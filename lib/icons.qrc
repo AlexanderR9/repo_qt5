@@ -1,0 +1,55 @@
+<RCC>
+    <qresource prefix="/icons">
+
+        <file>images/applications-system.svg</file>
+        <file>images/ball_gray.svg</file>
+        <file>images/ball_green.svg</file>
+        <file>images/ball_red.svg</file>
+        <file>images/ball_yellow.svg</file>
+        <file>images/chart.svg</file>
+        <file>images/clock.svg</file>
+        <file>images/document-new.svg</file>
+        <file>images/document-open.svg</file>
+        <file>images/document-save.svg</file>
+        <file>images/document-print.svg</file>
+        <file>images/document-print-preview.svg</file>
+        <file>images/up.svg</file>
+        <file>images/house.svg</file>
+        <file>images/perimetr.svg</file>
+        <file>images/r_scale.svg</file>
+        <file>images/octane.svg</file>
+        <file>images/b_scale.svg</file>
+        <file>images/coin.svg</file>
+        <file>images/chain.svg</file>
+        <file>images/down.svg</file>
+        <file>images/left.svg</file>
+        <file>images/right.svg</file>
+        <file>images/system-file-manager.svg</file>
+        <file>images/system-events-manager.svg</file>
+	<file>images/system-log-out.svg</file>
+	<file>images/system-search.svg</file>
+	<file>images/utilities-system-monitor.svg</file>
+        <file>images/preferences-system.svg</file>
+        <file>images/edit-clear.svg</file>
+        <file>images/edit-undo.svg</file>
+        <file>images/edit-redo.svg</file>
+        <file>images/bag.svg</file>
+        <file>images/emblem-ok.svg</file>
+        <file>images/emblem-cancel.svg</file>
+        <file>images/folder-open.svg</file>
+        <file>images/list-add.svg</file>
+        <file>images/list-remove.svg</file>
+        <file>images/media-play.svg</file>
+        <file>images/media-stop.svg</file>
+        <file>images/media-pause.svg</file>
+        <file>images/process-stop.svg</file>
+        <file>images/view-refresh.svg</file>
+        
+        <file>images/send_msg.png</file>
+
+    </qresource>
+</RCC>
+
+
+
+
