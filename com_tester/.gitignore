@@ -1,0 +1,6 @@
+com_tester.pro.user
+.qmake.stash
+moc
+obj
+Makefile
+com_tester

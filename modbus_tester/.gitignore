@@ -1,0 +1,6 @@
+modbus_tester.pro.user
+.qmake.stash
+moc
+obj
+Makefile
+modbus_tester

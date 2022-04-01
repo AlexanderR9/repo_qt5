@@ -1,0 +1,63 @@
+#!/bin/bash
+
+QT_PATH=$HOME/qt
+QT_PLUNGNS_PATH=$QT_PATH/plugins
+BIN_FILE_PATH=.
+BIN_FILE_NAME=com_tester
+
+MY_LIB_PATH=../lib/build
+MY_LIB_NAME=liblib.so
+MY_LIB_VERSION=1.0.0
+
+DISTR_NAME=comtester
+TEMPORY_DIR=temp
+
+
+echo "make temporary folder[$TEMPORY_DIR] ....."
+mkdir $TEMPORY_DIR
+sleep 1
+echo "make libs folder ....."
+mkdir $TEMPORY_DIR/lib
+sleep 1
+
+echo "copy service folders  ....."
+cp -r input $TEMPORY_DIR/input
+cp -r received $TEMPORY_DIR/received
+sleep 1
+
+echo "copy bin file [$BIN_FILE_PATH/$BIN_FILE_NAME] ....."
+cp $BIN_FILE_PATH/$BIN_FILE_NAME $TEMPORY_DIR/$BIN_FILE_NAME
+cp start_distr $TEMPORY_DIR/start
+sleep 1
+
+FML=$TEMPORY_DIR/lib/$MY_LIB_NAME.$MY_LIB_VERSION
+echo "copy mylib [$MY_LIB_NAME] ....."
+cp $MY_LIB_PATH/$MY_LIB_NAME.$MY_LIB_VERSION $FML
+chmod -x $FML
+sleep 1
+
+echo "make links for mylib [$MY_LIB_NAME] ....."
+cd $TEMPORY_DIR/lib
+ln -s $MY_LIB_NAME.$MY_LIB_VERSION $MY_LIB_NAME.1.0
+ln -s $MY_LIB_NAME.$MY_LIB_VERSION $MY_LIB_NAME.1
+ln -s $MY_LIB_NAME.$MY_LIB_VERSION $MY_LIB_NAME
+cd ../../
+sleep 1
+
+echo "copy plugin/platforms qt folder ....."
+cp -r $QT_PLUNGNS_PATH/platforms $TEMPORY_DIR/platforms
+sleep 1
+
+
+echo "make tar distrib file ....."
+mv $TEMPORY_DIR $DISTR_NAME
+tar -czvf $DISTR_NAME.tar.gz $DISTR_NAME
+
+echo "remove temporary folder[$TEMPORY_DIR] ....."
+rm -r $DISTR_NAME
+sleep 1
+
+echo "Finished!!!"
+
+exit 0
+
