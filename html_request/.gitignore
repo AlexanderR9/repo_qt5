@@ -1,0 +1,7 @@
+html_request.pro.user
+.qmake.stash
+moc
+obj
+data
+Makefile
+html_request
