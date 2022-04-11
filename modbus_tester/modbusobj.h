@@ -52,19 +52,19 @@ public:
 
 protected:
     QModbusRtuSerialMaster      *m_master;
-    //QModbusRtuSerialSlave       *m_slave;
-    MBServer       *m_slave;
+    MBServer                    *m_slave;
 
     int m_mode;
     ModbusPacketParams m_packParams;
 
-    void sendRequest();
-    void sendReply();
+    void sendRequest(); //only master
+    void prepareRequestData(QModbusDataUnit&);  //only master
+    void sendReply(); // only slave
+    //void initDataUnitSlave(); //инициализация набора регистров (only slave)
+    void timerEvent(QTimerEvent*); //test
+
     bool readCmd() const;
     bool writeCmd() const;
-    void prepareRequestData(QModbusDataUnit&);
-    void initDataUnitSlave(); //инициализация набора регистров для режима slave
-    void timerEvent(QTimerEvent*);
 
 protected slots:
     void slotErrorOccurred(QModbusDevice::Error);

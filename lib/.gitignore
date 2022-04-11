@@ -6,3 +6,4 @@ ui_h
 build
 Makefile
 qrc_icons.cpp
+full_clear

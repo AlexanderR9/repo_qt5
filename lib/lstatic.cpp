@@ -59,7 +59,7 @@ QString LStatic::baToStr(const QByteArray &ba, int line_size, bool with_int_valu
         if (s16.length() > 2)
         {
             s16 = s16.right(2);
-            qWarning()<<QString("WARNING: LStatic::baToStr   s16.length(%1) > 2, i=%2").arg(s16.length()).arg(i);
+            //qWarning()<<QString("WARNING: LStatic::baToStr   s16.length(%1) > 2, i=%2").arg(s16.length()).arg(i);
         }
         if (s16.length() == 1) s16 = s16.prepend("0");
         if (with_int_values)

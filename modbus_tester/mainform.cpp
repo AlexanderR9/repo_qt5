@@ -11,14 +11,12 @@ MainForm::MainForm(QWidget *parent)
     :LMainWidget(parent),
     m_protocol(NULL),
     m_modbusObj(NULL)
-    //f_worker(NULL)
 {
     setObjectName("main_form_testmodbus");
 
     m_modbusObj = new ModBusObj(this);
     connect(m_modbusObj, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_modbusObj, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMessage(const QString&)));
-
 }
 void MainForm::save()
 {
@@ -28,10 +26,6 @@ void MainForm::save()
 void MainForm::load()
 {
     LMainWidget::load();
-
-    //QStringList keys;
-    //keys.append("infile");
-    //slotAppSettingsChanged(keys);
 }
 void MainForm::initActions()
 {
@@ -94,19 +88,6 @@ void MainForm::initCommonSettings()
     for (int i=0; i<=5; i++) combo_list.append(QString::number(i));
     lCommonSettings.setComboList(key, combo_list);
     lCommonSettings.setDefValue(key, 1);
-
-
-    //key = QString("infile");
-    //lCommonSettings.addParam(QString("Input file"), LSimpleDialog::sdtFilePath, key);
-    //lCommonSettings.setDefValue(key, "");
-
-    //key = QString("showbuff");
-    //lCommonSettings.addParam(QString("Show buffers"), LSimpleDialog::sdtBool, key);
-    //lCommonSettings.setDefValue(key, false);
-
-    //key = QString("savebuff");
-    //lCommonSettings.addParam(QString("Save received buffer to file"), LSimpleDialog::sdtBool, key);
-    //lCommonSettings.setDefValue(key, false);
 }
 void MainForm::slotAppSettingsChanged(QStringList keys)
 {
@@ -151,23 +132,6 @@ void MainForm::slotAppSettingsChanged(QStringList keys)
     if (need_update)
         m_modbusObj->setPacketParams(p_pack);
 
-
-    /*
-    QString key = "infile";
-    if (keys.contains(key))
-    {
-        m_protocol->addSpace();
-        f_worker->setInputFile(lCommonSettings.paramValue(key).toString());
-
-        key = "showbuff";
-        if (lCommonSettings.paramValue(key).toBool())
-        {
-            QString s_ba = LStatic::baToStr(f_worker->sendingBuffer());
-            m_protocol->addText(s_ba, LProtocolBox::ttData);
-        }
-    }
-    */
-
 }
 void MainForm::updatePortParams()
 {
@@ -179,7 +143,6 @@ void MainForm::updatePortParams()
     if (type == "MASTER") p_com.device_type = 0;
     if (type == "SLAVE") p_com.device_type = 1;
     m_modbusObj->setPortParams(p_com);
-
 
     bool ok;
     ModbusPacketParams p_pack;
@@ -216,8 +179,6 @@ void MainForm::writeToPort()
 void MainForm::slotMessage(const QString &text)
 {
     m_protocol->addText(text);
-    //if (text.toLower().contains("received data"))
-      //  parseReceivedData(m_comObj->receivedBuffer());
 }
 void MainForm::slotError(const QString &text)
 {
@@ -235,36 +196,4 @@ void MainForm::slotAction(int type)
         default: break;
     }
 }
-/*
-void MainForm::getTestBA(QByteArray &ba)
-{
-    ba.clear();
-
-    char c = 0xaa;
-    ba.push_back(c);
-    c = 0xbb;
-    ba.push_back(c);
-    c = 0xdd;
-    ba.push_back(c);
-}
-*/
-/*
-void MainForm::parseReceivedData(const QByteArray &ba)
-{
-    QString key = "showbuff";
-    if (lCommonSettings.paramValue(key).toBool())
-    {
-        m_protocol->addSpace();
-        QString s_ba = LStatic::baToStr(ba);
-        m_protocol->addText(s_ba, LProtocolBox::ttData);
-        m_protocol->addSpace();
-    }
-
-    key = "savebuff";
-    if (lCommonSettings.paramValue(key).toBool())
-    {
-        f_worker->saveBuffer(ba);
-    }
-}
-*/
 

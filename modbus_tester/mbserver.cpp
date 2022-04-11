@@ -1,17 +1,19 @@
 #include "mbserver.h"
 #include "comparams_struct.h"
 #include "mbadu.h"
+#include "lstatic.h"
 
 #include <QSerialPort>
 #include <QModbusPdu>
 #include <QDebug>
 #include <QDateTime>
+#include <QtMath>
 
 #define REQ_DATE_TIME_CODE      0x15
-#define DT_START_POINT          4744694139655227477 //стартовая точка времи, соответствующая   09.03.2022  16:30:00
+//#define DT_START_POINT          4744694139655227477 //стартовая точка времи, соответствующая   09.03.2022  16:30:00
 
 
-
+////////////// MBServer //////////////////
 MBServer::MBServer(QObject *parent)
     :QModbusServer(parent),
     m_port(NULL),
@@ -19,7 +21,6 @@ MBServer::MBServer(QObject *parent)
     m_maxReadingReg(0),
     m_maxWritingReg(0),
     m_invalidPass(0)
-    //m_elapsedOffset(0)
 {
    m_port = new QSerialPort(this);
 
@@ -30,6 +31,82 @@ MBServer::MBServer(QObject *parent)
    connect(m_port, SIGNAL(aboutToClose()), this, SLOT(slotAboutToClose()));
    connect(m_port, SIGNAL(error(QSerialPort::SerialPortError)), this, SLOT(slotError()));
 
+   startTimer(3800);
+}
+void MBServer::timerEvent(QTimerEvent*)
+{
+    qDebug("MBServer::timerEvent");
+    double base_len = 26.7; //mm
+    quint16 pos = 0x100; //for rack 1
+    quint16 value = 0; //reg_value
+    double d_value = 0;
+
+    int start_rack = 11;
+    for (int rack=11; rack<=14; rack++)
+    {
+        int d_rack = rack - start_rack;
+        double rack_factor = qPow(1.2, d_rack);
+        for (int i=0; i<8; i++)
+        {
+            for (int j=0; j<2; j++)
+            {
+                int sign = ((qrand()%99 < 50) ? -1 : 1);
+                d_value = sign*double(qrand()%300)/100;
+                value = quint16((rack_factor*base_len + d_value)*100);
+                setData(QModbusDataUnit::HoldingRegisters, (pos*(i+1) + j + d_rack*2), value);
+            }
+        }
+    }
+
+
+    //temperature params, rack=16
+    double base_temp = 280;
+    int d_rack = 16 - start_rack;
+    for (int i=0; i<4; i++)
+    {
+        double group_factor = qPow(1.05, i);
+        for (int j=0; j<4; j++)
+        {
+            //mul="0.03125" add="-125.0"
+            int sign = ((qrand()%99 < 50) ? -1 : 1);
+            d_value = sign*double(qrand()%300)/100;
+            value = quint16((group_factor*base_temp + d_value + 125)*32);
+            setData(QModbusDataUnit::HoldingRegisters, (pos*(i+1) + j + d_rack*2), value);
+        }
+    }
+
+
+    //d_value = 3.6;
+    //value = quint16((base_temp + d_value + 125)*32);
+    //setData(QModbusDataUnit::HoldingRegisters, (pos + d_rack*2), value);
+
+
+    //rack 1,  params 1 - 2
+    //setData(QModbusDataUnit::HoldingRegisters, pos, value);
+    //setData(QModbusDataUnit::HoldingRegisters, pos+1, quint16(value*1.5));
+    //rack 1,  params 3 - 4
+    //value = 3700;
+    //setData(QModbusDataUnit::HoldingRegisters, 2*pos, value);
+    //setData(QModbusDataUnit::HoldingRegisters, 2*pos+1, quint16(value*1.5));
+
+    //pos += 2;
+    //value = 2200;
+    //setData(QModbusDataUnit::HoldingRegisters, pos, value);
+
+}
+void MBServer::initBuffers()
+{
+    quint16 start_pos_reg = 0; //стартовая позиция регистров
+    quint16 reg_count = 5000; //количество регистров в буфере, т.е. для 16 битных регистров размер буфера будет reg_count*2
+    QModbusDataUnit data_unit(QModbusDataUnit::HoldingRegisters, start_pos_reg, reg_count);
+    QModbusDataUnit data_coils(QModbusDataUnit::Coils, start_pos_reg, reg_count);
+    //QModbusDataUnit data_inputs(QModbusDataUnit::DiscreteInputs, start_pos_reg, reg_count);
+
+    QModbusDataUnitMap map;
+    map.insert(data_unit.registerType(), data_unit);
+    //map.insert(data_inputs.registerType(), data_inputs);
+    map.insert(data_coils.registerType(), data_coils);
+    setMap(map);
 }
 void MBServer::reset()
 {
@@ -37,7 +114,6 @@ void MBServer::reset()
     m_maxReadingReg = 0;
     m_maxWritingReg = 0;
     m_invalidPass = 0;
-
 }
 void MBServer::slotError()
 {
@@ -80,7 +156,6 @@ void MBServer::slotError()
             break;
     }
 
-
     emit signalError(QString("com_port error, code=%1").arg(code));
 }
 void MBServer::slotAboutToClose()
@@ -88,34 +163,21 @@ void MBServer::slotAboutToClose()
     qDebug("MBServer::slotAboutToClose()");
     if (state() != QModbusDevice::ClosingState)
         setState(QModbusDevice::UnconnectedState);
-
 }
-/*
-void MBServer::recalcElapsedOffset()
-{
-    QDateTime cur_dt(QDateTime::currentDateTime());
-    QDateTime start_dt(QDate(2022, 3, 9), QTime(16, 30));
-
-    qint64 d = start_dt.msecsTo(cur_dt);
-    m_elapsedOffset = quint64(d)*16.35;
-    qDebug()<<QString("MBServer::recalcElapsedOffset()   m_elapsedOffset = %1").arg(m_elapsedOffset);
-}
-*/
 bool MBServer::open()
 {
     if (state() == QModbusDevice::ConnectedState)
         return true;
 
-
     m_requestBuffer.clear();
+    initBuffers();
 
     if (m_port->open(QIODevice::ReadWrite))
     {
         setState(QModbusDevice::ConnectedState);
         m_port->clear(); // only possible after open
-        //recalcElapsedOffset();
-        //m_elapsedTimer.start();
         reset();
+        qDebug("slave device opened!");
     }
     else setError(m_port->errorString(), QModbusDevice::ConnectionError);
 
@@ -137,9 +199,7 @@ QString MBServer::cmdCounterToStr() const
     {
         QList<quint8> keys = m_cmdCounter.keys();
         for (int i=0; i<keys.count(); i++)
-        {
             s = QString("%1  cmd(%2)/count(%3) ").arg(s).arg(keys.at(i)).arg(m_cmdCounter.value(keys.at(i)));
-        }
     }
     return s;
 }
@@ -155,49 +215,71 @@ void MBServer::slotReadyRead()
     const int size = m_port->size();
     m_requestBuffer += m_port->read(size);
     //qDebug() << QString("Current request buffer: ") << m_requestBuffer.toHex();
+    parseCurrentBuffer();
+}
+void MBServer::parseCurrentBuffer()
+{
+    if (m_requestBuffer.size() < 4) return;
 
     MBAdu adu(m_requestBuffer);
-    //qDebug() << QString("Current request buffer: ") << adu.rawData().toHex();
-
-    //qDebug()<<adu.rawDataToStr();
     if (adu.invalid())
     {
-        //qWarning() << m_requestBuffer.toHex() << QString("    size=%1").arg(adu.rawSize());
-        if (m_invalidPass < 1)
+        if (m_invalidPass < 5) //ждем еще один кусочек пакета, т.е. даем еще один шанс, с 1-го раза не бракуем
         {
+            qDebug()<<QString("     m_invalidPass=%1").arg(m_invalidPass);
             m_invalidPass++;
-            //qWarning()<<QString("invalid pass: %1").arg(m_invalidPass);
             return;
         }
 
-        qWarning()<<QString("(RTU server) Invalid ADU, err_code %1: %2").arg(adu.errCode()).arg(adu.stringErr());
+        qWarning() << QString("(RTU server) Invalid ADU, err_code %1: %2").arg(adu.errCode()).arg(adu.stringErr());
         qWarning() << m_requestBuffer.toHex() << QString("    size=%1").arg(adu.rawSize());
         m_requestBuffer.clear();
         m_invalidPass = 0;
         return;
     }
+    qDebug()<<adu.rawDataToStr();
 
-    m_invalidPass = 0;
-    /*
-    m_cmdCounter.insert(adu.cmdCode(), m_cmdCounter.value(adu.cmdCode(), 0) + 1);
-    //qDebug()<<cmdCounterToStr();
-
-    if (adu.readingCmd())
-    {
-        if (adu.startPosReg() > m_maxReadingReg) m_maxReadingReg = adu.startPosReg();
-    }
-    else if (adu.writingCmd())
-    {
-        if (adu.startPosReg() > m_maxWritingReg) m_maxWritingReg = adu.startPosReg();
-    }
+    int packet_size = adu.rawSize();
+    if (m_requestBuffer.size() == packet_size) m_requestBuffer.clear();
     else
     {
-        qDebug() << QString("Current request buffer: ") << adu.rawData().toHex();
+        qDebug()<<QString("trim buffer:  requestBuffer %1 bytes / packet_size %2 bytes").arg(m_requestBuffer.size()).arg(packet_size);
+        m_requestBuffer.remove(0, packet_size);
     }
-    //qDebug()<<regPosToStr();
-    */
 
+    m_invalidPass = 0;
     is_broadcast = (adu.serverAddress() == 0);
+    tryParseAdu(adu);
+
+    if (!m_requestBuffer.isEmpty()) parseCurrentBuffer();
+}
+void MBServer::transformPDU(QModbusPdu &pdu, quint8 rack_addr)
+{
+    quint8 d_rack = rack_addr - 11;
+
+    switch (pdu.functionCode())
+    {
+        case QModbusPdu::ReadHoldingRegisters:
+        {
+            if (d_rack > 0)
+            {
+                QByteArray ba(pdu.data());
+                quint16 pos = quint16((quint8(ba.at(0)) << 8) | quint8(ba.at(1)));
+               // qDebug()<<QString("pos=%1  d_rack=%2").arg(pos).arg(d_rack);
+                pos += d_rack*2;
+                ba[1] = uchar(pos);
+                ba[0] = uchar(pos>>8);
+                pdu.setData(ba);
+                //qDebug()<<QString("PDU after transform, rack_addr=%1, pdu_data: ").arg(rack_addr) << ba.toHex();
+            }
+            break;
+        }
+        default: break;
+    }
+}
+void MBServer::tryParseAdu(const MBAdu &adu)
+{
+    //пытаемся извлечь PDU из ADU
     QModbusPdu pdu;
     adu.getPduData(pdu);
     const int pduSizeWithoutFcode = pdu.size() - 1;
@@ -207,39 +289,44 @@ void MBServer::slotReadyRead()
         return;
     }
 
-    m_requestBuffer.clear();
-    if (!is_broadcast && (adu.serverAddress() != this->serverAddress()))
+    // PDU ok
+
+    /////////////////////////алгоритм реакции MBServer на запрос//////////////////////////////////////
+    transformPDU(pdu, adu.serverAddress());
+    /*
+    if (!is_broadcast && (adu.serverAddress() != this->serverAddress())) //проверка адреса устройства в запросе
     {
-        qWarning()<<QString("(RTU server) Wrong server address %1 / %2").arg(serverAddress()).arg(adu.serverAddress());
+        qWarning() << QString("(RTU server) Wrong server address %1 / %2").arg(serverAddress()).arg(adu.serverAddress());
         return;
     }
+    */
 
     const QModbusRequest request(pdu);
     QModbusResponse response;
     if (value(QModbusServer::DeviceBusy).value<quint16>() == 0xffff)
     {
-        qWarning()<<QString("(RTU server) DeviceBusy");
+        qWarning() << QString("(RTU server) DeviceBusy");
         response = QModbusExceptionResponse(request.functionCode(),  QModbusExceptionResponse::ServerDeviceBusy);
     }
-    else
-    {
-        //incrementCounter(QModbusServerPrivate::Counter::ServerMessage);
-        response = processRequest(request);
-    }
+    else response = processRequest(request);
 
     if ((!response.isValid()) || processesBroadcast() || value(QModbusServer::ListenOnlyMode).toBool())
     {
-        qWarning()<<QString("(RTU server) Invalid response, exeption %1").arg(response.exceptionCode());
-        qWarning()<<response;
+        qWarning() << QString("(RTU server) Invalid response, exeption %1").arg(response.exceptionCode());
+        qWarning() << response;
         return;
     }
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+    trySendResponse(response); //запись ответ в COM
+}
+void MBServer::trySendResponse(const QModbusResponse &response)
+{
     QByteArray result;
-    getResponseBA(result, response);
-    if (adu.cmdCode() == 43)
-        qDebug() << "(RTU server) Response ADU:" << result.toHex();
+    getResponseBA(result, response); //convert QModbusResponse -> QByteArray
 
-    if (!isConnected())
+    if (!isConnected()) //по каким-то причинам произошел разрыв связи
     {
         qWarning() << "(RTU server) Requesting serial port has closed.";
         setError(QString("Requesting serial port is closed"), QModbusDevice::WriteError);
@@ -247,8 +334,9 @@ void MBServer::slotReadyRead()
         return;
     }
 
-    int writtenBytes = m_port->write(result);
-    if ((writtenBytes < 0) || (writtenBytes < result.size()))
+    //qDebug()<<QString("send response, size=%1").arg(result.size());
+    int writtenBytes = m_port->write(result);   // запись ответа в COM порт
+    if ((writtenBytes < 0) || (writtenBytes < result.size())) //проверка результат записи
     {
         qWarning() << "(RTU server) Cannot write requested response to serial port.";
         setError(QString("Could not write response to client"), QModbusDevice::WriteError);
@@ -256,12 +344,8 @@ void MBServer::slotReadyRead()
         return;
     }
 
-    if (response.isException())
-    {
-        qWarning() << QString("WARNING: (RTU server) response exception %1").arg(response.exceptionCode());
-        qDebug() << QString("Current request buffer: ") << adu.rawData().toHex();
-    }
-
+    if (response.isException()) //некое исключение
+        qWarning() << QString("WARNING: (RTU server) response exception %1 :  %2").arg(response.exceptionCode()).arg(LStatic::baToStr(result, 24));
 }
 void MBServer::getResponseBA(QByteArray &ba, const QModbusPdu &pdu)
 {
@@ -278,41 +362,27 @@ void MBServer::setPortParams(const ComParams &params)
     m_port->setDataBits(QSerialPort::DataBits(params.data_bits));
     m_port->setStopBits(QSerialPort::StopBits(params.stop_bits));
     m_port->setParity(QSerialPort::Parity(params.parity));
-
-    //setConnectionParameter(QModbusDevice::SerialPortNameParameter, params.port_name);
-    // setConnectionParameter(QModbusDevice::SerialDataBitsParameter, params.data_bits);
-    // setConnectionParameter(QModbusDevice::SerialStopBitsParameter, params.stop_bits);
-    // setConnectionParameter(QModbusDevice::SerialBaudRateParameter, params.baud_rate);
-     //setConnectionParameter(QModbusDevice::SerialBaudRateParameter, QSerialPort::Baud115200);
-    // setConnectionParameter(QModbusDevice::SerialParityParameter, params.parity);
-
 }
 QModbusResponse MBServer::processRequest(const QModbusPdu &request)
 {
-    if (request.functionCode() == QModbusRequest::EncapsulatedInterfaceTransport)
+    if (request.functionCode() == QModbusRequest::EncapsulatedInterfaceTransport) //в запросе необычный код команды
     {
         quint8 meiType;
         request.decodeData(&meiType);
         qDebug()<<QString("processRequest: functionCode=%1,  meiType=%2").arg(QModbusRequest::EncapsulatedInterfaceTransport).arg(meiType);
 
-        /*
-        namespace EncapsulatedInterfaceTransport
-        {
-            enum SubFunctionCode {CanOpenGeneralReference = 0x0D, ReadDeviceIdentification = 0x0E};
-        }
-        */
-
-        //if (meiType == EncapsulatedInterfaceTransport::CanOpenGeneralReference)
-
         if (meiType == 0x0D)
+        {
             return QModbusExceptionResponse(request.functionCode(), QModbusExceptionResponse::IllegalFunction);
+        }
         else if (meiType == REQ_DATE_TIME_CODE)
         {
             return dateTimeResponse(request);
         }
         else qWarning("******************INVALID SUB FUNCTION****************************");
     }
-    return QModbusServer::processRequest(request);
+
+    return QModbusServer::processRequest(request); //стандартная базовая обработка QModbusPdu
 }
 QModbusResponse MBServer::dateTimeResponse(const QModbusPdu &request) const
 {
@@ -320,58 +390,26 @@ QModbusResponse MBServer::dateTimeResponse(const QModbusPdu &request) const
     QDataStream stream(&ba, QIODevice::WriteOnly);
     stream.setByteOrder(QDataStream::LittleEndian);
     stream << quint8(REQ_DATE_TIME_CODE);
-    /*
-    //09.03.2022    16:30:00
-    stream << quint8(0x41);
-    stream << quint8(0xd8);
-    stream << quint8(0x8a);
-    stream << quint8(0x2e);
-    stream << quint8(0x7a);
-    stream << quint8(0x07);
-    stream << quint8(0x08);
-    stream << quint8(0x55);
-    */
-
     stream << curDTPoint_double();
     //stream << curDTPoint();
     stream << quint16(0);
-
     return QModbusResponse(request.functionCode(), ba);
 }
 double MBServer::curDTPoint_double() const
 {
     struct timespec tm;
-    //int res = clock_gettime(CLOCK_MONOTONIC, &tm);
     int res = clock_gettime(CLOCK_REALTIME, &tm);
-
-    //sys_time<milliseconds> utc_ms{round<milliseconds>(ms{my_utc_ts})};
 
     double factor_6 = 1000000;
     double sec = tm.tv_sec;
     double mk_sec = -1000 + double(tm.tv_nsec)/double(1000);
     return (sec + mk_sec/factor_6);
-
 }
-
 qint64 MBServer::curDTPoint() const
 {
-    //auto current_time = std::chrono::system_clock::now();
-    //return quint64(std::chrono::system_clock::now());
-    //double d = current_time;
-
-
     struct timespec tm;
     int res = clock_gettime(CLOCK_REALTIME, &tm);
-    //qDebug()<<QString("clock %1").arg((int64_t)(((int64_t)tm.tv_sec)*1000000+((int64_t)tm.tv_nsec)/1000));
     return (((qint64)tm.tv_sec)*1000000+((qint64)tm.tv_nsec)/1000);
-
-
-
-    //old code
-    //quint64 s_point = quint64(DT_START_POINT) + m_elapsedOffset;
-    //s_point += quint64(m_elapsedTimer.nsecsElapsed()/1000);
-    //qDebug()<<QString("m_elapsedTimer microsecs: %1").arg(m_elapsedTimer.nsecsElapsed()/1000);
-    //return s_point;
 }
 
 
