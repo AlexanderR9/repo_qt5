@@ -1,5 +1,5 @@
 #include "mbadu.h"
-#include "comparams_struct.h"
+#include "mbcrckeytable.h"
 #include "lstatic.h"
 
 #include <QModbusPdu>
