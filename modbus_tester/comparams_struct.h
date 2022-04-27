@@ -16,6 +16,8 @@ struct ComParams
     int parity;
     int device_type; // 0-master, 1-slave
 
+    QString emul_config;
+
     void reset()
     {
         port_name = "/dev/ttyUSB3";
@@ -24,6 +26,7 @@ struct ComParams
         stop_bits = QSerialPort::OneStop;
         parity = QSerialPort::EvenParity;
         device_type = 0;
+        emul_config.clear();
     }
 };
 

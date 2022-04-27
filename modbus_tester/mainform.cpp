@@ -26,6 +26,10 @@ void MainForm::save()
 void MainForm::load()
 {
     LMainWidget::load();
+
+    QString emul_config = lCommonSettings.paramValue("emulconfig").toString().trimmed();
+    m_modbusObj->setEmulConfig(emul_config);
+
 }
 void MainForm::initActions()
 {
@@ -53,6 +57,10 @@ void MainForm::initCommonSettings()
     key = QString("portname");
     lCommonSettings.addParam(QString("Port name"), LSimpleDialog::sdtFilePath, key);
     lCommonSettings.setDefValue(key, "/dev/ttyS3");
+
+    key = QString("emulconfig");
+    lCommonSettings.addParam(QString("Config file"), LSimpleDialog::sdtFilePath, key);
+    lCommonSettings.setDefValue(key, "config/sacor_bal2.xml");
 
     key = QString("cmd");
     lCommonSettings.addParam(QString("Packet command"), LSimpleDialog::sdtStringCombo, key);
@@ -129,6 +137,14 @@ void MainForm::slotAppSettingsChanged(QStringList keys)
         need_update = true;
     }
 
+    key = "emulconfig";
+    if (keys.contains(key))
+    {
+        QString emul_config = lCommonSettings.paramValue(key).toString().trimmed();
+        m_modbusObj->setEmulConfig(emul_config);
+    }
+
+
     if (need_update)
         m_modbusObj->setPacketParams(p_pack);
 
@@ -139,6 +155,7 @@ void MainForm::updatePortParams()
 
     ComParams p_com;
     p_com.port_name = lCommonSettings.paramValue("portname").toString().trimmed();
+    p_com.emul_config = lCommonSettings.paramValue("emulconfig").toString().trimmed();
     QString type = lCommonSettings.paramValue("devicetype").toString().trimmed();
     if (type == "MASTER") p_com.device_type = 0;
     if (type == "SLAVE") p_com.device_type = 1;

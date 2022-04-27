@@ -28,6 +28,7 @@ HEADERS += $$PWD/mainform.h \
 	$$PWD/mbslaveserverbase.h \
 	$$PWD/mbdeviceemulator.h \
 	$$PWD/mbserver.h \
+	$$PWD/mbconfigloader.h \
 	$$PWD/mbadu.h
 
 SOURCES += $$PWD/main.cpp \
@@ -36,5 +37,6 @@ SOURCES += $$PWD/main.cpp \
 	$$PWD/mbslaveserverbase.cpp \
 	$$PWD/mbdeviceemulator.cpp \
 	$$PWD/mbserver.cpp \
+	$$PWD/mbconfigloader.cpp \
 	$$PWD/mbadu.cpp
 

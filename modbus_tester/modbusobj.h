@@ -28,6 +28,7 @@ public:
 
     void setPortParams(const ComParams&);
     void setPacketParams(const ModbusPacketParams &pp);
+    void setEmulConfig(const QString&);
     inline const ModbusPacketParams& packetParams() const {return m_packParams;}
 
     bool isConnected() const;

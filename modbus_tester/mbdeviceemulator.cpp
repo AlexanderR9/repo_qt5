@@ -5,14 +5,15 @@
 #include <QTimer>
 #include <QModbusDataUnit>
 
-#define UPDATE_VALUES_INTERVAL      5000
-#define UPDATE_CHANCE_FACTOR        0.1  //вероятность того, что сигнал попытается обновиться
+#define UPDATE_VALUES_INTERVAL      3333
+#define UPDATE_CHANCE_FACTOR        0.5  //вероятность того, что сигнал попытается обновиться
 
 
 /////////////////////MBDeviceEmulator//////////////////////////////
 MBDeviceEmulator::MBDeviceEmulator(QObject *parent)
     :QObject(parent),
-    m_timer(NULL)
+    m_timer(NULL),
+    m_firstValues(false)
 {
     setObjectName("mb_sacor_emulator");
     reset();
@@ -30,13 +31,14 @@ void MBDeviceEmulator::slotTimer()
     QMap<quint8, MBEmulDevice>::iterator it = m_devices.begin();
     while (it != m_devices.end())
     {
-        it.value().updateSignals(need_update_regs);
+        it.value().updateSignals(need_update_regs, m_firstValues);
         it++;
     }
 
+    m_firstValues = false;
     if (need_update_regs.isEmpty()) return;
 
-    qDebug("update emulation values 2");
+    //qDebug("update emulation values 2");
     QMap<quint16, quint16>::const_iterator it2 = need_update_regs.constBegin();
     while (it2 != need_update_regs.constEnd())
     {
@@ -48,7 +50,11 @@ void MBDeviceEmulator::slotTimer()
 void MBDeviceEmulator::startEmulation()
 {
     if (m_timer)
-        if (!m_timer->isActive()) m_timer->start();
+        if (!m_timer->isActive())
+        {
+            m_timer->start();
+            //m_firstValues = true;
+        }
 }
 void MBDeviceEmulator::stopEmulation()
 {
@@ -74,6 +80,12 @@ int MBDeviceEmulator::allSignalsCount() const
     foreach (MBEmulDevice d, m_devices)
         n += d.signalsCount();
     return n;
+}
+int MBDeviceEmulator::deviceSignalsCount(quint8 addr) const
+{
+    if (m_devices.contains(addr))
+        return m_devices[addr].emul_signals.count();
+    return -1;
 }
 void MBDeviceEmulator::addDevice(quint8 address)
 {
@@ -125,6 +137,8 @@ void MBDeviceEmulator::processPDU(quint8 addr, QByteArray &ba)
     ba[1] = uchar(pos);
     ba[0] = uchar(pos>>8);
 }
+
+/*
 const MBEmulDevice* MBDeviceEmulator::deviceAt(quint8 addr) const
 {
     if (m_devices.contains(addr))
@@ -143,10 +157,16 @@ const MBEmulDevice* MBDeviceEmulator::deviceAt(quint8 addr) const
 
     return NULL;
 }
+*/
 void MBDeviceEmulator::setEmuValueSettings(quint8 addr, const EmulValueSettings &evs)
 {
-    if (deviceAt(addr))
+    if (m_devices.contains(addr))
         m_devices[addr].setEmuValueSettings(evs);
+}
+void MBDeviceEmulator::setEmuValueSettings(quint8 addr, const EmulValueSettings &evs, int sig_i)
+{
+    if (m_devices.contains(addr))
+        m_devices[addr].setEmuValueSettings(sig_i, evs);
 }
 
 
@@ -161,30 +181,55 @@ void MBEmulDevice::updateSignal(int i, double v, double factor, int adder)
     if (i < 0 || i >= emul_signals.count()) return;
     emul_signals[i].updateValue(v, factor, adder);
 }
-void MBEmulDevice::updateSignals(QMap<quint16, quint16> &map)
+void MBEmulDevice::updateSignals(QMap<quint16, quint16> &map, bool is_first)
 {
     qDebug()<<QString("update signals for addr %1").arg(address);
     if (emul_signals.isEmpty()) return;
 
+    //update double signals
     for (int i=0; i<signalsCount(); i++)
     {
-        if (LMath::rnd() > UPDATE_CHANCE_FACTOR) continue;
+        if (emul_signals.at(i).isBit()) continue;
+
+        if (!is_first && (LMath::rnd() > UPDATE_CHANCE_FACTOR)) continue;
+
+        const EmulValueSettings &evs = (emul_signals.at(i).hasEmulSettings() ? emul_signals.at(i).emul_settings : emul_settings);
+        if (evs.disabled()) {qWarning()<<QString(" disabled: rack_addr=%1  i=%2").arg(address).arg(i); continue;}
 
         quint16 pos = regPos(i);
+        updateSignal(i, evs.nextValue(), evs.factor, evs.adder);
+        map.insert(pos, emul_signals.at(i).value);
+    }
+
+
+    //update bin signals
+    for (int i=0; i<signalsCount(); i++)
+    {
+        if (!emul_signals.at(i).isBit()) continue;
+        quint16 pos = regPos(i);
+
+        const EmulValueSettings &evs = (emul_signals.at(i).hasEmulSettings() ? emul_signals.at(i).emul_settings : emul_settings);
+        if (evs.disabled()) {qWarning()<<QString(" disabled: rack_addr=%1  i=%2").arg(address).arg(i); continue;}
+
+
         if (emul_signals.at(i).isBit())
         {
-            updateSignal(i, emul_settings.nextBitValue(), 0);
+            quint8 b_index = emul_signals.at(i).reg_info.bit_index;
+            double d_bit = evs.nextBitValue();
+            updateSignal(i, d_bit, 0);
             int cur_value = map.value(pos, 0);
-            if (emul_signals.at(i).value > 0) LMath::setBitOn(cur_value, emul_signals.at(i).reg_info.bit_index);
-            else LMath::setBitOff(cur_value, emul_signals.at(i).reg_info.bit_index);
+
+            if (emul_signals.at(i).value > 0) LMath::setBitOn(cur_value, b_index);
+            else LMath::setBitOff(cur_value, b_index);
+
+            if (b_index == 0 && emul_signals.at(i).reg_info.pos == 256)
+            {
+                qDebug()<<QString("rack_addr=%0 cur_value=%1  sig_value=%2  d_bit=%3  pos=%4").arg(address).arg(LMath::toStr(cur_value)).arg(emul_signals.at(i).value).arg(d_bit).arg(pos);
+            }
             map.insert(pos, quint16(cur_value));
         }
-        else
-        {
-            updateSignal(i, emul_settings.nextValue(), 100, 0);
-            map.insert(pos, emul_signals.at(i).value);
-        }
     }
+
 }
 quint16 MBEmulDevice::regPos(int i, quint16 def_value) const
 {
@@ -210,6 +255,14 @@ void MBEmulDevice::setEmuValueSettings(const EmulValueSettings &evs)
 {
     emul_settings.base_value = evs.base_value;
     emul_settings.err = evs.err;
+    emul_settings.factor = evs.factor;
+    emul_settings.adder = evs.adder;
+    //qDebug()<<QString("MBEmulDevice::setEmuValueSettings  addr=%1  base_value=%2  err=%3").arg(address).arg(emul_settings.base_value).arg(emul_settings.err);
+}
+void MBEmulDevice::setEmuValueSettings(int i, const EmulValueSettings &evs)
+{
+    if (i < 0 || i >= emul_signals.count()) return;
+    emul_signals[i].setEmuValueSettings(evs);
 }
 
 
@@ -228,6 +281,13 @@ void MBEmulSignal::updateValue(double v, double factor, int adder)
     if (isBit()) value = (v > 0 ? 1 : 0);
     else value = quint16((v + adder)*factor);
 }
+void MBEmulSignal::setEmuValueSettings(const EmulValueSettings &evs)
+{
+    emul_settings.base_value = evs.base_value;
+    emul_settings.err = evs.err;
+    emul_settings.factor = evs.factor;
+    emul_settings.adder = evs.adder;
+}
 
 
 /////////////////////EmulValueSettings//////////////////////////////
@@ -240,12 +300,23 @@ double EmulValueSettings::nextValue() const
 }
 double EmulValueSettings::nextBitValue() const
 {
-    int bv = ((base_value > 0) ? 1 : 0);
-    if (err <= 0 || err > 100) return bv;
+    //int bv = ((base_value > 0) ? 1 : 0);
+    //if (err <= 0 || err > 100) return bv;
+    if (err < 0.1 || err > 100) return base_value;
 
     bool need_invert = (double(LMath::rndInt(0, 10000))/double(100) > err);
-    if (need_invert) return ((bv == 1) ? 0 : 1);
-    return bv;
+    if (need_invert)
+    {
+        if (base_value == 0) return 1;
+        return 0;
+    }
+
+    //if (need_invert) return ((bv == 1) ? 0 : 1);
+    return base_value;
+}
+QString EmulValueSettings::toStr() const
+{
+    return QString("EmulValueSettings: base_value=%1  err=%2%  factor=%3  adder=%4").arg(base_value).arg(err).arg(factor).arg(adder);
 }
 
 

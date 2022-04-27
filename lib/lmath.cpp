@@ -85,9 +85,11 @@ void LMath::setBitOn(int &a, quint8 bit_pos)
 void LMath::setBitOff(int &a, quint8 bit_pos)
 {
     if (bit_pos > (sizeof(a)*byteSize() - 1)) return;
-    quint32 aa = 1;
+    if (!isBitOn(a, bit_pos)) return;
+
+    quint32 aa = 0;
     if (bit_pos > 0) aa <<= bit_pos;
-    a ^= aa;
+    a |= aa;
 }
 QString LMath::toStr(int a)
 {

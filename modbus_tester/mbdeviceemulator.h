@@ -14,14 +14,20 @@ class QTimer;
 // EmulValueSettings
 struct EmulValueSettings
 {
-    EmulValueSettings() :base_value(0), err(0) {}
-    EmulValueSettings(double bv, double e) :base_value(bv), err(e) {}
+    EmulValueSettings() :base_value(0), err(0), factor(1), adder(0) {}
+    EmulValueSettings(double bv, double e, double f, double a = 0) :base_value(bv), err(e), factor(f), adder(a) {}
 
     double base_value;
     double err; //%
 
+    double factor; //множитель для участия конвертации double в значение регистра quint16
+    double adder; //добавочное значение для участия конвертации double в значение регистра quint16
+
     double nextValue() const; //для вещественных сигналов
     double nextBitValue() const; //для дискретных сигналов
+    void disableSettings() {base_value = err = -1;}
+    bool disabled() const {return ((base_value < 0) && (err < 0));}
+    QString toStr() const;
 
 };
 
@@ -50,6 +56,8 @@ struct MBEmulSignal
 
     quint16 value;
     MBRegisterInfo reg_info;
+    EmulValueSettings emul_settings;
+
 
     //уникальный
     //10-ми значное число
@@ -60,11 +68,13 @@ struct MBEmulSignal
     quint32 id;
 
     inline bool isBit() const {return (reg_info.type == MBRegisterInfo::estBit_1);}
-    inline void reset() {value = id = 0;}
+    inline void reset() {value = id = 0; emul_settings.disableSettings();}
     inline quint32 baseID() const {return quint16(qRound(double(id)/double(100))*100);}
 
     void calcID(quint8 addr);
     void updateValue(double v, double factor, int adder = 0);
+    void setEmuValueSettings(const EmulValueSettings&);
+    bool hasEmulSettings() const {return !emul_settings.disabled();}
 
 };
 
@@ -87,8 +97,9 @@ struct MBEmulDevice
     void updateSignal(int i, double v, double factor, int adder = 0); //обновить значение сигнала
     quint16 regPos(int i, quint16 def_value = 0) const; //реальная позиция регистра i-го сигнала для этого устройства
     QList<quint16> emulPosList() const; //все значения имитируемых регистров в этом устройстве (для всех сигналов этого устройства)
-    void setEmuValueSettings(const EmulValueSettings&);
-    void updateSignals(QMap<quint16, quint16>&); // need update registers map: pos, value
+    void setEmuValueSettings(const EmulValueSettings&); //задать настроки эмуляции значений для всей стойки
+    void setEmuValueSettings(int, const EmulValueSettings&); //задать настроки эмуляции значений для конкретного датчика стойки
+    void updateSignals(QMap<quint16, quint16>&, bool); // need update registers map: pos, value
 
 };
 
@@ -102,7 +113,9 @@ public:
     virtual ~MBDeviceEmulator() {}
 
     void out();
-    int allSignalsCount() const;
+    int allSignalsCount() const; //количество всех сигналов, всей системы
+    int deviceSignalsCount(quint8) const; //количество всех сигналов заданного устройства
+
     void addDevice(quint8 address); //добавить устройство
     void addDeviceSignal(quint8, const MBRegisterInfo&); //добавить сигнал в устройство
     void processPDU(quint8, QByteArray&); //обработать данные запроса
@@ -110,16 +123,19 @@ public:
     void stopEmulation(); //остановить эмулятор
     bool activated() const;
     void setEmuValueSettings(quint8, const EmulValueSettings&); //установить настройки эмуляции для заданного устройства
+    void setEmuValueSettings(quint8, const EmulValueSettings&, int); //установить настройки эмуляции для заданного устройства и заданного сигнала
 
     inline int deviceCount() const {return m_devices.count();}
     inline quint32 mbRegsCount() const {return (deviceCount()*MBEmulDevice::maxSignals() + 10);} //сколько всего регистров необходимо зарезервировать для имитации данной системы
+    inline void setFirstValuesOn() {m_firstValues = true;}
+    inline void reset() {m_devices.clear();}
 
 protected:
     QMap<quint8, MBEmulDevice> m_devices;
     QTimer *m_timer;
+    bool m_firstValues; //признак того что в этот момент значения задаются в 1-й раз после старта эмуляции.
 
-    void reset() {m_devices.clear();}
-    const MBEmulDevice* deviceAt(quint8) const;
+    //const MBEmulDevice* deviceAt(quint8) const;
 
 protected slots:
     void slotTimer(); //обновить некоторые значения имитируемых сигналов

@@ -1,5 +1,7 @@
 #include "modbusobj.h"
 #include "mbserver.h"
+#include "mbconfigloader.h"
+
 
 #include <QDebug>
 #include <QModbusRtuSerialMaster>
@@ -17,7 +19,11 @@ ModBusObj::ModBusObj(QObject *parent)
     m_mode(-1)
 {
     m_master = new QModbusRtuSerialMaster(this);
+
     m_slave = new MBServer(this);
+    connect(m_slave->configLoader(), SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
+    connect(m_slave->configLoader(), SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
+
     //initDataUnitSlave();
     //setSlaveMode();
 
@@ -315,6 +321,10 @@ void ModBusObj::setPortParams(const ComParams &params)
     m_master->setConnectionParameter(QModbusDevice::SerialParityParameter, params.parity);
 
     m_slave->setPortParams(params);
+}
+void ModBusObj::setEmulConfig(const QString &f_name)
+{
+    m_slave->setEmulConfig(f_name);
 }
 void ModBusObj::setPacketParams(const ModbusPacketParams &pp)
 {

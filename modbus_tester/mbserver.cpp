@@ -4,6 +4,8 @@
 #include "lstatic.h"
 #include "lmath.h"
 #include "mbdeviceemulator.h"
+#include "mbconfigloader.h"
+
 
 
 #include <QSerialPort>
@@ -20,6 +22,7 @@ MBServer::MBServer(QObject *parent)
     m_maxReadingReg(0),
     m_maxWritingReg(0),
     m_invalidPass(0),
+    emul_config_loader(NULL),
     emul_complex(NULL)
 {
     reset();
@@ -33,63 +36,28 @@ MBServer::MBServer(QObject *parent)
 }
 void MBServer::timerEvent(QTimerEvent*)
 {    
-    /*
-    if (emul_complex.hash_pos.isEmpty()) return;
-
-    qDebug("MBServer::timerEvent");
-    double base_len = 26.7;
-    double d_value = 0;
-    MBEmulDevice& rack11 = emul_complex.emul_devices[11];
-    for (int i=0; i<rack11.emul_signals.count(); i++)
-    {
-        d_value = LMath::rndSignum()*LMath::rnd()*1.5;
-        rack11.updateSignal(i, base_len+d_value, 100, 0);
-    }
-
-    base_len = 32.1;
-    MBEmulDevice& rack12 = emul_complex.emul_devices[12];
-    for (int i=0; i<rack12.emul_signals.count(); i++)
-    {
-        d_value = LMath::rndSignum()*LMath::rnd()*5.5;;
-        rack12.updateSignal(i, base_len+d_value, 100, 0);
-    }
-
-    double base_temp = 280;
-    MBEmulDevice& rack16 = emul_complex.emul_devices[16];
-    for (int i=0; i<rack16.emul_signals.count(); i++)
-    {
-        d_value = LMath::rndSignum()*LMath::rnd()*3.5;
-        rack16.updateSignal(i, base_temp+d_value, 32, 125);
-    }
-
-
-    MBEmulDevice& rack15 = emul_complex.emul_devices[15];
-    bool was_1 = false;
-    for (int i=0; i<rack15.emul_signals.count(); i++)
-    {
-        quint8 bit = ((LMath::factorOk(73.5) && !was_1) ? 1 : 0);
-        rack15.updateSignal(i, bit, 0, 0);
-        if (bit > 0) was_1 = true;
-    }
-//    rack15.updateSignal(2, 1, 0, 0);
-//    rack15.updateSignal(10, 1, 0, 0);
-
-
-    rewriteEmulData();
-    //emul_complex.out();
-    */
 
 }
 void MBServer::initEmulComplex()
 {
     //ВМЕСТО ЭТОЙ ФУНКЦИИ ОБЪЕКТ emul_complex ДОЛЖЕН ЗАПОЛНИТЬСЯ ИЗ КОНФИГА!!! (в будущем)
 
-    quint16 start_pos = 0x0100;
     emul_complex = new MBDeviceEmulator(this);
+    emul_config_loader = new MBConfigLoader(emul_complex);
+    emul_complex->out();
+
+    connect(emul_complex, SIGNAL(signalSetRegisterValue(int, quint16, quint16)), this, SLOT(slotSetRegisterValue(int, quint16, quint16)));
+
+    emul_complex->startEmulation();
+
+/*
+
+    quint16 start_pos = 0x0100;
+    quint8 addr_offset = 0;
 
     //init racks
     for (quint8 addr=11; addr<=16; addr++)
-        emul_complex->addDevice(addr);
+        emul_complex->addDevice(addr+addr_offset);
 
     //init signals linear
     for (quint8 addr=11; addr<=14; addr++)
@@ -97,7 +65,7 @@ void MBServer::initEmulComplex()
             for (int j=0; j<2; j++)
             {
                 MBRegisterInfo info(MBRegisterInfo::estBit_16, start_pos*i + j);
-                emul_complex->addDeviceSignal(addr, info);
+                emul_complex->addDeviceSignal(addr+addr_offset, info);
             }
 
     //init signals Din
@@ -105,116 +73,40 @@ void MBServer::initEmulComplex()
         for (int j=0; j<8; j++)
         {
             MBRegisterInfo info(MBRegisterInfo::estBit_1, start_pos*i, j);
-            emul_complex->addDeviceSignal(15, info);
+            emul_complex->addDeviceSignal(15+addr_offset, info);
         }
 
     //init signals temp
     for (int i=1; i<=4; i++)
         for (int j=0; j<4; j++)
-            emul_complex->addDeviceSignal(16, MBRegisterInfo(MBRegisterInfo::estBit_16, start_pos*i + j));
+            emul_complex->addDeviceSignal(16+addr_offset, MBRegisterInfo(MBRegisterInfo::estBit_16, start_pos*i + j));
 
 
     connect(emul_complex, SIGNAL(signalSetRegisterValue(int, quint16, quint16)), this, SLOT(slotSetRegisterValue(int, quint16, quint16)));
 
-    emul_complex->out();
-    qDebug()<<QString("emul_complex: rack count %1,  all_signals_count %2,  reserve_reristers %3").
-                    arg(emul_complex->deviceCount()).arg(emul_complex->allSignalsCount()).arg(emul_complex->mbRegsCount());
+    //emul_complex->out();
+    qDebug()<<QString("emul_complex: rack count %1,  all_signals_count %2,  reserve_reristers %3").arg(emul_complex->deviceCount()).arg(emul_complex->allSignalsCount()).arg(emul_complex->mbRegsCount());
 
-    emul_complex->setEmuValueSettings(11, EmulValueSettings(29.3, 1.5));
+    emul_complex->setEmuValueSettings(11+addr_offset, EmulValueSettings(46.3, 0.5, 100));
+    emul_complex->setEmuValueSettings(12+addr_offset, EmulValueSettings(42.3, 0.5, 100));
+    emul_complex->setEmuValueSettings(13+addr_offset, EmulValueSettings(68.3, 0.5, 100));
+    emul_complex->setEmuValueSettings(14+addr_offset, EmulValueSettings(64.8, 0.1, 100));
+
+    emul_complex->setEmuValueSettings(15+addr_offset, EmulValueSettings(0, 0, 1));
+    emul_complex->setEmuValueSettings(16+addr_offset, EmulValueSettings(218.3, 0.5, 32, 125));
+
+    emul_complex->setEmuValueSettings(16+addr_offset, EmulValueSettings(327, 0.5, 32, 125), 6);
+    emul_complex->setEmuValueSettings(16+addr_offset, EmulValueSettings(341, 0.5, 32, 125), 7);
+    emul_complex->setEmuValueSettings(16+addr_offset, EmulValueSettings(291, 0.2, 32, 125), 8);
+
+    emul_complex->setEmuValueSettings(16+addr_offset, EmulValueSettings(281, 0.2, 32, 125), 2);
+    emul_complex->setEmuValueSettings(16+addr_offset, EmulValueSettings(281, 0.2, 32, 125), 5);
+    emul_complex->setEmuValueSettings(16+addr_offset, EmulValueSettings(281, 0.2, 32, 125), 13);
+    emul_complex->setEmuValueSettings(16+addr_offset, EmulValueSettings(281, 0.2, 32, 125), 14);
 
     emul_complex->startEmulation();
-
-
-    /*
-    //init racks
-    emul_complex.reset();
-    for (quint8 addr=11; addr<=16; addr++)
-        emul_complex.addDevice(addr);
-
-    quint16 pos = 0x0100;
-
-    //init signals linear
-    for (quint8 addr=11; addr<=14; addr++)
-        for (int i=1; i<=8; i++)
-            for (int j=0; j<2; j++)
-                emul_complex.addDeviceSignal(addr, MBEmulSignal::estBit_16, pos*i + j);
-
-    //init signals Din
-    for (int i=1; i<=9; i++)
-        for (int j=0; j<8; j++)
-            emul_complex.addDeviceSignal(15, MBEmulSignal::estBit_1, pos*i);
-
-    //init signals temp
-    for (int i=1; i<=4; i++)
-        for (int j=0; j<4; j++)
-            emul_complex.addDeviceSignal(16, MBEmulSignal::estBit_16, pos*i+j);
-
-    emul_complex.recalcRegisterPos();
-    emul_complex.out();
-    qDebug()<<QString("emul_complex: rack count %1    hash_pos size %2").arg(emul_complex.emul_devices.count()).arg(emul_complex.hash_pos.count());
-
     */
-}
-void MBServer::rewriteEmulData()
-{
-    /*
-    qDebug("MBServer::rewriteEmulData()");
-    if (!isConnected()) return;
 
-    QModbusDataUnit::RegisterType reg_type = QModbusDataUnit::HoldingRegisters;
-
-    QList<quint8> addrs = emul_complex.emul_devices.keys();
-    for (int i=0; i<addrs.count(); i++)
-    {
-        const MBEmulDevice& rack = emul_complex.emul_devices.value(addrs.at(i));
-        //qDebug()<<QString("MBServer::rewriteEmulData():  rack %1").arg(rack.address);
-
-        //write bit values
-        QList<quint32> writed_id;
-        while (2 > 1)
-        {
-            int pos = -1;
-            quint16 value = 0;
-            quint32 f_id = 0;
-            for (int j=0; j<rack.emul_signals.count(); j++)
-            {
-                const MBEmulSignal &sig = rack.emul_signals.at(j);
-                if (sig.isBit() && !writed_id.contains(sig.id))
-                {
-                    if (pos < 0) {pos = emul_complex.hash_pos.value(sig.id); f_id = sig.id;}
-                    if (emul_complex.hash_pos.value(sig.id) == pos)
-                    {
-                        if (sig.value > 0)
-                        {
-                            quint8 bit_index = sig.id - sig.baseID();
-                            int a = value;
-                            LMath::setBitOn(a, bit_index);
-                            value = quint16(a);
-                        }
-                        writed_id.append(sig.id);
-                    }
-                }
-            }
-
-            if (pos > 0) //qDebug()<<QString("write reg, type bit: id_param=%1  pos=%2  reg_value=%3  sig_value=%4").arg(f_id).arg(pos).arg(value).arg(LMath::toStr(value));
-                setData(reg_type, quint16(pos), value);
-            else break;
-        }
-
-
-        //write quint16 values
-        for (int j=0; j<rack.emul_signals.count(); j++)
-        {
-            const MBEmulSignal &sig = rack.emul_signals.at(j);
-            if (!sig.isBit())
-            {
-                quint16 reg_pos = emul_complex.hash_pos.value(sig.id);
-                //if (rack.address == 16) qDebug()<<QString("write reg: id_param=%1  pos=%2  value=%3").arg(sig.id).arg(reg_pos).arg(sig.value);
-                setData(reg_type, reg_pos, sig.value);
-            }
-        }
-    }
-    */
 }
 void MBServer::slotSetRegisterValue(int reg_type, quint16 pos, quint16 value)
 {
@@ -236,6 +128,11 @@ void MBServer::initRegistersMap()
     map.insert(data_coils.registerType(), data_coils);
     setMap(map);
 
+}
+bool MBServer::open()
+{
+    if (isDisconnected()) emul_complex->setFirstValuesOn();
+    return MBSlaveServerBase::open();
 }
 void MBServer::reset()
 {
@@ -305,27 +202,6 @@ void MBServer::transformPDU(QModbusPdu &pdu, quint8 rack_addr)
             QByteArray ba(pdu.data()); //тело запроса (все что после кода команды и до CRC) т.е. 2 байта - позиция регистра, 2 байта - сколько регистров считать, начиная с указанной позиции
             emul_complex->processPDU(rack_addr, ba); //обработать запрос
             pdu.setData(ba); //установить модифицированный запрос обратно
-
-        /*
-            QByteArray ba(pdu.data());
-            quint16 pos = quint16((quint8(ba.at(0)) << 8) | quint8(ba.at(1))); //позиция в запросе
-            quint32 id = emul_complex.idFromRequest(rack_addr, pos);
-            //qDebug()<<QString("pos from request, pos=%1,  must_id=%2").arg(pos).arg(id);
-            if (!emul_complex.hash_pos.contains(id))
-            {
-               //qDebug("id not found");
-               //pdu.setData(QByteArray());
-               pos = emul_complex.hash_pos.count()-8;
-            }
-            else pos = emul_complex.hash_pos.value(id);
-            //qDebug()<<QString("pos from hash, pos=%1").arg(pos);
-
-            //replace pos to PDU
-            ba[1] = uchar(pos);
-            ba[0] = uchar(pos>>8);
-            pdu.setData(ba);
-            */
-
             break;
         }
         default: break;
@@ -363,6 +239,22 @@ void MBServer::setPortParams(const ComParams &params)
     m_port->setDataBits(QSerialPort::DataBits(params.data_bits));
     m_port->setStopBits(QSerialPort::StopBits(params.stop_bits));
     m_port->setParity(QSerialPort::Parity(params.parity));
+
+    if (emul_config_loader) setEmulConfig(params.emul_config);
+}
+void MBServer::setEmulConfig(const QString &f_name)
+{
+    if (isConnected()) return;
+
+    if (f_name.trimmed() != emul_config_loader->currentConfig())
+    {
+        bool ok;
+        emul_config_loader->setConfig(f_name.trimmed());
+        emul_config_loader->tryLoadConfig(ok);
+        if (!ok) qWarning()<<QString("MBServer::setEmulConfig WARNING cant't load emul config");
+        else  emul_complex->out();
+
+    }
 }
 QModbusResponse MBServer::exeptionRequest(const QModbusPdu &request) const
 {
@@ -381,6 +273,12 @@ QModbusResponse MBServer::exeptionRequest(const QModbusPdu &request) const
 
     return QModbusResponse();
 }
+
+
+
+
+
+
 /*
 QModbusResponse MBServer::dateTimeResponse(const QModbusPdu &request) const
 {
