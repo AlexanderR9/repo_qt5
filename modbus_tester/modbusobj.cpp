@@ -1,5 +1,7 @@
 #include "modbusobj.h"
 #include "mbserver.h"
+#include "mbconfigloader.h"
+
 
 #include <QDebug>
 #include <QModbusRtuSerialMaster>
@@ -17,20 +19,22 @@ ModBusObj::ModBusObj(QObject *parent)
     m_mode(-1)
 {
     m_master = new QModbusRtuSerialMaster(this);
-    //m_slave = new QModbusRtuSerialSlave(this);
+
     m_slave = new MBServer(this);
+    connect(m_slave->configLoader(), SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
+    connect(m_slave->configLoader(), SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
 
-
-    setSlaveMode();
+    //initDataUnitSlave();
+    //setSlaveMode();
 
     m_master->setTimeout(2000);
     m_master->setNumberOfRetries(1);
 
-    initDataUnitSlave();
     //startTimer(3000);
 }
 void ModBusObj::timerEvent(QTimerEvent *event)
 {
+    //случайное изменение значений некоторых регистров в режиме slave (для примера)
     if (isSlave() && isConnected())
     {
         quint16 pos = qrand()%10;
@@ -47,13 +51,14 @@ void ModBusObj::timerEvent(QTimerEvent *event)
         qDebug()<<QString("ModBusObj::timerEvent: change slave register %1, value %2").arg(pos).arg(reg_value);
     }
 }
+/*
 void ModBusObj::initDataUnitSlave()
 {
-    QModbusDataUnitMap map;
     quint16 start_pos_reg = 0; //стартовая позиция регистров
     quint16 reg_count = m_packParams.n_regs; //количество регистров в буфере, т.е. для 16 битных регистров размер буфера будет reg_count*2
     QModbusDataUnit data_unit(QModbusDataUnit::HoldingRegisters, start_pos_reg, reg_count);
 
+    //принудительная установка значений для некоторых регистров (просто для примера)
     data_unit.setValue(0, 0xffff);
     data_unit.setValue(1, 0xffff);
     data_unit.setValue(2, 0xa1);
@@ -61,10 +66,13 @@ void ModBusObj::initDataUnitSlave()
     data_unit.setValue(4, 0xa3);
     data_unit.setValue(5, 0xa4);
     data_unit.setValue(6, 0xa5a6);
+    ////////////////////////////////////////////////////////////
 
+    QModbusDataUnitMap map;
     map.insert(data_unit.registerType(), data_unit);
     m_slave->setMap(map);
 }
+*/
 bool ModBusObj::isConnected() const
 {
     if (isMaster()) return (m_master->state() == QModbusDevice::ConnectedState);
@@ -135,7 +143,10 @@ void ModBusObj::slotStateChanged(QModbusDevice::State state)
 }
 void ModBusObj::slotDataWritten(QModbusDataUnit::RegisterType reg, int addr, int size)
 {
-    QString msg = QString("%0: device data writen, register=%1  address=%2  size=%3").arg(strMode()).arg(reg).arg(addr).arg(size);
+    quint16 v = 9999;
+    bool ok = m_slave->data(reg, addr, &v);
+    QString sv = (ok ? QString::number(v) : "fault");
+    QString msg = QString("%0: device data writen, register_type=%1  position=%2  size=%3  value=%4").arg(strMode()).arg(reg).arg(addr).arg(size).arg(sv);
     emit signalMsg(msg);
 }
 void ModBusObj::disconnectSignals()
@@ -154,10 +165,8 @@ void ModBusObj::connectSignals()
         connect(m_master, SIGNAL(errorOccurred(QModbusDevice::Error)), this, SLOT(slotErrorOccurred(QModbusDevice::Error)));
         connect(m_master, SIGNAL(stateChanged(QModbusDevice::State)), this, SLOT(slotStateChanged(QModbusDevice::State)));
     }
-
     if (isSlave())
     {
-        //connect(m_slave, SIGNAL(errorOccurred(QModbusDevice::Error)), this, SLOT(slotErrorOccurred(QModbusDevice::Error)));
         connect(m_slave, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
         connect(m_slave, SIGNAL(stateChanged(QModbusDevice::State)), this, SLOT(slotStateChanged(QModbusDevice::State)));
         connect(m_slave, SIGNAL(dataWritten(QModbusDataUnit::RegisterType, int, int)), this, SLOT(slotDataWritten(QModbusDataUnit::RegisterType, int, int)));
@@ -239,11 +248,9 @@ bool ModBusObj::writeCmd() const
 }
 void ModBusObj::sendReply()
 {
-    QString msg = QString("Try send reply .........");
+    //в режиме slave устройство не может посылать запросы, может только отвечать на них
+    QString msg = QString("this mode slave, can't send request!!!");
     emit signalMsg(msg);
-
-//    m_slave->rewriteData();
-
 }
 void ModBusObj::tryConnect(bool &ok)
 {
@@ -262,11 +269,11 @@ void ModBusObj::tryConnect(bool &ok)
     disconnectSignals();
     connectSignals();
 
-
     if (isMaster()) ok = m_master->connectDevice();
     else if (isSlave())
     {
-        initDataUnitSlave();
+        //initDataUnitSlave();
+        qDebug("try slave connect ...");
         ok = m_slave->connectDevice();
     }
     else
@@ -284,7 +291,6 @@ void ModBusObj::tryConnect(bool &ok)
     }
 
     emit signalMsg("Ok!");
-
 }
 void ModBusObj::tryDisconnect()
 {
@@ -307,8 +313,6 @@ void ModBusObj::setPortParams(const ComParams &params)
     if (isConnected()) return;
 
     m_mode = ((params.device_type == 0) ? mboMaster : mboSlave);
-    qDebug()<<QString("ModBusObj::setPortParams  portname=[%1]  mode=[%2]").arg(params.port_name).arg(strMode());
-
 
     m_master->setConnectionParameter(QModbusDevice::SerialPortNameParameter, params.port_name);
     m_master->setConnectionParameter(QModbusDevice::SerialDataBitsParameter, params.data_bits);
@@ -316,14 +320,11 @@ void ModBusObj::setPortParams(const ComParams &params)
     m_master->setConnectionParameter(QModbusDevice::SerialBaudRateParameter, params.baud_rate);
     m_master->setConnectionParameter(QModbusDevice::SerialParityParameter, params.parity);
 
-   //m_slave->setConnectionParameter(QModbusDevice::SerialPortNameParameter, params.port_name);
-   // m_slave->setConnectionParameter(QModbusDevice::SerialDataBitsParameter, params.data_bits);
-   // m_slave->setConnectionParameter(QModbusDevice::SerialStopBitsParameter, params.stop_bits);
-   // m_slave->setConnectionParameter(QModbusDevice::SerialBaudRateParameter, params.baud_rate);
-    //m_slave->setConnectionParameter(QModbusDevice::SerialBaudRateParameter, QSerialPort::Baud115200);
-   // m_slave->setConnectionParameter(QModbusDevice::SerialParityParameter, params.parity);
-
     m_slave->setPortParams(params);
+}
+void ModBusObj::setEmulConfig(const QString &f_name)
+{
+    m_slave->setEmulConfig(f_name);
 }
 void ModBusObj::setPacketParams(const ModbusPacketParams &pp)
 {

@@ -27,7 +27,6 @@ protected:
     void closePort();
     void writeToPort();
     void updatePortParams();
-//    void parseReceivedData(const QByteArray&);
 
     void initActions();
     void initWidgets();
@@ -43,7 +42,6 @@ protected slots:
 private:
     LProtocolBox    *m_protocol;
     ModBusObj       *m_modbusObj;
-    //FileWorker      *f_worker;
 
 };
 

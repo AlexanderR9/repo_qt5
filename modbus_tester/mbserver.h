@@ -1,63 +1,63 @@
 #ifndef MBSERVER_H
 #define MBSERVER_H
 
+#include "mbslaveserverbase.h"
 
-#include <QModbusServer>
-#include <QElapsedTimer>
-
+#include <QDebug>
 
 class QSerialPort;
 class QModbusPdu;
 struct ComParams;
+class MBAdu;
+class MBDeviceEmulator;
+class MBConfigLoader;
+
 
 //MBServer
-class MBServer : public QModbusServer
+class MBServer : public MBSlaveServerBase
 {
     Q_OBJECT
 public:
     MBServer(QObject *parent = NULL);
     virtual ~MBServer() {}
 
-    void setPortParams(const ComParams&);
-    virtual bool processesBroadcast() const {return is_broadcast;}
-    inline bool isConnected() const {return (state() == QModbusDevice::ConnectedState);}
-    QString cmdCounterToStr() const;
-    QString regPosToStr() const;
+    void setPortParams(const ComParams&); //установка параметров COM порта
+    QString cmdCounterToStr() const; //info
+    QString regPosToStr() const; //info
+    inline const MBConfigLoader* configLoader() const {return emul_config_loader;}
+    void setEmulConfig(const QString&);
+
 
 protected:
-    virtual bool open();
-    virtual void close();
-    void getResponseBA(QByteArray&, const QModbusPdu&);
-    qint64 curDTPoint() const;
-    double curDTPoint_double() const;
-    //void recalcElapsedOffset();
     void reset();
+    void timerEvent(QTimerEvent*); //test
+    QModbusResponse exeptionRequest(const QModbusPdu&) const; //обработать исключение запроса
 
-    QModbusResponse processRequest(const QModbusPdu &request) override;
-    QModbusResponse dateTimeResponse(const QModbusPdu &request) const;
-
-
-
-    QSerialPort     *m_port;
-    QByteArray       m_requestBuffer;
-    bool             is_broadcast;
-    //QElapsedTimer    m_elapsedTimer;
-    //quint64          m_elapsedOffset; //поправочное смещение относительно стартовой точки времени
-    QMap<quint8, int> m_cmdCounter; //счетчик команд
+    QMap<quint8, int>   m_cmdCounter; //счетчик команд
     int     m_maxReadingReg;
     int     m_maxWritingReg;
     int     m_invalidPass;
 
+    void parseCurrentBuffer();
+    void tryParseAdu(const MBAdu&);
+    bool open();
+
+
+    //for emulation
+    void initRegistersMap();
+    void transformPDU(QModbusPdu&, quint8);
+
+    MBConfigLoader *emul_config_loader;
+    MBDeviceEmulator *emul_complex;
+    void initEmulComplex(); //инициализировать таблицу устройств и сигналов для имитации системы
 
 protected slots:
-    void slotReadyRead();
-    void slotAboutToClose();
-    void slotError();
+    void slotSetRegisterValue(int, quint16, quint16); //записать значение в регистр
 
-signals:
-    void signalError(const QString&);
 
 };
 
 
 #endif // MBSERVER_H
+
+

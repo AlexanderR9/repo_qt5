@@ -67,6 +67,37 @@ double LMath::sqrt(const double &value, const double &exact)
 }
 
 
+/////////////BIT OPERATIONS////////////////
+bool LMath::isBitOn(int a, quint8 bit_pos)
+{
+    if (bit_pos > (sizeof(a)*byteSize() - 1)) return false;
+    quint32 aa = 1;
+    if (bit_pos > 0) aa <<= bit_pos;
+    return !((aa & a) == 0);
+}
+void LMath::setBitOn(int &a, quint8 bit_pos)
+{
+    if (bit_pos > (sizeof(a)*byteSize() - 1)) return;
+    quint32 aa = 1;
+    if (bit_pos > 0) aa <<= bit_pos;
+    a |= aa;
+}
+void LMath::setBitOff(int &a, quint8 bit_pos)
+{
+    if (bit_pos > (sizeof(a)*byteSize() - 1)) return;
+    if (!isBitOn(a, bit_pos)) return;
+
+    quint32 aa = 0;
+    if (bit_pos > 0) aa <<= bit_pos;
+    a |= aa;
+}
+QString LMath::toStr(int a)
+{
+    QString s;
+    for(uint i=0; i<sizeof(a)*byteSize(); i++)
+        s = QString(" %1%2").arg(isBitOn(a,i)?"1":"0").arg(s);
+    return s;
+}
 
 
 

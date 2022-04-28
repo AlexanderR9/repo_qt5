@@ -23,13 +23,20 @@ unix:!macx: LIBS += -L$$PWD/../lib/build -llib
 # Input
 HEADERS += $$PWD/mainform.h \
         $$PWD/modbusobj.h \
+	$$PWD/mbcrckeytable.h \
 	$$PWD/comparams_struct.h \
-    mbserver.h \
-    mbadu.h
+	$$PWD/mbslaveserverbase.h \
+	$$PWD/mbdeviceemulator.h \
+	$$PWD/mbserver.h \
+	$$PWD/mbconfigloader.h \
+	$$PWD/mbadu.h
 
 SOURCES += $$PWD/main.cpp \
 	$$PWD/mainform.cpp \
         $$PWD/modbusobj.cpp \
-    mbserver.cpp \
-    mbadu.cpp
+	$$PWD/mbslaveserverbase.cpp \
+	$$PWD/mbdeviceemulator.cpp \
+	$$PWD/mbserver.cpp \
+	$$PWD/mbconfigloader.cpp \
+	$$PWD/mbadu.cpp
 

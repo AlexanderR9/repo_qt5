@@ -4,3 +4,5 @@ moc
 obj
 Makefile
 modbus_tester
+full_clear
+config

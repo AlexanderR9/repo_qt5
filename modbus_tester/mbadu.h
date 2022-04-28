@@ -4,20 +4,19 @@
 
 #include <QByteArray>
 
-
 class QModbusPdu;
 
 //MBAdu
 class MBAdu
 {
 public:
-    MBAdu(const QByteArray &raw_data);
+    MBAdu(const QByteArray &input_data);
 
     qint8 serverAddress() const;
     qint8 cmdCode() const;
     quint16 rawDataCRC() const;
     quint16 startPosReg() const;
-    void getPduData(QModbusPdu &pdu);
+    void getPduData(QModbusPdu &pdu) const;
 
     inline bool invalid() const {return !is_valid;}
     inline int errCode() const {return m_err;}
@@ -30,7 +29,6 @@ public:
 
     static quint16 MB_CRC16(const QByteArray&, int len = -1); // если len < 0, то значит использовать весь BA
     static quint16 convertToLittleEndian(const quint16); //развернуть порядок байт в значении
-
 
 protected:
     QByteArray m_data;
@@ -46,13 +44,10 @@ protected:
     void checkData();
 
 private:
-    bool checkSumOk() const;
+    void checkSumOk();
     bool reqCodeOk() const;
-    //quint16 MB_CRC16_cs(const unsigned char * puchMsg, quint16 usDataLen) const;
-
 
 };
-
 
 
 
