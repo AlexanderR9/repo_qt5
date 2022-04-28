@@ -33,6 +33,7 @@ protected:
     void startHtmlRequest(); //отправить http запрос для получения html страницы
     void saveHtmlToFile();
     void loadHtmlFile();
+    void parseHtml();
 
 protected slots:
     void slotAction(int); //virtual slot from parent

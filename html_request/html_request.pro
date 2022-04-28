@@ -21,10 +21,12 @@ DEPENDPATH += $$PWD/../lib/build
 unix:!macx: LIBS += -L$$PWD/../lib/build -llib
 
 # Input
-HEADERS += $$PWD/mainform.h
+HEADERS += $$PWD/mainform.h \
+	$$PWD/htmlparser.h
 
 
 SOURCES += $$PWD/main.cpp \
-	$$PWD/mainform.cpp
+	$$PWD/mainform.cpp \
+        $$PWD/htmlparser.cpp
 
 

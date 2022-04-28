@@ -3,6 +3,8 @@
 #include "lprotocol.h"
 #include "lhtmlrequester.h"
 #include "lfile.h"
+#include "htmlparser.h"
+
 
 #include <QDebug>
 #include <QDir>
@@ -34,6 +36,7 @@ void MainForm::initActions()
     addAction(LMainWidget::atStart);
     addAction(LMainWidget::atSave);
     addAction(LMainWidget::atLoadData);
+    addAction(LMainWidget::atChain);
     addAction(LMainWidget::atClear);
     addAction(LMainWidget::atSettings);
     addAction(LMainWidget::atExit);
@@ -47,6 +50,8 @@ void MainForm::slotAction(int type)
         case LMainWidget::atSave: {saveHtmlToFile(); break;}
         case LMainWidget::atLoadData: {loadHtmlFile(); break;}
         case LMainWidget::atClear: {m_protocol->clearProtocol(); break;}
+        case LMainWidget::atChain: {parseHtml(); break;}
+
         default: break;
     }
 }
@@ -55,9 +60,11 @@ void MainForm::initWidgets()
     v_splitter = new QSplitter(Qt::Vertical, this);
     m_textView = new QTextEdit(this);
     m_protocol = new LProtocolBox(false, this);
-    //m_textView->setReadOnly(true);
+    m_textView->setReadOnly(true);
 
-    m_textView->setDocumentTitle(QString("------------- HTML text ------------------"));
+
+
+    //m_textView->setDocumentTitle(QString("------------- HTML text ------------------"));
 
     QTextDocument *doc = m_textView->document();
     if (doc) qDebug("doc ok!");
@@ -73,6 +80,12 @@ void MainForm::initWidgets()
     v_splitter->addWidget(html_box);
     v_splitter->addWidget(m_protocol);
     addWidget(v_splitter, 0, 0);
+
+
+    //QString html_text("<h1 color=\"red\" align=\"center\">Заголовок первого уровня</h1>");
+    //m_textView->setHtml(html_text);
+
+
 }
 void MainForm::initCommonSettings()
 {
@@ -102,6 +115,20 @@ void MainForm::load()
     QSettings settings(companyName(), projectName());
     QByteArray ba(settings.value(QString("%1/v_splitter/state").arg(objectName()), QByteArray()).toByteArray());
     if (!ba.isEmpty()) v_splitter->restoreState(ba);
+}
+void MainForm::parseHtml()
+{
+    MyHTMLParser parser;
+    parser.tryParseHtmlText(m_textView->toPlainText());
+
+    m_protocol->addText(QString("--- parsing result ----"));
+    m_protocol->addText(QString("head_node size: %1").arg(parser.headData().length()));
+    m_protocol->addText(QString("body_node size: %1").arg(parser.bodyData().length()));
+
+    m_textView->clear();
+    //m_textView->setPlainText(parser.bodyData());
+    m_textView->setHtml(parser.bodyData());
+
 }
 void MainForm::loadHtmlFile()
 {
