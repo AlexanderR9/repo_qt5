@@ -7,6 +7,10 @@ class LProtocolBox;
 class LHTMLRequester;
 class QSplitter;
 class QTextEdit;
+class MyHTMLParser;
+class QWebEngineView;
+
+
 
 // MainForm
 class MainForm : public LMainWidget
@@ -19,8 +23,12 @@ public:
 protected:
     LProtocolBox        *m_protocol;
     LHTMLRequester      *m_req;
+    MyHTMLParser        *m_parser;
     QSplitter           *v_splitter;
+    QSplitter           *h_splitter;
     QTextEdit           *m_textView;
+    QWebEngineView      *m_webView;
+
 
     QString projectName() const {return "htmlparser";}
     QString mainTitle() const {return QString("Html requester (Qt5)!");}

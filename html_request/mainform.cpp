@@ -12,6 +12,9 @@
 #include <QApplication>
 #include <QSplitter>
 #include <QTextEdit>
+#include <QWebEngineView>
+
+
 
 #define SAVE_HTML_FOLDER  QString("data")
 
@@ -21,14 +24,20 @@ MainForm::MainForm(QWidget *parent)
     :LMainWidget(parent),
     m_protocol(NULL),
     m_req(NULL),
+    m_parser(NULL),
     v_splitter(NULL),
-    m_textView(NULL)
+    h_splitter(NULL),
+    m_textView(NULL),
+    m_webView(NULL)
 {
     setObjectName("main_form_htmlparser");
 
     m_req = new LHTMLRequester(this);
     connect(m_req, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_req, SIGNAL(signalFinished()), this, SLOT(slotReqFinished()));
+
+    m_parser = new MyHTMLParser(this);
+
 
 }
 void MainForm::initActions()
@@ -58,7 +67,9 @@ void MainForm::slotAction(int type)
 void MainForm::initWidgets()
 {
     v_splitter = new QSplitter(Qt::Vertical, this);
+    h_splitter = new QSplitter(Qt::Horizontal, this);
     m_textView = new QTextEdit(this);
+    m_webView = new QWebEngineView(this);
     m_protocol = new LProtocolBox(false, this);
     m_textView->setReadOnly(true);
 
@@ -79,7 +90,11 @@ void MainForm::initWidgets()
 
     v_splitter->addWidget(html_box);
     v_splitter->addWidget(m_protocol);
-    addWidget(v_splitter, 0, 0);
+    h_splitter->addWidget(v_splitter);
+    h_splitter->addWidget(m_webView);
+
+
+    addWidget(h_splitter, 0, 0);
 
 
     //QString html_text("<h1 color=\"red\" align=\"center\">Заголовок первого уровня</h1>");
@@ -98,7 +113,7 @@ void MainForm::initCommonSettings()
     lCommonSettings.setDefValue(key, QString("https://yandex.ru"));
 
     key = QString("savefile");
-    lCommonSettings.addParam(QString("Save HTML file (example: data.html)"), LSimpleDialog::sdtString, key);
+    lCommonSettings.addParam(QString("Save HTML file (example: data.html)"), LSimpleDialog::sdtFilePath, key);
     lCommonSettings.setDefValue(key, QString("html.txt"));
 }
 void MainForm::save()
@@ -107,6 +122,7 @@ void MainForm::save()
 
     QSettings settings(companyName(), projectName());
     settings.setValue(QString("%1/v_splitter/state").arg(objectName()), v_splitter->saveState());
+    settings.setValue(QString("%1/h_splitter/state").arg(objectName()), h_splitter->saveState());
 }
 void MainForm::load()
 {
@@ -115,19 +131,27 @@ void MainForm::load()
     QSettings settings(companyName(), projectName());
     QByteArray ba(settings.value(QString("%1/v_splitter/state").arg(objectName()), QByteArray()).toByteArray());
     if (!ba.isEmpty()) v_splitter->restoreState(ba);
+
+    ba.clear();
+    ba = settings.value(QString("%1/h_splitter/state").arg(objectName()), QByteArray()).toByteArray();
+    if (!ba.isEmpty()) h_splitter->restoreState(ba);
+
+
 }
 void MainForm::parseHtml()
 {
-    MyHTMLParser parser;
-    parser.tryParseHtmlText(m_textView->toPlainText());
+    if (!m_parser) return
+
+    m_parser->reset();
+    m_parser->tryParseHtmlText(m_textView->toPlainText());
 
     m_protocol->addText(QString("--- parsing result ----"));
-    m_protocol->addText(QString("head_node size: %1").arg(parser.headData().length()));
-    m_protocol->addText(QString("body_node size: %1").arg(parser.bodyData().length()));
+    m_protocol->addText(QString("head_node size: %1").arg(m_parser->headData().length()));
+    m_protocol->addText(QString("body_node size: %1").arg(m_parser->bodyData().length()));
 
     m_textView->clear();
     //m_textView->setPlainText(parser.bodyData());
-    m_textView->setHtml(parser.bodyData());
+    m_textView->setHtml(m_parser->bodyData());
 
 }
 void MainForm::loadHtmlFile()
@@ -146,7 +170,8 @@ void MainForm::loadHtmlFile()
     }
 
     err.clear();
-    f_name = QString("%1%2%3").arg(SAVE_HTML_FOLDER).arg(QDir::separator()).arg(f_name);
+    if (!f_name.contains(QDir::separator()))
+        f_name = QString("%1%2%3").arg(SAVE_HTML_FOLDER).arg(QDir::separator()).arg(f_name);
     m_protocol->addText(QString("Try load HTML file [%1] .........").arg(f_name), LProtocolBox::ttOk);
 
     QString data;
@@ -159,6 +184,10 @@ void MainForm::loadHtmlFile()
 
     m_textView->setPlainText(data);
     m_protocol->addText(QString("Ok!  Readed %1 bytes.").arg(data.size()));
+
+    if (!m_webView->page()) qDebug()<<QString("page is NULL");
+
+    m_webView->setHtml(data);
 }
 void MainForm::saveHtmlToFile()
 {
@@ -189,7 +218,8 @@ void MainForm::saveHtmlToFile()
     }
 
     err.clear();
-    f_name = QString("%1%2%3").arg(SAVE_HTML_FOLDER).arg(QDir::separator()).arg(f_name);
+    if (!f_name.contains(QDir::separator()))
+        f_name = QString("%1%2%3").arg(SAVE_HTML_FOLDER).arg(QDir::separator()).arg(f_name);
     m_protocol->addText(QString("Try save HTML data to file [%1] .........").arg(f_name), LProtocolBox::ttOk);
 
     QString data;
@@ -212,6 +242,7 @@ void MainForm::startHtmlRequest()
     {
         m_req->setUrl(lCommonSettings.paramValue("url").toString());
         m_req->startRequest();
+        //m_webView->load(m_req->currentUrl());
     }    
 }
 void MainForm::slotReqFinished()

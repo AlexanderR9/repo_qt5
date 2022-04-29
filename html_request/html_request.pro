@@ -10,6 +10,7 @@ OBJECTS_DIR=obj
 
 QT -= gui
 QT *= network widgets
+QT += webenginewidgets
 
 INCLUDEPATH += . \
             $$PWD \
@@ -22,11 +23,13 @@ unix:!macx: LIBS += -L$$PWD/../lib/build -llib
 
 # Input
 HEADERS += $$PWD/mainform.h \
+	$$PWD/htmlnode.h \
 	$$PWD/htmlparser.h
 
 
 SOURCES += $$PWD/main.cpp \
 	$$PWD/mainform.cpp \
+	$$PWD/htmlnode.cpp \
         $$PWD/htmlparser.cpp
 
 
