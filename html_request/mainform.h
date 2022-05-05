@@ -9,7 +9,8 @@ class QSplitter;
 class QTextEdit;
 class MyHTMLParser;
 class QWebEngineView;
-
+class QProgressBar;
+class QGroupBox;
 
 
 // MainForm
@@ -28,6 +29,7 @@ protected:
     QSplitter           *h_splitter;
     QTextEdit           *m_textView;
     QWebEngineView      *m_webView;
+    QProgressBar        *m_viewProgress;
 
 
     QString projectName() const {return "htmlparser";}
@@ -38,15 +40,28 @@ protected:
     void save();
     void load();
 
+    void initWebView(QGroupBox*&);
+
     void startHtmlRequest(); //отправить http запрос для получения html страницы
     void saveHtmlToFile();
     void loadHtmlFile();
     void parseHtml();
 
+    QString currentUrl() const;
+
 protected slots:
     void slotAction(int); //virtual slot from parent
     void slotError(const QString&);
     void slotReqFinished();
+
+    //for m_webView
+    void slotViewStarted();
+    void slotViewProgress(int);
+    void slotViewFinished(bool);
+
+private:
+    void functorToPlaneText(const QString&);
+    void functorToHtml(const QString&);
 
 };
 

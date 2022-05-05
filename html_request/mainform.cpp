@@ -13,7 +13,9 @@
 #include <QSplitter>
 #include <QTextEdit>
 #include <QWebEngineView>
-
+#include <QProgressBar>
+#include <QGroupBox>
+#include <QStyleFactory>
 
 
 #define SAVE_HTML_FOLDER  QString("data")
@@ -28,7 +30,8 @@ MainForm::MainForm(QWidget *parent)
     v_splitter(NULL),
     h_splitter(NULL),
     m_textView(NULL),
-    m_webView(NULL)
+    m_webView(NULL),
+    m_viewProgress(NULL)
 {
     setObjectName("main_form_htmlparser");
 
@@ -37,8 +40,6 @@ MainForm::MainForm(QWidget *parent)
     connect(m_req, SIGNAL(signalFinished()), this, SLOT(slotReqFinished()));
 
     m_parser = new MyHTMLParser(this);
-
-
 }
 void MainForm::initActions()
 {
@@ -64,18 +65,84 @@ void MainForm::slotAction(int type)
         default: break;
     }
 }
+void MainForm::initWebView(QGroupBox *&view_box)
+{
+    m_webView = new QWebEngineView(this);
+    connect(m_webView, SIGNAL(loadStarted()), this, SLOT(slotViewStarted()));
+    connect(m_webView, SIGNAL(loadProgress(int)), this, SLOT(slotViewProgress(int)));
+    connect(m_webView, SIGNAL(loadFinished(bool)), this, SLOT(slotViewFinished(bool)));
+
+    m_viewProgress = new QProgressBar(this);
+    m_viewProgress->setTextVisible(true);
+    m_viewProgress->setStyle(QStyleFactory::create("NorwegianWood"));
+
+    //QFont font;
+    //font.setBold(true);
+    //font.setPixelSize(20);
+    //m_viewProgress->setFont(font);
+
+    view_box = new QGroupBox("Web view", this);
+    if (view_box->layout()) delete view_box->layout();
+    view_box->setLayout(new QVBoxLayout(0));
+    view_box->layout()->addWidget(m_webView);
+    view_box->layout()->addWidget(m_viewProgress);
+
+}
+void MainForm::slotViewStarted()
+{
+    qDebug("MainForm::slotViewStarted()");
+    m_viewProgress->setValue(0);
+    QPalette p;
+    p.setColor(QPalette::Background, Qt::darkYellow);
+    m_viewProgress->setPalette(p);
+}
+void MainForm::slotViewProgress(int p)
+{
+    qDebug()<<QString("MainForm::slotViewProgress()  p=%1").arg(p);
+    m_viewProgress->setValue(p);
+
+}
+void MainForm::slotViewFinished(bool ok)
+{
+    qDebug()<<QString("MainForm::slotViewFinished()  ok=%1").arg(ok);
+    QPalette p;
+    //p.setColor(QPalette::Background, Qt::green);
+    p.setBrush(m_viewProgress->backgroundRole(), Qt::green);
+    m_viewProgress->setPalette(p);
+
+    if (ok) m_protocol->addText(QString("url loaded ok!  title: %1").arg(m_webView->title()));
+    else slotError("fault.");
+
+
+    m_webView->page()->toPlainText([this](const QString &result){functorToPlaneText(result);});
+    //m_webView->page()->toHtml([this](const QString &result){functorToPlaneText(result);});
+    //protected slots:    void handleHtml(QString sHtml);signals:
+    //void html(QString sHtml); void MainWindow::SomeFunction() {    connect(this, SIGNAL(html(QString)), this, SLOT(handleHtml(QString)));
+    //view->page()->toHtml([this](const QString& result) mutable {emit html(result);}); }void MainWindow::handleHtml(QString sHtml){      qDebug()<<"myhtml"<< sHtml;}
+}
+void MainForm::functorToPlaneText(const QString &s)
+{
+    qDebug("MainForm::functorToPlaneText");
+    m_textView->clear();
+    m_textView->setPlainText(s);
+
+}
+void MainForm::functorToHtml(const QString &s)
+{
+    qDebug("MainForm::functorToPlaneText");
+    m_textView->clear();
+    m_textView->setHtml(s);
+}
 void MainForm::initWidgets()
 {
+    QGroupBox *view_box = NULL;
+    initWebView(view_box);
+
     v_splitter = new QSplitter(Qt::Vertical, this);
     h_splitter = new QSplitter(Qt::Horizontal, this);
     m_textView = new QTextEdit(this);
-    m_webView = new QWebEngineView(this);
     m_protocol = new LProtocolBox(false, this);
     m_textView->setReadOnly(true);
-
-
-
-    //m_textView->setDocumentTitle(QString("------------- HTML text ------------------"));
 
     QTextDocument *doc = m_textView->document();
     if (doc) qDebug("doc ok!");
@@ -86,21 +153,15 @@ void MainForm::initWidgets()
     if (html_box->layout()) delete html_box->layout();
     html_box->setLayout(new QHBoxLayout(0));
     html_box->layout()->addWidget(m_textView);
-    //html_box->layout()->setMargin(2);
 
     v_splitter->addWidget(html_box);
     v_splitter->addWidget(m_protocol);
     h_splitter->addWidget(v_splitter);
-    h_splitter->addWidget(m_webView);
 
+    if (view_box)
+        h_splitter->addWidget(view_box);
 
     addWidget(h_splitter, 0, 0);
-
-
-    //QString html_text("<h1 color=\"red\" align=\"center\">Заголовок первого уровня</h1>");
-    //m_textView->setHtml(html_text);
-
-
 }
 void MainForm::initCommonSettings()
 {
@@ -135,8 +196,6 @@ void MainForm::load()
     ba.clear();
     ba = settings.value(QString("%1/h_splitter/state").arg(objectName()), QByteArray()).toByteArray();
     if (!ba.isEmpty()) h_splitter->restoreState(ba);
-
-
 }
 void MainForm::parseHtml()
 {
@@ -232,18 +291,31 @@ void MainForm::startHtmlRequest()
 {
     qDebug("press start ..........");
     m_protocol->addSpace();
-    QString msg = QString("Start request [URL=%1] .........").arg(m_req->currentUrl());
+
+    QString msg = QString("Start request [URL=%1] .........").arg(currentUrl());
     m_protocol->addText(msg, LProtocolBox::ttOk);
 
     m_textView->clear();
     m_textView->setDocumentTitle(QString("------------- HTML of url(%1) ------------------").arg(m_req->currentUrl()));
 
+
+    ///////////////for m_webView////////////////////////////////////
+    m_webView->load(currentUrl());
+    m_webView->show();
+
+
+    ///////////////for m_req////////////////////////////////////
+    /*
     if (m_req) 
     {
-        m_req->setUrl(lCommonSettings.paramValue("url").toString());
+        m_req->setUrl(currentUrl());
         m_req->startRequest();
-        //m_webView->load(m_req->currentUrl());
-    }    
+    }
+    */
+}
+QString MainForm::currentUrl() const
+{
+    return lCommonSettings.paramValue("url").toString();
 }
 void MainForm::slotReqFinished()
 {
