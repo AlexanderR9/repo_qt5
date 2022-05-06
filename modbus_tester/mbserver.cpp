@@ -18,7 +18,7 @@
 
 ////////////// MBServer //////////////////
 MBServer::MBServer(QObject *parent)
-    :MBSlaveServerBase(parent),
+    :LMBSlaveServerBase(parent),
     m_maxReadingReg(0),
     m_maxWritingReg(0),
     m_invalidPass(0),
@@ -132,7 +132,7 @@ void MBServer::initRegistersMap()
 bool MBServer::open()
 {
     if (isDisconnected()) emul_complex->setFirstValuesOn();
-    return MBSlaveServerBase::open();
+    return LMBSlaveServerBase::open();
 }
 void MBServer::reset()
 {
@@ -163,7 +163,7 @@ void MBServer::parseCurrentBuffer()
 {
     if (bufferSmall()) return;
 
-    MBAdu adu(m_buffer);
+    LMBAdu adu(m_buffer);
     if (adu.invalid())
     {
         if (m_invalidPass < 5) //ждем еще один кусочек пакета, т.е. даем еще один шанс, с 1-го раза не бракуем
@@ -207,7 +207,7 @@ void MBServer::transformPDU(QModbusPdu &pdu, quint8 rack_addr)
         default: break;
     }
 }
-void MBServer::tryParseAdu(const MBAdu &adu)
+void MBServer::tryParseAdu(const LMBAdu &adu)
 {
     //пытаемся извлечь PDU из ADU
     QModbusPdu pdu;

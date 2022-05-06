@@ -1,13 +1,13 @@
 #include "mbadu.h"
 #include "mbcrckeytable.h"
-#include "lstatic.h"
+//#include "lstatic.h"
 
 #include <QModbusPdu>
 #include <QDebug>
 
 #define MIN_RAWDATA_SIZE    4
 
-MBAdu::MBAdu(const QByteArray &input_data)
+LMBAdu::LMBAdu(const QByteArray &input_data)
     :m_data(input_data),
     is_valid(false),
     must_crc(9999),
@@ -15,38 +15,36 @@ MBAdu::MBAdu(const QByteArray &input_data)
 {
     checkData();
 }
-qint8 MBAdu::serverAddress() const
+qint8 LMBAdu::serverAddress() const
 {
     if (m_data.isEmpty()) return -1;
     return uchar(m_data.at(0));
 }
-qint8 MBAdu::cmdCode() const
+qint8 LMBAdu::cmdCode() const
 {
     if (m_data.isEmpty()) return -1;
     return uchar(m_data.at(1));
 }
-quint16 MBAdu::rawDataCRC() const
+quint16 LMBAdu::rawDataCRC() const
 {
     int n = rawSize();
     if (n < MIN_RAWDATA_SIZE) return 9999;
     return quint16((quint8(m_data.at(n-2)) << 8) | quint8(m_data.at(n-1)));
 }
-quint16 MBAdu::startPosReg() const
+quint16 LMBAdu::startPosReg() const
 {
     if (rawSize() < MIN_RAWDATA_SIZE) return 9998;
     return quint16((quint8(m_data.at(2)) << 8) | quint8(m_data.at(3)));
 }
-QString MBAdu::rawDataToStr() const
+QString LMBAdu::rawDataToStr() const
 {
-    QString s1 = QString("/////////////ADU: Received raw data, size %1 /////////////////").arg(rawSize());
+    QString s1 = QString("ADU: Received raw data, size %1").arg(rawSize());
     QString s2;
-
-    if (rawSize() == 0) s2 = "is empty!";
-    else s2 = LStatic::baToStr(m_data, 24);
-
-    return QString("%1 \n\r %2").arg(s1).arg(s2);
+    if (rawSize() == 0) s2 = "data is empty";
+    else s2 = m_data.toHex(':');
+    return QString("%1    [%2]").arg(s1).arg(s2);
 }
-void MBAdu::getPduData(QModbusPdu &pdu) const
+void LMBAdu::getPduData(QModbusPdu &pdu) const
 {
     if (invalid())
     {
@@ -59,7 +57,7 @@ void MBAdu::getPduData(QModbusPdu &pdu) const
         pdu.setData(m_data.mid(2, m_data.size()-4)); // берем весь массив ADU и отрываем по 2 байта с начала и с конца
     }
 }
-void MBAdu::checkData()
+void LMBAdu::checkData()
 {
     m_err = 0;
     if (m_data.size() < MIN_RAWDATA_SIZE) {m_err = -1; return;}
@@ -71,7 +69,7 @@ void MBAdu::checkData()
 
     is_valid = true;
 }
-void MBAdu::checkSumOk()
+void LMBAdu::checkSumOk()
 {
     must_crc = convertToLittleEndian(MB_CRC16(m_data, rawSize()-2));
     if (must_crc != rawDataCRC())
@@ -97,7 +95,7 @@ void MBAdu::checkSumOk()
         }
     }
 }
-QString MBAdu::stringErr() const
+QString LMBAdu::stringErr() const
 {
     switch (m_err)
     {
@@ -109,7 +107,7 @@ QString MBAdu::stringErr() const
     }
     return QString("no error");
 }
-bool MBAdu::reqCodeOk() const
+bool LMBAdu::reqCodeOk() const
 {
     qint8 cmd = cmdCode();
     switch (cmd)
@@ -134,11 +132,11 @@ bool MBAdu::reqCodeOk() const
     }
     return false;
 }
-quint16 MBAdu::convertToLittleEndian(const quint16 v16)
+quint16 LMBAdu::convertToLittleEndian(const quint16 v16)
 {
     return ((v16 << 8) | (v16 >> 8));
 }
-quint16 MBAdu::MB_CRC16(const QByteArray &ba, int len)
+quint16 LMBAdu::MB_CRC16(const QByteArray &ba, int len)
 {
     const unsigned char *puchMsg = (const unsigned char*)(ba.data());
     quint16 usDataLen = (len < 0 || len >= ba.size()) ? ba.size() : quint16(len);

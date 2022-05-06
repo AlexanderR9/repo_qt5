@@ -1,5 +1,5 @@
-#ifndef MBADU_H
-#define MBADU_H
+#ifndef LMBADU_H
+#define LMBADU_H
 
 
 #include <QByteArray>
@@ -7,10 +7,10 @@
 class QModbusPdu;
 
 //MBAdu
-class MBAdu
+class LMBAdu
 {
 public:
-    MBAdu(const QByteArray &input_data);
+    LMBAdu(const QByteArray &input_data);
 
     qint8 serverAddress() const;
     qint8 cmdCode() const;

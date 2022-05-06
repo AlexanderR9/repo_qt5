@@ -1,5 +1,5 @@
-#ifndef MBSLAVESERVERBASE_H
-#define MBSLAVESERVERBASE_H
+#ifndef LMBSLAVESERVERBASE_H
+#define LMBSLAVESERVERBASE_H
 
 
 #include <QModbusServer>
@@ -7,13 +7,13 @@
 class QSerialPort;
 
 
-//MBSlaveServerBase
-class MBSlaveServerBase : public QModbusServer
+//LMBSlaveServerBase
+class LMBSlaveServerBase : public QModbusServer
 {
     Q_OBJECT
 public:
-    MBSlaveServerBase(QObject *parent = NULL);
-    virtual ~MBSlaveServerBase() {}
+    LMBSlaveServerBase(QObject *parent = NULL);
+    virtual ~LMBSlaveServerBase() {}
 
     bool isConnected() const;           //COM port state - ConnectedState
     bool isDisconnected() const;        //COM port state - UnconnectedState

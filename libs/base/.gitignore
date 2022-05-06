@@ -1,0 +1,9 @@
+base.pro.user
+.qmake.stash
+moc
+obj
+ui_h
+build
+Makefile
+qrc_icons.cpp
+full_clear

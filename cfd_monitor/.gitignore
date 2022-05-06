@@ -1,0 +1,8 @@
+cfdmonitor.pro.user
+.qmake.stash
+moc
+obj
+Makefile
+cfdmonitor
+full_clear
+config

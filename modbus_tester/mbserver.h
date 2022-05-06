@@ -8,13 +8,13 @@
 class QSerialPort;
 class QModbusPdu;
 struct ComParams;
-class MBAdu;
+class LMBAdu;
 class MBDeviceEmulator;
 class MBConfigLoader;
 
 
 //MBServer
-class MBServer : public MBSlaveServerBase
+class MBServer : public LMBSlaveServerBase
 {
     Q_OBJECT
 public:
@@ -39,7 +39,7 @@ protected:
     int     m_invalidPass;
 
     void parseCurrentBuffer();
-    void tryParseAdu(const MBAdu&);
+    void tryParseAdu(const LMBAdu&);
     bool open();
 
 

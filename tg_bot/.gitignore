@@ -1,0 +1,9 @@
+tg_bot.pro.user
+.qmake.stash
+moc
+obj
+Makefile
+tg_bot
+full_clear
+tarnalib
+
