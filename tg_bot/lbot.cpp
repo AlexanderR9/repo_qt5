@@ -11,7 +11,7 @@ LBot::LBot(QObject *parent)
 {
 
     setObjectName("lbot");
-    m_token = QString("2007125359:AAFceDjykVy-Mxnwi386IpYNmjCnvBzpLPs");
+    m_token = QString("???");
 
     init();
 }

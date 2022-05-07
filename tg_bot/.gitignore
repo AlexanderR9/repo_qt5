@@ -6,4 +6,8 @@ Makefile
 tg_bot
 full_clear
 tarnalib
-
+config
+Makefile.Debug
+Makefile.Release
+debug
+release
