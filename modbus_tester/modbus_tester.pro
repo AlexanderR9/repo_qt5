@@ -28,7 +28,7 @@ unix:!macx: LIBS += -L$$PWD/../libs/io_bus/build/ -lliobus
 HEADERS += $$PWD/mainform.h \
         $$PWD/modbusobj.h \
 	$$PWD/mbcrckeytable.h \
-	$$PWD/comparams_struct.h \
+	$$PWD/mbparams.h \
 	$$PWD/mbdeviceemulator.h \
 	$$PWD/mbserver.h \
         $$PWD/mbconfigloader.h

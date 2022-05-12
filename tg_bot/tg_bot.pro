@@ -6,7 +6,7 @@ MOC_DIR=moc
 OBJECTS_DIR=obj
 
 QT -= gui
-QT *= network widgets
+QT *= network widgets xml
 
 INCLUDEPATH += . \
             $$PWD \

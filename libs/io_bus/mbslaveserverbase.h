@@ -5,7 +5,7 @@
 #include <QModbusServer>
 
 class QSerialPort;
-
+struct LComParams;
 
 //LMBSlaveServerBase
 class LMBSlaveServerBase : public QModbusServer
@@ -14,6 +14,8 @@ class LMBSlaveServerBase : public QModbusServer
 public:
     LMBSlaveServerBase(QObject *parent = NULL);
     virtual ~LMBSlaveServerBase() {}
+
+    virtual void setPortParams(const LComParams&); //установка параметров COM порта
 
     bool isConnected() const;           //COM port state - ConnectedState
     bool isDisconnected() const;        //COM port state - UnconnectedState
@@ -25,7 +27,6 @@ public:
     inline bool bufferEmpty() const {return m_buffer.isEmpty();}
     inline void clearBuffer() {m_buffer.clear();}
     inline int bufferSize() const {return m_buffer.size();}
-
 
 protected:
     QSerialPort *m_port;

@@ -1,4 +1,11 @@
 #include "lbot.h"
+#include "lstatic.h"
+
+
+#include <QFile>
+#include <QDir>
+#include <QDomDocument>
+#include <QDomNode>
 
 
 #include <TarnaBot>
@@ -6,10 +13,9 @@ using namespace Telegram;
 
 
 LBot::LBot(QObject *parent)
-    :QObject(parent),
+    :LSimpleObject(parent),
     m_botObj(NULL)
 {
-
     setObjectName("lbot");
     m_token = QString("???");
 
@@ -17,9 +23,72 @@ LBot::LBot(QObject *parent)
 }
 void LBot::init()
 {
-    //m_botObj = new TarnaBot(this);
-}
+    if (m_botObj) {delete m_botObj; m_botObj = NULL;}
 
+
+    m_botObj = new TarnaBot(m_token, 10000);
+
+
+}
+void LBot::loadConfig(const QString &fname)
+{
+    QString err;
+    if (fname.trimmed().isEmpty())
+    {
+        err = QString("LBot: WARNING - config filename is empty ");
+        emit  signalError(err);
+        return;
+    }
+    QFile f(fname.trimmed());
+    if (!f.exists())
+    {
+        err = QString("LBot: WARNING - config filename [%1] not found").arg(fname);
+        emit  signalError(err);
+        return;
+    }
+    QDomDocument dom;
+    if (!dom.setContent(&f))
+    {
+        err = QString("LBot: WARNING - config filename [%1] can't load to DomDocument").arg(fname);
+        emit  signalError(err);
+        if (f.isOpen()) f.close();
+        return;
+    }
+    f.close();
+
+    QString root_node_name("config");
+    QDomNode root_node = dom.namedItem(root_node_name);
+    if (root_node.isNull())
+    {
+        err = QString("LBot: invalid struct XML document [%1], node <%2> not found.").arg(fname).arg(root_node_name);
+        emit signalError(err);
+        return;
+    }
+
+    QString token_node_name("token");
+    QDomNode token_node = root_node.namedItem(token_node_name);
+    if (token_node.isNull())
+    {
+        err = QString("LBot: invalid struct XML document [%1], node <%2> not found.").arg(fname).arg(token_node_name);
+        emit signalError(err);
+        return;
+    }
+
+    m_token = LStatic::getStringAttrValue("value", token_node);
+    if (m_token.isEmpty())
+    {
+        err = QString("LBot: invalid token value.").arg(fname).arg(token_node_name);
+        emit signalError(err);
+        return;
+    }
+
+     err = QString("MBConfigLoader: config loaded ok!");
+     emit signalMsg(err);
+     err = QString("token = [%1]").arg(m_token);
+     emit signalMsg(err);
+
+     init();
+}
 ////////////////////////////////////////////
 /*
 #include <QCoreApplication>

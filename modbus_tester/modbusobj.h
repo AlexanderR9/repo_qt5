@@ -2,7 +2,7 @@
 #define MODBUSOBJ_H
 
 #include "lsimpleobj.h"
-#include "comparams_struct.h"
+#include "mbparams.h"
 
 
 #include <QByteArray>
@@ -13,7 +13,8 @@
 class QModbusRtuSerialMaster;
 class QModbusRtuSerialSlave;
 class MBServer;
-struct ComParams;
+struct LComParams;
+//struct ModbusPacketParams;
 
 
 //ModBusObj
@@ -26,7 +27,7 @@ public:
     ModBusObj(QObject *parent = NULL);
     virtual ~ModBusObj() {}
 
-    void setPortParams(const ComParams&);
+    void setPortParams(const LComParams&);
     void setPacketParams(const ModbusPacketParams &pp);
     void setEmulConfig(const QString&);
     inline const ModbusPacketParams& packetParams() const {return m_packParams;}

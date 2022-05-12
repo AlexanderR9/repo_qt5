@@ -1,5 +1,5 @@
-#ifndef LCOMPARAMS_STRUCT_H
-#define LCOMPARAMS_STRUCT_H
+#ifndef LCOMPARAMS_H
+#define LCOMPARAMS_H
 
 #include <QSerialPort>
 #include <QByteArray>
@@ -31,4 +31,4 @@ struct LComParams
 
 
 
-#endif // COMPARAMS_STRUCT_H
+#endif // LCOMPARAMS_H

@@ -3,6 +3,8 @@
 #include "lprotocol.h"
 #include "lstatic.h"
 #include "modbusobj.h"
+#include "comparams.h"
+
 
 #include <QDebug>
 #include <QByteArray>
@@ -96,6 +98,11 @@ void MainForm::initCommonSettings()
     for (int i=0; i<=5; i++) combo_list.append(QString::number(i));
     lCommonSettings.setComboList(key, combo_list);
     lCommonSettings.setDefValue(key, 1);
+
+    key = QString("showupdateregevents");
+    lCommonSettings.addParam(QString("Show update registers events"), LSimpleDialog::sdtBool, key);
+
+
 }
 void MainForm::slotAppSettingsChanged(QStringList keys)
 {
@@ -136,6 +143,12 @@ void MainForm::slotAppSettingsChanged(QStringList keys)
         p_pack.retries = lCommonSettings.paramValue(key).toInt();
         need_update = true;
     }
+    key = "showupdateregevents";
+    if (keys.contains(key))
+    {
+        p_pack.show_update_reg_events = lCommonSettings.paramValue(key).toInt();
+        need_update = true;
+    }
 
     key = "emulconfig";
     if (keys.contains(key))
@@ -144,31 +157,31 @@ void MainForm::slotAppSettingsChanged(QStringList keys)
         m_modbusObj->setEmulConfig(emul_config);
     }
 
-
     if (need_update)
         m_modbusObj->setPacketParams(p_pack);
-
 }
 void MainForm::updatePortParams()
 {
     if (m_modbusObj->isConnected()) return;
 
-    ComParams p_com;
+    LComParams p_com;
     p_com.port_name = lCommonSettings.paramValue("portname").toString().trimmed();
-    p_com.emul_config = lCommonSettings.paramValue("emulconfig").toString().trimmed();
     QString type = lCommonSettings.paramValue("devicetype").toString().trimmed();
-    if (type == "MASTER") p_com.device_type = 0;
-    if (type == "SLAVE") p_com.device_type = 1;
     m_modbusObj->setPortParams(p_com);
 
     bool ok;
     ModbusPacketParams p_pack;
+    //p_pack.emul_config = lCommonSettings.paramValue("emulconfig").toString().trimmed();
+    if (type == "MASTER") p_pack.device_type = 0;
+    if (type == "SLAVE") p_pack.device_type = 1;
+
     p_pack.address = lCommonSettings.paramValue("address").toInt();
     p_pack.cmd = lCommonSettings.paramValue("cmd").toString().toInt(&ok, 16);
     //qDebug()<<QString("MainForm::updatePortParams()  cmd=%1/%2").arg(p_pack.cmd).arg(lCommonSettings.paramValue("cmd").toString());
     p_pack.start_pos = lCommonSettings.paramValue("startreg").toInt();
     p_pack.n_regs = lCommonSettings.paramValue("nreg").toInt();
     p_pack.retries = lCommonSettings.paramValue("retries").toInt();
+    p_pack.show_update_reg_events = lCommonSettings.paramValue("showupdateregevents").toBool();
     m_modbusObj->setPacketParams(p_pack);
 
 }

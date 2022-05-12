@@ -1,7 +1,7 @@
 #include "modbusobj.h"
 #include "mbserver.h"
 #include "mbconfigloader.h"
-
+#include "comparams.h"
 
 #include <QDebug>
 #include <QModbusRtuSerialMaster>
@@ -146,6 +146,8 @@ void ModBusObj::slotDataWritten(QModbusDataUnit::RegisterType reg, int addr, int
     quint16 v = 9999;
     bool ok = m_slave->data(reg, addr, &v);
     QString sv = (ok ? QString::number(v) : "fault");
+    if (ok && !m_packParams.show_update_reg_events) return;
+
     QString msg = QString("%0: device data writen, register_type=%1  position=%2  size=%3  value=%4").arg(strMode()).arg(reg).arg(addr).arg(size).arg(sv);
     emit signalMsg(msg);
 }
@@ -308,11 +310,10 @@ void ModBusObj::tryDisconnect()
 
     emit signalMsg("done!");
 }
-void ModBusObj::setPortParams(const ComParams &params)
+void ModBusObj::setPortParams(const LComParams &params)
 {
     if (isConnected()) return;
 
-    m_mode = ((params.device_type == 0) ? mboMaster : mboSlave);
 
     m_master->setConnectionParameter(QModbusDevice::SerialPortNameParameter, params.port_name);
     m_master->setConnectionParameter(QModbusDevice::SerialDataBitsParameter, params.data_bits);
@@ -328,6 +329,8 @@ void ModBusObj::setEmulConfig(const QString &f_name)
 }
 void ModBusObj::setPacketParams(const ModbusPacketParams &pp)
 {
+    m_mode = ((pp.device_type == 0) ? mboMaster : mboSlave);
+
     m_packParams.setData(pp);
     m_master->setNumberOfRetries(m_packParams.retries);
     m_slave->setServerAddress(m_packParams.address);

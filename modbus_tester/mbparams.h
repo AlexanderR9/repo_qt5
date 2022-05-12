@@ -1,10 +1,11 @@
-#ifndef COMPARAMS_STRUCT_H
-#define COMPARAMS_STRUCT_H
+#ifndef MBPARAMS_H
+#define MBPARAMS_H
 
 #include <QSerialPort>
 #include <QString>
 
 //ComParams
+/*
 struct ComParams
 {
     ComParams() {reset();}
@@ -29,6 +30,7 @@ struct ComParams
         emul_config.clear();
     }
 };
+*/
 
 //ModbusPacketParams
 struct ModbusPacketParams
@@ -49,6 +51,11 @@ struct ModbusPacketParams
     //только для master: количество запросов при неуспешных или недождавшихся ответах
     quint8 retries;
 
+    //QString emul_config; //конфиг файл для эмуляции системы
+    int device_type; // 0-master, 1-slave
+
+    bool show_update_reg_events; //выводить в протокол информацию об изменении значений регистров (only slave)
+
     void reset()
     {
         address = 0;
@@ -56,6 +63,7 @@ struct ModbusPacketParams
         start_pos = 0;
         n_regs = 2;
         retries = 1;
+        show_update_reg_events = false;
     }
     void setData(const ModbusPacketParams &other)
     {
@@ -64,6 +72,7 @@ struct ModbusPacketParams
         start_pos = other.start_pos;
         n_regs = other.n_regs;
         retries = other.retries;
+        show_update_reg_events = other.show_update_reg_events;
     }
     QString toStr() const
     {
@@ -78,6 +87,6 @@ struct ModbusPacketParams
 
 
 
-#endif // COMPARAMS_STRUCT_H
+#endif // MBPARAMS_H
 
 

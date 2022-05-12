@@ -1,6 +1,6 @@
 #include "mbslaveserverbase.h"
 #include "mbadu.h"
-//#include "lstatic.h"
+#include "comparams.h"
 
 #include <QSerialPort>
 #include <QModbusResponse>
@@ -30,6 +30,15 @@ void LMBSlaveServerBase::initComPort()
     m_port->setDataBits(QSerialPort::Data8);
     m_port->setStopBits(QSerialPort::OneStop);
     m_port->setParity(QSerialPort::EvenParity);
+}
+void LMBSlaveServerBase::setPortParams(const LComParams &params)
+{
+    if (!m_port) return;
+    m_port->setPortName(params.port_name);
+    m_port->setBaudRate(params.baud_rate, QSerialPort::AllDirections);
+    m_port->setDataBits(QSerialPort::DataBits(params.data_bits));
+    m_port->setStopBits(QSerialPort::StopBits(params.stop_bits));
+    m_port->setParity(QSerialPort::Parity(params.parity));
 }
 bool LMBSlaveServerBase::open()
 {

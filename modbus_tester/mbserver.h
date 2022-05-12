@@ -21,7 +21,7 @@ public:
     MBServer(QObject *parent = NULL);
     virtual ~MBServer() {}
 
-    void setPortParams(const ComParams&); //установка параметров COM порта
+    //void setPortParams(const ComParams&); //установка параметров COM порта
     QString cmdCounterToStr() const; //info
     QString regPosToStr() const; //info
     inline const MBConfigLoader* configLoader() const {return emul_config_loader;}

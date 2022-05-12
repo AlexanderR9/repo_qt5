@@ -1,5 +1,5 @@
 #include "mbserver.h"
-#include "comparams_struct.h"
+//#include "comparams_struct.h"
 #include "mbadu.h"
 #include "lstatic.h"
 #include "lmath.h"
@@ -26,8 +26,8 @@ MBServer::MBServer(QObject *parent)
     emul_complex(NULL)
 {
     reset();
-    ComParams params;
-    setPortParams(params);
+    //ComParams params;
+    //setPortParams(params);
 
     //for emul funcs
     initEmulComplex();
@@ -232,7 +232,8 @@ void MBServer::tryParseAdu(const LMBAdu &adu)
     if (response.isValid())
         trySendResponse(response); //запись ответ в COM
 }
-void MBServer::setPortParams(const ComParams &params)
+/*
+void MBServer::setPortParams(const LComParams &params)
 {
     m_port->setPortName(params.port_name);
     m_port->setBaudRate(params.baud_rate, QSerialPort::AllDirections);
@@ -242,6 +243,7 @@ void MBServer::setPortParams(const ComParams &params)
 
     if (emul_config_loader) setEmulConfig(params.emul_config);
 }
+*/
 void MBServer::setEmulConfig(const QString &f_name)
 {
     if (isConnected()) return;
@@ -253,7 +255,6 @@ void MBServer::setEmulConfig(const QString &f_name)
         emul_config_loader->tryLoadConfig(ok);
         if (!ok) qWarning()<<QString("MBServer::setEmulConfig WARNING cant't load emul config");
         else  emul_complex->out();
-
     }
 }
 QModbusResponse MBServer::exeptionRequest(const QModbusPdu &request) const
