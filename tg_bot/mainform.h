@@ -16,6 +16,7 @@ public:
     MainForm(QWidget *parent = 0);
     virtual ~MainForm() {}
     
+    virtual void init();
 
 protected:
     LProtocolBox        *m_protocol;
@@ -28,6 +29,8 @@ protected:
     void initCommonSettings();
 
     void loadConfig();
+    void getUpdates();
+    void sendMsg();
 
 protected slots:
     void slotAction(int); //virtual slot from parent

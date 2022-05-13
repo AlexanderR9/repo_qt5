@@ -6,30 +6,151 @@
 #include <QDir>
 #include <QDomDocument>
 #include <QDomNode>
+#include <QJsonDocument>
 
-
-#include <TarnaBot>
-using namespace Telegram;
+#include <TarnaBasicSender>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QNetworkAccessManager>
+#include <QByteArray>
 
 
 LBot::LBot(QObject *parent)
     :LSimpleObject(parent),
-    m_botObj(NULL)
+    m_botObj(NULL),
+    bot_url(QString("https://api.telegram.org")),
+    m_request(NULL),
+    m_netManager(NULL),
+    m_reqCode(tgrcInvalid)
 {
     setObjectName("lbot");
     m_token = QString("???");
 
-    init();
+
+    m_request = new QNetworkRequest();
+    m_request->setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+    m_netManager = new QNetworkAccessManager(this);
+    QObject::connect(m_netManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(slotRequestFinished(QNetworkReply*)));
+
+    connect(this, SIGNAL(signalJsonReceived(QJsonObject)), this, SLOT());
+
+}
+LBot::~LBot()
+{
+    if (m_request) delete m_request;
+
+
+}
+void LBot::slotRequestFinished(QNetworkReply *reply)
+{
+    qDebug("LBot::slotRequestFinished");
+
+    if (reply)
+    {
+        QJsonObject result = QJsonDocument::fromJson(reply->readAll()).object();
+        emit signalJsonReceived(result);
+    }
+}
+void LBot::slotJsonReceived(QJsonObject reply_obj)
+{
+
 }
 void LBot::init()
 {
     if (m_botObj) {delete m_botObj; m_botObj = NULL;}
 
 
-    m_botObj = new TarnaBot(m_token, 10000);
+    if (m_token.isEmpty())
+    {
+        emit signalError("LBot: WARNING - token is empty");
+        return;
+    }
+
+    bot_url = QString("%1/bot%2").arg(bot_url).arg(m_token);
+
+    //QNetworkProxy proxy = QNetworkProxy(QNetworkProxy::Socks5Proxy, "localhost", 9050);
+//    TarnaBasicSender *basic_sender = new TarnaBasicSender(m_token);
+  //  m_botObj = new TarnaBot(basic_sender);
+
+    signalMsg("Bot object initializate OK!");
+    signalMsg(QString("Bot url: [%1]").arg(bot_url));
+
+}
+void LBot::getMe()
+{
+    if (!m_botObj) {signalError("Bot object is NULL!"); return;}
+
+    /*
+    User u = m_botObj->getMe();
+    QString msg = QString("ME: first_name=[%1]  last_name=[%2]  user_name=[%3]").arg(u.getFirstName()).arg(u.getLastName()).arg(u.getUsername());
+    msg = QString("%1  is_bot=[%2]").arg(msg).arg(u.getIsBot() ? "yes" : "no");
+    msg = QString("%1  ID=[%2]").arg(msg).arg(u.hasId() ? u.getId() : -1);
+    */
+
+    m_reqCode = tgrcGetMe;
+    QJsonObject jsonObject;
+    sendJsonRequest(jsonObject, "getMe");
+
+
+    //emit signalMsg(msg);
+}
+void LBot::sendMsg()
+{
+    if (!m_botObj) {signalError("Bot object is NULL!"); return;}
+
+ //   qint64 id = 2007125359;
+    qint64 id = 1975188389;
+    QString text("test text");
+    m_botObj->sendMessage(id, text);
+    emit signalMsg("msg sended");
+
+}
+void LBot::getUpdates()
+{
+    if (!m_botObj) {signalError("Bot object is NULL!"); return;}
+
+//    QVector<Update> getUpdates(qint64 offset = 0, int limit = 100, qint64 timeout = 100, QVector<QString> allowedUpdates = QVector<QString>());
+
+    QVector<Update> updates(m_botObj->getUpdates(529822261, 100));
+    if (updates.isEmpty())
+    {
+        emit signalMsg("updates is empty");
+        return;
+    }
+
+    QString msg = QString("UPDATES: count=%1").arg(updates.count());
 
 
 }
+void LBot::sendJsonRequest(const QJsonObject &json_obj, const QString &api_method)
+{
+    //QJsonObject result;
+    QUrl request_url = QString("%1/%2").arg(bot_url).arg(api_method);
+    m_request->setUrl(request_url);
+    m_netManager->post(*m_request, QJsonDocument(json_obj).toJson());
+
+    /*
+    QUrl url;
+    url.setUrl(mUrl + apiMethod);
+
+    QNetworkRequest request;
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    request.setUrl(url);
+
+    QEventLoop loop;
+    QObject::connect(&mNam, &QNetworkAccessManager::finished, &loop, &QEventLoop::quit);
+    QNetworkReply* reply = mNam.post(request, QJsonDocument(jsonObject).toJson());
+    loop.exec();
+
+    result = QJsonDocument::fromJson(reply->readAll()).object();
+    delete reply;
+    return result;
+    */
+}
+
+
+
 void LBot::loadConfig(const QString &fname)
 {
     QString err;
@@ -89,6 +210,9 @@ void LBot::loadConfig(const QString &fname)
 
      init();
 }
+
+
+
 ////////////////////////////////////////////
 /*
 #include <QCoreApplication>
@@ -100,10 +224,7 @@ using namespace Telegram;
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
-
-    GameBot bot("token",
-                QNetworkProxy(QNetworkProxy::Socks5Proxy, "localhost", 9050),
-                1000);
+    GameBot bot("token", QNetworkProxy(QNetworkProxy::Socks5Proxy, "localhost", 9050), 1000);
     return a.exec();
 }
 */

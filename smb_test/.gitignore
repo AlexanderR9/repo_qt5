@@ -2,6 +2,7 @@ smb_test.pro.user
 .qmake.stash
 moc
 obj
+uic
 Makefile
 smb_test
 full_clear

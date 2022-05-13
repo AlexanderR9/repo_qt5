@@ -4,8 +4,10 @@
 
 TEMPLATE = app
 TARGET = smb_test
+
 MOC_DIR=moc
 OBJECTS_DIR=obj
+UI_DIR=uic
 
 
 INCLUDEPATH += . \
