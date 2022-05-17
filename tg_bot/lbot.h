@@ -4,8 +4,8 @@
 
 #include <lsimpleobj.h>
 
-#include <TarnaBot>
-using namespace Telegram;
+//#include <TarnaBot>
+//using namespace Telegram;
 
 #include <QJsonObject>
 
@@ -13,7 +13,7 @@ class QNetworkRequest;
 class QNetworkAccessManager;
 class QNetworkReply;
 
-enum TGRequestCode {tgrcGetMe = 601, tgrcInvalid = -1};
+enum TGRequestCode {tgrcGetMe = 601, tgrcSendTextMsg, tgrcInvalid = -1};
 
 // LBot
 class LBot : public LSimpleObject
@@ -28,12 +28,16 @@ public:
 
     void getMe();
     void getUpdates();
-    void sendMsg();
+    void sendMsg(const QString&);
 
+    static void jsonToDebug(const QJsonObject&, quint8 level = 0);
+    static QString jsonValueToStr(const QJsonValue&);
+    static QString apiMetodByReqCode(int);
 
 protected:
     QString      m_token;
-    TarnaBot    *m_botObj;
+    qint64       m_chatID;
+    //TarnaBot    *m_botObj;
     QString     bot_url;
     QNetworkRequest *m_request;
     QNetworkAccessManager *m_netManager;
@@ -41,7 +45,7 @@ protected:
 
 
     void init();
-    void sendJsonRequest(const QJsonObject&, const QString&);
+    void sendJsonRequest(const QJsonObject&);
 
 protected slots:
     void slotRequestFinished(QNetworkReply*);

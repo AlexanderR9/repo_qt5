@@ -7,6 +7,7 @@
 #include <QDomDocument>
 #include <QDomNode>
 #include <QJsonDocument>
+#include <QJsonArray>
 
 #include <TarnaBasicSender>
 #include <QNetworkRequest>
@@ -17,7 +18,8 @@
 
 LBot::LBot(QObject *parent)
     :LSimpleObject(parent),
-    m_botObj(NULL),
+      m_chatID(-1),
+    //m_botObj(NULL),
     bot_url(QString("https://api.telegram.org")),
     m_request(NULL),
     m_netManager(NULL),
@@ -31,9 +33,8 @@ LBot::LBot(QObject *parent)
     m_request->setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
     m_netManager = new QNetworkAccessManager(this);
-    QObject::connect(m_netManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(slotRequestFinished(QNetworkReply*)));
-
-    connect(this, SIGNAL(signalJsonReceived(QJsonObject)), this, SLOT());
+    connect(m_netManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(slotRequestFinished(QNetworkReply*)));
+    connect(this, SIGNAL(signalJsonReceived(QJsonObject)), this, SLOT(slotJsonReceived(QJsonObject)));
 
 }
 LBot::~LBot()
@@ -44,21 +45,75 @@ LBot::~LBot()
 }
 void LBot::slotRequestFinished(QNetworkReply *reply)
 {
-    qDebug("LBot::slotRequestFinished");
-
     if (reply)
     {
         QJsonObject result = QJsonDocument::fromJson(reply->readAll()).object();
-        emit signalJsonReceived(result);
+        if (result.count() < 2)
+        {
+            emit signalError(QString("answered json invalid, size=%1").arg(result.count()));
+            return;
+        }
+
+        QStringList keys = result.keys();
+        if (!keys.contains("ok"))
+        {
+            emit signalError(QString("answered json invalid, not found key [ok]"));
+            return;
+        }
+        if (!keys.contains("result"))
+        {
+            emit signalError(QString("answered json invalid, not found key [result]"));
+            return;
+        }
+        if (!result["ok"].toBool())
+        {
+            emit signalError(QString("answered json invalid, value[ok]=false"));
+            return;
+        }
+        if (!result["result"].isObject())
+        {
+            emit signalError(QString("answered json invalid, value[result] is not object"));
+            return;
+        }
+
+        jsonToDebug(result);
+
+        emit signalJsonReceived(result["result"].toObject());
     }
+    else emit signalError(QString("answered json invalid, reply is null"));
 }
 void LBot::slotJsonReceived(QJsonObject reply_obj)
 {
+    qDebug("------------------------------");
+    qDebug("LBot::slotJsonReceived");
+    emit signalMsg(QString("answer json received!"));
 
+    qDebug("------------------------------");
+    QStringList keys = reply_obj.keys();
+    qDebug()<<QString("keys %1,  size %2, count %3, len %4").arg(keys.count()).arg(reply_obj.size()).arg(reply_obj.count()).arg(reply_obj.length());
+
+    return;
+    qDebug("------------------------------");
+    qDebug("KEYS:");
+    for (int i=0; i<keys.count(); i++)
+    {
+        QJsonValue jv = reply_obj[keys.at(i)];
+        QString value_type = "??";
+        if (jv.isArray()) value_type = "array";
+        else if (jv.isBool()) value_type = "bool";
+        else if (jv.isDouble()) value_type = "double";
+        else if (jv.isNull()) value_type = "null";
+        else if (jv.isObject()) value_type = "object";
+        else if (jv.isString()) value_type = "string";
+
+
+        qDebug()<<keys.at(i) << QString("   type=[%1]").arg(value_type);
+
+    }
 }
 void LBot::init()
 {
-    if (m_botObj) {delete m_botObj; m_botObj = NULL;}
+    //if (m_botObj) {delete m_botObj; m_botObj = NULL;}
 
 
     if (m_token.isEmpty())
@@ -75,11 +130,12 @@ void LBot::init()
 
     signalMsg("Bot object initializate OK!");
     signalMsg(QString("Bot url: [%1]").arg(bot_url));
+    signalMsg(QString("Chat ID: [%1]").arg(m_chatID));
 
 }
 void LBot::getMe()
 {
-    if (!m_botObj) {signalError("Bot object is NULL!"); return;}
+    //if (!m_botObj) {signalError("Bot object is NULL!"); return;}
 
     /*
     User u = m_botObj->getMe();
@@ -90,42 +146,54 @@ void LBot::getMe()
 
     m_reqCode = tgrcGetMe;
     QJsonObject jsonObject;
-    sendJsonRequest(jsonObject, "getMe");
+    sendJsonRequest(jsonObject);
 
 
     //emit signalMsg(msg);
 }
-void LBot::sendMsg()
+void LBot::sendMsg(const QString &text)
 {
-    if (!m_botObj) {signalError("Bot object is NULL!"); return;}
+    m_reqCode = tgrcSendTextMsg;
+    QJsonObject jsonObject;
+    jsonObject["chat_id"] = m_chatID;
+    jsonObject["text"] = text;
+    jsonObject["disable_web_page_preview"] = false;
+    jsonObject["disable_notification"] = false;
+    sendJsonRequest(jsonObject);
 
- //   qint64 id = 2007125359;
-    qint64 id = 1975188389;
-    QString text("test text");
-    m_botObj->sendMessage(id, text);
-    emit signalMsg("msg sended");
+
+    //if (!m_botObj) {signalError("Bot object is NULL!"); return;}
+    //qint64 id = 1975188389;
+    //QString text("test text");
+    //m_botObj->sendMessage(id, text);
+    //emit signalMsg("msg sended");
 
 }
 void LBot::getUpdates()
 {
-    if (!m_botObj) {signalError("Bot object is NULL!"); return;}
+    //if (!m_botObj) {signalError("Bot object is NULL!"); return;}
 
-//    QVector<Update> getUpdates(qint64 offset = 0, int limit = 100, qint64 timeout = 100, QVector<QString> allowedUpdates = QVector<QString>());
-
-    QVector<Update> updates(m_botObj->getUpdates(529822261, 100));
-    if (updates.isEmpty())
+    //QVector<Update> updates(m_botObj->getUpdates(529822261, 100));
+    //if (updates.isEmpty())
     {
         emit signalMsg("updates is empty");
         return;
     }
 
-    QString msg = QString("UPDATES: count=%1").arg(updates.count());
-
-
+    //QString msg = QString("UPDATES: count=%1").arg(updates.count());
 }
-void LBot::sendJsonRequest(const QJsonObject &json_obj, const QString &api_method)
+void LBot::sendJsonRequest(const QJsonObject &json_obj)
 {
-    //QJsonObject result;
+    QString api_method = LBot::apiMetodByReqCode(m_reqCode);
+    emit signalMsg(QString("Try send json request, metod=[%1]...........").arg(api_method));
+    if (api_method.trimmed().isEmpty())
+    {
+        signalError(QString("request code invalid: %1").arg(m_reqCode));
+        return;
+    }
+
+    qDebug("");
+    qDebug() << QString("SEND REQUEST (%1)").arg(api_method);
     QUrl request_url = QString("%1/%2").arg(bot_url).arg(api_method);
     m_request->setUrl(request_url);
     m_netManager->post(*m_request, QJsonDocument(json_obj).toJson());
@@ -147,6 +215,49 @@ void LBot::sendJsonRequest(const QJsonObject &json_obj, const QString &api_metho
     delete reply;
     return result;
     */
+}
+void LBot::jsonToDebug(const QJsonObject &j_obj, quint8 level)
+{
+    if (level == 0) qDebug()<<QString("----------------ANSWER JSON OBJECT-------------------");
+    QString space;
+    if (level > 0)
+        for (quint8 i=0; i<level; i++) space.append("  ");
+
+    qDebug()<<QString("%1 JSON OBJ: size=%2  level=%3").arg(space).arg(j_obj.count()).arg(level);
+
+    QStringList keys(j_obj.keys());
+    for (int i=0; i<keys.count(); i++)
+    {
+        QJsonValue jv = j_obj[keys.at(i)];
+        if (jv.isObject()) jsonToDebug(jv.toObject(), level+1);
+        else qDebug()<<QString("%1 key=[%2] : (%3)").arg(space).arg(keys.at(i)).arg(jsonValueToStr(jv));
+    }
+}
+QString LBot::jsonValueToStr(const QJsonValue &jv)
+{
+    QString s("??");
+    if (jv.isArray()) s = QString("type=[%1]  count=[%2]").arg("array").arg(jv.toArray().count());
+    else if (jv.isBool()) s = QString("type=[%1]  value=[%2]").arg("bool").arg(jv.toBool()?"true":"false");
+    else if (jv.isDouble())
+    {
+        double d = jv.toDouble();
+        if (d > 10000) s = QString("type=[%1]  value=[%2]").arg("double").arg(qint64(d));
+        else QString("type=[%1]  value=[%2]").arg("double").arg(QString::number(d, 'f', 2));
+    }
+    else if (jv.isNull()) s = QString("type=[%1]").arg("null");
+    else if (jv.isObject()) s = QString("type=[%1]").arg("object");
+    else if (jv.isString()) s = QString("type=[%1]  value=[%2]").arg("string").arg(jv.toString());
+    return s;
+}
+QString LBot::apiMetodByReqCode(int code)
+{
+    switch (code)
+    {
+        case tgrcGetMe: return QString("getMe");
+        case tgrcSendTextMsg: return QString("sendMessage");
+        default: break;
+    }
+    return QString();
 }
 
 
@@ -194,6 +305,14 @@ void LBot::loadConfig(const QString &fname)
         emit signalError(err);
         return;
     }
+    QString chat_id_node_name("chat_id");
+    QDomNode chat_id_node = root_node.namedItem(chat_id_node_name);
+    if (chat_id_node.isNull())
+    {
+        err = QString("LBot: invalid struct XML document [%1], node <%2> not found.").arg(fname).arg(chat_id_node_name);
+        emit signalError(err);
+        return;
+    }
 
     m_token = LStatic::getStringAttrValue("value", token_node);
     if (m_token.isEmpty())
@@ -202,6 +321,8 @@ void LBot::loadConfig(const QString &fname)
         emit signalError(err);
         return;
     }
+
+    m_chatID = LStatic::getIntAttrValue("value", chat_id_node);
 
      err = QString("MBConfigLoader: config loaded ok!");
      emit signalMsg(err);

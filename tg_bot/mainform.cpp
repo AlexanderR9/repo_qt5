@@ -56,8 +56,9 @@ void MainForm::getUpdates()
 void MainForm::sendMsg()
 {
     m_protocol->addSpace();
-    slotMessage("send message ...");
-    l_bot->sendMsg();
+    QString text("hello!");
+    slotMessage("try send message ...");
+    l_bot->sendMsg(text);
 }
 void MainForm::loadConfig()
 {
