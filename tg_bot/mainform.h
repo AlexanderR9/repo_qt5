@@ -29,8 +29,10 @@ protected:
     void initCommonSettings();
 
     void loadConfig();
+
     void getUpdates();
     void sendMsg();
+    void getMe();
 
 protected slots:
     void slotAction(int); //virtual slot from parent

@@ -4,16 +4,11 @@
 
 #include <lsimpleobj.h>
 
-//#include <TarnaBot>
-//using namespace Telegram;
 
 #include <QJsonObject>
+#include <QJsonArray>
 
-class QNetworkRequest;
-class QNetworkAccessManager;
-class QNetworkReply;
-
-enum TGRequestCode {tgrcGetMe = 601, tgrcSendTextMsg, tgrcInvalid = -1};
+class TGSender;
 
 // LBot
 class LBot : public LSimpleObject
@@ -21,38 +16,39 @@ class LBot : public LSimpleObject
     Q_OBJECT
 public:
     LBot(QObject*);
-    virtual ~LBot();
+    virtual ~LBot() {}
 
     void loadConfig(const QString&);
     QString name() const {return QString("tgbot_obj");}
 
+    //tg funcs
     void getMe();
     void getUpdates();
     void sendMsg(const QString&);
 
+    //static service funcs
     static void jsonToDebug(const QJsonObject&, quint8 level = 0);
     static QString jsonValueToStr(const QJsonValue&);
-    static QString apiMetodByReqCode(int);
 
 protected:
-    QString      m_token;
-    qint64       m_chatID;
-    //TarnaBot    *m_botObj;
-    QString     bot_url;
-    QNetworkRequest *m_request;
-    QNetworkAccessManager *m_netManager;
-    int m_reqCode;
+    QString                 m_token;
+    qint64                  m_chatID;
+    TGSender                *m_sender;
 
 
     void init();
-    void sendJsonRequest(const QJsonObject&);
+    void initSender();
+    //void sendJsonRequest(const QJsonObject&);
 
 protected slots:
-    void slotRequestFinished(QNetworkReply*);
+    //void slotRequestFinished(QNetworkReply*);
     void slotJsonReceived(QJsonObject);
+    void slotJArrReceived(QJsonArray);
+    void slotFinishedFault();
 
 signals:
-    void signalJsonReceived(QJsonObject);
+    //void signalJsonReceived(QJsonObject);
+    //void signalJArrReceived(QJsonArray);
 
 };
 

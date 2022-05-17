@@ -42,10 +42,16 @@ void MainForm::slotAction(int type)
         case LMainWidget::atRefresh: {getUpdates(); break;}
         case LMainWidget::atLoadData: {loadConfig(); break;}
         case LMainWidget::atSendMsg: {sendMsg(); break;}
-        case LMainWidget::atData: {l_bot->getMe(); break;}
+        case LMainWidget::atData: {getMe(); break;}
         case LMainWidget::atClear: {m_protocol->clearProtocol(); break;}
         default: break;
     }
+}
+void MainForm::getMe()
+{
+    m_protocol->addSpace();
+    slotMessage("get me ...");
+    l_bot->getMe();
 }
 void MainForm::getUpdates()
 {

@@ -12,27 +12,28 @@ INCLUDEPATH += . \
             $$PWD \
             $$PWD/../libs/base \
             $$PWD/../libs/base/ui_h \
-            $$PWD/../libs/web \
-            $$PWD/tarnalib \
-            $$PWD/tarnalib/include \
-            $$PWD/tarnalib/src
+            $$PWD/../libs/web
 
 #path for libs files
 DEPENDPATH += $$PWD/../libs/base/build \
-            $$PWD/../libs/web/build \
-	    $$PWD/tarnalib
+            $$PWD/../libs/web/build
+
 
 #include libs
 unix:!macx: LIBS += -L$$PWD/../libs/base/build/ -llbase
 unix:!macx: LIBS += -L$$PWD/../libs/web/build/ -llweb
-unix:!macx: LIBS += -L$$PWD/tarnalib/ -ltarnabot
 
 # Input
 HEADERS += $$PWD/mainform.h \
-    lbot.h
-
+        $$PWD/lbot.h \
+        $$PWD/tgsender.h
 
 SOURCES += $$PWD/main.cpp \
 	$$PWD/mainform.cpp \
-    lbot.cpp
+        $$PWD/lbot.cpp \
+        $$PWD/tgsender.cpp
+
+
+
+
 
