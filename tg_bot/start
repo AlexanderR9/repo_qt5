@@ -1,4 +1,4 @@
 #!/bin/bash
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../libs/base/build:../libs/web/build:tarnalib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../libs/base/build:../libs/tg/build
 ./tg_bot
 

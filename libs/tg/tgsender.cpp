@@ -8,7 +8,7 @@
 
 
 
-TGSender::TGSender(const QString &token, QObject *parent)
+LTGSender::LTGSender(const QString &token, QObject *parent)
     :QObject(parent),
     m_botToken(token),
     m_request(NULL),
@@ -18,7 +18,7 @@ TGSender::TGSender(const QString &token, QObject *parent)
     initNetObjects();
 
 }
-void TGSender::initNetObjects()
+void LTGSender::initNetObjects()
 {
     m_request = new QNetworkRequest();
     m_request->setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
@@ -26,7 +26,7 @@ void TGSender::initNetObjects()
     m_netManager = new QNetworkAccessManager(this);
     connect(m_netManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(slotRequestFinished(QNetworkReply*)));
 }
-QString TGSender::apiMetodByReqCode(int code)
+QString LTGSender::apiMetodByReqCode(int code)
 {
     switch (code)
     {
@@ -37,14 +37,14 @@ QString TGSender::apiMetodByReqCode(int code)
     }
     return QString();
 }
-QString TGSender::requestUrl(const QString &api_metod) const
+QString LTGSender::requestUrl(const QString &api_metod) const
 {
     return QString("%1/bot%2/%3").arg(tgUrlBase()).arg(m_botToken).arg(api_metod);
 }
-void TGSender::sendJsonRequest(const QJsonObject &json_obj, int req_code)
+void LTGSender::sendJsonRequest(const QJsonObject &json_obj, int req_code)
 {
     m_err.clear();
-    QString api_method = TGSender::apiMetodByReqCode(req_code);
+    QString api_method = LTGSender::apiMetodByReqCode(req_code);
     if (api_method.trimmed().isEmpty())
     {
         m_err = QString("request code invalid: %1").arg(req_code);
@@ -55,7 +55,7 @@ void TGSender::sendJsonRequest(const QJsonObject &json_obj, int req_code)
     m_request->setUrl(requestUrl(api_method));
     m_netManager->post(*m_request, QJsonDocument(json_obj).toJson());
 }
-void TGSender::slotRequestFinished(QNetworkReply *reply)
+void LTGSender::slotRequestFinished(QNetworkReply *reply)
 {
     m_err.clear();
     if (reply)

@@ -2,16 +2,11 @@
 #define LBOT_H
 
 
-#include <lsimpleobj.h>
+#include "tgabstractbot.h"
 
-
-#include <QJsonObject>
-#include <QJsonArray>
-
-class TGSender;
 
 // LBot
-class LBot : public LSimpleObject
+class LBot : public LTGAbstractBot
 {
     Q_OBJECT
 public:
@@ -19,36 +14,19 @@ public:
     virtual ~LBot() {}
 
     void loadConfig(const QString&);
-    QString name() const {return QString("tgbot_obj");}
+    QString name() const {return QString("MyLBot");}
 
-    //tg funcs
-    void getMe();
-    void getUpdates();
-    void sendMsg(const QString&);
 
     //static service funcs
-    static void jsonToDebug(const QJsonObject&, quint8 level = 0);
+    static void jsonToDebug(const QJsonObject&, quint8 level = 0); //выхлоп объекта json в debug
     static QString jsonValueToStr(const QJsonValue&);
 
 protected:
-    QString                 m_token;
-    qint64                  m_chatID;
-    TGSender                *m_sender;
-
-
-    void init();
-    void initSender();
-    //void sendJsonRequest(const QJsonObject&);
+    void reset() {m_params.reset();}
 
 protected slots:
-    //void slotRequestFinished(QNetworkReply*);
     void slotJsonReceived(QJsonObject);
     void slotJArrReceived(QJsonArray);
-    void slotFinishedFault();
-
-signals:
-    //void signalJsonReceived(QJsonObject);
-    //void signalJArrReceived(QJsonArray);
 
 };
 

@@ -72,8 +72,7 @@ void MainForm::loadConfig()
     slotMessage("try load config ...");
     if (!l_bot) return;
 
-    QString key = QString("config");
-    l_bot->loadConfig(lCommonSettings.paramValue(key).toString().trimmed());
+    l_bot->loadConfig(lCommonSettings.paramValue("config").toString().trimmed());
 }
 void MainForm::initWidgets()
 {
