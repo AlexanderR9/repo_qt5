@@ -42,6 +42,8 @@ public:
     virtual QString name() const = 0;
     virtual bool invalid() const;   // валидность параметров бота
     virtual void setBotParams(const LTGParamsBot&);
+    virtual void loadConfig(const QString&);
+
 
     //tg funcs
     void getMe();
@@ -49,11 +51,11 @@ public:
     void sendMsg(const QString&);
 
 protected:
-    LTGParamsBot             m_params;   //основные параметры бота
-    LTGSender                *m_sender;  //объект для обмена с сервером TG
+    LTGParamsBot    m_params;   //основные параметры бота
+    LTGSender       *m_sender;  //объект для обмена с сервером TG
 
     virtual void reinitSender(); //параметры бота изменились, необходимо переинициализировать объект m_sender
-    virtual void reset() = 0;
+    virtual void reset() {m_params.reset();}
 
 protected slots:
     virtual void slotJsonReceived(QJsonObject) = 0; //пришел нормальный ответ в виде QJsonObject, необходимо обработать ответ
@@ -65,7 +67,4 @@ protected slots:
 
 
 #endif // TG_ABSTRACT_BOT_H
-
-
-
 

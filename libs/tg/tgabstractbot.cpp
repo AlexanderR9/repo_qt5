@@ -1,5 +1,6 @@
 #include "tgabstractbot.h"
 #include "tgsender.h"
+#include "tgconfigloaderbase.h"
 
 #include <QDebug>
 
@@ -77,6 +78,21 @@ void LTGAbstractBot::getUpdates(qint64 last_update_id)
 
     if (m_sender->hasErr())
         emit signalError(QString("TGAbstractBot::getUpdates() - err=[%1]").arg(m_sender->err()));
+}
+void LTGAbstractBot::loadConfig(const QString &fname)
+{
+    QString err;
+    reset();
+
+    LTGConfigLoaderBase loader(fname);
+    loader.loadBotParams(m_params, err);
+    if (!err.isEmpty())
+    {
+        emit  signalError(err);
+        return;
+    }
+
+    reinitSender();
 }
 
 

@@ -18,6 +18,14 @@ LTGSender::LTGSender(const QString &token, QObject *parent)
     initNetObjects();
 
 }
+LTGSender::~LTGSender()
+{
+    if (m_request)
+    {
+        delete m_request;
+        m_request = NULL;
+    }
+}
 void LTGSender::initNetObjects()
 {
     m_request = new QNetworkRequest();

@@ -21,7 +21,7 @@ public:
     enum TGRequestCode {tgrcGetMe = 601, tgrcSendTextMsg, tgrcGetUpdates, tgrcInvalid = -1};
 
     LTGSender(const QString &token,  QObject *parent = NULL);
-    virtual ~LTGSender() {if (m_request) delete m_request;}
+    virtual ~LTGSender();
 
     void sendJsonRequest(const QJsonObject&, int); //отправить запрос, int - код команды из множества TGRequestCode
 

@@ -14,9 +14,9 @@
 #include <QProgressBar>
 #include <QGroupBox>
 #include <QStyleFactory>
-#include <QTimer>
+#include <QTabWidget>
 
-#define SAVE_HTML_FOLDER  QString("data")
+//#define SAVE_HTML_FOLDER  QString("data")
 
 
 // MainForm
@@ -24,11 +24,12 @@ MainForm::MainForm(QWidget *parent)
     :LMainWidget(parent),
     m_protocol(NULL),
     v_splitter(NULL),
-    m_textView(NULL),
-    m_timer(NULL),
-    m_pageRequester(NULL)
+    m_tab(NULL)
+  //  m_textView(NULL),
+    //m_timer(NULL),
+    //m_pageRequester(NULL)
 {
-
+/*
     m_timer = new QTimer(this);
     connect(m_timer, SIGNAL(timeout()), this, SLOT(slotTimer()));
 
@@ -50,7 +51,7 @@ MainForm::MainForm(QWidget *parent)
     m_couples.append("RPM");
     m_couples.append("MRK");
     m_couples.append("MET");
-
+*/
 
 }
 void MainForm::initActions()
@@ -184,15 +185,14 @@ void MainForm::start()
     m_protocol->addText(QString("Monitoring started, request interval: %1 sec.").arg(reqInterval()/1000), 5);
     updateActionsEnable(false);
 
-    m_timer->setInterval(reqInterval());
-    m_timer->start();
+    //m_timer->setInterval(reqInterval());
+    //m_timer->start();
 }
 void MainForm::stop()
 {
-    m_timer->stop();
+//    m_timer->stop();
     m_protocol->addText("Monitoring stoped!", 5);
     updateActionsEnable(true);
-
 }
 void MainForm::save()
 {

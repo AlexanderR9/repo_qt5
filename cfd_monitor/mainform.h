@@ -13,6 +13,7 @@ class QProgressBar;
 class QGroupBox;
 class QTimer;
 class LHTMLPageRequester;
+class QTabWidget;
 
 
 // MainForm
@@ -25,11 +26,12 @@ public:
     
 protected:
     LProtocolBox        *m_protocol;
+    QTabWidget          *m_tab;
     QSplitter           *v_splitter;
-    QTextEdit           *m_textView;
-    QTimer              *m_timer;
-    LHTMLPageRequester  *m_pageRequester;
-    QStringList         m_couples;
+    //QTextEdit           *m_textView;
+    //QTimer              *m_timer;
+    //LHTMLPageRequester  *m_pageRequester;
+    //QStringList         m_couples;
 
     QString projectName() const {return "cfdmonitor";}
     QString mainTitle() const {return QString("CFD monitoring (Qt5)!");}
@@ -44,18 +46,18 @@ protected:
     void stop();
     void updateActionsEnable(bool);
 
-    QString currentUrl() const;
-    QString viewType() const;
-    int reqInterval() const;
-    void tryRequest();
-    void parsePageData();
+    //QString currentUrl() const;
+    //QString viewType() const;
+    //int reqInterval() const;
+    //void tryRequest();
+    //void parsePageData();
 
 protected slots:
     void slotAction(int); //virtual slot from parent
     void slotError(const QString&);
-    void slotTimer();
-    void slotDataReady();
-    void slotFinished(bool);
+    //void slotTimer();
+    //void slotDataReady();
+    //void slotFinished(bool);
 
 
 };
