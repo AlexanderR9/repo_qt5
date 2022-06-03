@@ -1,6 +1,6 @@
-
 #include <QApplication>
 #include "mainform.h"
+
 
 int main(int args, char **argv)
 {

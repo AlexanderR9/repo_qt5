@@ -4,11 +4,16 @@
 #include "basepage.h"
 
 //CFDPage
-class CFDPage : BasePage
+class CFDPage : public BasePage
 {
+    Q_OBJECT
 public:
     CFDPage(QWidget*);
     virtual ~CFDPage() {}
+
+    QString iconPath() const {return QString(":/icons/images/b_scale.svg");}
+    QString caption() const {return QString("CFD stat");}
+
 
 };
 

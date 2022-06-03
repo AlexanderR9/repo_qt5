@@ -4,6 +4,7 @@ TARGET = cfdmonitor
 DEFINES += QT_DEPRECATED_WARNINGS
 MOC_DIR=moc
 OBJECTS_DIR=obj
+UI_DIR=ui
 
 QT -= gui
 QT *= network widgets
@@ -11,6 +12,7 @@ QT += webenginewidgets
 
 INCLUDEPATH += . \
             $$PWD \
+            $$PWD/ui \
             $$PWD/../libs/base \
             $$PWD/../libs/base/ui_h \
             $$PWD/../libs/web \
@@ -35,6 +37,8 @@ HEADERS += $$PWD/mainform.h \
 	$$PWD/statobj.h \
 	$$PWD/basepage.h \
 	$$PWD/cfdpage.h \
+	$$PWD/configpage.h \
+	$$PWD/cfdconfigobj.h \
 	$$PWD/logpage.h
 
 
@@ -45,6 +49,10 @@ SOURCES += $$PWD/main.cpp \
 	$$PWD/statobj.cpp \
 	$$PWD/basepage.cpp \
 	$$PWD/cfdpage.cpp \
+	$$PWD/configpage.cpp \
+	$$PWD/cfdconfigobj.cpp \
 	$$PWD/logpage.cpp
 
+
+FORMS += $$PWD/ui/configpage.ui
 

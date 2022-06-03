@@ -5,11 +5,15 @@
 
 
 //LogPage
-class LogPage : BasePage
+class LogPage : public BasePage
 {
+    Q_OBJECT
 public:
     LogPage(QWidget*);
     virtual ~LogPage() {}
+
+    QString iconPath() const {return QString(":/icons/images/log.png");}
+    QString caption() const {return QString("Log");}
 
 };
 

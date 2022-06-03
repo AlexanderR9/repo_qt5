@@ -6,3 +6,4 @@ Makefile
 cfdmonitor
 full_clear
 config
+ui_configpage.h

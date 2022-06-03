@@ -2,10 +2,14 @@
 #include "lcommonsettings.h"
 #include "lprotocol.h"
 #include "lhtmlpagerequester.h"
-
+#include "cfdpage.h"
+#include "logpage.h"
+#include "configpage.h"
+#include "cfdconfigobj.h"
 
 #include <QDebug>
 #include <QDir>
+#include <QIcon>
 #include <QSettings>
 #include <QApplication>
 #include <QSplitter>
@@ -24,7 +28,8 @@ MainForm::MainForm(QWidget *parent)
     :LMainWidget(parent),
     m_protocol(NULL),
     v_splitter(NULL),
-    m_tab(NULL)
+    m_tab(NULL),
+    m_configObj(NULL)
   //  m_textView(NULL),
     //m_timer(NULL),
     //m_pageRequester(NULL)
@@ -64,21 +69,75 @@ void MainForm::initActions()
 }
 void MainForm::initWidgets()
 {
-    v_splitter = new QSplitter(Qt::Vertical, this);
-    m_textView = new QTextEdit(this);
-    m_protocol = new LProtocolBox(false, this);
-    m_textView->setReadOnly(true);
+    qDeleteAll(m_pages);
+    m_pages.clear();
 
-    v_splitter->addWidget(m_textView);
-    v_splitter->addWidget(m_protocol);
+    initPages();
+    initTab();
+    initSplitter();
+}
+void MainForm::initPages()
+{
+    CFDPage *cfd_page = new  CFDPage(this);
+    m_pages.insert(BasePage::ptCFDStat, cfd_page);
+
+    ConfigPage *config_page = new  ConfigPage(this);
+    m_pages.insert(BasePage::ptConfig, config_page);
+
+    LogPage *log_page = new  LogPage(this);
+    m_pages.insert(BasePage::ptLog, log_page);
+}
+void MainForm::initTab()
+{
+    if (m_tab) {delete m_tab; m_tab = NULL;}
+    m_tab = new QTabWidget(this);
+    m_tab->setIconSize(QSize(28, 28));
+    //m_tab->setTabShape(QTabWidget::Triangular);
+    m_tab->setTabPosition(QTabWidget::South);
+
+    int n = m_tab->count();
+    for (int i=0; i<n; i++)
+    {
+        QWidget *w = m_tab->widget(0);
+        m_tab->removeTab(0);
+        if (w) delete w;
+    }
+
+    foreach (BasePage *page, m_pages)
+    {
+        QIcon icon(page->iconPath());
+        m_tab->addTab(page, icon, page->caption());
+    }
+}
+void MainForm::initSplitter()
+{
+    m_protocol = new LProtocolBox(false, this);
+    if (v_splitter) {delete v_splitter; v_splitter = NULL;}
+    v_splitter = new QSplitter(Qt::Vertical, this);
     addWidget(v_splitter, 0, 0);
 
-    stop();
+    v_splitter->addWidget(m_tab);
+    v_splitter->addWidget(m_protocol);
+}
+void MainForm::initConfigObj()
+{
+    if (m_configObj) {delete m_configObj; m_configObj = NULL;}
+    m_configObj = new CFDConfigObject(lCommonSettings.paramValue("config").toString(), this);
+
+    connect(m_configObj, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
+    connect(m_configObj, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMessage(const QString&)));
+
+    m_configObj->tryLoadConfig();
 }
 void MainForm::initCommonSettings()
 {
     QStringList combo_list;
 
+    QString key = QString("config");
+    lCommonSettings.addParam(QString("Config file"), LSimpleDialog::sdtFilePath, key);
+    lCommonSettings.setDefValue(key, QString(""));
+
+    /*
     QString key = QString("url");
     lCommonSettings.addParam(QString("URL page (example: https://ya.ru)"), LSimpleDialog::sdtString, key);
     lCommonSettings.setDefValue(key, QString("https://yandex.ru"));
@@ -93,6 +152,7 @@ void MainForm::initCommonSettings()
     combo_list.clear();
     combo_list << "HTML code" << "Plain text";
     lCommonSettings.setComboList(key, combo_list);
+*/
 
 }
 void MainForm::slotAction(int type)
@@ -106,6 +166,8 @@ void MainForm::slotAction(int type)
         default: break;
     }
 }
+/*
+
 void MainForm::slotTimer()
 {
     QString elm = m_couples.takeFirst();
@@ -173,6 +235,7 @@ void MainForm::slotFinished(bool ok)
 {
     if (!ok) slotError("fault");
 }
+*/
 void MainForm::updateActionsEnable(bool stoped)
 {
     getAction(LMainWidget::atStop)->setEnabled(!stoped);
@@ -182,8 +245,8 @@ void MainForm::updateActionsEnable(bool stoped)
 }
 void MainForm::start()
 {
-    m_protocol->addText(QString("Monitoring started, request interval: %1 sec.").arg(reqInterval()/1000), 5);
-    updateActionsEnable(false);
+    //m_protocol->addText(QString("Monitoring started, request interval: %1 sec.").arg(reqInterval()/1000), 5);
+    //updateActionsEnable(false);
 
     //m_timer->setInterval(reqInterval());
     //m_timer->start();
@@ -191,8 +254,8 @@ void MainForm::start()
 void MainForm::stop()
 {
 //    m_timer->stop();
-    m_protocol->addText("Monitoring stoped!", 5);
-    updateActionsEnable(true);
+    //m_protocol->addText("Monitoring stoped!", 5);
+    //updateActionsEnable(true);
 }
 void MainForm::save()
 {
@@ -213,6 +276,8 @@ void MainForm::load()
     //ba.clear();
     //ba = settings.value(QString("%1/h_splitter/state").arg(objectName()), QByteArray()).toByteArray();
     //if (!ba.isEmpty()) h_splitter->restoreState(ba);
+
+    initConfigObj();
 }
 
 
@@ -391,7 +456,7 @@ void MainForm::slotReqFinished()
     m_textView->setPlainText(data);
 
 }
-*/
+
 int MainForm::reqInterval() const
 {
     return (lCommonSettings.paramValue("req_interval").toInt() * 1000);
@@ -404,8 +469,13 @@ QString MainForm::currentUrl() const
 {
     return QString("%1/%2").arg(lCommonSettings.paramValue("url").toString()).arg(m_couples.first());
 }
+*/
 void MainForm::slotError(const QString &text)
 {
     m_protocol->addText(text, LProtocolBox::ttErr);
+}
+void MainForm::slotMessage(const QString &text)
+{
+    m_protocol->addText(text, LProtocolBox::ttText);
 }
 

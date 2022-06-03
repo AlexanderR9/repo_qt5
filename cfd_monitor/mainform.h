@@ -3,6 +3,8 @@
 
 #include "lmainwidget.h"
 
+#include <QMap>
+
 class LProtocolBox;
 class LHTMLRequester;
 class QSplitter;
@@ -14,6 +16,8 @@ class QGroupBox;
 class QTimer;
 class LHTMLPageRequester;
 class QTabWidget;
+class BasePage;
+class CFDConfigObject;
 
 
 // MainForm
@@ -25,9 +29,12 @@ public:
     virtual ~MainForm() {}
     
 protected:
-    LProtocolBox        *m_protocol;
-    QTabWidget          *m_tab;
-    QSplitter           *v_splitter;
+    LProtocolBox            *m_protocol;
+    QTabWidget              *m_tab;
+    QSplitter               *v_splitter;
+    QMap<int, BasePage*>     m_pages;
+    CFDConfigObject         *m_configObj;
+
     //QTextEdit           *m_textView;
     //QTimer              *m_timer;
     //LHTMLPageRequester  *m_pageRequester;
@@ -39,6 +46,10 @@ protected:
     void initWidgets();
     void initCommonSettings();
 
+    void initPages();
+    void initTab();
+    void initSplitter();
+    void initConfigObj();
     void save();
     void load();
 
@@ -55,6 +66,7 @@ protected:
 protected slots:
     void slotAction(int); //virtual slot from parent
     void slotError(const QString&);
+    void slotMessage(const QString&);
     //void slotTimer();
     //void slotDataReady();
     //void slotFinished(bool);

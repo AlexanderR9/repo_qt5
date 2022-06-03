@@ -1,6 +1,6 @@
 #include "cfdpage.h"
 
-CFDStatObj::CFDStatObj(QWidget *parent)
+CFDPage::CFDPage(QWidget *parent)
     :BasePage(parent)
 {
 
