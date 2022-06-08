@@ -15,6 +15,7 @@ public:
     QString iconPath() const {return QString(":/icons/images/log.png");}
     QString caption() const {return QString("Log");}
 
+    void updatePage() {}
 };
 
 

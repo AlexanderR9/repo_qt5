@@ -18,6 +18,7 @@ class LHTMLPageRequester;
 class QTabWidget;
 class BasePage;
 class CFDConfigObject;
+class TGBot;
 
 
 // MainForm
@@ -34,9 +35,10 @@ protected:
     QSplitter               *v_splitter;
     QMap<int, BasePage*>     m_pages;
     CFDConfigObject         *m_configObj;
+    TGBot                   *m_bot;
 
     //QTextEdit           *m_textView;
-    //QTimer              *m_timer;
+    QTimer              *m_timer;
     //LHTMLPageRequester  *m_pageRequester;
     //QStringList         m_couples;
 
@@ -50,16 +52,18 @@ protected:
     void initTab();
     void initSplitter();
     void initConfigObj();
+    void initBotObj();
     void save();
     void load();
 
     void start();
     void stop();
     void updateActionsEnable(bool);
+    void fillConfigPage();
 
     //QString currentUrl() const;
     //QString viewType() const;
-    //int reqInterval() const;
+    int reqInterval() const;
     //void tryRequest();
     //void parsePageData();
 
@@ -67,7 +71,7 @@ protected slots:
     void slotAction(int); //virtual slot from parent
     void slotError(const QString&);
     void slotMessage(const QString&);
-    //void slotTimer();
+    void slotTimer();
     //void slotDataReady();
     //void slotFinished(bool);
 

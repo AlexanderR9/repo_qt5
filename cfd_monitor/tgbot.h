@@ -4,6 +4,7 @@
 
 #include "tgabstractbot.h"
 
+#include <QMap>
 
 // TGBot
 class TGBot : public LTGAbstractBot
@@ -14,6 +15,9 @@ public:
     virtual ~TGBot() {}
 
     QString name() const {return QString("MyLBot");}
+    QString toStrParams() const;
+
+    QMap<QString, QString> getParams() const;
 
 protected slots:
     void slotJsonReceived(QJsonObject);

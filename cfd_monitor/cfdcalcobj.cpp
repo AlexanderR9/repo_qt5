@@ -1,4 +1,4 @@
-#include "cfdrequester.h"
+#include "cfdcalcobj.h"
 #include "lhtmlpagerequester.h"
 
 CFDRequester::CFDRequester(QObject *parent)

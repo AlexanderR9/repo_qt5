@@ -37,7 +37,6 @@ public:
 
     inline int replySize() const {return m_replyBuffer.count();}    //размер ответа
     inline bool replyEmpty() const {return m_replyBuffer.isEmpty();}    //пустой ответ
-    inline QString currentUrl() const {return m_url;}   //текущий URL
 
     
 protected:

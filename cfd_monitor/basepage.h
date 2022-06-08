@@ -10,7 +10,7 @@ class BasePage : public QWidget
 {
     Q_OBJECT
 public:
-    enum PageType {ptCFDStat = 81, ptLog, ptConfig};
+    enum PageType {ptCFDStat = 81, ptLog, ptConfig, ptHtml};
 
     BasePage(QWidget*);
     virtual ~BasePage() {}
@@ -19,7 +19,11 @@ public:
     virtual QString caption() const = 0;
     virtual void save(QSettings&) {}
     virtual void load(QSettings&) {}
+    virtual void updatePage() = 0;
 
+signals:
+    void signalError(const QString&);
+    void signalMsg(const QString&);
 
 };
 

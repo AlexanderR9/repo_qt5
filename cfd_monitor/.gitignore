@@ -7,3 +7,4 @@ cfdmonitor
 full_clear
 config
 ui_configpage.h
+ui_htmlpage.h

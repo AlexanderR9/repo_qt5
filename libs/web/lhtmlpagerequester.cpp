@@ -33,6 +33,8 @@ void LHTMLPageRequester::startRequest()
     }
 
     clearData();
+    is_buzy = true;
+    
     bool ok;
     checkUrl(ok);
     if (!ok)

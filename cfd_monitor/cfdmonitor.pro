@@ -7,7 +7,7 @@ OBJECTS_DIR=obj
 UI_DIR=ui
 
 QT -= gui
-QT *= network widgets
+QT *= network widgets xml
 QT += webenginewidgets
 
 INCLUDEPATH += . \
@@ -33,10 +33,11 @@ unix:!macx: LIBS += -L$$PWD/../libs/tg/build/ -lltg
 # Input
 HEADERS += $$PWD/mainform.h \
 	$$PWD/tgbot.h \
-	$$PWD/cfdrequester.h \
+	$$PWD/cfdcalcobj.h \
 	$$PWD/statobj.h \
 	$$PWD/basepage.h \
 	$$PWD/cfdpage.h \
+	$$PWD/htmlpage.h \
 	$$PWD/configpage.h \
 	$$PWD/cfdconfigobj.h \
 	$$PWD/logpage.h
@@ -45,14 +46,16 @@ HEADERS += $$PWD/mainform.h \
 SOURCES += $$PWD/main.cpp \
 	$$PWD/mainform.cpp \
 	$$PWD/tgbot.cpp \
-	$$PWD/cfdrequester.cpp \
+	$$PWD/cfdcalcobj.cpp \
 	$$PWD/statobj.cpp \
 	$$PWD/basepage.cpp \
 	$$PWD/cfdpage.cpp \
+	$$PWD/htmlpage.cpp \
 	$$PWD/configpage.cpp \
 	$$PWD/cfdconfigobj.cpp \
 	$$PWD/logpage.cpp
 
 
-FORMS += $$PWD/ui/configpage.ui
+FORMS += $$PWD/ui/configpage.ui \
+        $$PWD/ui/htmlpage.ui
 

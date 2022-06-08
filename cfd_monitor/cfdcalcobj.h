@@ -1,5 +1,5 @@
-#ifndef CFDREQUESTER_H
-#define CFDREQUESTER_H
+#ifndef CFDCALCOBJ_H
+#define CFDCALCOBJ_H
 
 #include "lsimpleobj.h"
 
@@ -21,6 +21,6 @@ protected:
 };
 
 
-#endif //CFDREQUESTER_H
+#endif //CFDCALCOBJ_H
 
 

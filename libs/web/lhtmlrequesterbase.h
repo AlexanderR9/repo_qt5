@@ -16,6 +16,7 @@ public:
     virtual void startRequest() = 0; //выполнить запрос страницы
 
     inline bool isBuzy() const {return is_buzy;} //признак того что в текущий момент идет запрос
+    inline QString url() const {return m_url;}
 
 protected:
     QString m_url;

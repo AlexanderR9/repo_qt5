@@ -4,11 +4,13 @@
 #include "lhtmlpagerequester.h"
 #include "cfdpage.h"
 #include "logpage.h"
+#include "htmlpage.h"
 #include "configpage.h"
 #include "cfdconfigobj.h"
+#include "tgbot.h"
 
 #include <QDebug>
-#include <QDir>
+#include <QTimer>
 #include <QIcon>
 #include <QSettings>
 #include <QApplication>
@@ -20,8 +22,6 @@
 #include <QStyleFactory>
 #include <QTabWidget>
 
-//#define SAVE_HTML_FOLDER  QString("data")
-
 
 // MainForm
 MainForm::MainForm(QWidget *parent)
@@ -29,34 +29,13 @@ MainForm::MainForm(QWidget *parent)
     m_protocol(NULL),
     v_splitter(NULL),
     m_tab(NULL),
-    m_configObj(NULL)
-  //  m_textView(NULL),
-    //m_timer(NULL),
-    //m_pageRequester(NULL)
+    m_configObj(NULL),
+    m_bot(NULL),
+    m_timer(NULL)
 {
-/*
+
     m_timer = new QTimer(this);
     connect(m_timer, SIGNAL(timeout()), this, SLOT(slotTimer()));
-
-
-    m_pageRequester = new LHTMLPageRequester(this);
-    connect(m_pageRequester, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
-    connect(m_pageRequester, SIGNAL(signalDataReady()), this, SLOT(slotDataReady()));
-    connect(m_pageRequester, SIGNAL(signalFinished(bool)), this, SLOT(slotFinished(bool)));
-
-
-    m_couples.append("VZ");
-    m_couples.append("T");
-    m_couples.append("LSTR");
-    m_couples.append("CBRL");
-    m_couples.append("INTC");
-    m_couples.append("GIS");
-    m_couples.append("ET");
-    m_couples.append("KO");
-    m_couples.append("RPM");
-    m_couples.append("MRK");
-    m_couples.append("MET");
-*/
 
 }
 void MainForm::initActions()
@@ -75,6 +54,8 @@ void MainForm::initWidgets()
     initPages();
     initTab();
     initSplitter();
+
+    updateActionsEnable(true);
 }
 void MainForm::initPages()
 {
@@ -86,6 +67,17 @@ void MainForm::initPages()
 
     LogPage *log_page = new  LogPage(this);
     m_pages.insert(BasePage::ptLog, log_page);
+
+    HtmlPage *html_page = new  HtmlPage(this);
+    m_pages.insert(BasePage::ptHtml, html_page);
+    connect(html_page, SIGNAL(signalGetUrlByTicker(const QString&, QString&)), config_page, SLOT(slotSetUrlByTicker(const QString&, QString&)));
+
+
+    foreach (BasePage *page, m_pages)
+    {
+        connect(page, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
+        connect(page, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMessage(const QString&)));
+    }
 }
 void MainForm::initTab()
 {
@@ -127,7 +119,51 @@ void MainForm::initConfigObj()
     connect(m_configObj, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_configObj, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMessage(const QString&)));
 
+    m_protocol->addText("Try load CFD configuration .....", LProtocolBox::ttOk);
     m_configObj->tryLoadConfig();
+}
+void MainForm::initBotObj()
+{
+    if (m_bot) {delete m_bot; m_bot = NULL;}
+    m_bot = new TGBot(this);
+
+    connect(m_bot, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
+    connect(m_bot, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMessage(const QString&)));
+
+    m_protocol->addSpace();
+    m_protocol->addText("Try bot configuration .....", LProtocolBox::ttOk);
+    m_bot->loadConfig(lCommonSettings.paramValue("config").toString());
+    if (m_bot->invalid())
+    {
+        slotError(QString("invalid loaded bot parameters"));
+        return;
+    }
+}
+void MainForm::fillConfigPage()
+{
+    ConfigPage *page = qobject_cast<ConfigPage*>(m_pages.value(BasePage::ptConfig));
+    if (!page)
+    {
+        qWarning()<<QString("MainForm::fillConfigPage() ERR: invalid convert to ConfigPage from m_pages");
+        return;
+    }
+
+    page->reinitCFDTable();
+    page->reinitTGTable();
+
+    page->setTGBotParams(m_bot->getParams());
+
+    QStringList data(m_configObj->getSources());
+    page->setSourses(data);
+
+    int n = m_configObj->cfdCount();
+    for (int i=0; i<n; i++)
+    {
+        QStringList row_data(m_configObj->getCFDObjectData(i));
+        page->addCFDObject(row_data);
+    }
+
+    page->updatePage();
 }
 void MainForm::initCommonSettings()
 {
@@ -137,15 +173,16 @@ void MainForm::initCommonSettings()
     lCommonSettings.addParam(QString("Config file"), LSimpleDialog::sdtFilePath, key);
     lCommonSettings.setDefValue(key, QString(""));
 
+    key = QString("req_interval");
+    lCommonSettings.addParam(QString("Request interval, sec"), LSimpleDialog::sdtIntCombo, key);
+    for (int i=1; i<=20; i++) combo_list.append(QString::number(i*3));
+    lCommonSettings.setComboList(key, combo_list);
+
     /*
     QString key = QString("url");
     lCommonSettings.addParam(QString("URL page (example: https://ya.ru)"), LSimpleDialog::sdtString, key);
     lCommonSettings.setDefValue(key, QString("https://yandex.ru"));
 
-    key = QString("req_interval");
-    lCommonSettings.addParam(QString("Request interval, sec"), LSimpleDialog::sdtIntCombo, key);
-    for (int i=1; i<=20; i++) combo_list.append(QString::number(i*3));
-    lCommonSettings.setComboList(key, combo_list);
 
     key = QString("view_type");
     lCommonSettings.addParam(QString("Show page content type"), LSimpleDialog::sdtStringCombo, key);
@@ -166,23 +203,28 @@ void MainForm::slotAction(int type)
         default: break;
     }
 }
-/*
+
 
 void MainForm::slotTimer()
 {
-    QString elm = m_couples.takeFirst();
-    m_couples.append(elm);
+    m_protocol->addSpace();
 
-    if (!m_pageRequester->isBuzy())
+    QString next_ticker;
+    m_configObj->getNextTicker(next_ticker);
+    QString msg = QString("next request [%1] .........").arg(next_ticker);
+    m_protocol->addText(msg, LProtocolBox::ttFile);
+
+    HtmlPage *page = qobject_cast<HtmlPage*>(m_pages.value(BasePage::ptHtml));
+    if (!page)
     {
-        m_protocol->addSpace();
-        QString msg = QString("Start request [URL=%1] .........").arg(currentUrl());
-        m_protocol->addText(msg, LProtocolBox::ttOk);
-        m_textView->clear();
+        qWarning()<<QString("MainForm::slotTimer() ERR: invalid convert to HtmlPage from m_pages");
+        return;
     }
 
-    tryRequest();
+    page->tryRequest(next_ticker);
+
 }
+/*
 void MainForm::tryRequest()
 {
     if (m_pageRequester->isBuzy())
@@ -245,17 +287,18 @@ void MainForm::updateActionsEnable(bool stoped)
 }
 void MainForm::start()
 {
-    //m_protocol->addText(QString("Monitoring started, request interval: %1 sec.").arg(reqInterval()/1000), 5);
-    //updateActionsEnable(false);
+    m_protocol->addSpace();
+    m_protocol->addText(QString("Monitoring started, request interval: %1 sec.").arg(reqInterval()/1000), 5);
+    updateActionsEnable(false);
 
-    //m_timer->setInterval(reqInterval());
-    //m_timer->start();
+    m_timer->setInterval(reqInterval());
+    m_timer->start();
 }
 void MainForm::stop()
 {
-//    m_timer->stop();
-    //m_protocol->addText("Monitoring stoped!", 5);
-    //updateActionsEnable(true);
+    m_timer->stop();
+    m_protocol->addText("Monitoring stoped!", 5);
+    updateActionsEnable(true);
 }
 void MainForm::save()
 {
@@ -263,7 +306,8 @@ void MainForm::save()
 
     QSettings settings(companyName(), projectName());
     settings.setValue(QString("%1/v_splitter/state").arg(objectName()), v_splitter->saveState());
-    //settings.setValue(QString("%1/h_splitter/state").arg(objectName()), h_splitter->saveState());
+    settings.setValue(QString("%1/tab/page_index").arg(objectName()), m_tab->currentIndex());
+
 }
 void MainForm::load()
 {
@@ -273,11 +317,11 @@ void MainForm::load()
     QByteArray ba(settings.value(QString("%1/v_splitter/state").arg(objectName()), QByteArray()).toByteArray());
     if (!ba.isEmpty()) v_splitter->restoreState(ba);
 
-    //ba.clear();
-    //ba = settings.value(QString("%1/h_splitter/state").arg(objectName()), QByteArray()).toByteArray();
-    //if (!ba.isEmpty()) h_splitter->restoreState(ba);
+    m_tab->setCurrentIndex(settings.value(QString("%1/tab/page_index").arg(objectName()), 0).toInt());
 
     initConfigObj();
+    initBotObj();
+    fillConfigPage();
 }
 
 
@@ -456,11 +500,12 @@ void MainForm::slotReqFinished()
     m_textView->setPlainText(data);
 
 }
-
+*/
 int MainForm::reqInterval() const
 {
     return (lCommonSettings.paramValue("req_interval").toInt() * 1000);
 }
+/*
 QString MainForm::viewType() const
 {
     return lCommonSettings.paramValue("view_type").toString();
