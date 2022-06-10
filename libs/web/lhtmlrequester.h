@@ -48,6 +48,11 @@ protected:
 
 protected slots:
     void slotFinished(QNetworkReply*);
+    void slotAccessibleChanged();
+    void slotAuthenticationRequired();
+    void slotSSLErrors();
+
+
 
 };
 

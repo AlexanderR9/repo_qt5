@@ -69,7 +69,7 @@
      <property name="maximumSize">
       <size>
        <width>16777215</width>
-       <height>150</height>
+       <height>200</height>
       </size>
      </property>
      <property name="title">
@@ -108,7 +108,7 @@
      <property name="maximumSize">
       <size>
        <width>16777215</width>
-       <height>150</height>
+       <height>200</height>
       </size>
      </property>
      <property name="title">
@@ -131,7 +131,14 @@
        <number>4</number>
       </property>
       <item>
-       <widget class="QTableWidget" name="tgTable"/>
+       <widget class="QTableWidget" name="tgTable">
+        <property name="selectionMode">
+         <enum>QAbstractItemView::NoSelection</enum>
+        </property>
+        <property name="selectionBehavior">
+         <enum>QAbstractItemView::SelectRows</enum>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>

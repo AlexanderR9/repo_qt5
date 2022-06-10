@@ -11,6 +11,7 @@ class LStatic
 {
 public:
     static QString strCurrentTime(bool with_ms = true); //hh:mm:ss_zzz
+    static QString strCurrentDateTime(QString mask = "dd.MM.yyyy hh:mm:ss");
     static int defIconSize() {return 40;}
 
 	//for strings
@@ -33,6 +34,19 @@ public:
     //преобразует QByteArray в строку типа: AA BB 12 FD ....., line_size задает через сколько байт вставлять '\n'
     //если with_int_values то выводится каждый байт с расшифровкой в десятичном виде  : AA(170) BB(187) ...
     static QString baToStr(const QByteArray&, int line_size = 8, bool with_int_values = false);
+
+    //преобразует строку в список строк по заданному разделителю
+    //если remove_empty_line = true то все пустые строки удаляются и все крайние пробелы у всех строк отсекаются
+    //исходная строка не меняется
+    static QStringList trimSplitList(const QString&, QString split_symbol = "\n", bool remove_empty_line = true);
+
+    //удаляет в строке все длинный пробелы и заменяет их на одиночные,
+    //если remove_tabs = true то все табуляции заменяются одиночные пробелы
+    //исходная строка не меняется
+    static QString removeLongSpaces(const QString&, bool remove_tabs = true);
+
+    //возвращает строку в виде одиночного пробела
+    static QString spaceSymbol() {return QString(" ");}
 
 
 

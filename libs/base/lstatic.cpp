@@ -4,12 +4,17 @@
 #include <QTextCodec>
 #include <QDebug>
 #include <QTime>
+#include <QDateTime>
 
 //////////////// LStatic /////////////////////////
 QString LStatic::strCurrentTime(bool with_ms)
 {
     QString mask = with_ms ? "hh:mm:ss_zzz" : "hh:mm:ss";
     return QTime::currentTime().toString(mask);
+}
+QString LStatic::strCurrentDateTime(QString mask)
+{
+    return QDateTime::currentDateTime().toString(mask);
 }
 int LStatic::subCount(const QString &s, const QString sub_s)
 {
@@ -44,6 +49,37 @@ int LStatic::strIndexOfByEnd(const QString &s, const QString sub_s)
 QString LStatic::fromColor(const QColor &color, QString split_symbol)
 {
     return QString("(%1%2 %3%4 %5)").arg(color.red()).arg(split_symbol).arg(color.green()).arg(split_symbol).arg(color.blue());
+}
+QStringList LStatic::trimSplitList(const QString &data, QString split_symbol, bool remove_empty_line)
+{
+    QStringList list = data.split(split_symbol);
+    if (!remove_empty_line) return list;
+
+    int n = list.count();
+    for (int i=n-1; i>=0; i--)
+    {
+        QString s = list.at(i).trimmed();
+        if (s.isEmpty()) list.removeAt(i);
+        else list.replace(i, s);
+    }
+    return list;
+}
+QString LStatic::removeLongSpaces(const QString &s, bool remove_tabs)
+{
+    QString space(" ");
+    QString space2("  ");
+    QString space160(QChar(160));
+    QString result = s.trimmed();
+
+    result.replace(space160, space);
+
+    if (remove_tabs)
+        result.replace("\t", space);
+
+    while (result.contains(space2))
+        result.replace(space2, space);
+
+    return result;
 }
 QString LStatic::baToStr(const QByteArray &ba, int line_size, bool with_int_values)
 {

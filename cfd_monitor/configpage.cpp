@@ -39,6 +39,7 @@ void ConfigPage::setTGBotParams(const QMap<QString, QString> &map)
         row_data << keys.at(i) << map.value(keys.at(i));
         LTable::addTableRow(tgTable, row_data);
     }
+
 }
 void ConfigPage::initSearch()
 {
@@ -72,6 +73,7 @@ void ConfigPage::updatePage()
 {
     m_search->exec();
     tgTable->resizeColumnsToContents();
+    tgTable->resizeRowsToContents();
     cfdTable->resizeRowsToContents();
 }
 

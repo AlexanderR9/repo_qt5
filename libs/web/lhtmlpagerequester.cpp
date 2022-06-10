@@ -17,6 +17,9 @@ LHTMLPageRequester::LHTMLPageRequester(QObject *parent)
     connect(m_page, SIGNAL(loadFinished(bool)), this, SLOT(slotFinished(bool)));
     connect(m_page, SIGNAL(loadProgress(int)), this, SIGNAL(signalProgress(int)));
 
+    //test
+
+
 }
 QString LHTMLPageRequester::title() const
 {

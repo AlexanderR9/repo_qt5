@@ -3,6 +3,8 @@
 
 #include "basepage.h"
 
+class QTableWidget;
+
 //CFDPage
 class CFDPage : public BasePage
 {
@@ -15,6 +17,18 @@ public:
     QString caption() const {return QString("CFD stat");}
 
     void updatePage() {}
+
+protected:
+    QTableWidget    *m_table;
+
+    QStringList headerLabels() const;
+    void init();
+    void removeRowByTicker(const QString&);
+
+public slots:
+    void slotNewPrice(const QStringList&);
+
+
 
 };
 

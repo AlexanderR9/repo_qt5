@@ -19,6 +19,7 @@ class QTabWidget;
 class BasePage;
 class CFDConfigObject;
 class TGBot;
+class CFDCalcObj;
 
 
 // MainForm
@@ -36,11 +37,8 @@ protected:
     QMap<int, BasePage*>     m_pages;
     CFDConfigObject         *m_configObj;
     TGBot                   *m_bot;
-
-    //QTextEdit           *m_textView;
-    QTimer              *m_timer;
-    //LHTMLPageRequester  *m_pageRequester;
-    //QStringList         m_couples;
+    QTimer                  *m_timer;
+    CFDCalcObj              *m_calcObj;
 
     QString projectName() const {return "cfdmonitor";}
     QString mainTitle() const {return QString("CFD monitoring (Qt5)!");}
@@ -52,6 +50,7 @@ protected:
     void initTab();
     void initSplitter();
     void initConfigObj();
+    void initCalcObj();
     void initBotObj();
     void save();
     void load();
@@ -60,20 +59,13 @@ protected:
     void stop();
     void updateActionsEnable(bool);
     void fillConfigPage();
-
-    //QString currentUrl() const;
-    //QString viewType() const;
     int reqInterval() const;
-    //void tryRequest();
-    //void parsePageData();
 
 protected slots:
     void slotAction(int); //virtual slot from parent
     void slotError(const QString&);
     void slotMessage(const QString&);
     void slotTimer();
-    //void slotDataReady();
-    //void slotFinished(bool);
 
 
 };

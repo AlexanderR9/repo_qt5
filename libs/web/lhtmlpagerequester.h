@@ -57,6 +57,8 @@ private:
     void functorPlainData(const QString&);
     void functorHtmlData(const QString&);
 
+private slots:
+
 };
 
 

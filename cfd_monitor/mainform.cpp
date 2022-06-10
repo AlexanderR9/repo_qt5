@@ -8,6 +8,7 @@
 #include "configpage.h"
 #include "cfdconfigobj.h"
 #include "tgbot.h"
+#include "cfdcalcobj.h"
 
 #include <QDebug>
 #include <QTimer>
@@ -31,9 +32,9 @@ MainForm::MainForm(QWidget *parent)
     m_tab(NULL),
     m_configObj(NULL),
     m_bot(NULL),
-    m_timer(NULL)
+    m_timer(NULL),
+    m_calcObj(NULL)
 {
-
     m_timer = new QTimer(this);
     connect(m_timer, SIGNAL(timeout()), this, SLOT(slotTimer()));
 
@@ -122,6 +123,33 @@ void MainForm::initConfigObj()
     m_protocol->addText("Try load CFD configuration .....", LProtocolBox::ttOk);
     m_configObj->tryLoadConfig();
 }
+void MainForm::initCalcObj()
+{
+    if (m_calcObj) {delete m_calcObj; m_calcObj = NULL;}
+    m_calcObj = new CFDCalcObj(this);
+
+    connect(m_calcObj, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
+    connect(m_calcObj, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMessage(const QString&)));
+
+    m_protocol->addText("Calculate object ready!", LProtocolBox::ttOk);
+    m_protocol->addSpace();
+
+    HtmlPage *page = qobject_cast<HtmlPage*>(m_pages.value(BasePage::ptHtml));
+    if (!page)
+    {
+        qWarning()<<QString("MainForm::fillConfigPage() ERR: invalid convert to HtmlPage from m_pages");
+        return;
+    }
+    connect(page, SIGNAL(signalNewPrice(QString, double)), m_calcObj, SLOT(slotNewPrice(QString, double)));
+
+    CFDPage *cfd_page = qobject_cast<CFDPage*>(m_pages.value(BasePage::ptCFDStat));
+    if (!cfd_page)
+    {
+        qWarning()<<QString("MainForm::fillConfigPage() ERR: invalid convert to CFDPage from m_pages");
+        return;
+    }
+    connect(m_calcObj, SIGNAL(signalUpdateCFDTable(const QStringList&)), cfd_page, SLOT(slotNewPrice(const QStringList&)));
+}
 void MainForm::initBotObj()
 {
     if (m_bot) {delete m_bot; m_bot = NULL;}
@@ -177,20 +205,6 @@ void MainForm::initCommonSettings()
     lCommonSettings.addParam(QString("Request interval, sec"), LSimpleDialog::sdtIntCombo, key);
     for (int i=1; i<=20; i++) combo_list.append(QString::number(i*3));
     lCommonSettings.setComboList(key, combo_list);
-
-    /*
-    QString key = QString("url");
-    lCommonSettings.addParam(QString("URL page (example: https://ya.ru)"), LSimpleDialog::sdtString, key);
-    lCommonSettings.setDefValue(key, QString("https://yandex.ru"));
-
-
-    key = QString("view_type");
-    lCommonSettings.addParam(QString("Show page content type"), LSimpleDialog::sdtStringCombo, key);
-    combo_list.clear();
-    combo_list << "HTML code" << "Plain text";
-    lCommonSettings.setComboList(key, combo_list);
-*/
-
 }
 void MainForm::slotAction(int type)
 {
@@ -203,8 +217,6 @@ void MainForm::slotAction(int type)
         default: break;
     }
 }
-
-
 void MainForm::slotTimer()
 {
     m_protocol->addSpace();
@@ -222,62 +234,7 @@ void MainForm::slotTimer()
     }
 
     page->tryRequest(next_ticker);
-
 }
-/*
-void MainForm::tryRequest()
-{
-    if (m_pageRequester->isBuzy())
-    {
-        m_protocol->addText("requester is buzy!!!", LProtocolBox::ttWarning);
-        return;
-    }
-
-    m_pageRequester->setUrl(currentUrl());
-    m_pageRequester->startRequest();
-}
-void MainForm::parsePageData()
-{
-    m_protocol->addText(QString("Page title: [%1]").arg(m_pageRequester->title()));
-    if (!m_pageRequester->title().contains(QString("(%1)").arg(m_couples.first())))
-    {
-        m_protocol->addText("page data incorrect", LProtocolBox::ttWarning);
-        return;
-    }
-
-    QStringList list = m_pageRequester->plainData().split("\n");
-    int n = list.count();
-    for (int i=n-1; i>=0; i--)
-        if (list.at(i).trimmed().isEmpty()) list.removeAt(i);
-
-    for (int i=0; i<list.count(); i++)
-    {
-        QString s = list.at(i).trimmed();
-        if (s.left(1) == "$" && s.right(1) == "%")
-        {
-            m_protocol->addText(QString("%1: %2").arg(m_couples.first()).arg(s), LProtocolBox::ttFile);
-            break;
-        }
-    }
-
-}
-void MainForm::slotDataReady()
-{
-    if (m_pageRequester->badRequest()) return;
-
-    m_protocol->addText("ok!");
-    m_protocol->addText(QString("html data size %1,  plain data size %2").arg(m_pageRequester->htmlDataSize()).arg(m_pageRequester->plainDataSize()));
-
-    if (viewType().toLower().contains("html")) m_textView->setPlainText(m_pageRequester->htmlData());
-    else m_textView->setPlainText(m_pageRequester->plainData());
-
-    parsePageData();
-}
-void MainForm::slotFinished(bool ok)
-{
-    if (!ok) slotError("fault");
-}
-*/
 void MainForm::updateActionsEnable(bool stoped)
 {
     getAction(LMainWidget::atStop)->setEnabled(!stoped);
@@ -319,6 +276,7 @@ void MainForm::load()
 
     m_tab->setCurrentIndex(settings.value(QString("%1/tab/page_index").arg(objectName()), 0).toInt());
 
+    initCalcObj();
     initConfigObj();
     initBotObj();
     fillConfigPage();
