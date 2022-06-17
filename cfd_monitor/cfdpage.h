@@ -24,11 +24,15 @@ protected:
     QStringList headerLabels() const;
     void init();
     void removeRowByTicker(const QString&);
+    void updateCellColors();
 
 public slots:
     void slotNewPrice(const QStringList&);
 
 
+private:
+    void getCellValue(const QString&, double&, bool&);
+    QColor getColorByLimits(const double&, double) const;
 
 };
 

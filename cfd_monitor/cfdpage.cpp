@@ -1,10 +1,17 @@
 #include "cfdpage.h"
-//#include "lstatic.h"
+#include "lstatic.h"
 #include "ltable.h"
 
 #include <QTableWidget>
 #include <QVBoxLayout>
 #include <QHeaderView>
+
+
+#define TICKER_COL      2
+#define DAY_COL         3
+#define WEEK_COL        4
+#define MONTH_COL       5
+
 
 
 //CFDPage statistic
@@ -22,32 +29,68 @@ void CFDPage::slotNewPrice(const QStringList &row_data)
         return;
     }
 
-    removeRowByTicker(row_data.first());
+    removeRowByTicker(row_data.at(TICKER_COL));
     LTable::insertTableRow(0, m_table, row_data);
+    LTable::resizeTableContents(m_table);
+
+    updateCellColors();
+}
+void CFDPage::updateCellColors()
+{
+    double value = 0;
+    bool ok = false;
+    QColor color = Qt::gray;
+    int n = m_table->rowCount();
+    for (int i=0; i<n; i++)
+    {
+        //day
+        getCellValue(m_table->item(i, DAY_COL)->text(), value, ok);
+        color = (ok ? getColorByLimits(value, 0.9) : Qt::gray);
+        m_table->item(i, DAY_COL)->setTextColor(color);
+
+        //week
+        getCellValue(m_table->item(i, WEEK_COL)->text(), value, ok);
+        color = (ok ? getColorByLimits(value, 6.9) : Qt::gray);
+        m_table->item(i, WEEK_COL)->setTextColor(color);
+
+        //month
+        getCellValue(m_table->item(i, MONTH_COL)->text(), value, ok);
+        color = (ok ? getColorByLimits(value, 15.5) : Qt::gray);
+        m_table->item(i, MONTH_COL)->setTextColor(color);
+    }
+}
+QColor CFDPage::getColorByLimits(const double &value, double limit) const
+{
+    if (value < -1*limit) return Qt::darkRed;
+    else if (value > limit) return Qt::darkGreen;
+    return Qt::black;
+}
+void CFDPage::getCellValue(const QString &cell_text, double &value, bool &ok)
+{
+    value = -1;
+    ok = false;
+    if (cell_text.right(1) != "%") return;
+
+    QString s = LStatic::strTrimRight(cell_text, 1).trimmed();
+    if (s.left(1) == "+") s = LStatic::strTrimLeft(s, 1).trimmed();
+    value = s.toDouble(&ok);
 }
 void CFDPage::removeRowByTicker(const QString &ticker)
 {
-    int index = -1;
     int n = m_table->rowCount();
     for (int i=0; i<n ;i++)
     {
-        if (m_table->item(i, 0)->text() == ticker)
+        if (m_table->item(i, TICKER_COL)->text() == ticker)
         {
-            index = i;
+            m_table->removeRow(i);
             break;
         }
-    }
-
-    if (index >= 0)
-    {
-        m_table->removeRow(index);
-        LTable::resizeTableContents(m_table);
     }
 }
 QStringList CFDPage::headerLabels() const
 {
     QStringList list;
-    list << "Ticker" << "Price" << "Day" << "Week" << "Month" << "Update datetime";
+    list << "Date" << "Time" << "Ticker" << "Day" << "Week" << "Month" << "Last price";
     return list;
 }
 void CFDPage::init()
