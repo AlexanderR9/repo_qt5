@@ -22,6 +22,7 @@ public:
     inline bool invalid() const {return (m_price < 0);}
     inline QString err() const {return m_err;}
     inline QPair<QString, double> lastPrice() const {return QPair<QString, double>(m_ticker, m_price);}
+    inline const QString& curTicker() const {return m_ticker;}
 
 protected:
     QString     m_ticker;
@@ -71,6 +72,7 @@ protected:
     int                 m_runingTime;
 
     void resetPage(const QString&);
+    void sendLog(const QString&, int);
 
 protected slots:
     void slotDataReady(); //выполняется когда запрос полностью завершен, независимо от результата выполнения

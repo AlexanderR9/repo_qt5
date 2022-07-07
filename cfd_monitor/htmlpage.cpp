@@ -2,7 +2,7 @@
 #include "lhtmlpagerequester.h"
 #include "lhtmlrequester.h"
 #include "lstatic.h"
-
+#include "logpage.h"
 
 #include <QTimer>
 
@@ -25,17 +25,9 @@ HtmlPage::HtmlPage(QWidget *parent)
     connect(http_requester, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
     connect(http_requester, SIGNAL(signalFinished(bool)), this, SLOT(slotRequestFinished(bool)));
 
-    //connect(m_requester, SIGNAL(renderProcessTerminated(RenderProcessTerminationStatus, int)),
-      //      this, SLOT(slotBreaked(int, int)));
-
-    //QIcon icon(QString(":/icons/images/ball_gray.svg"));
-    //groupBox->setWindowIcon(icon);
-
     m_timer = new QTimer(this);
     connect(m_timer, SIGNAL(timeout()), this, SLOT(slotTimer()));
     m_timer->setInterval(1000);
-
-
 }
 void HtmlPage::slotTimer()
 {
@@ -71,7 +63,7 @@ void HtmlPage::tryHTTPRequest(const QString &ticker)
         emit signalError("http_requester is buzy");
         return;
     }
-    qDebug("HtmlPage::tryHTTPRequest");
+    //qDebug("HtmlPage::tryHTTPRequest");
     resetPage(ticker);
     if (ticker.isEmpty())
     {
@@ -91,14 +83,10 @@ void HtmlPage::tryHTTPRequest(const QString &ticker)
 }
 void HtmlPage::tryRequest(const QString &ticker)
 {
-    //////////////////////////////////////////////
-    //tryHTTPRequest(ticker);
-    //return;
-    ////////////////////////////////////////////
-
     if (m_requester->isBuzy())
     {
         emit signalError("requester is buzy");
+        sendLog(ticker, 2);
         return;
     }
 
@@ -107,9 +95,9 @@ void HtmlPage::tryRequest(const QString &ticker)
     if (ticker.isEmpty())
     {
         emit signalError("current ticker is empty");
+        sendLog(QString("???"), 2);
         return;
     }
-
 
     QString url;
     emit signalGetUrlByTicker(ticker, url);
@@ -118,7 +106,6 @@ void HtmlPage::tryRequest(const QString &ticker)
 
     m_timer->start();
     m_requester->startRequest();
-
 }
 void HtmlPage::getPriceFromPlainData()
 {
@@ -126,6 +113,7 @@ void HtmlPage::getPriceFromPlainData()
     if (m_priceParser.invalid())
     {
         emit signalError(m_priceParser.err());
+        sendLog(QString("Can't parsing HTML (%1)").arg(m_priceParser.curTicker()), 1);
     }
     else
     {
@@ -150,16 +138,25 @@ void HtmlPage::slotDataReady()
     if (m_requester->badRequest())
     {
         s = QString("RESULT=[FAULT]");
+        sendLog(m_priceParser.curTicker(), 1);
     }
     else
     {
         s = QString("RESULT=[OK]  HTML_SIZE=[%1]  TEXT_SIZE=[%2]").arg(m_requester->htmlDataSize()).arg(m_requester->plainDataSize());
         textEdit->setPlainText(m_requester->plainData());
         emit signalMsg("Ok!");
+        sendLog(m_priceParser.curTicker(), 0);
 
         getPriceFromPlainData();
     }
     infoLabel->setText(QString("%1 - %2").arg(infoLabel->text()).arg(s));
+}
+void HtmlPage::sendLog(const QString &ticker, int result)
+{
+    LogStruct log(amtHtmlPage, result);
+    if (ticker.length() > 5) log.msg = ticker;
+    else log.msg = QString("HTTP request (%1)").arg(ticker);
+    emit signalSendLog(log);
 }
 void HtmlPage::slotProgress(int p)
 {

@@ -8,5 +8,6 @@ full_clear
 config
 ui_configpage.h
 ui_htmlpage.h
+ui_logpage.h
 data
 

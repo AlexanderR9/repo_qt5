@@ -4,6 +4,9 @@
 #include <QWidget>
 
 class QSettings;
+struct LogStruct;
+
+
 
 // BasePage
 class BasePage : public QWidget
@@ -24,6 +27,7 @@ public:
 signals:
     void signalError(const QString&);
     void signalMsg(const QString&);
+    void signalSendLog(const LogStruct&);
 
 };
 

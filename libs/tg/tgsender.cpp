@@ -59,7 +59,7 @@ void LTGSender::sendJsonRequest(const QJsonObject &json_obj, int req_code)
         return;
     }
 
-    qDebug() << QString("SEND REQUEST (%1)").arg(api_method);
+    //qDebug() << QString("SEND REQUEST (%1)").arg(api_method);
     m_request->setUrl(requestUrl(api_method));
     m_netManager->post(*m_request, QJsonDocument(json_obj).toJson());
 }

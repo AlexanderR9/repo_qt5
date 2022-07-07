@@ -8,7 +8,9 @@
 #include <QJsonObject>
 #include <QJsonArray>
 
+
 class LTGSender;
+class QTimer;
 
 // основное настройки бота
 // TGParamsBot
@@ -30,7 +32,10 @@ struct LTGParamsBot
 //абстрактый класс бота TG,
 //для создания своего бота необходимо унаследоваться от этого.
 //релиазовать свой алгоритм в слотах slotJsonReceived и slotJArrReceived.
-//после создания объекта класса своего бота надо установить параметры бота методом setBotParams.
+//после создания объекта класса своего бота надо установить параметры бота методом setBotParams
+//                              или загрузить их из конфига методом loadConfig.
+
+
 // TGAbstractBot
 class LTGAbstractBot : public LSimpleObject
 {
@@ -50,9 +55,15 @@ public:
     void getUpdates(qint64 last_update_id = -1);
     void sendMsg(const QString&);
 
+    //auto checking updates on/off
+    void startCheckingUpdatesTimer(int);
+    void stopCheckingUpdatesTimer();
+
+
 protected:
     LTGParamsBot    m_params;   //основные параметры бота
     LTGSender       *m_sender;  //объект для обмена с сервером TG
+    QTimer          *m_timer;   //таймер для периодической проверки обновлений (пришедших сообщений)
 
     virtual void reinitSender(); //параметры бота изменились, необходимо переинициализировать объект m_sender
     virtual void reset() {m_params.reset();}
@@ -61,6 +72,22 @@ protected slots:
     virtual void slotJsonReceived(QJsonObject) = 0; //пришел нормальный ответ в виде QJsonObject, необходимо обработать ответ
     virtual void slotJArrReceived(QJsonArray) = 0; //пришел нормальный ответ в виде QJsonArray, необходимо обработать ответ
     virtual void slotFinishedFault(); //запрос завершился неудачно, описание ошибки в переменной m_err
+    virtual void slotTimer(); //авто-проверка пришедших сообщений к боту
+
+
+};
+
+
+//LJsonWorker
+class LJsonWorker
+{
+public:
+    LJsonWorker(const QJsonValue &v) :m_value(v) {}
+
+    QString strValueType() const;
+
+protected:
+    const QJsonValue &m_value;
 
 };
 

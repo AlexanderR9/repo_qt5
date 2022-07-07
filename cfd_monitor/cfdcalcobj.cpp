@@ -22,29 +22,39 @@ CFDCalcObj::CFDCalcObj(QObject *parent)
 }
 void CFDCalcObj::slotNewPrice(QString ticker, double price)
 {
-    loadTickerFile(ticker);
+    loadTickerFile(ticker); //загрузить текущие данные из файла для ticker
+    if (!needRecalc(price)) return; //цена почти не изменилась
 
     bool ok;
-    addToFile(ticker, price, ok);
+    addToFile(ticker, price, ok); //добавить новую точку в файл и в контейнер m_currentData
 
     QStringList list;
-    if (!ok)
+    if (!ok) //произошла ошибка при добавлении точки в файл
     {
         list.append(QDate::currentDate().toString(CFD_DATA_DATEFORMAT));
         list.append(QTime::currentTime().toString(CFD_DATA_TIMEFORMAT));
-        list << ticker << "---" << "---" << "---" << "??";
+        list.append(ticker);
+        list << "---" << "---" << "---" << "??";
     }
-    else
+    else //пересчитать текущие отклонения цены с учетом новых данных
     {
+        QList<double> list_to_bot;
+
         list.append(m_currentData.last().date.toString(CFD_DATA_DATEFORMAT));
         list.append(m_currentData.last().time.toString(CFD_DATA_TIMEFORMAT));
         list.append(ticker);
         list.append(changingPriceByPeriod(0));
+        list_to_bot.append(list.last().toDouble(&ok)); if (!ok) list_to_bot[0] = 0;
         list.append(changingPriceByPeriod(1));
+        list_to_bot.append(list.last().toDouble(&ok)); if (!ok) list_to_bot[1] = 0;
         list.append(changingPriceByPeriod(4));
+        list_to_bot.append(list.last().toDouble(&ok)); if (!ok) list_to_bot[2] = 0;
         list.append(QString::number(m_currentData.last().price, 'f', 2));
+
+        emit signalInfoToBot(ticker, list_to_bot);
+
     }
-    emit signalUpdateCFDTable(list);
+    emit signalUpdateCFDTable(list); //отправить последние результаты на страницу CFDPage
 }
 QString CFDCalcObj::changingPriceByPeriod(uint hours) const
 {
@@ -74,7 +84,19 @@ QString CFDCalcObj::changingPriceByPeriod(uint hours) const
     }
     return s;
 }
-void CFDCalcObj::addToFile(const QString &ticker, double &price, bool &ok)
+bool CFDCalcObj::needRecalc(const double &price) const
+{
+    if (m_currentData.isEmpty()) return true;
+    if (m_currentData.last().invalid()) return true;
+
+    if (qAbs(m_currentData.last().price - price) < 0.05)
+    {
+        if (m_currentData.last().dt().secsTo(QDateTime::currentDateTime()) < (3600*24)) return false;
+    }
+
+    return true;
+}
+void CFDCalcObj::addToFile(const QString &ticker, const double &price, bool &ok)
 {
     ok = false;
     CFDFileRecord rec(QDateTime::currentDateTime(), price);

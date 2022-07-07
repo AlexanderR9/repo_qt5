@@ -57,6 +57,12 @@ void MainForm::initWidgets()
     initSplitter();
 
     updateActionsEnable(true);
+
+    //////////////////////////////////
+    LogStruct log(amtMainWindow, 0);
+    log.msg = "Application started";
+    emit signalSendLog(log);
+
 }
 void MainForm::initPages()
 {
@@ -68,6 +74,7 @@ void MainForm::initPages()
 
     LogPage *log_page = new  LogPage(this);
     m_pages.insert(BasePage::ptLog, log_page);
+    connect(this, SIGNAL(signalSendLog(const LogStruct&)), log_page, SLOT(slotNewLog(const LogStruct&)));
 
     HtmlPage *html_page = new  HtmlPage(this);
     m_pages.insert(BasePage::ptHtml, html_page);
@@ -78,6 +85,7 @@ void MainForm::initPages()
     {
         connect(page, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
         connect(page, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMessage(const QString&)));
+        connect(page, SIGNAL(signalSendLog(const LogStruct&)), this, SIGNAL(signalSendLog(const LogStruct&)));
     }
 }
 void MainForm::initTab()
@@ -130,6 +138,7 @@ void MainForm::initCalcObj()
 
     connect(m_calcObj, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_calcObj, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMessage(const QString&)));
+    connect(m_calcObj, SIGNAL(signalSendLog(const LogStruct&)), this, SIGNAL(signalSendLog(const LogStruct&)));
 
     m_protocol->addText("Calculate object ready!", LProtocolBox::ttOk);
     m_protocol->addSpace();
@@ -157,6 +166,7 @@ void MainForm::initBotObj()
 
     connect(m_bot, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_bot, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMessage(const QString&)));
+    connect(m_bot, SIGNAL(signalSendLog(const LogStruct&)), this, SIGNAL(signalSendLog(const LogStruct&)));
 
     m_protocol->addSpace();
     m_protocol->addText("Try bot configuration .....", LProtocolBox::ttOk);
@@ -166,6 +176,9 @@ void MainForm::initBotObj()
         slotError(QString("invalid loaded bot parameters"));
         return;
     }
+
+    m_bot->startCheckingUpdatesTimer(4000);
+
 }
 void MainForm::fillConfigPage()
 {

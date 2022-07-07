@@ -3,6 +3,7 @@
 #include "tgconfigloaderbase.h"
 
 #include <QDebug>
+#include <QTimer>
 
 
 //LTGAbstractBot
@@ -11,6 +12,26 @@ LTGAbstractBot::LTGAbstractBot(QObject *parent)
     m_sender(NULL)
 {
     setObjectName("tg_abstract_bot");
+
+    m_timer = new QTimer(this);
+    connect(m_timer, SIGNAL(timeout()), this, SLOT(slotTimer()));
+    stopCheckingUpdatesTimer();
+
+}
+void LTGAbstractBot::startCheckingUpdatesTimer(int interval)
+{
+    stopCheckingUpdatesTimer();
+    if (!m_sender || invalid()) return;
+    if (interval < 500) return;
+    m_timer->start(interval);
+}
+void LTGAbstractBot::stopCheckingUpdatesTimer()
+{
+    if (m_timer->isActive()) m_timer->stop();
+}
+void LTGAbstractBot::slotTimer()
+{
+    getUpdates();
 }
 bool LTGAbstractBot::invalid() const
 {
@@ -118,5 +139,27 @@ void LTGParamsBot::reset()
 }
 
 
+///////////////LJsonWorker/////////////////////////////////
+QString LJsonWorker::strValueType() const
+{
+    if (m_value.isString()) return QString("string");
+    if (m_value.isArray()) return QString("array");
+    if (m_value.isNull()) return QString("null");
+    if (m_value.isObject()) return QString("obj");
+
+
+    switch (m_value.type())
+    {
+        case QJsonValue::Bool:      return QString("type_bool");
+        case QJsonValue::Double:    return QString("type_double");
+        case QJsonValue::String:    return QString("type_string");
+        case QJsonValue::Array:     return QString("type_array");
+        case QJsonValue::Object:    return QString("type_object");
+        case QJsonValue::Null:      return QString("type_null");
+        case QJsonValue::Undefined: return QString("type_undefined");
+        default: break;
+    }
+    return "??";
+}
 
 

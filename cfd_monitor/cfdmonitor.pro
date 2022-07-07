@@ -57,5 +57,6 @@ SOURCES += $$PWD/main.cpp \
 
 
 FORMS += $$PWD/ui/configpage.ui \
-        $$PWD/ui/htmlpage.ui
+        $$PWD/ui/htmlpage.ui \
+        $$PWD/ui/logpage.ui
 

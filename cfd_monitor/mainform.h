@@ -20,6 +20,7 @@ class BasePage;
 class CFDConfigObject;
 class TGBot;
 class CFDCalcObj;
+struct LogStruct;
 
 
 // MainForm
@@ -66,6 +67,9 @@ protected slots:
     void slotError(const QString&);
     void slotMessage(const QString&);
     void slotTimer();
+
+signals:
+    void signalSendLog(const LogStruct&);
 
 
 };
