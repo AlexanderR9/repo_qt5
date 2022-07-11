@@ -1,4 +1,5 @@
 cfdmonitor.pro.user
+cfdmonitor.debug
 .qmake.stash
 moc
 obj

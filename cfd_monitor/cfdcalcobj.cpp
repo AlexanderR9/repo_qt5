@@ -20,10 +20,25 @@ CFDCalcObj::CFDCalcObj(QObject *parent)
 {
 
 }
+void CFDCalcObj::slotGetLastPrice(const QString &ticker, double &price, int &hours_ago)
+{
+    price = -1;
+    hours_ago = -1;
+    loadTickerFile(ticker); //загрузить текущие данные из файла для ticker
+    if (!m_currentData.isEmpty())
+    {
+        price = m_currentData.last().price;
+        hours_ago = m_currentData.last().dt().secsTo(QDateTime::currentDateTime())/3600;
+    }
+}
 void CFDCalcObj::slotNewPrice(QString ticker, double price)
 {
     loadTickerFile(ticker); //загрузить текущие данные из файла для ticker
-    if (!needRecalc(price)) return; //цена почти не изменилась
+    if (!needRecalc(price))
+    {
+        qDebug()<<QString("NOT NEED RECACL price_now - price_last < 0.05 cent");
+        return; //цена почти не изменилась
+    }
 
     bool ok;
     addToFile(ticker, price, ok); //добавить новую точку в файл и в контейнер m_currentData

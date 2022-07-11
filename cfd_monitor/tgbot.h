@@ -51,22 +51,27 @@ public:
 
 protected:
     QList<TGMsg> m_msgs;
+    qint64 last_update_id; //id последнего полученного сообщения
 
     void sendLog(const QString&, int);
     void trySendDeviation(const QString&, const double&, int);
     void sendDeviation(const TGMsg&);
     int findMsg(const QString&, int) const;
     bool needUpdateInfo(const TGMsg&, const double&) const;
+    void receivedUpdates(const QList<LTGUpdate>&);
+    void parseUpdate(const LTGUpdate&); //проверить пришедшее сообщение/запрос и при необходимости ответить
+    void replyLastPrice(const QString&); //выдать текущую цену по заданному тикеру
 
 protected slots:
     void slotJsonReceived(QJsonObject);
-    void slotJArrReceived(QJsonArray);
+    void slotTimer();
 
 public slots:
     void slotNewChangingPrices(const QString&, const QList<double>&);
 
 signals:
     void signalSendLog(const LogStruct&);
+    void signalGetLastPrice(const QString&, double&, int&);
 
 
 

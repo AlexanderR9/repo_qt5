@@ -1,5 +1,7 @@
 #include "tgbot.h"
 #include "logpage.h"
+#include "tgjsonworker.h"
+#include "lstatic.h"
 
 #include <QDebug>
 
@@ -14,7 +16,8 @@
 
 //TGBot
 TGBot::TGBot(QObject *parent)
-    :LTGAbstractBot(parent)
+    :LTGAbstractBot(parent),
+    last_update_id(-1)
 {
     m_msgs.clear();
 }
@@ -22,19 +25,51 @@ void TGBot::slotJsonReceived(QJsonObject jobj)
 {
     qDebug("TGBot::slotJsonReceived");
 }
-void TGBot::slotJArrReceived(QJsonArray jarr)
+void TGBot::slotTimer()
 {
-    qDebug()<<QString("TGBot::slotJArrReceived -  arr_size %1").arg(jarr.count());
-
-    if (jarr.isEmpty()) return;
-
-    for (int i=0; i<jarr.count(); i++)
+    this->getUpdates(last_update_id);
+}
+void TGBot::receivedUpdates(const QList<LTGUpdate> &updates)
+{
+    qDebug()<<QString("TGBot::receivedUpdates -  updates_size %1").arg(updates.count());
+    if (updates.isEmpty())
     {
-        LJsonWorker jw(jarr.at(i));
-        qDebug()<<QString("   %1.  %2").arg(i+1).arg(jw.strValueType());
+        last_update_id = -1;
+        return;
     }
 
+    last_update_id = updates.last().update_id;
+    for (int i=0; i<updates.count(); i++)
+    {
+        parseUpdate(updates.at(i));
+    }
+}
+void TGBot::parseUpdate(const LTGUpdate &update)
+{
+    qDebug()<<update.toStr();
+    if (m_params.chatID != update.chat_id)
+    {
+        QString err = QString("UPDATE: warning chat_id(%1)").arg(update.chat_id);
+        sendLog(err, 2);
+        err = QString("Received update invalid, update.chat_id(%1) != %2").arg(update.chat_id).arg(m_params.chatID);
+        return;
+    }
 
+    QString req = update.text.trimmed();
+    QStringList list = LStatic::trimSplitList(req, LStatic::spaceSymbol());
+    if (list.count() == 2 && list.first().toLower() == "get")
+    {
+        replyLastPrice(list.last());
+    }
+}
+void TGBot::replyLastPrice(const QString &ticker)
+{
+    double price = 0;
+    int hours_ago;
+    emit signalGetLastPrice(ticker, price, hours_ago);
+    QString msg("Invalid ticker!!!");
+    if (price >= 0) msg = QString("Last price: %1,    hours ago %2").arg(QString::number(price, 'f', 2)).arg(hours_ago);
+    this->sendMsg(msg);
 }
 void TGBot::slotNewChangingPrices(const QString &ticker, const QList<double> &changing_data)
 {
@@ -82,7 +117,7 @@ void TGBot::trySendDeviation(const QString &ticker, const double &d, int period_
 }
 void TGBot::sendDeviation(const TGMsg &msg)
 {
-    QString text = QString("%1: period [%2], deviation=%3%").arg(msg.ticker).arg(msg.strPeriod()).arg(msg.strDeviation());
+    QString text = QString("%1:  period [%2],  deviation=%3%").arg(msg.ticker).arg(msg.strPeriod()).arg(msg.strDeviation());
     this->sendMsg(text);
 
     text = QString("sended tg_message (%1 : %2%)").arg(msg.ticker).arg(msg.strDeviation());
@@ -100,6 +135,7 @@ int TGBot::findMsg(const QString &ticker, int period_type) const
 bool TGBot::needUpdateInfo(const TGMsg &msg, const double &d) const
 {
     if (qAbs(d)/qAbs(msg.deviation) > 1.3) return true;
+    if (qAbs(d)/qAbs(msg.deviation) < 0.7) return true;
 
     QDateTime dt = QDateTime::currentDateTime();
     double d_hours = msg.dt.secsTo(dt)/3600;

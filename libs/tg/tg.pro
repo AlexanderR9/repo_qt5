@@ -18,10 +18,12 @@ unix:!macx: LIBS += -L$$PWD/../base/build/ -llbase
 # Input
 HEADERS += $$PWD/tgconfigloaderbase.h \
         $$PWD/tgabstractbot.h \
+        $$PWD/tgjsonworker.h \
         $$PWD/tgsender.h
 
 SOURCES += $$PWD/tgconfigloaderbase.cpp \
         $$PWD/tgabstractbot.cpp \
+        $$PWD/tgjsonworker.cpp \
         $$PWD/tgsender.cpp
 
 

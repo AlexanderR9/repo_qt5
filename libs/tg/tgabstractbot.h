@@ -11,6 +11,8 @@
 
 class LTGSender;
 class QTimer;
+struct LTGUpdate;
+
 
 // основное настройки бота
 // TGParamsBot
@@ -67,29 +69,17 @@ protected:
 
     virtual void reinitSender(); //параметры бота изменились, необходимо переинициализировать объект m_sender
     virtual void reset() {m_params.reset();}
+    virtual void receivedUpdates(const QList<LTGUpdate>&) = 0;
 
 protected slots:
     virtual void slotJsonReceived(QJsonObject) = 0; //пришел нормальный ответ в виде QJsonObject, необходимо обработать ответ
-    virtual void slotJArrReceived(QJsonArray) = 0; //пришел нормальный ответ в виде QJsonArray, необходимо обработать ответ
+    virtual void slotJArrReceived(QJsonArray); //пришел нормальный ответ в виде QJsonArray, необходимо обработать ответ
     virtual void slotFinishedFault(); //запрос завершился неудачно, описание ошибки в переменной m_err
     virtual void slotTimer(); //авто-проверка пришедших сообщений к боту
 
 
 };
 
-
-//LJsonWorker
-class LJsonWorker
-{
-public:
-    LJsonWorker(const QJsonValue &v) :m_value(v) {}
-
-    QString strValueType() const;
-
-protected:
-    const QJsonValue &m_value;
-
-};
 
 
 

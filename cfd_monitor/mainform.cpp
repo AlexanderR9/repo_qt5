@@ -167,6 +167,8 @@ void MainForm::initBotObj()
     connect(m_bot, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_bot, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMessage(const QString&)));
     connect(m_bot, SIGNAL(signalSendLog(const LogStruct&)), this, SIGNAL(signalSendLog(const LogStruct&)));
+    connect(m_bot, SIGNAL(signalGetLastPrice(const QString&, double&, int&)), m_calcObj, SLOT(slotGetLastPrice(const QString&, double&, int&)));
+    connect(m_calcObj, SIGNAL(signalInfoToBot(const QString&, const QList<double>&)), m_bot, SLOT(slotNewChangingPrices(const QString&, const QList<double>&)));
 
     m_protocol->addSpace();
     m_protocol->addText("Try bot configuration .....", LProtocolBox::ttOk);
@@ -289,9 +291,10 @@ void MainForm::load()
 
     m_tab->setCurrentIndex(settings.value(QString("%1/tab/page_index").arg(objectName()), 0).toInt());
 
-    initCalcObj();
     initConfigObj();
+    initCalcObj();
     initBotObj();
+
     fillConfigPage();
 }
 

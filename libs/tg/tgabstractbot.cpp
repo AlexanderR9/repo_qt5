@@ -1,6 +1,7 @@
 #include "tgabstractbot.h"
 #include "tgsender.h"
 #include "tgconfigloaderbase.h"
+#include "tgjsonworker.h"
 
 #include <QDebug>
 #include <QTimer>
@@ -115,7 +116,18 @@ void LTGAbstractBot::loadConfig(const QString &fname)
 
     reinitSender();
 }
+void LTGAbstractBot::slotJArrReceived(QJsonArray jarr)
+{
+    if (jarr.isEmpty())
+    {
+        //emit  signalError("LTGAbstractBot::slotJArrReceived - json array is empty.");
+        return;
+    }
 
+    QList<LTGUpdate> updates;
+    LJsonWorker::convertJArrToTGUpdates(jarr, updates);
+    receivedUpdates(updates);
+}
 
 ///////////////LTGParamsBot/////////////////////////////////
 void LTGParamsBot::setParams(const LTGParamsBot &p)
@@ -136,30 +148,6 @@ void LTGParamsBot::reset()
     chatID = -1;
     req_timeout = 3;
     limit_msg = 20;
-}
-
-
-///////////////LJsonWorker/////////////////////////////////
-QString LJsonWorker::strValueType() const
-{
-    if (m_value.isString()) return QString("string");
-    if (m_value.isArray()) return QString("array");
-    if (m_value.isNull()) return QString("null");
-    if (m_value.isObject()) return QString("obj");
-
-
-    switch (m_value.type())
-    {
-        case QJsonValue::Bool:      return QString("type_bool");
-        case QJsonValue::Double:    return QString("type_double");
-        case QJsonValue::String:    return QString("type_string");
-        case QJsonValue::Array:     return QString("type_array");
-        case QJsonValue::Object:    return QString("type_object");
-        case QJsonValue::Null:      return QString("type_null");
-        case QJsonValue::Undefined: return QString("type_undefined");
-        default: break;
-    }
-    return "??";
 }
 
 
