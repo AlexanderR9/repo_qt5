@@ -14,6 +14,13 @@
 #define CFD_DATA_DATEFORMAT "dd.MM.yyyy"
 
 
+#define CALC_PERIOD1    24
+#define CALC_PERIOD2    24*7
+#define CALC_PERIOD3    24*30
+
+#define NEED_RECALC_CHANGE_PRICE    0.05
+
+
 //CFDCalcObj
 CFDCalcObj::CFDCalcObj(QObject *parent)
     :LSimpleObject(parent)
@@ -58,11 +65,11 @@ void CFDCalcObj::slotNewPrice(QString ticker, double price)
         list.append(m_currentData.last().date.toString(CFD_DATA_DATEFORMAT));
         list.append(m_currentData.last().time.toString(CFD_DATA_TIMEFORMAT));
         list.append(ticker);
-        list.append(changingPriceByPeriod(0));
+        list.append(changingPriceByPeriod(CALC_PERIOD1));
         list_to_bot.append(list.last().toDouble(&ok)); if (!ok) list_to_bot[0] = 0;
-        list.append(changingPriceByPeriod(1));
+        list.append(changingPriceByPeriod(CALC_PERIOD2));
         list_to_bot.append(list.last().toDouble(&ok)); if (!ok) list_to_bot[1] = 0;
-        list.append(changingPriceByPeriod(4));
+        list.append(changingPriceByPeriod(CALC_PERIOD3));
         list_to_bot.append(list.last().toDouble(&ok)); if (!ok) list_to_bot[2] = 0;
         list.append(QString::number(m_currentData.last().price, 'f', 2));
 
@@ -104,11 +111,10 @@ bool CFDCalcObj::needRecalc(const double &price) const
     if (m_currentData.isEmpty()) return true;
     if (m_currentData.last().invalid()) return true;
 
-    if (qAbs(m_currentData.last().price - price) < 0.05)
+    if (qAbs(m_currentData.last().price - price) < NEED_RECALC_CHANGE_PRICE)
     {
         if (m_currentData.last().dt().secsTo(QDateTime::currentDateTime()) < (3600*24)) return false;
     }
-
     return true;
 }
 void CFDCalcObj::addToFile(const QString &ticker, const double &price, bool &ok)

@@ -1,9 +1,11 @@
 #include "mainform.h"
 #include "lcommonsettings.h"
 #include "lprotocol.h"
-#include "lhtmlrequester.h"
+#include "lhtmlpagerequester.h"
 #include "lfile.h"
 #include "htmlparser.h"
+#include "lstatic.h"
+#include "lfile.h"
 
 
 #include <QDebug>
@@ -13,6 +15,7 @@
 #include <QSplitter>
 #include <QTextEdit>
 #include <QWebEngineView>
+#include <QTimer>
 #include <QProgressBar>
 #include <QGroupBox>
 #include <QStyleFactory>
@@ -26,20 +29,49 @@ MainForm::MainForm(QWidget *parent)
     :LMainWidget(parent),
     m_protocol(NULL),
     m_req(NULL),
-    m_parser(NULL),
+    //m_parser(NULL),
     v_splitter(NULL),
     h_splitter(NULL),
     m_textView(NULL),
-    m_webView(NULL),
+    //m_webView(NULL),
     m_viewProgress(NULL)
 {
     setObjectName("main_form_htmlparser");
 
-    m_req = new LHTMLRequester(this);
+    m_req = new LHTMLPageRequester(this);
     connect(m_req, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
-    connect(m_req, SIGNAL(signalFinished()), this, SLOT(slotReqFinished()));
+    connect(m_req, SIGNAL(signalDataReady()), this, SLOT(slotReqFinished()));
 
-    m_parser = new MyHTMLParser(this);
+    //m_parser = new MyHTMLParser(this);
+
+    QTimer *timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(slotTimer()));
+    timer->start(30000);
+}
+void MainForm::slotTimer()
+{
+    if (m_tickers.isEmpty())
+    {
+        qobject_cast<QTimer*>(sender())->stop();
+        m_protocol->addSpace();
+        m_protocol->addText("timer stoped!");
+    }
+
+    m_protocol->addSpace();
+    m_protocol->addText("timer tick");
+    if (m_req->isBuzy())
+    {
+        m_protocol->addText("requester is buzy.");
+        return;
+    }
+
+    QString ticker = m_tickers.last();
+    QString url = QString("https://finviz.com/quote.ashx?t=%1").arg(ticker);
+    m_protocol->addText(QString("try next data ticker: %1").arg(ticker));
+    m_protocol->addText(QString("URL: %1").arg(url));
+    m_req->setUrl(url);
+    m_req->startRequest();
+
 }
 void MainForm::initActions()
 {
@@ -67,6 +99,7 @@ void MainForm::slotAction(int type)
 }
 void MainForm::initWebView(QGroupBox *&view_box)
 {
+    /*
     m_webView = new QWebEngineView(this);
     connect(m_webView, SIGNAL(loadStarted()), this, SLOT(slotViewStarted()));
     connect(m_webView, SIGNAL(loadProgress(int)), this, SLOT(slotViewProgress(int)));
@@ -86,15 +119,17 @@ void MainForm::initWebView(QGroupBox *&view_box)
     view_box->setLayout(new QVBoxLayout(0));
     view_box->layout()->addWidget(m_webView);
     view_box->layout()->addWidget(m_viewProgress);
-
+*/
 }
 void MainForm::slotViewStarted()
 {
+    /*
     qDebug("MainForm::slotViewStarted()");
     m_viewProgress->setValue(0);
     QPalette p;
     p.setColor(QPalette::Background, Qt::darkYellow);
     m_viewProgress->setPalette(p);
+    */
 }
 void MainForm::slotViewProgress(int p)
 {
@@ -107,14 +142,14 @@ void MainForm::slotViewFinished(bool ok)
     qDebug()<<QString("MainForm::slotViewFinished()  ok=%1").arg(ok);
     QPalette p;
     //p.setColor(QPalette::Background, Qt::green);
-    p.setBrush(m_viewProgress->backgroundRole(), Qt::green);
-    m_viewProgress->setPalette(p);
+    //p.setBrush(m_viewProgress->backgroundRole(), Qt::green);
+    //m_viewProgress->setPalette(p);
 
-    if (ok) m_protocol->addText(QString("url loaded ok!  title: %1").arg(m_webView->title()));
-    else slotError("fault.");
+    //if (ok) m_protocol->addText(QString("url loaded ok!  title: %1").arg(m_webView->title()));
+    //else slotError("fault.");
 
 
-    m_webView->page()->toPlainText([this](const QString &result){functorToPlaneText(result);});
+    //m_webView->page()->toPlainText([this](const QString &result){functorToPlaneText(result);});
     //m_webView->page()->toHtml([this](const QString &result){functorToPlaneText(result);});
     //protected slots:    void handleHtml(QString sHtml);signals:
     //void html(QString sHtml); void MainWindow::SomeFunction() {    connect(this, SIGNAL(html(QString)), this, SLOT(handleHtml(QString)));
@@ -196,22 +231,22 @@ void MainForm::load()
     ba.clear();
     ba = settings.value(QString("%1/h_splitter/state").arg(objectName()), QByteArray()).toByteArray();
     if (!ba.isEmpty()) h_splitter->restoreState(ba);
+
+    loadtickers();
 }
 void MainForm::parseHtml()
 {
-    if (!m_parser) return
+    //if (!m_parser) return
+    //m_parser->reset();
+    //m_parser->tryParseHtmlText(m_textView->toPlainText());
 
-    m_parser->reset();
-    m_parser->tryParseHtmlText(m_textView->toPlainText());
-
-    m_protocol->addText(QString("--- parsing result ----"));
-    m_protocol->addText(QString("head_node size: %1").arg(m_parser->headData().length()));
-    m_protocol->addText(QString("body_node size: %1").arg(m_parser->bodyData().length()));
+    //m_protocol->addText(QString("--- parsing result ----"));
+    //m_protocol->addText(QString("head_node size: %1").arg(m_parser->headData().length()));
+    //m_protocol->addText(QString("body_node size: %1").arg(m_parser->bodyData().length()));
 
     m_textView->clear();
     //m_textView->setPlainText(parser.bodyData());
-    m_textView->setHtml(m_parser->bodyData());
-
+    //m_textView->setHtml(m_parser->bodyData());
 }
 void MainForm::loadHtmlFile()
 {
@@ -244,9 +279,9 @@ void MainForm::loadHtmlFile()
     m_textView->setPlainText(data);
     m_protocol->addText(QString("Ok!  Readed %1 bytes.").arg(data.size()));
 
-    if (!m_webView->page()) qDebug()<<QString("page is NULL");
+    //if (!m_webView->page()) qDebug()<<QString("page is NULL");
+    //m_webView->setHtml(data);
 
-    m_webView->setHtml(data);
 }
 void MainForm::saveHtmlToFile()
 {
@@ -281,8 +316,7 @@ void MainForm::saveHtmlToFile()
         f_name = QString("%1%2%3").arg(SAVE_HTML_FOLDER).arg(QDir::separator()).arg(f_name);
     m_protocol->addText(QString("Try save HTML data to file [%1] .........").arg(f_name), LProtocolBox::ttOk);
 
-    QString data;
-    m_req->getHtmlData(data);
+    QString data = m_req->htmlData();
     err = LFile::writeFile(f_name, data);
     if (!err.isEmpty()) m_protocol->addText(err, LProtocolBox::ttErr);
     else m_protocol->addText(QString("Ok!  Was writed %1 bytes.").arg(data.size()));
@@ -294,24 +328,20 @@ void MainForm::startHtmlRequest()
 
     QString msg = QString("Start request [URL=%1] .........").arg(currentUrl());
     m_protocol->addText(msg, LProtocolBox::ttOk);
-
     m_textView->clear();
-    m_textView->setDocumentTitle(QString("------------- HTML of url(%1) ------------------").arg(m_req->currentUrl()));
-
+    m_textView->setDocumentTitle(QString("------------- HTML of url(%1) ------------------").arg(m_req->url()));
 
     ///////////////for m_webView////////////////////////////////////
-    m_webView->load(currentUrl());
-    m_webView->show();
-
+    //m_webView->load(currentUrl());
+    //m_webView->show();
 
     ///////////////for m_req////////////////////////////////////
-    /*
     if (m_req) 
     {
         m_req->setUrl(currentUrl());
         m_req->startRequest();
     }
-    */
+
 }
 QString MainForm::currentUrl() const
 {
@@ -319,17 +349,80 @@ QString MainForm::currentUrl() const
 }
 void MainForm::slotReqFinished()
 {
-    m_protocol->addText(QString("getted bytes size: %1").arg(m_req->replySize()));
+    m_protocol->addText(QString("getted bytes size: %1").arg(m_req->plainDataSize()));
     m_protocol->addText("Finished!");
 
-    QString data;
-    m_req->getHtmlData(data);
+    QString data(m_req->plainData());
     m_textView->setPlainText(data);
 
+    QString fname = QString("%1%2%3").arg(SAVE_HTML_FOLDER).arg(QDir::separator()).arg(QString("config.txt"));
+    QStringList list = LStatic::trimSplitList(data);
+    for (int i=0; i<list.count(); i++)
+    {
+        QString s = list.at(i).trimmed();
+        if (s.indexOf(m_tickers.last()) == 0 && s.contains("[") && s.contains("]"))
+        {
+            s = list.at(i+1).trimmed();
+            m_protocol->addText(QString("company_name = %1").arg(s));
+            QString amp("&");
+            if (s.contains(amp)) s.replace(amp, QString("&amp;"));
+
+            QString f_line = QString("<cfd ticker=\"%1\" name=\"%2\" source=\"1\"").arg(m_tickers.last()).arg(s);
+            m_tickers.removeLast();
+
+            QStringList direction = LStatic::trimSplitList(list.at(i+2).trimmed(), "|");
+            if (direction.count() == 3)
+            {
+                direction[1].replace(amp, QString("&amp;"));
+                f_line.append(QString(" direction=\"%1\" country=\"%2\"").arg(direction.at(1)).arg(direction.at(2)));
+            }
+            f_line.append(QString("/>\n"));
+
+            QString err = LFile::appendFile(fname, f_line);
+            if (!err.isEmpty()) slotError(err);
+            break;
+        }
+    }
+
+    m_protocol->addText(QString("tickers else %1").arg(m_tickers.count()));
 }
 void MainForm::slotError(const QString &text)
 {
     m_protocol->addText(text, LProtocolBox::ttErr);
+}
+void MainForm::loadtickers()
+{
+    m_protocol->addSpace();
+    m_textView->clear();
+
+
+    QString f_name = "tickers.txt";
+    f_name = QString("%1%2%3").arg(SAVE_HTML_FOLDER).arg(QDir::separator()).arg(f_name);
+    m_protocol->addText(QString("Try load file [%1] .........").arg(f_name), LProtocolBox::ttOk);
+
+    m_tickers.clear();
+    QString err = LFile::readFileSL(f_name, m_tickers);
+    if (!err.isEmpty())
+    {
+        slotError(err);
+        return;
+    }
+
+    for (int i=m_tickers.count()-1; i>=0; i--)
+    {
+        QString s = m_tickers.at(i).trimmed();
+        s = s.remove("\n");
+        s = s.remove("\r");
+        if (s.isEmpty())
+        {
+            m_tickers.removeAt(i);
+            continue;
+        }
+        m_tickers[i] = s;
+        qDebug()<<QString("%1.   [%2]").arg(i+1).arg(m_tickers.at(i));
+    }
+    m_protocol->addText(QString("loaded %1 tickers.").arg(m_tickers.count()), LProtocolBox::ttOk);
+
 }
 
 

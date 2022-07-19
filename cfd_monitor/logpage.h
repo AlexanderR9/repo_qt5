@@ -45,12 +45,16 @@ public:
     QString iconPath() const {return QString(":/icons/images/log.png");}
     QString caption() const {return QString("Log");}
 
-    void updatePage() {}
+    void updatePage();
 
 protected:
     void initModulesList();
     void initLogTable();
     QStringList headerLabels() const;
+    QString filePathByModule(int) const;
+    void addLogToFile(const LogStruct&);
+
+    int                 n_err;
 
 public slots:
     void slotNewLog(const LogStruct&);

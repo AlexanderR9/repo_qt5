@@ -4,11 +4,11 @@
 #include "lmainwidget.h"
 
 class LProtocolBox;
-class LHTMLRequester;
+class LHTMLPageRequester;
 class QSplitter;
 class QTextEdit;
-class MyHTMLParser;
-class QWebEngineView;
+//class MyHTMLParser;
+//class QWebEngineView;
 class QProgressBar;
 class QGroupBox;
 
@@ -23,13 +23,14 @@ public:
     
 protected:
     LProtocolBox        *m_protocol;
-    LHTMLRequester      *m_req;
-    MyHTMLParser        *m_parser;
+    LHTMLPageRequester  *m_req;
+//    MyHTMLParser        *m_parser;
     QSplitter           *v_splitter;
     QSplitter           *h_splitter;
     QTextEdit           *m_textView;
-    QWebEngineView      *m_webView;
+    //QWebEngineView      *m_webView;
     QProgressBar        *m_viewProgress;
+    QStringList         m_tickers;
 
 
     QString projectName() const {return "htmlparser";}
@@ -46,6 +47,7 @@ protected:
     void saveHtmlToFile();
     void loadHtmlFile();
     void parseHtml();
+    void loadtickers();
 
     QString currentUrl() const;
 
@@ -53,6 +55,7 @@ protected slots:
     void slotAction(int); //virtual slot from parent
     void slotError(const QString&);
     void slotReqFinished();
+    void slotTimer();
 
     //for m_webView
     void slotViewStarted();

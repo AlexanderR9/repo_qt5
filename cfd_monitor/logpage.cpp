@@ -1,18 +1,43 @@
 #include "logpage.h"
 #include "ltable.h"
+#include "lfile.h"
 
 
 #include <QDebug>
+#include <QDir>
+#include <QFile>
+
+
+#define CFD_LOG_FILETYPE   "log"
+#define CFD_LOG_FOLDER     "log"
+
 
 //LogPage
 LogPage::LogPage(QWidget *parent)
-    :BasePage(parent)
+    :BasePage(parent),
+      n_err(0)
 {
     setupUi(this);
 
     initModulesList();
     initLogTable();
 
+}
+QString LogPage::filePathByModule(int module_type) const
+{
+    QString path = QString("%1%2%3").arg(QApplication::applicationDirPath()).arg(QDir::separator()).arg(CFD_LOG_FOLDER);
+
+    QString f_name;
+    switch (module_type)
+    {
+        case amtMainWindow:     {f_name = "main_window"; break;}
+        case amtCalcObj:        {f_name = "calc_object"; break;}
+        case amtHtmlPage:       {f_name = "html_page"; break;}
+        case amtTGBot:          {f_name = "tg_bot"; break;}
+        default: return QString();
+    }
+
+    return QString("%1%2%3.%4").arg(path).arg(QDir::separator()).arg(f_name).arg(CFD_LOG_FILETYPE);
 }
 void LogPage::initModulesList()
 {
@@ -31,13 +56,37 @@ void LogPage::initLogTable()
     LTable::resizeTableContents(logTable);
 
 }
+void LogPage::addLogToFile(const LogStruct &log)
+{
+    QString fname(filePathByModule(log.module));
+    if (fname.isEmpty())
+    {
+        qWarning()<<QString("LogPage::addLogToFile - log_filename is empty!");
+        return;
+    }
+
+    QString fline = QString("%1 %2 STATUS(%3) - %4 \n").arg(log.strDate()).arg(log.strTime()).arg(log.strStatus()).arg(log.msg);
+    QString err = LFile::appendFile(fname, fline);
+    if (!err.isEmpty())
+    {
+        signalError(err);
+    }
+}
+void LogPage::updatePage()
+{
+    QString s = QString("Log (count %1/%2)").arg(logTable->rowCount()).arg(n_err);
+    logBox->setTitle(s);
+}
 void LogPage::slotNewLog(const LogStruct &log)
 {
     if (log.invalid())
     {
-        return;
         qWarning()<<QString("LogPage::slotNewLog - received invalid log!");
+        return;
     }
+
+    addLogToFile(log);
+    if (log.status != 0) n_err++;
 
     QStringList row_data;
     row_data.append(log.strDate());
@@ -47,8 +96,9 @@ void LogPage::slotNewLog(const LogStruct &log)
     row_data.append(log.strStatus());
     LTable::addTableRow(logTable, row_data);
     logTable->item(logTable->rowCount()-1, logTable->columnCount()-1)->setTextColor(log.logColor());
-
     LTable::resizeTableContents(logTable);
+
+    updatePage();
 }
 QStringList LogPage::headerLabels() const
 {

@@ -22,6 +22,7 @@
 #include <QGroupBox>
 #include <QStyleFactory>
 #include <QTabWidget>
+#include <QLibraryInfo>
 
 
 // MainForm
@@ -37,6 +38,16 @@ MainForm::MainForm(QWidget *parent)
 {
     m_timer = new QTimer(this);
     connect(m_timer, SIGNAL(timeout()), this, SLOT(slotTimer()));
+
+
+    qDebug()<<QString("PluginsPath: [%1]").arg(QLibraryInfo::location(QLibraryInfo::PluginsPath));
+    qDebug()<<QString("DataPath: [%1]").arg(QLibraryInfo::location(QLibraryInfo::DataPath));
+    qDebug()<<QString("LibrariesPath: [%1]").arg(QLibraryInfo::location(QLibraryInfo::LibrariesPath));
+    qDebug()<<QString("LibraryExecutablesPath: [%1]").arg(QLibraryInfo::location(QLibraryInfo::PluginsPath));
+    qDebug()<<QString("TranslationsPath: [%1]").arg(QLibraryInfo::location(QLibraryInfo::PluginsPath));
+
+
+
 
 }
 void MainForm::initActions()

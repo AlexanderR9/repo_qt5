@@ -7,8 +7,10 @@ Makefile
 cfdmonitor
 full_clear
 config
+data
+log
 ui_configpage.h
 ui_htmlpage.h
 ui_logpage.h
-data
+cfd_monitor.tar.gz
 
