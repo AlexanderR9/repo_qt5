@@ -118,7 +118,7 @@ void HtmlPage::getPriceFromPlainData()
     else
     {
         QPair<QString, double> pair(m_priceParser.lastPrice());
-        emit signalMsg(QString("Getted price for [%1] : %2").arg(pair.first).arg(QString::number(pair.second, 'f', 2)));
+        //emit signalMsg(QString("Getted price for [%1] : %2").arg(pair.first).arg(QString::number(pair.second, 'f', 2)));
         emit signalNewPrice(pair.first, pair.second);
     }
 }

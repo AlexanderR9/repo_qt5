@@ -41,6 +41,12 @@ void CFDCalcObj::slotGetLastPrice(const QString &ticker, double &price, int &hou
 void CFDCalcObj::slotNewPrice(QString ticker, double price)
 {
     loadTickerFile(ticker); //загрузить текущие данные из файла для ticker
+
+    double d_price = 0;
+    if (!m_currentData.isEmpty()) d_price = price - m_currentData.last().price;
+    emit signalMsg(QString("Getted price for [%1] : %2 (%3%4)").arg(ticker).arg(QString::number(price, 'f', 2)).
+                   arg(d_price > 0 ? "+" : QString()).arg(QString::number(d_price, 'f', 2)));
+
     if (!needRecalc(price))
     {
         qDebug()<<QString("NOT NEED RECACL price_now - price_last < 0.05 cent");
@@ -66,17 +72,27 @@ void CFDCalcObj::slotNewPrice(QString ticker, double price)
         list.append(m_currentData.last().time.toString(CFD_DATA_TIMEFORMAT));
         list.append(ticker);
         list.append(changingPriceByPeriod(CALC_PERIOD1));
-        list_to_bot.append(list.last().toDouble(&ok)); if (!ok) list_to_bot[0] = 0;
+        list_to_bot.append(toBotValue(list.last()));
         list.append(changingPriceByPeriod(CALC_PERIOD2));
-        list_to_bot.append(list.last().toDouble(&ok)); if (!ok) list_to_bot[1] = 0;
+        list_to_bot.append(toBotValue(list.last()));
         list.append(changingPriceByPeriod(CALC_PERIOD3));
-        list_to_bot.append(list.last().toDouble(&ok)); if (!ok) list_to_bot[2] = 0;
+        list_to_bot.append(toBotValue(list.last()));
         list.append(QString::number(m_currentData.last().price, 'f', 2));
 
-        emit signalInfoToBot(ticker, list_to_bot);
-
+        emit signalInfoToBot(ticker, list_to_bot); //отправить список текущих отклонений цены по отслеживаемым периодам
     }
+
     emit signalUpdateCFDTable(list); //отправить последние результаты на страницу CFDPage
+}
+double CFDCalcObj::toBotValue(const QString &s_value) const
+{
+    QString s = s_value.trimmed();
+    if (s.left(1) == "+") s = LStatic::strTrimLeft(s, 1);
+    if (s.right(1) == "%") s = LStatic::strTrimRight(s, 1);
+
+    bool ok;
+    double v = s.toDouble(&ok);
+    return (ok ? v : 0);
 }
 QString CFDCalcObj::changingPriceByPeriod(uint hours) const
 {

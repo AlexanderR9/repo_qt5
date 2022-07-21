@@ -63,6 +63,9 @@ signals:
     void signalSendLog(const LogStruct&);
     void signalInfoToBot(const QString&, const QList<double>&);
 
+private:
+    double toBotValue(const QString&) const;
+
 };
 
 
