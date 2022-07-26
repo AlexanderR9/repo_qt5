@@ -1,6 +1,7 @@
 #include "cfdcalcobj.h"
 #include "lstatic.h"
 #include "lfile.h"
+#include "cfdconfigobj.h"
 
 #include <QDateTime>
 #include <QFile>
@@ -18,12 +19,13 @@
 #define CALC_PERIOD2    24*7
 #define CALC_PERIOD3    24*30
 
-#define NEED_RECALC_CHANGE_PRICE    0.05
+//#define NEED_RECALC_CHANGE_PRICE    0.05
 
 
 //CFDCalcObj
-CFDCalcObj::CFDCalcObj(QObject *parent)
-    :LSimpleObject(parent)
+CFDCalcObj::CFDCalcObj(const CalcActionParams &act_params, QObject *parent)
+    :LSimpleObject(parent),
+    m_actParams(act_params)
 {
 
 }
@@ -127,7 +129,7 @@ bool CFDCalcObj::needRecalc(const double &price) const
     if (m_currentData.isEmpty()) return true;
     if (m_currentData.last().invalid()) return true;
 
-    if (qAbs(m_currentData.last().price - price) < NEED_RECALC_CHANGE_PRICE)
+    if (qAbs(m_currentData.last().price - price) < m_actParams.min_recalc_size)
     {
         if (m_currentData.last().dt().secsTo(QDateTime::currentDateTime()) < (3600*24)) return false;
     }

@@ -12,6 +12,7 @@
 //все значения времени должны идти по возрастанию
 
 struct LogStruct;
+struct CalcActionParams;
 
 //CFDFileRecord  (запись для одной временной точки и соответвующей ей цены)
 struct CFDFileRecord
@@ -37,11 +38,12 @@ class CFDCalcObj : public LSimpleObject
 {
     Q_OBJECT
 public:
-    CFDCalcObj(QObject*);
+    CFDCalcObj(const CalcActionParams&, QObject*);
     virtual ~CFDCalcObj() {}
 
 protected:
     QList<CFDFileRecord> m_currentData; //контейнер для загрузки всей истории цены для одного тикера
+    const CalcActionParams &m_actParams;
 
     void addToFile(const QString&, const double&, bool &ok); //добавить в файл и в m_currentData новое значение для указанного тикера
     void loadTickerFile(const QString&); //загрузить все данные для указанного тикера в m_currentData

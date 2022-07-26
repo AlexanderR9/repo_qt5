@@ -1,0 +1,10 @@
+isoworker.pro.user
+isoworker.debug
+.qmake.stash
+moc
+obj
+Makefile
+isoworker
+full_clear
+ui_paramspage.h
+

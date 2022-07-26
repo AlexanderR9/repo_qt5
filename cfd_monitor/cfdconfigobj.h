@@ -38,6 +38,19 @@ struct CFDObj
 
 };
 
+struct CalcActionParams
+{
+    CalcActionParams() {reset();}
+
+    double min_recalc_size;
+    double notice_day_size;
+    double notice_week_size;
+    double notice_month_size;
+
+    void reset() {min_recalc_size=0.04; notice_day_size=5; notice_week_size=10; notice_month_size=15;}
+    QString toStr() {return QString("ACTION PARAMS: min_recalc_size=%1,  notice_sizes: day(%2)  week(%3)  month(%4)").arg(min_recalc_size).arg(notice_day_size).arg(notice_week_size).arg(notice_month_size);}
+};
+
 
 //CFDConfigObject
 class CFDConfigObject : public LSimpleObject
@@ -55,21 +68,26 @@ public:
     void getNextTicker(QString&);
 
     inline int cfdCount() const {return m_cfdList.count();}
+    inline const CalcActionParams& calcActionParams() const {return m_actParams;}
 
 protected:
     QString m_configFile;
     QList<CFDDataSource> m_sources;
     QList<CFDObj> m_cfdList;
+    CalcActionParams m_actParams;
     int m_curCFDIndex; //for request data
 
     void loadSources(const QDomNode&);
     void loadCFDList(const QDomNode&);
+    void loadActParams(const QDomNode&);
+
     void reset();
     void sendConfigInfo();
 
 private:
     QString sourceByID(int) const;
     bool containsTicker(QString) const;
+    double getDoubleAttrValue(const QDomNode&) const;
 
 };
 

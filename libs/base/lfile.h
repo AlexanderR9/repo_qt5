@@ -17,10 +17,21 @@ public:
     //возвращает список файлов лежащих в dir_path(полные пути), кроме пустых строк или типа (. или ..)
     //если ftype не пустая строка, то вернет только список файлов с рассширением ftype
     static QString dirFiles(QString dir_path, QStringList &list, QString ftype = "txt");
+
+    //возвращает список папок лежащих в dir_path(полные пути), кроме пустых строк или типа (. или ..)
+    //если filter_text не пустая строка, то вернет только список папок, имя которых содержит filter_text
+    static QString dirFolders(QString dir_path, QStringList &list, QString filter_text = QString());
+
+
     //проверка существования файла по имени (указывать полный путь)
     static bool fileExists(QString);
     //создать пустой файл (указывать полный путь)
     static QString fileCreate(QString);
+    //возращает имя файла без полного пути
+    static QString shortFileName(QString);
+    //возращает имя папки без полного пути
+    static QString shortDirName(QString);
+
 
 };
 

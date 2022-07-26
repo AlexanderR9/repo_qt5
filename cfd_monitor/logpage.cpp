@@ -15,7 +15,8 @@
 //LogPage
 LogPage::LogPage(QWidget *parent)
     :BasePage(parent),
-      n_err(0)
+      n_err(0),
+      n_maxSize(1000)
 {
     setupUi(this);
 
@@ -74,6 +75,14 @@ void LogPage::addLogToFile(const LogStruct &log)
 }
 void LogPage::updatePage()
 {
+    if (logTable->rowCount() > n_maxSize)
+    {
+        for (int i=0; i<100; i++)
+        {
+            logTable->removeRow(0);
+        }
+    }
+
     QString s = QString("Log (count %1/%2)").arg(logTable->rowCount()).arg(n_err);
     logBox->setTitle(s);
 }

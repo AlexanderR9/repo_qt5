@@ -93,6 +93,8 @@ void CFDConfigObject::tryLoadConfig()
         return;
     }
 
+    loadActParams(root_node);
+
     QString cfdlist_node_name("cfd_list");
     QDomNode cfdlist_node = root_node.namedItem(cfdlist_node_name);
     if (cfdlist_node.isNull())
@@ -111,12 +113,57 @@ void CFDConfigObject::tryLoadConfig()
         return;
     }
 
+
     loadSources(sources_node);
     loadCFDList(cfdlist_node);
 
     sendConfigInfo();
     emit signalMsg(QString("Finished OK!"));
 
+}
+void CFDConfigObject::loadActParams(const QDomNode &node)
+{
+    QDomNode action_params_node = node.namedItem("action_params");
+    if (action_params_node.isNull())
+    {
+        emit signalError(QString("WARNING: node <action_params> not found, params set default values."));
+        return;
+    }
+
+    double v = 0;
+    QDomNode child_node = action_params_node.firstChild();
+    while (!child_node.isNull())
+    {
+        if (child_node.nodeName() == "no_recalc_size")
+        {
+            v = getDoubleAttrValue(child_node);
+            if (v > 0) m_actParams.min_recalc_size = v;
+        }
+        else if (child_node.nodeName() == "notice_day_size")
+        {
+            v = getDoubleAttrValue(child_node);
+            if (v > 0) m_actParams.notice_day_size = v;
+        }
+        else if (child_node.nodeName() == "notice_week_size")
+        {
+            v = getDoubleAttrValue(child_node);
+            if (v > 0) m_actParams.notice_week_size = v;
+        }
+        else if (child_node.nodeName() == "notice_month_size")
+        {
+            v = getDoubleAttrValue(child_node);
+            if (v > 0) m_actParams.notice_month_size = v;
+        }
+        child_node = child_node.nextSibling();
+    }
+}
+double CFDConfigObject::getDoubleAttrValue(const QDomNode &node) const
+{
+    if (node.isNull()) return -1;
+    bool ok;
+    double v = LStatic::getStringAttrValue("value", node).toDouble(&ok);
+    if (!ok || v < 0.05 || v > 1000) return -1;
+    return v;
 }
 void CFDConfigObject::loadSources(const QDomNode &node)
 {
@@ -186,6 +233,7 @@ bool CFDConfigObject::containsTicker(QString s) const
 }
 void CFDConfigObject::sendConfigInfo()
 {
+    emit signalMsg(m_actParams.toStr());
     emit signalMsg(QString("readed %1 URL sourses:").arg(m_sources.count()));
     //for (int i=0; i<m_sources.count(); i++)
         //emit signalMsg(QString("   %1. %2").arg(i+1).arg(m_sources.at(i).toStr()));

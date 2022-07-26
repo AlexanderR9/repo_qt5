@@ -40,12 +40,13 @@ MainForm::MainForm(QWidget *parent)
     connect(m_timer, SIGNAL(timeout()), this, SLOT(slotTimer()));
 
 
+    /*
     qDebug()<<QString("PluginsPath: [%1]").arg(QLibraryInfo::location(QLibraryInfo::PluginsPath));
     qDebug()<<QString("DataPath: [%1]").arg(QLibraryInfo::location(QLibraryInfo::DataPath));
     qDebug()<<QString("LibrariesPath: [%1]").arg(QLibraryInfo::location(QLibraryInfo::LibrariesPath));
     qDebug()<<QString("LibraryExecutablesPath: [%1]").arg(QLibraryInfo::location(QLibraryInfo::PluginsPath));
     qDebug()<<QString("TranslationsPath: [%1]").arg(QLibraryInfo::location(QLibraryInfo::PluginsPath));
-
+*/
 
 
 
@@ -145,7 +146,7 @@ void MainForm::initConfigObj()
 void MainForm::initCalcObj()
 {
     if (m_calcObj) {delete m_calcObj; m_calcObj = NULL;}
-    m_calcObj = new CFDCalcObj(this);
+    m_calcObj = new CFDCalcObj(m_configObj->calcActionParams(), this);
 
     connect(m_calcObj, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_calcObj, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMessage(const QString&)));
@@ -173,7 +174,7 @@ void MainForm::initCalcObj()
 void MainForm::initBotObj()
 {
     if (m_bot) {delete m_bot; m_bot = NULL;}
-    m_bot = new TGBot(this);
+    m_bot = new TGBot(m_configObj->calcActionParams(), this);
 
     connect(m_bot, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_bot, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMessage(const QString&)));
@@ -190,7 +191,7 @@ void MainForm::initBotObj()
         return;
     }
 
-    m_bot->startCheckingUpdatesTimer(4000);
+    m_bot->startCheckingUpdatesTimer(14000);
 
 }
 void MainForm::fillConfigPage()
@@ -231,6 +232,15 @@ void MainForm::initCommonSettings()
     lCommonSettings.addParam(QString("Request interval, sec"), LSimpleDialog::sdtIntCombo, key);
     for (int i=1; i<=20; i++) combo_list.append(QString::number(i*3));
     lCommonSettings.setComboList(key, combo_list);
+
+    key = QString("log_max_size");
+    lCommonSettings.addParam(QString("Log max size"), LSimpleDialog::sdtIntCombo, key);
+    combo_list.clear();
+    combo_list << "200" << "500" << "1000" << "2000" << "3000" << "5000";
+    lCommonSettings.setComboList(key, combo_list);
+
+
+
 }
 void MainForm::slotAction(int type)
 {
@@ -307,6 +317,31 @@ void MainForm::load()
     initBotObj();
 
     fillConfigPage();
+
+    QStringList keys;
+    keys.append(QString("log_max_size"));
+    slotAppSettingsChanged(keys);
+
+}
+void MainForm::slotAppSettingsChanged(QStringList keys)
+{
+    qDebug("MainForm::slotAppSettingsChanged");
+    LMainWidget::slotAppSettingsChanged(keys);
+
+    QString key = QString("log_max_size");
+    if (keys.contains(key))
+    {
+        int n = lCommonSettings.paramValue(key).toInt();
+        qDebug()<<QString("MainForm::slotAppSettingsChanged  n=%1").arg(n);
+        LogPage *page = qobject_cast<LogPage*>(m_pages.value(BasePage::ptLog));
+        if (!page)
+        {
+            qWarning()<<QString("MainForm::slotAppSettingsChanged() ERR: invalid convert to LogPage from m_pages");
+            return;
+        }
+        page->setMaxSize(n);
+        page->updatePage();
+    }
 }
 
 

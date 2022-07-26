@@ -33,7 +33,7 @@ void CFDPage::slotNewPrice(const QStringList &row_data)
     LTable::insertTableRow(0, m_table, row_data);
     LTable::resizeTableContents(m_table);
 
-    updateCellColors();
+    updatePage();
 }
 void CFDPage::updateCellColors()
 {
@@ -87,6 +87,18 @@ void CFDPage::removeRowByTicker(const QString &ticker)
         }
     }
 }
+void CFDPage::updatePage()
+{
+    int n = m_table->rowCount();
+    if (n <= 0) return;
+
+    QStringList list;
+    for (int i=0; i<n; i++)
+        list.append(QString::number(i+1));
+    LTable::setTableHeaders(m_table, list, Qt::Vertical);
+
+    updateCellColors();
+}
 QStringList CFDPage::headerLabels() const
 {
     QStringList list;
@@ -100,7 +112,7 @@ void CFDPage::init()
     setLayout(vlay);
 
     m_table = new QTableWidget(this);
-    m_table->verticalHeader()->hide();
+    m_table->verticalHeader()->show();
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     vlay->addWidget(m_table);

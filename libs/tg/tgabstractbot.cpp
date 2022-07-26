@@ -23,7 +23,7 @@ void LTGAbstractBot::startCheckingUpdatesTimer(int interval)
 {
     stopCheckingUpdatesTimer();
     if (!m_sender || invalid()) return;
-    if (interval < 500) return;
+    if (interval < 500) {qWarning()<<QString("LTGAbstractBot::startCheckingUpdatesTimer - WATNING: timeinterval(%1) < 500").arg(interval); return;}
     m_timer->start(interval);
 }
 void LTGAbstractBot::stopCheckingUpdatesTimer()
@@ -89,6 +89,7 @@ void LTGAbstractBot::sendMsg(const QString &text)
 }
 void LTGAbstractBot::getUpdates(qint64 last_update_id)
 {
+    qDebug()<<QString("LTGAbstractBot::getUpdates exec, last_update_id=%1").arg(last_update_id);
     QJsonObject jsonObject;
     jsonObject["limit"] = m_params.limit_msg;
     jsonObject["timeout"] = m_params.req_timeout;

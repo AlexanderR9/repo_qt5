@@ -54,6 +54,16 @@ bool LFile::fileExists(QString fname)
     if (fname.trimmed().isEmpty()) return false;
     return QFileInfo::exists(fname);
 }
+QString LFile::shortFileName(QString full_name)
+{
+    QFileInfo fi(full_name);
+    return fi.fileName();
+}
+QString LFile::shortDirName(QString full_name)
+{
+    QDir dir(full_name);
+    return dir.dirName();
+}
 QString LFile::fileCreate(QString fname)
 {
     QString err;
@@ -94,6 +104,34 @@ QString LFile::appendFile(QString fname, const QString &data)
     f.close();
     return QString();
 }
+QString LFile::dirFolders(QString dir_path, QStringList &list, QString filter_text)
+{
+    list.clear();
+
+    QString err;
+    if (dir_path.trimmed().isEmpty())
+    {
+        err = QString("Dir path is empty!");
+        return err;
+    }
+
+    QDir dir(dir_path.trimmed());
+    if (!dir.exists())
+    {
+        err = QString("Dir path [%1] not found!").arg(dir.path());
+        return err;
+    }
+
+    QStringList dir_list = dir.entryList(QDir::AllDirs);
+    for (int i=0; i<dir_list.count(); i++)
+    {
+        QString s = dir_list.at(i).trimmed();
+        if (s.isEmpty() || s =="." || s =="..") continue;
+        if (!filter_text.isEmpty() && s.contains(filter_text)) continue;
+        list.append(QString("%1%2%3").arg(dir.path()).arg(QDir::separator()).arg(s));
+    }
+    return err;
+}
 QString LFile::dirFiles(QString dir_path, QStringList &list, QString ftype)
 {
     list.clear();
@@ -117,7 +155,7 @@ QString LFile::dirFiles(QString dir_path, QStringList &list, QString ftype)
     {
         QString s = dir_list.at(i).trimmed();
         if (s.length() < 3) continue;
-	if (!ftype.trimmed().isEmpty() && !s.contains(QString(".%1").arg(ftype.trimmed()))) continue;
+        if (!ftype.trimmed().isEmpty() && !s.contains(QString(".%1").arg(ftype.trimmed()))) continue;
         list.append(QString("%1%2%3").arg(dir.path()).arg(QDir::separator()).arg(s));
     }
 

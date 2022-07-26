@@ -28,7 +28,6 @@ public:
 protected:
     LSearch     *m_search;
 
-
     void initSearch();
 
 public slots:

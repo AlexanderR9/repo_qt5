@@ -2,12 +2,13 @@
 #include "logpage.h"
 #include "tgjsonworker.h"
 #include "lstatic.h"
+#include "cfdconfigobj.h"
 
 #include <QDebug>
 
-#define LIMIT_PERIOD1   5.5 // % for day
-#define LIMIT_PERIOD2   8.5 // % for week
-#define LIMIT_PERIOD3   20.5 // % for month
+//#define LIMIT_PERIOD1   5.5 // % for day
+//#define LIMIT_PERIOD2   8.5 // % for week
+//#define LIMIT_PERIOD3   20.5 // % for month
 
 #define UPDATE_INTERVAL_PERIOD1     24      //hours
 #define UPDATE_INTERVAL_PERIOD2     24*3    //hours
@@ -15,9 +16,10 @@
 
 
 //TGBot
-TGBot::TGBot(QObject *parent)
+TGBot::TGBot(const CalcActionParams &act_params, QObject *parent)
     :LTGAbstractBot(parent),
-    last_update_id(-1)
+    last_update_id(-1),
+    m_actParams(act_params)
 {
     m_msgs.clear();
 }
@@ -85,13 +87,13 @@ void TGBot::slotNewChangingPrices(const QString &ticker, const QList<double> &ch
               arg(QString::number(changing_data.at(1), 'f', 2)).
               arg(QString::number(changing_data.at(2), 'f', 2));
 
-    if (qAbs(changing_data.at(0)) > LIMIT_PERIOD1)
+    if (qAbs(changing_data.at(0)) > m_actParams.notice_day_size)
         trySendDeviation(ticker, changing_data.at(0), 1);
 
-    if (qAbs(changing_data.at(1)) > LIMIT_PERIOD2)
+    if (qAbs(changing_data.at(1)) > m_actParams.notice_week_size)
         trySendDeviation(ticker, changing_data.at(1), 2);
 
-    if (qAbs(changing_data.at(2)) > LIMIT_PERIOD3)
+    if (qAbs(changing_data.at(2)) > m_actParams.notice_month_size)
         trySendDeviation(ticker, changing_data.at(2), 3);
 
 }

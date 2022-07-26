@@ -67,6 +67,7 @@ protected slots:
     void slotError(const QString&);
     void slotMessage(const QString&);
     void slotTimer();
+    void slotAppSettingsChanged(QStringList);
 
 signals:
     void signalSendLog(const LogStruct&);

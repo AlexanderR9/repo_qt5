@@ -13,6 +13,10 @@ public:
     virtual ~LSimpleObject() {}
 
     virtual QString name() const {return QString("simple_obj");}
+    inline void setDebugLevel(quint8 level) {m_debugLevel = level;}
+
+protected:
+    quint8 m_debugLevel;
 
 signals:
     void signalError(const QString&);

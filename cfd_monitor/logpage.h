@@ -44,6 +44,7 @@ public:
 
     QString iconPath() const {return QString(":/icons/images/log.png");}
     QString caption() const {return QString("Log");}
+    inline void setMaxSize(int n) {n_maxSize = n;}
 
     void updatePage();
 
@@ -55,6 +56,7 @@ protected:
     void addLogToFile(const LogStruct&);
 
     int                 n_err;
+    int                 n_maxSize;
 
 public slots:
     void slotNewLog(const LogStruct&);

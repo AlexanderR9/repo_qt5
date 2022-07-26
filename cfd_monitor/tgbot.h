@@ -8,7 +8,7 @@
 #include <QDateTime>
 
 struct LogStruct;
-
+struct CalcActionParams;
 
 //TGMsg
 struct TGMsg
@@ -41,7 +41,7 @@ class TGBot : public LTGAbstractBot
 {
     Q_OBJECT
 public:
-    TGBot(QObject*);
+    TGBot(const CalcActionParams&, QObject*);
     virtual ~TGBot() {}
 
     QString name() const {return QString("MyLBot");}
@@ -52,6 +52,7 @@ public:
 protected:
     QList<TGMsg> m_msgs;
     qint64 last_update_id; //id последнего полученного сообщения
+    const CalcActionParams &m_actParams;
 
     void sendLog(const QString&, int);
     void trySendDeviation(const QString&, const double&, int);

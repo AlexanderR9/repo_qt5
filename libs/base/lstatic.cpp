@@ -16,6 +16,10 @@ QString LStatic::strCurrentDateTime(QString mask)
 {
     return QDateTime::currentDateTime().toString(mask);
 }
+QString LStatic::strCurrentDate(QString mask)
+{
+    return QDate::currentDate().toString(mask);
+}
 int LStatic::subCount(const QString &s, const QString sub_s)
 {
     int n = 0;

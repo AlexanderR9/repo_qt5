@@ -16,7 +16,7 @@ public:
     QString iconPath() const {return QString(":/icons/images/b_scale.svg");}
     QString caption() const {return QString("CFD stat");}
 
-    void updatePage() {}
+    void updatePage();
 
 protected:
     QTableWidget    *m_table;
