@@ -19,8 +19,15 @@ public:
 
     void save(QSettings&);
     void load(QSettings&);
+    void loadISOList(const QString&);
+    QString seletedISOFile() const;
 
 protected:
+    QStringList headerLabels() const;
+    void initTable();
+
+signals:
+    void signalError(const QString&);
 
 
 };

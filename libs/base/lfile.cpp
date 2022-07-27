@@ -54,6 +54,24 @@ bool LFile::fileExists(QString fname)
     if (fname.trimmed().isEmpty()) return false;
     return QFileInfo::exists(fname);
 }
+int LFile::fileSizeB(QString fname)
+{
+    if (!fileExists(fname)) return -1;
+    QFileInfo fi(fname);
+    return fi.size();
+}
+int LFile::fileSizeKB(QString fname)
+{
+    int sb = fileSizeB(fname);
+    if (sb <= 0) return sb;
+    return sb/1024;
+}
+int LFile::fileSizeMB(QString fname)
+{
+    int sb = fileSizeKB(fname);
+    if (sb <= 0) return sb;
+    return sb/1024;
+}
 QString LFile::shortFileName(QString full_name)
 {
     QFileInfo fi(full_name);

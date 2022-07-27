@@ -1,7 +1,6 @@
  #include "lmainwidget.h"
  #include "lcommonsettings.h"
 
-
  #include <QToolBar>
  #include <QAction>
  #include <QDebug>
@@ -10,7 +9,7 @@
  #include <QGridLayout>
      
  #define DEF_SPACING	2
- #define DEF_MARGIN	4
+ #define DEF_MARGIN     4
  
      
 // class LMainWidget
@@ -111,7 +110,6 @@ void LMainWidget::addAction(int type)
     QString icon_name(actionIconName(type));
     if (icon_name.isEmpty()) return;
     
-    //QString path = QString(":/icons/images/%1.svg").arg(icon_name);
     QString path = QString(":/icons/images");
     if (icon_name.right(4) == ".png") path = QString("%1/%2").arg(path).arg(icon_name);
     else path = QString("%1/%2.svg").arg(path).arg(icon_name);
@@ -134,44 +132,50 @@ QString LMainWidget::actionIconName(int type)
 {
     switch (type)
     {
-	case atSettings: return  QString("applications-system");
-	case atExit: return QString("system-log-out");
-	case atStart: return QString("media-play");
-	case atStop: return QString("media-stop");
-	case atPause: return QString("media-pause");
-	case atAdd: return QString("list-add");
-	case atRemove: return QString("list-remove");
-	case atOk: return QString("emblem-ok");
-	case atCancel: return QString("emblem-cancel");
-	case atClear: return QString("edit-clear");
-	case atRedo: return QString("edit-redo");
-	case atUndo: return QString("edit-undo");
-	case atChart: return QString("chart");
-	case atClock: return QString("clock");
-	case atOpen: return QString("document-open");
-	case atSave: return QString("document-save");
-	case atSearch: return QString("system-search");
-	case atUp: return QString("up");
-	case atDown: return QString("down");
-	case atLeft: return QString("left");
-	case atRight: return QString("right");
-	case atLoadData: return QString("down");
-	case atData: return QString("system-file-manager");
-	case atRefresh: return QString("view-refresh");
-	case atMonitoring: return QString("utilities-system-monitor");
-	case atBuy: return QString("ball_green");
-	case atSell: return QString("ball_red");
-	case atBag: return QString("bag");
-	case atBScale: return QString("b_scale");
-	case atRScale: return QString("r_scale");
-	case atSScale: return QString("octane");
-	case atChain: return QString("chain");
-    case atCoin: return QString("coin");
-    case atSendMsg: return QString("send_msg.png");
-    case atHouse: return QString("house");
-	case atPerimetr: return QString("perimetr");
-	
-	default: break;
+        case atSettings: return  QString("applications-system");
+        case atExit: return QString("system-log-out");
+        case atStart: return QString("media-play");
+        case atStop: return QString("media-stop");
+        case atPause: return QString("media-pause");
+        case atAdd: return QString("list-add");
+        case atRemove: return QString("list-remove");
+        case atOk: return QString("emblem-ok");
+        case atCancel: return QString("emblem-cancel");
+        case atClear: return QString("edit-clear");
+        case atRedo: return QString("edit-redo");
+        case atUndo: return QString("edit-undo");
+        case atChart: return QString("chart");
+        case atClock: return QString("clock");
+        case atOpen: return QString("document-open");
+        case atSave: return QString("document-save");
+        case atSearch: return QString("system-search");
+        case atUp: return QString("up");
+        case atDown: return QString("down");
+        case atLeft: return QString("left");
+        case atRight: return QString("right");
+        case atLoadData: return QString("down");
+        case atData: return QString("system-file-manager");
+        case atRefresh: return QString("view-refresh");
+        case atMonitoring: return QString("utilities-system-monitor");
+        case atBuy: return QString("ball_green");
+        case atSell: return QString("ball_red");
+        case atBag: return QString("bag");
+        case atBScale: return QString("b_scale");
+        case atRScale: return QString("r_scale");
+        case atSScale: return QString("octane");
+        case atChain: return QString("chain");
+        case atCoin: return QString("coin");
+        case atSendMsg: return QString("send_msg.png");
+        case atHouse: return QString("house");
+        case atPerimetr: return QString("perimetr");
+        case atEject: return QString("eject.png");
+        case atISO: return QString("isofile.png");
+        case atBurn: return QString("burn.png");
+        case atCDErase: return QString("cd_erase.png");
+        case atCalcCRC: return QString("crc.png");
+
+
+        default: break;
     }
     
     return QString();	
@@ -180,43 +184,49 @@ QString LMainWidget::actionText(int type)
 {
     switch (type)
     {
-	case atSettings: return  QString("Application settings");
-	case atExit: return QString("Exit");
-	case atStart: return QString("Start");
-	case atStop: return QString("Stop");
-	case atPause: return QString("Pause");
-	case atAdd: return QString("Add");
-	case atRemove: return QString("Remove");
-	case atOk: return QString("Ok");
-	case atCancel: return QString("Cancel");
-	case atClear: return QString("Clear");
-	case atRedo: return QString("Redo");
-	case atUndo: return QString("Undo");
-	case atChart: return QString("Chart");
-	case atClock: return QString("Clock");
-	case atOpen: return QString("Open");
-	case atSave: return QString("Save");
-	case atSearch: return QString("Search");
-	case atUp: return QString("Up");
-	case atDown: return QString("Down");
-	case atLeft: return QString("Left");
-	case atRight: return QString("Right");
-	case atLoadData: return QString("Load data");
-	case atData: return QString("General data");
-	case atRefresh: return QString("Refresh");
-	case atMonitoring: return QString("Execute test");
-	case atBuy: return QString("Buy");
-	case atSell: return QString("Sell");
-	case atBag: return QString("Bag");
-	case atBScale: return QString("Bar scale");
-	case atRScale: return QString("Round scale");
-	case atSScale: return QString("Scale");
-	case atChain: return QString("Chain");
-    case atCoin: return QString("Coin");
-    case atSendMsg: return QString("Send message");
-    case atHouse: return QString("House");
-	case atPerimetr: return QString("Perimetr");
-	default: break;
+        case atSettings: return  QString("Application settings");
+        case atExit: return QString("Exit");
+        case atStart: return QString("Start");
+        case atStop: return QString("Stop");
+        case atPause: return QString("Pause");
+        case atAdd: return QString("Add");
+        case atRemove: return QString("Remove");
+        case atOk: return QString("Ok");
+        case atCancel: return QString("Cancel");
+        case atClear: return QString("Clear");
+        case atRedo: return QString("Redo");
+        case atUndo: return QString("Undo");
+        case atChart: return QString("Chart");
+        case atClock: return QString("Clock");
+        case atOpen: return QString("Open");
+        case atSave: return QString("Save");
+        case atSearch: return QString("Search");
+        case atUp: return QString("Up");
+        case atDown: return QString("Down");
+        case atLeft: return QString("Left");
+        case atRight: return QString("Right");
+        case atLoadData: return QString("Load data");
+        case atData: return QString("General data");
+        case atRefresh: return QString("Refresh");
+        case atMonitoring: return QString("Execute test");
+        case atBuy: return QString("Buy");
+        case atSell: return QString("Sell");
+        case atBag: return QString("Bag");
+        case atBScale: return QString("Bar scale");
+        case atRScale: return QString("Round scale");
+        case atSScale: return QString("Scale");
+        case atChain: return QString("Chain");
+        case atCoin: return QString("Coin");
+        case atSendMsg: return QString("Send message");
+        case atHouse: return QString("House");
+        case atPerimetr: return QString("Perimetr");
+        case atEject: return QString("Eject");
+        case atISO: return QString("Make ISO");
+        case atBurn: return QString("Burn CD");
+        case atCDErase: return QString("Erase CD");
+        case atCalcCRC: return QString("Calc CRC");
+
+        default: break;
     }
     
     return QString();	

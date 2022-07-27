@@ -19,7 +19,8 @@ class MainForm : public LMainWidget
 {
     Q_OBJECT
 public:
-    enum ISOStages {isoStoped = 270, isoStarting, isoInitSourceDirs, isoFinishedAll, isoMakeNext, isoProcessRun, isoNeedCalcMD5, isoNeedBreak = -1};
+    enum ISOStages {isoStoped = 270, isoStarting, isoInitSourceDirs, isoFinishedAll, isoMakeNext, isoProcessRun,
+                    isoNeedCalcMD5,  isoNeedCalcMD5_CD, isoBurningCD,  isoEraseCD, isoEjectCDROM, isoNeedBreak = -1};
 
     MainForm(QWidget *parent = 0);
     virtual ~MainForm() {}
@@ -33,6 +34,7 @@ protected:
     int                     m_stage;
     QTimer                  *m_timer;
     QString                 m_curISOFile; //full path
+    int                     m_cdBlockSize;
 
 
     QString projectName() const {return "isoworker";}
@@ -41,21 +43,34 @@ protected:
     void initWidgets();
     void initCommonSettings();
 
-
-    void start();
-    void stopBreak();
-    void updateActionsEnable(bool);
     void readParamsPage();
 
-    //cd rw
+    void startMakerISO();
+    void stopBreak();
+    void stopOk();
+    void updateActionsEnable(bool);
     void prepareSourceDirISO();
     void makeISO();
     void calcMD5();
+    void calcMD5_CD();
     void parseMD5();
     QString sourcePath() const;
+    QString burnSpeed() const;
+    QString cdDevice() const;
     void printNextProcessCommand();
     void checkProcessFinishedResult();
+    void checkISOProcessFinishedResult();
+    void checkBurnProcessFinishedResult();
+    void checkEraseProcessFinishedResult();
+    void checkEjectProcessFinishedResult();
+    void checkMD5CDProcessFinishedResult();
     void finishedAll();
+    void tryBurn();
+    void startBurning(const QString&);
+    void eject();
+    void tryErase();
+    void startErase();
+    void runProcess(int);
 
 
     void save();

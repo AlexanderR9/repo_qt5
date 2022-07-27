@@ -33,6 +33,11 @@ public:
     static QString shortDirName(QString);
 
 
+    //возвращает размер файла, в случае ошибки вернет -1
+    static int fileSizeB(QString);
+    static int fileSizeKB(QString);
+    static int fileSizeMB(QString);
+
 };
 
  #endif
