@@ -24,6 +24,7 @@ struct LTGParamsBot
     qint64      chatID;
     quint8      req_timeout; //sec
     quint8      limit_msg; //max msg count
+    quint8      updates_interval; //sec, period for coll func getUpdates, 0 - off updates
 
     void setParams(const LTGParamsBot&);
     QString toStr() const;
@@ -58,7 +59,7 @@ public:
     void sendMsg(const QString&);
 
     //auto checking updates on/off
-    void startCheckingUpdatesTimer(int);
+    void startCheckingUpdatesTimer();
     void stopCheckingUpdatesTimer();
 
 

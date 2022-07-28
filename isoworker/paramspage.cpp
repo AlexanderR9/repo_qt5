@@ -9,6 +9,9 @@
 #include <QSettings>
 
 
+#define MD5_COL             3
+#define ISO_NAME_COL        1
+
 
 
 //ParamsPage
@@ -49,7 +52,7 @@ void ParamsPage::load(QSettings &settings)
 QStringList ParamsPage::headerLabels() const
 {
     QStringList list;
-    list << "N" << "Name" << "Size, Kb";
+    list << "N" << "Name" << "Size, Kb" << "MD5 sum";
     return list;
 }
 void ParamsPage::initTable()
@@ -58,12 +61,45 @@ void ParamsPage::initTable()
     LTable::setTableHeaders(isoTable, headerLabels());
     LTable::resizeTableContents(isoTable);
 }
-void ParamsPage::loadISOList(const QString &path)
+void ParamsPage::updateMD5Column(const QString &path)
 {
-    qDebug() << QString("ParamsPage::loadISOList path: %1").arg(path);
+    int n = isoTable->rowCount();
+    if (n <= 0) return;
+
+    QString fname = QString("%1%2%3").arg(path).arg(QDir::separator()).arg(ParamsPage::md5File());
+    QStringList list;
+    QString err = LFile::readFileSL(fname, list);
+    if (!err.isEmpty())
+    {
+        emit signalError(err);
+        return;
+    }
+    if (list.isEmpty())
+    {
+        emit signalError(QString("Data list of (%1) is empty").arg(ParamsPage::md5File()));
+        return;
+    }
+
+    for (int i=0; i<n; i++)
+    {
+        QString iso_file = isoTable->item(i, ISO_NAME_COL)->text().trimmed();
+        for (int j=list.count()-1; j>=0; j--)
+        {
+            QString s = list.at(j).trimmed();
+            if (s.contains(iso_file))
+            {
+                s = LStatic::strTrimLeft(s, iso_file.length()).trimmed();
+                isoTable->item(i, MD5_COL)->setText(s);
+                break;
+            }
+        }
+    }
+}
+void ParamsPage::reloadISOList(const QString &path)
+{
+    qDebug() << QString("ParamsPage::reloadISOList path: %1").arg(path);
     LTable::removeAllRowsTable(isoTable);
 
-    qDebug("1");
     QStringList list;
     QString err = LFile::dirFiles(path, list, "iso");
     if (!err.isEmpty())
@@ -72,16 +108,18 @@ void ParamsPage::loadISOList(const QString &path)
         return;
     }
 
-    qDebug("2");
     for (int i=0; i<list.count(); i++)
     {
         QStringList row_data;
         row_data.append(QString::number(i+1));
         row_data.append(LFile::shortFileName(list.at(i)));
         row_data.append(QString::number(LFile::fileSizeKB(list.at(i))));
+        row_data.append("---");
         LTable::addTableRow(isoTable, row_data);
     }
 
+
+    updateMD5Column(path);
     LTable::resizeTableContents(isoTable);
 }
 QString ParamsPage::seletedISOFile() const
@@ -94,6 +132,28 @@ QString ParamsPage::seletedISOFile() const
     }
 
     return isoTable->item(rows.first(), 1)->text();
+}
+void ParamsPage::resetColors()
+{
+    int n = isoTable->rowCount();
+    if (n <= 0) return;
+
+    for (int i=0; i<n; i++)
+        isoTable->item(i, MD5_COL)->setTextColor(Qt::black);
+}
+void ParamsPage::findMD5(const QString &md5_value)
+{
+    int n = isoTable->rowCount();
+    if (n <= 0) return;
+
+    for (int i=0; i<n; i++)
+    {
+        if (isoTable->item(i, MD5_COL)->text() == md5_value)
+        {
+            isoTable->item(i, MD5_COL)->setTextColor(Qt::blue);
+            break;
+        }
+    }
 }
 
 

@@ -19,12 +19,17 @@ public:
 
     void save(QSettings&);
     void load(QSettings&);
-    void loadISOList(const QString&);
+    void reloadISOList(const QString&);
     QString seletedISOFile() const;
+    void resetColors();
+    void findMD5(const QString&);
+
+    static QString md5File() {return QString("md5_iso.txt");}
 
 protected:
     QStringList headerLabels() const;
     void initTable();
+    void updateMD5Column(const QString&);
 
 signals:
     void signalError(const QString&);

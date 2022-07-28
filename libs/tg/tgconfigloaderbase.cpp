@@ -84,4 +84,8 @@ void LTGConfigLoaderBase::parseBotParamsNode(const QDomNode &node, LTGParamsBot 
 
     QDomNode req_timeout_node = node.namedItem("req_timeout");
     if (!req_timeout_node.isNull()) p.req_timeout = LStatic::getIntAttrValue("value", req_timeout_node);
+
+    QDomNode updates_interval_node = node.namedItem("updates_interval");
+    if (!updates_interval_node.isNull()) p.updates_interval = LStatic::getIntAttrValue("value", updates_interval_node, 0);
+
 }

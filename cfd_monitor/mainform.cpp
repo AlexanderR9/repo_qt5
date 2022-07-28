@@ -191,7 +191,7 @@ void MainForm::initBotObj()
         return;
     }
 
-    m_bot->startCheckingUpdatesTimer(14000);
+    m_bot->startCheckingUpdatesTimer();
 
 }
 void MainForm::fillConfigPage()

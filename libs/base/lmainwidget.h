@@ -23,6 +23,7 @@ public:
     void addWidget(QWidget*, int, int, int = -1, int = -1);
     QAction* getAction(int) const;
     void addToolBarSeparator();
+    void setActionTooltip(int, QString);
 
     virtual void init();
     

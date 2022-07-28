@@ -19,12 +19,16 @@ LTGAbstractBot::LTGAbstractBot(QObject *parent)
     stopCheckingUpdatesTimer();
 
 }
-void LTGAbstractBot::startCheckingUpdatesTimer(int interval)
+void LTGAbstractBot::startCheckingUpdatesTimer()
 {
     stopCheckingUpdatesTimer();
     if (!m_sender || invalid()) return;
-    if (interval < 500) {qWarning()<<QString("LTGAbstractBot::startCheckingUpdatesTimer - WATNING: timeinterval(%1) < 500").arg(interval); return;}
-    m_timer->start(interval);
+    if (m_params.updates_interval < 1)
+    {
+        qWarning()<<QString("LTGAbstractBot::startCheckingUpdatesTimer - WATNING: get updates is OFF");
+        return;
+    }
+    m_timer->start(m_params.updates_interval*1000);
 }
 void LTGAbstractBot::stopCheckingUpdatesTimer()
 {
@@ -137,11 +141,12 @@ void LTGParamsBot::setParams(const LTGParamsBot &p)
     chatID = p.chatID;
     req_timeout = p.req_timeout;
     limit_msg = p.limit_msg;
+    updates_interval = p.updates_interval;
 }
 QString LTGParamsBot::toStr() const
 {
-    return QString("TGParamsBot: tocken=[%1] chatID=[%2] req_timeout=[%3] limit_msg=[%4]").
-            arg(token).arg(chatID).arg(req_timeout).arg(limit_msg);
+    return QString("TGParamsBot: tocken=[%1] chatID=[%2] req_timeout=[%3] limit_msg=[%4] updates_interval=[%5]").
+            arg(token).arg(chatID).arg(req_timeout).arg(limit_msg).arg(updates_interval);
 }
 void LTGParamsBot::reset()
 {
@@ -149,6 +154,7 @@ void LTGParamsBot::reset()
     chatID = -1;
     req_timeout = 3;
     limit_msg = 20;
+    updates_interval = 10;
 }
 
 

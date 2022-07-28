@@ -20,7 +20,8 @@ class MainForm : public LMainWidget
     Q_OBJECT
 public:
     enum ISOStages {isoStoped = 270, isoStarting, isoInitSourceDirs, isoFinishedAll, isoMakeNext, isoProcessRun,
-                    isoNeedCalcMD5,  isoNeedCalcMD5_CD, isoBurningCD,  isoEraseCD, isoEjectCDROM, isoNeedBreak = -1};
+                    isoNeedCalcMD5,  isoNeedCalcMD5_CD, isoBurningCD,  isoEraseCD, isoEjectCDROM,
+                    isoUmountCD, isoNeedBreak = -1};
 
     MainForm(QWidget *parent = 0);
     virtual ~MainForm() {}
@@ -58,19 +59,24 @@ protected:
     QString burnSpeed() const;
     QString cdDevice() const;
     void printNextProcessCommand();
+    void finishedAll();
+    void tryBurn();
+    void startBurning(const QString&);
+    void eject();
+    void umount();
+    void tryErase();
+    void startErase();
+    void runProcess(int);
+    void prepareCommand(QString);
+
+    //finished process funcs
     void checkProcessFinishedResult();
     void checkISOProcessFinishedResult();
     void checkBurnProcessFinishedResult();
     void checkEraseProcessFinishedResult();
     void checkEjectProcessFinishedResult();
     void checkMD5CDProcessFinishedResult();
-    void finishedAll();
-    void tryBurn();
-    void startBurning(const QString&);
-    void eject();
-    void tryErase();
-    void startErase();
-    void runProcess(int);
+    void checkUmountProcessFinishedResult();
 
 
     void save();
@@ -80,7 +86,7 @@ protected slots:
     void slotAction(int); //virtual slot from parent
     void slotError(const QString&);
     void slotMessage(const QString&);
-//    void slotAppSettingsChanged(QStringList);
+    void slotAppSettingsChanged(QStringList);
     void slotReadyRead();
     void slotFinished();
     void slotTimer();

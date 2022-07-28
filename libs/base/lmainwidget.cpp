@@ -105,6 +105,12 @@ void LMainWidget::addWidget(QWidget *w, int row, int col, int rows, int cols)
 
     lay->addWidget(w, row, col, rows, cols);
 } 
+void LMainWidget::setActionTooltip(int type, QString text)
+{
+    QAction *action = getAction(type);
+    if (!action) qWarning()<<QString("LMainWidget::setActionTooltip WARNING - not found action %1 (%2)").arg(type).arg(actionIconName(type));
+    else action->setText(text);
+}
 void LMainWidget::addAction(int type)
 {
     QString icon_name(actionIconName(type));

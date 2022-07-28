@@ -20,8 +20,11 @@
 
 #define MAKE_ISO_COMMAND        QString("genisoimage")
 #define MD5SUM_COMMAND          QString("md5sum")
-#define MD5SUM_FILE             QString("md5_iso.txt")
 #define CDRECORD_COMMAND        QString("cdrecord")
+#define UMOUNT_COMMAND          QString("umount")
+#define ISOINFO_COMMAND          QString("isoinfo")
+
+//#define MD5SUM_FILE             QString("md5_iso.txt")
 
 
 // MainForm
@@ -55,7 +58,9 @@ void MainForm::initActions()
     addAction(LMainWidget::atCDErase);
     addAction(LMainWidget::atStop);
     addAction(LMainWidget::atEject);
+    addAction(LMainWidget::atRemove);
     addAction(LMainWidget::atCalcCRC);
+    addToolBarSeparator();
     addAction(LMainWidget::atClear);
     addAction(LMainWidget::atSettings);
     addAction(LMainWidget::atExit);
@@ -70,10 +75,11 @@ void MainForm::initWidgets()
     v_splitter->addWidget(m_paramsPage);
     v_splitter->addWidget(m_protocol);
 
+    setActionTooltip(atRemove, "Umount CD");
+    setActionTooltip(atStop, "Break process");
     updateActionsEnable(true);
 
     connect(m_processObj, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
-
 }
 void MainForm::initCommonSettings()
 {
@@ -105,6 +111,7 @@ void MainForm::slotAction(int type)
         case LMainWidget::atClear: {m_protocol->clearProtocol(); break;}
         case LMainWidget::atBurn: {tryBurn(); break;}
         case LMainWidget::atEject: {eject(); break;}
+        case LMainWidget::atRemove: {umount(); break;}
         case LMainWidget::atCDErase: {tryErase(); break;}
         case LMainWidget::atCalcCRC: {calcMD5_CD(); break;}
         default: break;
@@ -112,11 +119,8 @@ void MainForm::slotAction(int type)
 }
 void MainForm::tryBurn()
 {
-    m_protocol->addSpace();
-    m_protocol->addText("[BURN CD]", LProtocolBox::ttFile);
+    prepareCommand("BURN CD");
 
-
-    qDebug("MainForm::burn()");
     QString f_name = m_paramsPage->seletedISOFile();
     if (!f_name.contains(".iso"))
     {
@@ -170,9 +174,7 @@ void MainForm::startBurning(const QString &iso_file)
 }
 void MainForm::tryErase()
 {
-    qDebug("MainForm::erase()");
-    m_protocol->addSpace();
-    m_protocol->addText("[ERASE CD]", LProtocolBox::ttFile);
+    prepareCommand("ERASE CD");
 
     QString q_text = QString("CDRW device: %1.\n%2 ").arg(cdDevice()).arg("Are you sure you want erase a disc?");
     int res = QMessageBox::question(this, "Erase CD!!!", q_text, QMessageBox::Ok, QMessageBox::Cancel);
@@ -206,10 +208,7 @@ void MainForm::startErase()
 }
 void MainForm::eject()
 {
-    qDebug("MainForm::eject()");
-
-    m_protocol->addSpace();
-    m_protocol->addText("[EJECT CD]", LProtocolBox::ttFile);
+    prepareCommand("EJECT CD");
 
     if (cdDevice().isEmpty())
     {
@@ -218,12 +217,25 @@ void MainForm::eject()
     }
 
     m_processObj->setCommand(CDRECORD_COMMAND);
-
     QStringList args;
     args << "-v" << "-eject" << QString("dev=%1").arg(cdDevice());
     m_processObj->setArgs(args);
-
     runProcess(isoEjectCDROM);
+}
+void MainForm::umount()
+{
+    prepareCommand("UMOUNT CD");
+    if (cdDevice().isEmpty())
+    {
+        slotError("invalid CDROM device");
+        return;
+    }
+
+    m_processObj->setCommand(UMOUNT_COMMAND);
+    QStringList args;
+    args << cdDevice();
+    m_processObj->setArgs(args);
+    runProcess(isoUmountCD);
 }
 void MainForm::runProcess(int cmd_type)
 {
@@ -231,6 +243,12 @@ void MainForm::runProcess(int cmd_type)
     printNextProcessCommand();
     updateActionsEnable(false);
     m_processObj->startCommand();
+}
+void MainForm::prepareCommand(QString title)
+{
+    m_paramsPage->resetColors();
+    m_protocol->addSpace();
+    m_protocol->addText(QString("[%1]").arg(title), LProtocolBox::ttFile);
 }
 void MainForm::slotReadyRead()
 {
@@ -240,14 +258,13 @@ void MainForm::slotFinished()
 {
     qDebug("MainForm::slotFinished()");
     QString s_result = (m_processObj->isOk() ? "Ok" : "Fault");
-    int p_type = (m_processObj->isOk() ? LProtocolBox::ttFile : LProtocolBox::ttWarning);
+    int p_type = (m_processObj->isOk() ? LProtocolBox::ttText : LProtocolBox::ttErr);
     m_protocol->addText(QString("process finished, result_code=[%1]").arg(s_result), p_type);
 
     QStringList debug_list(m_processObj->bufferList());
     for (int i=0; i<debug_list.count(); i++) qDebug()<<debug_list.at(i);
 
     checkProcessFinishedResult();
-
 }
 void MainForm::checkProcessFinishedResult()
 {
@@ -257,27 +274,20 @@ void MainForm::checkProcessFinishedResult()
         case isoEraseCD: {checkEraseProcessFinishedResult(); break;}
         case isoEjectCDROM: {checkEjectProcessFinishedResult(); break;}
         case isoNeedCalcMD5_CD: {checkMD5CDProcessFinishedResult(); break;}
+        case isoUmountCD: {checkUmountProcessFinishedResult(); break;}
         default: {checkISOProcessFinishedResult(); break;}
     }
 }
 void MainForm::checkBurnProcessFinishedResult()
 {
     QString buff(m_processObj->buffer().trimmed().toLower());
-    if (!m_processObj->isOk())
-    {
-        slotError(buff);
-    }
+    if (!m_processObj->isOk()) slotError(buff);
     stopOk();
-
 }
 void MainForm::checkMD5CDProcessFinishedResult()
 {
     QString buff(m_processObj->buffer().trimmed().toLower());
-    if (!m_processObj->isOk())
-    {
-        slotError(buff);
-    }
-
+    if (!m_processObj->isOk()) slotError(buff);
     if (buff.contains("no such file or directory"))
     {
         m_protocol->addText(QString("CD disk not found"), LProtocolBox::ttWarning);
@@ -285,6 +295,7 @@ void MainForm::checkMD5CDProcessFinishedResult()
         return;
     }
 
+    //check m_cdBlockSize
     if (m_cdBlockSize < 0)
     {
         QStringList debug_list(m_processObj->bufferList());
@@ -307,13 +318,14 @@ void MainForm::checkMD5CDProcessFinishedResult()
         {
             m_protocol->addText(QString("finded volume size: %1").arg(m_cdBlockSize), LProtocolBox::ttOk);
             m_protocol->addSpace();
-            m_protocol->addText("stage 2: ");
-            m_processObj->setCommand("dd");
+            m_protocol->addText(" -------- stage 2 ----------- ");
 
+
+            //command: dd if=/dev/sr0 bs=2048 count=354854 conv=notrunc,noerror | md5sum -b
+            m_processObj->setCommand("dd");
             QStringList args;
             args << QString("if=%1").arg(cdDevice()) << QString("bs=2048") << QString("count=%1").arg(m_cdBlockSize);
-            //args << QString("conv=notrunc,noerror") << QString("|") << QString("md5sum");// << QString("-b");
-            args << QString("conv=notrunc,noerror | md5sum");
+            args << QString("conv=notrunc,noerror") << QString("|") << QString("md5sum") << QString("-b");
             m_processObj->setArgs(args);
             printNextProcessCommand();
             m_processObj->startCommand();
@@ -327,29 +339,26 @@ void MainForm::checkMD5CDProcessFinishedResult()
     }
     else
     {
-        QStringList debug_list(m_processObj->bufferList());
-        if (debug_list.isEmpty())
+        QString s_crc = buff.trimmed();
+        if (s_crc.isEmpty())
         {
-            m_protocol->addText(QString("debug command is empty"), LProtocolBox::ttWarning);
+            m_protocol->addText(QString("debug of process is empty"), LProtocolBox::ttWarning);
         }
         else
         {
-            QString s_crc = debug_list.last().trimmed();
             int pos = s_crc.indexOf(LStatic::spaceSymbol());
-            if (pos > 0) s_crc = LStatic::strTrimLeft(s_crc, pos).trimmed();
-            m_protocol->addText(QString("MD5 sum:   %1").arg(s_crc), LProtocolBox::ttOk);
+            if (pos < 0) pos = s_crc.indexOf("*");
+            if (pos > 0) s_crc = s_crc.left(pos).trimmed();
+            m_protocol->addText(QString("MD5 sum of CD:  %1").arg(s_crc), LProtocolBox::ttOk);
+            m_paramsPage->findMD5(s_crc);
         }
-
         stopOk();
     }
 }
 void MainForm::checkEjectProcessFinishedResult()
 {
     QString buff(m_processObj->buffer().trimmed().toLower());
-    if (!m_processObj->isOk())
-    {
-        slotError(buff);
-    }
+    if (!m_processObj->isOk()) slotError(buff);
     stopOk();
 
 
@@ -370,13 +379,19 @@ void MainForm::checkEjectProcessFinishedResult()
 
 
 }
+void MainForm::checkUmountProcessFinishedResult()
+{
+    QString buff(m_processObj->buffer().trimmed().toLower());
+    if (!m_processObj->isOk()) slotError(buff);
+    stopOk();
+
+    if (buff.contains("process_err")) m_protocol->addText(buff, LProtocolBox::ttWarning);
+    else m_protocol->addText(buff);
+}
 void MainForm::checkEraseProcessFinishedResult()
 {
     QString buff(m_processObj->buffer().trimmed().toLower());
-    if (!m_processObj->isOk())
-    {
-        slotError(buff);
-    }
+    if (!m_processObj->isOk()) slotError(buff);
     stopOk();
 
     if (buff.contains("Error trying to open") || buff.contains("device or resource busy"))
@@ -437,10 +452,10 @@ void MainForm::parseMD5()
     else crc_value = out.left(pos).trimmed();
 
     f_line = QString("%1     %2 \n\n").arg(f_line).arg(crc_value);
-    m_protocol->addText(QString("append md5sum to file: %1").arg(MD5SUM_FILE));
+    m_protocol->addText(QString("append md5sum to file: %1").arg(ParamsPage::md5File()));
     m_protocol->addText(QString("crc_value: %1").arg(crc_value));
 
-    QString f_name = QString("%1%2%3").arg(sourcePath()).arg(QDir::separator()).arg(MD5SUM_FILE);
+    QString f_name = QString("%1%2%3").arg(sourcePath()).arg(QDir::separator()).arg(ParamsPage::md5File());
     QString err = LFile::appendFile(f_name, f_line);
     if (!err.isEmpty())
         slotError(err);
@@ -452,8 +467,10 @@ void MainForm::updateActionsEnable(bool stoped)
     getAction(LMainWidget::atISO)->setEnabled(stoped);
     getAction(LMainWidget::atBurn)->setEnabled(stoped);
     getAction(LMainWidget::atEject)->setEnabled(stoped);
+    getAction(LMainWidget::atRemove)->setEnabled(stoped);
     getAction(LMainWidget::atCDErase)->setEnabled(stoped);
-    getAction(LMainWidget::atCalcCRC)->setEnabled(false);
+    //getAction(LMainWidget::atCalcCRC)->setEnabled(false);
+    getAction(LMainWidget::atCalcCRC)->setEnabled(stoped);
     getAction(LMainWidget::atSettings)->setEnabled(stoped);
     getAction(LMainWidget::atExit)->setEnabled(stoped);
 }
@@ -467,6 +484,8 @@ void MainForm::readParamsPage()
 }
 void MainForm::startMakerISO()
 {
+    m_paramsPage->resetColors();
+
     m_curISOFile.clear();
     m_protocol->addSpace();
     m_protocol->addText("Starting cenarii for maker ISO", LProtocolBox::ttOk);
@@ -557,12 +576,12 @@ void MainForm::finishedAll()
     m_timer->stop();
     updateActionsEnable(true);
 
-    m_paramsPage->loadISOList(sourcePath());
+    m_paramsPage->reloadISOList(sourcePath());
 }
 void MainForm::calcMD5_CD()
 {
-    m_protocol->addSpace();
-    m_protocol->addText("[CALC MD5 (CD-ROM)]", LProtocolBox::ttFile);
+    prepareCommand("CALC MD5 (CD-ROM)");
+    m_cdBlockSize = -1;
 
     if (cdDevice().isEmpty())
     {
@@ -570,7 +589,7 @@ void MainForm::calcMD5_CD()
         return;
     }
 
-    m_processObj->setCommand("isoinfo");
+    m_processObj->setCommand(ISOINFO_COMMAND);
 
     QStringList args;
     args << "-d" << "-i" << cdDevice();
@@ -580,15 +599,13 @@ void MainForm::calcMD5_CD()
 }
 void MainForm::calcMD5()
 {
-    m_protocol->addSpace();
-    m_protocol->addText("[CALC MD5]", LProtocolBox::ttFile);
+    prepareCommand("CALC MD5 (FILE)");
     if (m_curISOFile.trimmed().isEmpty())
     {
         m_protocol->addText("Current ISO file is empty", LProtocolBox::ttWarning);
         m_stage = isoNeedBreak;
         return;
     }
-
     if (!LFile::fileExists(m_curISOFile))
     {
         m_protocol->addText(QString("Current ISO file [%1] not found").arg(m_curISOFile), LProtocolBox::ttErr);
@@ -634,6 +651,8 @@ void MainForm::makeISO()
 }
 void MainForm::stopBreak()
 {
+    m_paramsPage->resetColors();
+
     m_timer->stop();
     m_stage = isoStoped;
     if (m_processObj->isRunning())
@@ -666,7 +685,7 @@ void MainForm::load()
     if (!ba.isEmpty()) v_splitter->restoreState(ba);
 
     m_paramsPage->load(settings);
-    m_paramsPage->loadISOList(sourcePath());
+    m_paramsPage->reloadISOList(sourcePath());
 }
 QString MainForm::isoFileNameBySourceName(const QString &dir_source) const
 {
@@ -704,7 +723,6 @@ QStringList MainForm::makeArgsBySourcePath(const QString &source_path, const QSt
     args.append(source_path);
     return args;
 }
-
 void MainForm::slotError(const QString &text)
 {
     m_protocol->addText(text, LProtocolBox::ttErr);
@@ -714,26 +732,20 @@ void MainForm::slotMessage(const QString &text)
     m_protocol->addText(text, LProtocolBox::ttText);
 }
 
-/*
+
 void MainForm::slotAppSettingsChanged(QStringList keys)
 {
     qDebug("MainForm::slotAppSettingsChanged");
     LMainWidget::slotAppSettingsChanged(keys);
 
-    QString key = QString("log_max_size");
-    if (keys.contains(key))
+    if (keys.contains("source"))
     {
-        int n = lCommonSettings.paramValue(key).toInt();
-        qDebug()<<QString("MainForm::slotAppSettingsChanged  n=%1").arg(n);
-        LogPage *page = qobject_cast<LogPage*>(m_pages.value(BasePage::ptLog));
-        if (!page)
-        {
-            qWarning()<<QString("MainForm::slotAppSettingsChanged() ERR: invalid convert to LogPage from m_pages");
-            return;
-        }
-        page->setMaxSize(n);
-        page->updatePage();
+        m_protocol->addSpace();
+        m_protocol->addText(QString("Changed source dir: %1").arg(sourcePath()));
+        m_protocol->addText(QString("reloading ISO file list ...."));
+        m_paramsPage->reloadISOList(sourcePath());
+        m_protocol->addText(QString("done!"));
     }
 }
-*/
+
 

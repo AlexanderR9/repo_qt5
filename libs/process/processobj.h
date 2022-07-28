@@ -36,6 +36,7 @@ public:
 
 protected:
     QProcess        *m_process;
+    QProcess        *m_processChild; //дочерний процесс, подключается только в случае если в аргументах присутствует символ '|', т.е. выполняется двойная команда
     QString         m_command; //всего одно слово, пример "make", "mkdir"
     QStringList     m_args; //арументы команды(без пробелов), все что идет после самой команды, пример "-t", "2&>1", "/home/roman/tmp"
     bool            is_running;
@@ -44,6 +45,9 @@ protected:
     QTimer          *m_timer; //таймер периодической проверки выхлопа при выполнении команды
     QString         m_buff; //накапливающийся выхлоп выполняемой текущей команды
 
+
+    void stopProcessChild();
+    void activateProcessChild(int);
 
 protected slots:
     void slotTimer();
