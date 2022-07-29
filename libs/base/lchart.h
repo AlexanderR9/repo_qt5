@@ -183,6 +183,7 @@ public:
     inline void setAxisMarksInterval(int a, int b) {m_axis.setMarksInterval(a, b);}
     inline void setAxisOffsets(int a, int b, int c) {m_axis.setOffsets(a, b, c);}
     inline void setAxisTextOffsets(int a, int b) {m_axis.setTextOffsets(a, b);}
+    inline QString strMinMax() const {return m_axis.strMinMax();} //вывод инфы о мин. макс. оригинальном и текущем
 
 
     //other params

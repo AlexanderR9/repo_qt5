@@ -29,6 +29,19 @@ CFDCalcObj::CFDCalcObj(const CalcActionParams &act_params, QObject *parent)
 {
 
 }
+void CFDCalcObj::slotSetChartData(const QString &ticker, QMap<QDateTime, float> &chart_data)
+{
+    chart_data.clear();
+    loadTickerFile(ticker); //загрузить текущие данные из файла для ticker
+    if (m_currentData.isEmpty())
+    {
+        qWarning()<<QString("CFDCalcObj::slotSetChartData WARNING: history data for %1 is empty").arg(ticker);
+        return;
+    }
+
+    for (int i=0; i<m_currentData.count(); i++)
+        chart_data.insert(m_currentData.at(i).dt(), float(m_currentData.at(i).price));
+}
 void CFDCalcObj::slotGetLastPrice(const QString &ticker, double &price, int &hours_ago)
 {
     price = -1;

@@ -24,6 +24,12 @@ void ConfigPage::slotSetUrlByTicker(const QString &ticker, QString &url)
         }
     }
 }
+void ConfigPage::slotSetChartSource(QStringList &list)
+{
+    list.clear();
+    for (int i=0; i<cfdTable->rowCount(); i++)
+        list << cfdTable->item(i, 1)->text();
+}
 void ConfigPage::setSourses(const QStringList &data)
 {
     sourcesListWidget->clear();

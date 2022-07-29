@@ -39,7 +39,8 @@ HEADERS += $$PWD/mainform.h \
 	$$PWD/cfdpage.h \
 	$$PWD/htmlpage.h \
 	$$PWD/configpage.h \
-	$$PWD/cfdconfigobj.h \
+        $$PWD/chartpage.h \
+        $$PWD/cfdconfigobj.h \
 	$$PWD/logpage.h
 
 
@@ -51,12 +52,14 @@ SOURCES += $$PWD/main.cpp \
 	$$PWD/basepage.cpp \
 	$$PWD/cfdpage.cpp \
 	$$PWD/htmlpage.cpp \
-	$$PWD/configpage.cpp \
-	$$PWD/cfdconfigobj.cpp \
+        $$PWD/configpage.cpp \
+        $$PWD/chartpage.cpp \
+        $$PWD/cfdconfigobj.cpp \
 	$$PWD/logpage.cpp
 
 
 FORMS += $$PWD/ui/configpage.ui \
         $$PWD/ui/htmlpage.ui \
+        $$PWD/ui/chartpage.ui \
         $$PWD/ui/logpage.ui
 

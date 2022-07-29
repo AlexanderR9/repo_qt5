@@ -4,6 +4,7 @@
 #include "lhtmlpagerequester.h"
 #include "cfdpage.h"
 #include "logpage.h"
+#include "chartpage.h"
 #include "htmlpage.h"
 #include "configpage.h"
 #include "cfdconfigobj.h"
@@ -92,6 +93,9 @@ void MainForm::initPages()
     m_pages.insert(BasePage::ptHtml, html_page);
     connect(html_page, SIGNAL(signalGetUrlByTicker(const QString&, QString&)), config_page, SLOT(slotSetUrlByTicker(const QString&, QString&)));
 
+    ChartPage *chart_page = new  ChartPage(this);
+    m_pages.insert(BasePage::ptChart, chart_page);
+    connect(chart_page, SIGNAL(signalGetSource(QStringList&)), config_page, SLOT(slotSetChartSource(QStringList&)));
 
     foreach (BasePage *page, m_pages)
     {
@@ -191,7 +195,7 @@ void MainForm::initBotObj()
         return;
     }
 
-    m_bot->startCheckingUpdatesTimer();
+    //m_bot->startCheckingUpdatesTimer();
 
 }
 void MainForm::fillConfigPage()
@@ -219,6 +223,15 @@ void MainForm::fillConfigPage()
     }
 
     page->updatePage();
+
+    //////////////////////////////////////////
+    ChartPage *chart_page = qobject_cast<ChartPage*>(m_pages.value(BasePage::ptChart));
+    if (!chart_page) qWarning()<<QString("MainForm::fillConfigPage() ERR: invalid convert to ChartPage from m_pages");
+    else
+    {
+        chart_page->initSource();
+        connect(chart_page, SIGNAL(signalGetChartData(const QString&, QMap<QDateTime, float>&)), m_calcObj, SLOT(slotSetChartData(const QString&, QMap<QDateTime, float>&)));
+    }
 }
 void MainForm::initCommonSettings()
 {
@@ -286,10 +299,13 @@ void MainForm::start()
 
     m_timer->setInterval(reqInterval());
     m_timer->start();
+
+    m_bot->startCheckingUpdatesTimer();
 }
 void MainForm::stop()
 {
     m_timer->stop();
+    m_bot->stopCheckingUpdatesTimer();
     m_protocol->addText("Monitoring stoped!", 5);
     updateActionsEnable(true);
 }

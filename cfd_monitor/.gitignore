@@ -12,6 +12,7 @@ log
 ui_configpage.h
 ui_htmlpage.h
 ui_logpage.h
+ui_chartpage.h
 cfd_monitor.tar.gz
 data.tar.gz
 

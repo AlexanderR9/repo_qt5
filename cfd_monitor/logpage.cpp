@@ -34,6 +34,7 @@ QString LogPage::filePathByModule(int module_type) const
         case amtMainWindow:     {f_name = "main_window"; break;}
         case amtCalcObj:        {f_name = "calc_object"; break;}
         case amtHtmlPage:       {f_name = "html_page"; break;}
+        case amtChartPage:       {f_name = "chart_page"; break;}
         case amtTGBot:          {f_name = "tg_bot"; break;}
         default: return QString();
     }
@@ -158,6 +159,7 @@ QString LogStruct::strModule() const
         case amtMainWindow: return "main_window";
         case amtCalcObj: return "calc_object";
         case amtHtmlPage: return "html_page";
+        case amtChartPage: return "chart_page";
         case amtTGBot: return "tg_bot";
         default: break;
     }

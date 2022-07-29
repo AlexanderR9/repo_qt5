@@ -6,7 +6,7 @@
 
 #include <QDateTime>
 
-enum AppModuleType {amtMainWindow = 820, amtTGBot, amtHtmlPage, amtCalcObj};
+enum AppModuleType {amtMainWindow = 820, amtTGBot, amtChartPage, amtHtmlPage, amtCalcObj };
 
 //LogStruct
 struct LogStruct

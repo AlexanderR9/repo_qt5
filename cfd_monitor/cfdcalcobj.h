@@ -59,6 +59,8 @@ protected:
 public slots:
     void slotNewPrice(QString, double); //добавить очередное значение цены для указанного тикера
     void slotGetLastPrice(const QString&, double&, int&);
+    void slotSetChartData(const QString&, QMap<QDateTime, float>&);
+
 
 signals:
     void signalUpdateCFDTable(const QStringList&);

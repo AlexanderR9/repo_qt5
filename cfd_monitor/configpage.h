@@ -32,6 +32,7 @@ protected:
 
 public slots:
     void slotSetUrlByTicker(const QString&, QString&);
+    void slotSetChartSource(QStringList&);
 
 };
 
