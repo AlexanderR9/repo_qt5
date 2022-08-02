@@ -7,4 +7,6 @@ Makefile
 isoworker
 full_clear
 ui_paramspage.h
+ui_foldersstructdialog.h
+
 

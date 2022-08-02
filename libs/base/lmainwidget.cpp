@@ -179,6 +179,8 @@ QString LMainWidget::actionIconName(int type)
         case atBurn: return QString("burn.png");
         case atCDErase: return QString("cd_erase.png");
         case atCalcCRC: return QString("crc.png");
+        case atFoldersStruct: return QString("folders_struct.png");
+
 
 
         default: break;
@@ -231,6 +233,7 @@ QString LMainWidget::actionText(int type)
         case atBurn: return QString("Burn CD");
         case atCDErase: return QString("Erase CD");
         case atCalcCRC: return QString("Calc CRC");
+        case atFoldersStruct: return QString("Folders struct");
 
         default: break;
     }

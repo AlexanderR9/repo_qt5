@@ -29,14 +29,17 @@ unix:!macx: LIBS += -L$$PWD/../libs/process/build/ -llprocess
 
 # Input
 HEADERS += $$PWD/mainform.h \
+        $$PWD/foldersstructdialog.h \
         $$PWD/paramspage.h
+
 
 
 SOURCES += $$PWD/main.cpp \
         $$PWD/mainform.cpp \
+        $$PWD/foldersstructdialog.cpp \
         $$PWD/paramspage.cpp
 
 
-FORMS += $$PWD/ui/paramspage.ui
-#        $$PWD/ui/htmlpage.ui \
+FORMS += $$PWD/ui/paramspage.ui \
+        $$PWD/ui/foldersstructdialog.ui
 

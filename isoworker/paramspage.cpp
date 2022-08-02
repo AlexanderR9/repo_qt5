@@ -11,6 +11,7 @@
 
 #define MD5_COL             3
 #define ISO_NAME_COL        1
+#define TIME_COL            1
 
 
 
@@ -23,9 +24,11 @@ ParamsPage::ParamsPage(QWidget *parent)
 
     initTable();
 }
+/*
 QString ParamsPage::commandName() const
 {
-    return cmdLineEdit->text().trimmed();
+    //return cmdLineEdit->text().trimmed();
+    return QString();
 }
 QStringList ParamsPage::getArgs() const
 {
@@ -33,21 +36,23 @@ QStringList ParamsPage::getArgs() const
     if (s.isEmpty()) return QStringList();
     return LStatic::trimSplitList(s, ";");
 }
+*/
 bool ParamsPage::isSudo() const
 {
-    return isSudoCheckBox->isChecked();
+    //return isSudoCheckBox->isChecked();
+    return false;
 }
 void ParamsPage::save(QSettings &settings)
 {
-    settings.setValue("paramspage/command", cmdLineEdit->text());
-    settings.setValue("paramspage/args", argsLineEdit->text());
-    settings.setValue("paramspage/sudo", isSudoCheckBox->isChecked());
+    //settings.setValue("paramspage/command", cmdLineEdit->text());
+    //settings.setValue("paramspage/args", argsLineEdit->text());
+    //settings.setValue("paramspage/sudo", isSudoCheckBox->isChecked());
 }
 void ParamsPage::load(QSettings &settings)
 {
-    cmdLineEdit->setText(settings.value("paramspage/command").toString());
-    argsLineEdit->setText(settings.value("paramspage/args").toString());
-    isSudoCheckBox->setChecked(settings.value("paramspage/sudo").toBool());
+    //cmdLineEdit->setText(settings.value("paramspage/command").toString());
+    //argsLineEdit->setText(settings.value("paramspage/args").toString());
+    //isSudoCheckBox->setChecked(settings.value("paramspage/sudo").toBool());
 }
 QStringList ParamsPage::headerLabels() const
 {
@@ -55,11 +60,25 @@ QStringList ParamsPage::headerLabels() const
     list << "N" << "Name" << "Size, Kb" << "MD5 sum";
     return list;
 }
+QStringList ParamsPage::logHeaderLabels() const
+{
+    QStringList list;
+    list << "N" << "Time" << "Command" << "File" << "Result";
+    return list;
+}
 void ParamsPage::initTable()
 {
     LTable::fullClearTable(isoTable);
     LTable::setTableHeaders(isoTable, headerLabels());
     LTable::resizeTableContents(isoTable);
+
+    LTable::fullClearTable(logTable);
+    LTable::setTableHeaders(logTable, logHeaderLabels());
+    LTable::resizeTableContents(logTable);
+    logTable->verticalHeader()->hide();
+    LTable::resizeTableContents(logTable);
+
+
 }
 void ParamsPage::updateMD5Column(const QString &path)
 {
@@ -99,6 +118,7 @@ void ParamsPage::reloadISOList(const QString &path)
 {
     qDebug() << QString("ParamsPage::reloadISOList path: %1").arg(path);
     LTable::removeAllRowsTable(isoTable);
+    isoBox->setTitle(QString("ISO list   [DIR: %1]").arg(path));
 
     QStringList list;
     QString err = LFile::dirFiles(path, list, "iso");
@@ -117,7 +137,6 @@ void ParamsPage::reloadISOList(const QString &path)
         row_data.append("---");
         LTable::addTableRow(isoTable, row_data);
     }
-
 
     updateMD5Column(path);
     LTable::resizeTableContents(isoTable);
@@ -154,6 +173,40 @@ void ParamsPage::findMD5(const QString &md5_value)
             break;
         }
     }
+}
+void ParamsPage::startCommand(QString cmd, QString fname)
+{
+    QStringList row_data;
+    row_data.append(QString::number(logTable->rowCount()+1));
+    row_data.append(QString("%1 - ?").arg(LStatic::strCurrentTime(false)));
+    row_data.append(cmd);
+    row_data.append(fname);
+    row_data.append(QString("?"));
+    LTable::addTableRow(logTable, row_data);
+    LTable::resizeTableContents(logTable);
+
+    int n = logTable->rowCount();
+    if (n > 0) logTable->item(n-1, logHeaderLabels().count()-1)->setTextColor(Qt::gray);
+}
+void ParamsPage::finishedCommand(QString result)
+{
+    int n = logTable->rowCount();
+    if (n <= 0) return;
+
+    QTableWidgetItem *r_item = logTable->item(n-1, logHeaderLabels().count()-1);
+    if (!r_item) return;
+
+    r_item->setText(result);
+    if (result.contains("ok")) r_item->setTextColor(QColor(50, 200, 0));
+    else if (result.contains("fault")) r_item->setTextColor(Qt::red);
+    else if (result.contains("break")) r_item->setTextColor(Qt::darkYellow);
+    else r_item->setTextColor(Qt::gray);
+
+    QString s_time = logTable->item(n-1, TIME_COL)->text();
+    s_time.replace("?", LStatic::strCurrentTime(false));
+    logTable->item(n-1, TIME_COL)->setText(s_time);
+
+    LTable::resizeTableContents(logTable);
 }
 
 

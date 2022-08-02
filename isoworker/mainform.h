@@ -68,6 +68,7 @@ protected:
     void startErase();
     void runProcess(int);
     void prepareCommand(QString);
+    void showFoldersStructCD();
 
     //finished process funcs
     void checkProcessFinishedResult();

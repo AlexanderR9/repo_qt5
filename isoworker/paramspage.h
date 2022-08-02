@@ -13,8 +13,8 @@ public:
     ParamsPage(QWidget*);
     virtual ~ParamsPage() {}
 
-    QString commandName() const;
-    QStringList getArgs() const;
+    //QString commandName() const;
+    //QStringList getArgs() const;
     bool isSudo() const;
 
     void save(QSettings&);
@@ -23,11 +23,15 @@ public:
     QString seletedISOFile() const;
     void resetColors();
     void findMD5(const QString&);
+    void startCommand(QString, QString = QString());
+    void finishedCommand(QString);
 
     static QString md5File() {return QString("md5_iso.txt");}
 
 protected:
     QStringList headerLabels() const;
+    QStringList logHeaderLabels() const;
+
     void initTable();
     void updateMD5Column(const QString&);
 
