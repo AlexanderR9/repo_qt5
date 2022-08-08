@@ -168,7 +168,7 @@ QString LFile::dirFiles(QString dir_path, QStringList &list, QString ftype)
         return err;
     }
 
-    QStringList dir_list = dir.entryList();
+    QStringList dir_list = dir.entryList(QDir::Files);
     for (int i=0; i<dir_list.count(); i++)
     {
         QString s = dir_list.at(i).trimmed();

@@ -16,7 +16,7 @@ public:
 
     //возвращает список файлов лежащих в dir_path(полные пути), кроме пустых строк или типа (. или ..)
     //если ftype не пустая строка, то вернет только список файлов с рассширением ftype
-    static QString dirFiles(QString dir_path, QStringList &list, QString ftype = "txt");
+    static QString dirFiles(QString dir_path, QStringList &list, QString ftype = QString());
 
     //возвращает список папок лежащих в dir_path(полные пути), кроме пустых строк или типа (. или ..)
     //если filter_text не пустая строка, то вернет только список папок, имя которых содержит filter_text

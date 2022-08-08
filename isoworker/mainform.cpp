@@ -10,6 +10,7 @@
 
 #include <QDebug>
 #include <QDir>
+#include <QTest>
 #include <QTimer>
 #include <QSettings>
 #include <QSplitter>
@@ -260,9 +261,42 @@ void MainForm::prepareCommand(QString title)
 }
 void MainForm::showFoldersStructCD()
 {
-    FoldersStructDialog d(this);
-    d.exec();
+    qDebug("--------------MainForm::showFoldersStructCD()-------------------");
+    prepareCommand("GET CD MOUNT POINT");
+    m_processObj->setCommand("df");
+    m_processObj->setArgs(QStringList() << "-h");
 
+    qDebug()<<QString("showFoldersStructCD   %1").arg(LStatic::strCurrentTime());
+    runProcess(isoShowStructCD);
+    QTest::qWait(200);
+    while (m_processObj->isRunning())
+        QTest::qWait(100);
+
+    qDebug()<<QString("showFoldersStructCD   %1").arg(LStatic::strCurrentTime());
+
+    QStringList list(m_processObj->bufferList());
+    QString cd_path;
+    QString find_text = QString("%1dev%2sr0").arg(QDir::separator()).arg(QDir::separator());
+    for (int i=0; i<list.count(); i++)
+    {
+        QString s = list.at(i).trimmed();
+        if (s.indexOf(find_text) != 0) continue;
+        s.remove(QString("[process_out]"));
+        s = LStatic::strTrimLeft(s, find_text.length()).trimmed();
+        int pos = s.indexOf(QDir::separator());
+        if (pos > 0) cd_path = LStatic::strTrimLeft(s, pos).trimmed();
+        break;
+    }
+
+    if (cd_path.isEmpty())
+    {
+        m_protocol->addText("CD ROM mount point not found", LProtocolBox::ttWarning);
+        return;
+    }
+
+    m_protocol->addText(QString("CD ROM folder:  %1").arg(cd_path), LProtocolBox::ttOk);
+    FoldersStructDialog d(cd_path, this);
+    d.exec();
 }
 void MainForm::slotReadyRead()
 {
@@ -289,6 +323,7 @@ void MainForm::checkProcessFinishedResult()
         case isoEjectCDROM: {checkEjectProcessFinishedResult(); break;}
         case isoNeedCalcMD5_CD: {checkMD5CDProcessFinishedResult(); break;}
         case isoUmountCD: {checkUmountProcessFinishedResult(); break;}
+        case isoShowStructCD: {checkStructCDProcessFinishedResult(); break;}
         default: {checkISOProcessFinishedResult(); break;}
     }
 }
@@ -403,6 +438,15 @@ void MainForm::checkUmountProcessFinishedResult()
 
     if (buff.contains("process_err")) m_protocol->addText(buff, LProtocolBox::ttWarning);
     else m_protocol->addText(buff);
+}
+void MainForm::checkStructCDProcessFinishedResult()
+{
+    QString buff(m_processObj->buffer().trimmed().toLower());
+    if (!m_processObj->isOk()) slotError(buff);
+    stopOk();
+
+    if (buff.contains("process_err"))
+        m_protocol->addText(buff, LProtocolBox::ttWarning);
 }
 void MainForm::checkEraseProcessFinishedResult()
 {

@@ -21,7 +21,7 @@ class MainForm : public LMainWidget
 public:
     enum ISOStages {isoStoped = 270, isoStarting, isoInitSourceDirs, isoFinishedAll, isoMakeNext, isoProcessRun,
                     isoNeedCalcMD5,  isoNeedCalcMD5_CD, isoBurningCD,  isoEraseCD, isoEjectCDROM,
-                    isoUmountCD, isoNeedBreak = -1};
+                    isoUmountCD, isoShowStructCD, isoNeedBreak = -1};
 
     MainForm(QWidget *parent = 0);
     virtual ~MainForm() {}
@@ -78,6 +78,7 @@ protected:
     void checkEjectProcessFinishedResult();
     void checkMD5CDProcessFinishedResult();
     void checkUmountProcessFinishedResult();
+    void checkStructCDProcessFinishedResult();
 
 
     void save();

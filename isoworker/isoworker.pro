@@ -7,7 +7,7 @@ OBJECTS_DIR=obj
 UI_DIR=ui
 
 QT -= gui
-QT *= network widgets xml
+QT *= network widgets xml testlib
 
 INCLUDEPATH += . \
             $$PWD \
