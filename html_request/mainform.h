@@ -24,11 +24,9 @@ public:
 protected:
     LProtocolBox        *m_protocol;
     LHTMLPageRequester  *m_req;
-//    MyHTMLParser        *m_parser;
     QSplitter           *v_splitter;
     QSplitter           *h_splitter;
     QTextEdit           *m_textView;
-    //QWebEngineView      *m_webView;
     QProgressBar        *m_viewProgress;
     QStringList         m_tickers;
 
@@ -41,13 +39,14 @@ protected:
     void save();
     void load();
 
-    void initWebView(QGroupBox*&);
+    //void initWebView(QGroupBox*&);
 
     void startHtmlRequest(); //отправить http запрос для получения html страницы
     void saveHtmlToFile();
     void loadHtmlFile();
     void parseHtml();
     void loadtickers();
+    void loadtickers_insta();
 
     QString currentUrl() const;
 
@@ -58,7 +57,7 @@ protected slots:
     void slotTimer();
 
     //for m_webView
-    void slotViewStarted();
+    //void slotViewStarted();
     void slotViewProgress(int);
     void slotViewFinished(bool);
 

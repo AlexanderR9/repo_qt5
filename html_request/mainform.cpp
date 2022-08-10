@@ -29,11 +29,9 @@ MainForm::MainForm(QWidget *parent)
     :LMainWidget(parent),
     m_protocol(NULL),
     m_req(NULL),
-    //m_parser(NULL),
     v_splitter(NULL),
     h_splitter(NULL),
     m_textView(NULL),
-    //m_webView(NULL),
     m_viewProgress(NULL)
 {
     setObjectName("main_form_htmlparser");
@@ -41,8 +39,6 @@ MainForm::MainForm(QWidget *parent)
     m_req = new LHTMLPageRequester(this);
     connect(m_req, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_req, SIGNAL(signalDataReady()), this, SLOT(slotReqFinished()));
-
-    //m_parser = new MyHTMLParser(this);
 
     QTimer *timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(slotTimer()));
@@ -97,40 +93,6 @@ void MainForm::slotAction(int type)
         default: break;
     }
 }
-void MainForm::initWebView(QGroupBox *&view_box)
-{
-    /*
-    m_webView = new QWebEngineView(this);
-    connect(m_webView, SIGNAL(loadStarted()), this, SLOT(slotViewStarted()));
-    connect(m_webView, SIGNAL(loadProgress(int)), this, SLOT(slotViewProgress(int)));
-    connect(m_webView, SIGNAL(loadFinished(bool)), this, SLOT(slotViewFinished(bool)));
-
-    m_viewProgress = new QProgressBar(this);
-    m_viewProgress->setTextVisible(true);
-    m_viewProgress->setStyle(QStyleFactory::create("NorwegianWood"));
-
-    //QFont font;
-    //font.setBold(true);
-    //font.setPixelSize(20);
-    //m_viewProgress->setFont(font);
-
-    view_box = new QGroupBox("Web view", this);
-    if (view_box->layout()) delete view_box->layout();
-    view_box->setLayout(new QVBoxLayout(0));
-    view_box->layout()->addWidget(m_webView);
-    view_box->layout()->addWidget(m_viewProgress);
-*/
-}
-void MainForm::slotViewStarted()
-{
-    /*
-    qDebug("MainForm::slotViewStarted()");
-    m_viewProgress->setValue(0);
-    QPalette p;
-    p.setColor(QPalette::Background, Qt::darkYellow);
-    m_viewProgress->setPalette(p);
-    */
-}
 void MainForm::slotViewProgress(int p)
 {
     qDebug()<<QString("MainForm::slotViewProgress()  p=%1").arg(p);
@@ -171,7 +133,7 @@ void MainForm::functorToHtml(const QString &s)
 void MainForm::initWidgets()
 {
     QGroupBox *view_box = NULL;
-    initWebView(view_box);
+    //initWebView(view_box);
 
     v_splitter = new QSplitter(Qt::Vertical, this);
     h_splitter = new QSplitter(Qt::Horizontal, this);
@@ -232,7 +194,8 @@ void MainForm::load()
     ba = settings.value(QString("%1/h_splitter/state").arg(objectName()), QByteArray()).toByteArray();
     if (!ba.isEmpty()) h_splitter->restoreState(ba);
 
-    loadtickers();
+    //loadtickers();
+    loadtickers_insta();
 }
 void MainForm::parseHtml()
 {
@@ -278,10 +241,6 @@ void MainForm::loadHtmlFile()
 
     m_textView->setPlainText(data);
     m_protocol->addText(QString("Ok!  Readed %1 bytes.").arg(data.size()));
-
-    //if (!m_webView->page()) qDebug()<<QString("page is NULL");
-    //m_webView->setHtml(data);
-
 }
 void MainForm::saveHtmlToFile()
 {
@@ -331,17 +290,12 @@ void MainForm::startHtmlRequest()
     m_textView->clear();
     m_textView->setDocumentTitle(QString("------------- HTML of url(%1) ------------------").arg(m_req->url()));
 
-    ///////////////for m_webView////////////////////////////////////
-    //m_webView->load(currentUrl());
-    //m_webView->show();
-
     ///////////////for m_req////////////////////////////////////
     if (m_req) 
     {
         m_req->setUrl(currentUrl());
         m_req->startRequest();
     }
-
 }
 QString MainForm::currentUrl() const
 {
@@ -367,7 +321,7 @@ void MainForm::slotReqFinished()
             QString amp("&");
             if (s.contains(amp)) s.replace(amp, QString("&amp;"));
 
-            QString f_line = QString("<cfd ticker=\"%1\" name=\"%2\" source=\"1\"").arg(m_tickers.last()).arg(s);
+            QString f_line = QString("<cfd ticker=\"%1\" name=\"%2\" source=\"1\" insta=\"true\"").arg(m_tickers.last()).arg(s);
             m_tickers.removeLast();
 
             QStringList direction = LStatic::trimSplitList(list.at(i+2).trimmed(), "|");
@@ -394,8 +348,6 @@ void MainForm::loadtickers()
 {
     m_protocol->addSpace();
     m_textView->clear();
-
-
     QString f_name = "tickers.txt";
     f_name = QString("%1%2%3").arg(SAVE_HTML_FOLDER).arg(QDir::separator()).arg(f_name);
     m_protocol->addText(QString("Try load file [%1] .........").arg(f_name), LProtocolBox::ttOk);
@@ -419,6 +371,40 @@ void MainForm::loadtickers()
             continue;
         }
         m_tickers[i] = s;
+        qDebug()<<QString("%1.   [%2]").arg(i+1).arg(m_tickers.at(i));
+    }
+    m_protocol->addText(QString("loaded %1 tickers.").arg(m_tickers.count()), LProtocolBox::ttOk);
+
+}
+void MainForm::loadtickers_insta()
+{
+    m_protocol->addSpace();
+    m_textView->clear();
+    QString f_name = "tickers_insta.txt";
+    f_name = QString("%1%2%3").arg(SAVE_HTML_FOLDER).arg(QDir::separator()).arg(f_name);
+    m_protocol->addText(QString("Try load file [%1] .........").arg(f_name), LProtocolBox::ttOk);
+
+    m_tickers.clear();
+    QString err = LFile::readFileSL(f_name, m_tickers);
+    if (!err.isEmpty())
+    {
+        slotError(err);
+        return;
+    }
+
+
+    int space_pos = -1;
+    for (int i=m_tickers.count()-1; i>=0; i--)
+    {
+        QString s = m_tickers.at(i).trimmed();
+        s = s.remove("\n");
+        s = s.remove("\r");
+        if (s.isEmpty()) {m_tickers.removeAt(i); continue;}
+        if (s.indexOf("#") == 0) s = LStatic::strTrimLeft(s, 1);
+        space_pos = s.indexOf(LStatic::spaceSymbol());
+        if (space_pos <= 0) {m_tickers.removeAt(i); continue;}
+        m_tickers[i] = s.left(space_pos);
+
         qDebug()<<QString("%1.   [%2]").arg(i+1).arg(m_tickers.at(i));
     }
     m_protocol->addText(QString("loaded %1 tickers.").arg(m_tickers.count()), LProtocolBox::ttOk);

@@ -28,16 +28,33 @@ struct CFDObj
 
     QString name;
     QString ticker;
+    QString country;
     int source_id;
     QString url_text;
+    bool is_insta;
 
-    void reset() {source_id=-1; name = ticker = url_text = QString();}
+    void reset() {source_id=-1; name = ticker = url_text = QString(); is_insta=false;}
     bool invalid() const {return (source_id < 0 || name.isEmpty() || ticker.isEmpty());}
-    QString toStr() const {return QString("CFDObj: (%1)  ticker=%2  source_id=%3  url_text=[%4]").arg(name).arg(ticker).arg(source_id).arg(url_text);}
+    QString toStr() const {return QString("CFDObj: (%1)  ticker=%2  source_id=%3  url_text=[%4]  insta=%5  county=%6").
+                arg(name).arg(ticker).arg(source_id).arg(url_text).arg(is_insta?"yes":"no").arg(country);}
     QString requestUrl(const QString &base_url) const {return QString("%1%2").arg(base_url).arg(url_text.isEmpty()?ticker:url_text);}
 
 };
 
+// GetDivsParams
+struct GetDivsParams
+{
+    GetDivsParams() {reset();}
+
+    quint8 request_interval; //hours, 0 - off algoritm
+    QString source_url;
+    quint16 show_last;
+
+    void reset() {source_url.clear(); request_interval = 0; show_last = 200;}
+    QString toStr() const {return QString("DivsParams: request_interval=%1, shown_history=%2,  source_url: %3").arg(request_interval).arg(show_last).arg(source_url);}
+};
+
+// CalcActionParams
 struct CalcActionParams
 {
     CalcActionParams() {reset();}
@@ -69,17 +86,20 @@ public:
 
     inline int cfdCount() const {return m_cfdList.count();}
     inline const CalcActionParams& calcActionParams() const {return m_actParams;}
+    inline const GetDivsParams& divParams() const {return m_divParams;}
 
 protected:
     QString m_configFile;
     QList<CFDDataSource> m_sources;
     QList<CFDObj> m_cfdList;
     CalcActionParams m_actParams;
+    GetDivsParams m_divParams;
     int m_curCFDIndex; //for request data
 
     void loadSources(const QDomNode&);
     void loadCFDList(const QDomNode&);
     void loadActParams(const QDomNode&);
+    void loadDivParams(const QDomNode&);
 
     void reset();
     void sendConfigInfo();
@@ -88,6 +108,10 @@ private:
     QString sourceByID(int) const;
     bool containsTicker(QString) const;
     double getDoubleAttrValue(const QDomNode&) const;
+
+public slots:
+    void slotSetInstaPtr(const QString&, bool&);
+
 
 };
 

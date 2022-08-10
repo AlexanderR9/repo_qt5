@@ -14,6 +14,7 @@
 struct LogStruct;
 struct CalcActionParams;
 
+
 //CFDFileRecord  (запись для одной временной точки и соответвующей ей цены)
 struct CFDFileRecord
 {
@@ -40,6 +41,8 @@ class CFDCalcObj : public LSimpleObject
 public:
     CFDCalcObj(const CalcActionParams&, QObject*);
     virtual ~CFDCalcObj() {}
+
+    static QString dataFolderPath();
 
 protected:
     QList<CFDFileRecord> m_currentData; //контейнер для загрузки всей истории цены для одного тикера

@@ -28,7 +28,7 @@ protected:
 
 public slots:
     void slotNewPrice(const QStringList&);
-
+    void slotSetCurrentPrices(QMap<QString, double>&);
 
 private:
     void getCellValue(const QString&, double&, bool&);

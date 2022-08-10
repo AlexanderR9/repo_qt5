@@ -6,11 +6,13 @@
 
 #include <QTimer>
 
+#define GET_DIV_TICKER  QString("get_divs")
+
+
 //HtmlPage
 HtmlPage::HtmlPage(QWidget *parent)
     :BasePage(parent),
       m_requester(NULL),
-      http_requester(NULL),
       m_timer(NULL),
       m_runingTime(0)
 {
@@ -21,68 +23,37 @@ HtmlPage::HtmlPage(QWidget *parent)
     connect(m_requester, SIGNAL(signalDataReady()), this, SLOT(slotDataReady()));
     connect(m_requester, SIGNAL(signalProgress(int)), this, SLOT(slotProgress(int)));
 
-    http_requester = new LHTMLRequester(this);
-    connect(http_requester, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
-    connect(http_requester, SIGNAL(signalFinished(bool)), this, SLOT(slotRequestFinished(bool)));
-
     m_timer = new QTimer(this);
     connect(m_timer, SIGNAL(timeout()), this, SLOT(slotTimer()));
-    m_timer->setInterval(1000);
+    m_timer->setInterval(500);
 }
 void HtmlPage::slotTimer()
 {
     m_runingTime++;
     infoLabel->setText(QString("request runing time: %1 sec.").arg(m_runingTime));
-
 }
 void HtmlPage::slotBreaked(int terminationStatus, int exitCode)
 {
     m_timer->stop();
 }
-void HtmlPage::slotRequestFinished(bool ok)
+void HtmlPage::slotGetDivData(const QString &url)
 {
-    m_timer->stop();
-
-    if (!ok)
+    if (m_requester->isBuzy())
     {
-        qWarning("HtmlPage::slotRequestFinished  req_result=fault");
+        emit signalError("requester is buzy");
+        sendLog("get div data", 2);
         return;
     }
 
-    QString html_data;
-    http_requester->getHtmlData(html_data);
-
-    textEdit->setPlainText(html_data);
-    infoLabel->setText(QString("RESULT=[OK]  HTML_SIZE=[%1]").arg(html_data.length()));
-    emit signalMsg("Request finished, result Ok!");
-}
-void HtmlPage::tryHTTPRequest(const QString &ticker)
-{
-    if (http_requester->isBuzy())
-    {
-        emit signalError("http_requester is buzy");
-        return;
-    }
-    //qDebug("HtmlPage::tryHTTPRequest");
-    resetPage(ticker);
-    if (ticker.isEmpty())
-    {
-        emit signalError("current ticker is empty");
-        return;
-    }
-
-    QString url;
-    emit signalGetUrlByTicker(ticker, url);
-
+    resetPage(GET_DIV_TICKER);
+    m_priceParser.updateInput(GET_DIV_TICKER, url);
+    m_requester->setUrl(url);
     m_timer->start();
-    qDebug("http_requester->setUrl(url);");
-
-    http_requester->setUrl(url);
-    http_requester->startRequest();
-
+    m_requester->startRequest();
 }
 void HtmlPage::tryRequest(const QString &ticker)
 {
+    //qDebug()<<QString("HtmlPage::tryRequest for %1").arg(ticker);
     if (m_requester->isBuzy())
     {
         emit signalError("requester is buzy");
@@ -91,7 +62,6 @@ void HtmlPage::tryRequest(const QString &ticker)
     }
 
     resetPage(ticker);
-
     if (ticker.isEmpty())
     {
         emit signalError("current ticker is empty");
@@ -99,11 +69,12 @@ void HtmlPage::tryRequest(const QString &ticker)
         return;
     }
 
+
     QString url;
     emit signalGetUrlByTicker(ticker, url);
+
     m_requester->setUrl(url);
     m_priceParser.updateInput(ticker, url);
-
     m_timer->start();
     m_requester->startRequest();
 }
@@ -118,9 +89,13 @@ void HtmlPage::getPriceFromPlainData()
     else
     {
         QPair<QString, double> pair(m_priceParser.lastPrice());
-        //emit signalMsg(QString("Getted price for [%1] : %2").arg(pair.first).arg(QString::number(pair.second, 'f', 2)));
         emit signalNewPrice(pair.first, pair.second);
     }
+}
+void HtmlPage::getDivsFromPlainData()
+{
+    //qDebug("HtmlPage::getDivsFromPlainData()");
+    emit signalDivDataReceived(m_requester->plainData());
 }
 void HtmlPage::resetPage(const QString &ticker)
 {
@@ -147,7 +122,8 @@ void HtmlPage::slotDataReady()
         emit signalMsg("Ok!");
         sendLog(m_priceParser.curTicker(), 0);
 
-        getPriceFromPlainData();
+        if (isDivRequest()) getDivsFromPlainData();
+        else getPriceFromPlainData();
     }
     infoLabel->setText(QString("%1 - %2").arg(infoLabel->text()).arg(s));
 }
@@ -171,6 +147,13 @@ void HtmlPage::slotProgress(int p)
 
     //qDebug()<<QString("status=%1  action=%2").arg(m_requester->registerUserData());
 }
+bool HtmlPage::isDivRequest() const
+{
+    return (m_priceParser.curTicker() == GET_DIV_TICKER);
+}
+
+
+
 
 
 //HtmlWorker
@@ -227,24 +210,19 @@ void HtmlWorker::execMetod1(const QString &data) //smart-lab
         QString s = list.at(i).trimmed();
         if (s.left(1) == "$" && s.right(1) == "%")
         {
-            //qDebug()<<QString("find data line [%1]").arg(s);
             s = LStatic::strTrimLeft(s, 1).trimmed();
-            qDebug()<<QString("find data line_next [%1]").arg(s);
+            //qDebug()<<QString("find data line_next [%1]").arg(s);
             int pos = s.indexOf(LStatic::spaceSymbol());
-            //qDebug()<<QString("spaceSymbol=[%1]  code=%2").arg(LStatic::spaceSymbol()).arg(QChar(LStatic::spaceSymbol().at(0)).unicode());
-
-            //int pos = s.indexOf(" ");
-            //qDebug()<<QString("pos=%1").arg(pos);
             if (pos > 0)
             {
-                qDebug()<<QString("   read price, symbol_pos=%1 s=[%2]").arg(pos).arg(s);
+                //qDebug()<<QString("   read price, symbol_pos=%1 s=[%2]").arg(pos).arg(s);
                 m_price = s.left(pos).trimmed().toDouble(&ok);
             }
             else
             {
-                int len = s.length();
-                for (int k=0; k<len; k++)
-                    qDebug()<<QString("k=%0:  symbol=[%1]  code=%2").arg(k).arg(s[k]).arg(QChar(s[k]).unicode());
+                //int len = s.length();
+                //for (int k=0; k<len; k++)
+                    //qDebug()<<QString("k=%0:  symbol=[%1]  code=%2").arg(k).arg(s[k]).arg(QChar(s[k]).unicode());
             }
             break;
         }
@@ -261,7 +239,7 @@ void HtmlWorker::execMetod2(const QString &data) //finviz
     QStringList list;
     trimData(data, list);
 
-    qDebug()<<QString("HtmlWorker::execMetod2 - list size %1").arg(list.count());
+    //qDebug()<<QString("HtmlWorker::execMetod2 - list size %1").arg(list.count());
 
     bool ok = false;
     for (int i=0; i<list.count(); i++)
@@ -271,7 +249,7 @@ void HtmlWorker::execMetod2(const QString &data) //finviz
         int pos = s.indexOf("price");
         if (pos < 0) continue;
 
-        qDebug()<<QString("find price word, line %1, s=[%2]").arg(i).arg(s);
+        //qDebug()<<QString("find price word, line %1, s=[%2]").arg(i).arg(s);
         QString s2 = s.left(pos).trimmed();
         if (s2.right(6) == "target") {qDebug("has target"); continue;}
 
@@ -279,7 +257,7 @@ void HtmlWorker::execMetod2(const QString &data) //finviz
         pos = s.indexOf(LStatic::spaceSymbol());
         if (pos > 0 || s.length() < 7)
         {
-            qDebug()<<QString("   read price, symbol_pos=%1 s=[%2]").arg(pos).arg(s);
+            //qDebug()<<QString("   read price, symbol_pos=%1 s=[%2]").arg(pos).arg(s);
             m_price = s.left(pos).trimmed().toDouble(&ok);
             break;
         }

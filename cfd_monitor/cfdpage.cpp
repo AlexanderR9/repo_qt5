@@ -35,6 +35,19 @@ void CFDPage::slotNewPrice(const QStringList &row_data)
 
     updatePage();
 }
+void CFDPage::slotSetCurrentPrices(QMap<QString, double> &map)
+{
+    map.clear();
+
+    bool ok;
+    int price_col = m_table->columnCount() - 1;
+    for (int i=0; i<m_table->rowCount(); i++)
+    {
+        QString ticker = m_table->item(i, TICKER_COL)->text();
+        double price = m_table->item(i, price_col)->text().toDouble(&ok);
+        if (price > 10 && price < 500) map.insert(ticker, price);
+    }
+}
 void CFDPage::updateCellColors()
 {
     double value = 0;

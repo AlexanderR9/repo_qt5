@@ -6,10 +6,6 @@
 
 #include <QDebug>
 
-//#define LIMIT_PERIOD1   5.5 // % for day
-//#define LIMIT_PERIOD2   8.5 // % for week
-//#define LIMIT_PERIOD3   20.5 // % for month
-
 #define UPDATE_INTERVAL_PERIOD1     24      //hours
 #define UPDATE_INTERVAL_PERIOD2     24*3    //hours
 #define UPDATE_INTERVAL_PERIOD3     24*10   //hours
@@ -33,7 +29,7 @@ void TGBot::slotTimer()
 }
 void TGBot::receivedUpdates(const QList<LTGUpdate> &updates)
 {
-    qDebug()<<QString("TGBot::receivedUpdates -  updates_size %1").arg(updates.count());
+    //qDebug()<<QString("TGBot::receivedUpdates -  updates_size %1").arg(updates.count());
     if (updates.isEmpty())
     {
         last_update_id = -1;
@@ -48,7 +44,7 @@ void TGBot::receivedUpdates(const QList<LTGUpdate> &updates)
 }
 void TGBot::parseUpdate(const LTGUpdate &update)
 {
-    qDebug()<<update.toStr();
+    //qDebug()<<update.toStr();
     if (m_params.chatID != update.chat_id)
     {
         QString err = QString("UPDATE: warning chat_id(%1)").arg(update.chat_id);
@@ -82,10 +78,12 @@ void TGBot::slotNewChangingPrices(const QString &ticker, const QList<double> &ch
         return;
     }
 
+    /*
     qDebug()<<QString("TGBot::slotNewChangingPrices - %1:  d1=%2%  d2=%3%  d3=%4%").arg(ticker).
               arg(QString::number(changing_data.at(0), 'f', 2)).
               arg(QString::number(changing_data.at(1), 'f', 2)).
               arg(QString::number(changing_data.at(2), 'f', 2));
+              */
 
     if (qAbs(changing_data.at(0)) > m_actParams.notice_day_size)
         trySendDeviation(ticker, changing_data.at(0), 1);

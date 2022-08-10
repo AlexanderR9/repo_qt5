@@ -93,7 +93,9 @@ void LTGAbstractBot::sendMsg(const QString &text)
 }
 void LTGAbstractBot::getUpdates(qint64 last_update_id)
 {
-    qDebug()<<QString("LTGAbstractBot::getUpdates exec, last_update_id=%1").arg(last_update_id);
+    if (m_debugLevel > 0)
+        qDebug()<<QString("LTGAbstractBot::getUpdates exec, last_update_id=%1").arg(last_update_id);
+
     QJsonObject jsonObject;
     jsonObject["limit"] = m_params.limit_msg;
     jsonObject["timeout"] = m_params.req_timeout;

@@ -37,6 +37,7 @@ HEADERS += $$PWD/mainform.h \
 	$$PWD/statobj.h \
 	$$PWD/basepage.h \
 	$$PWD/cfdpage.h \
+	$$PWD/divpage.h \
 	$$PWD/htmlpage.h \
 	$$PWD/configpage.h \
         $$PWD/chartpage.h \
@@ -51,6 +52,7 @@ SOURCES += $$PWD/main.cpp \
 	$$PWD/statobj.cpp \
 	$$PWD/basepage.cpp \
 	$$PWD/cfdpage.cpp \
+	$$PWD/divpage.cpp \
 	$$PWD/htmlpage.cpp \
         $$PWD/configpage.cpp \
         $$PWD/chartpage.cpp \

@@ -14,7 +14,7 @@ class QListWidgetItem;
 
 
 
-//ConfigPage
+//ChartPage
 class ChartPage : public BasePage, Ui::ChartPage
 {
     Q_OBJECT

@@ -2,6 +2,10 @@
 #include "ltable.h"
 #include "lsearch.h"
 
+#include <QDebug>
+
+
+#define TICKER_COL  1
 
 ConfigPage::ConfigPage(QWidget *parent)
     :BasePage(parent),
@@ -14,21 +18,24 @@ ConfigPage::ConfigPage(QWidget *parent)
 }
 void ConfigPage::slotSetUrlByTicker(const QString &ticker, QString &url)
 {
+    qDebug("ConfigPage::slotSetUrlByTicker 1");
     url.clear();
+    int source_col = cfdTable->columnCount() - 1;
     for (int i=0; i<cfdTable->rowCount(); i++)
     {
-        if (cfdTable->item(i, 1)->text() == ticker)
+        if (cfdTable->item(i, TICKER_COL)->text() == ticker)
         {
-            url = cfdTable->item(i, 3)->text().trimmed();
+            url = cfdTable->item(i, source_col)->text().trimmed();
             break;
         }
     }
+    qDebug()<<QString("ConfigPage::slotSetUrlByTicker URL: [%1]").arg(url);
 }
 void ConfigPage::slotSetChartSource(QStringList &list)
 {
     list.clear();
     for (int i=0; i<cfdTable->rowCount(); i++)
-        list << cfdTable->item(i, 1)->text();
+        list << cfdTable->item(i, TICKER_COL)->text();
 }
 void ConfigPage::setSourses(const QStringList &data)
 {
@@ -45,7 +52,6 @@ void ConfigPage::setTGBotParams(const QMap<QString, QString> &map)
         row_data << keys.at(i) << map.value(keys.at(i));
         LTable::addTableRow(tgTable, row_data);
     }
-
 }
 void ConfigPage::initSearch()
 {
@@ -59,7 +65,7 @@ void ConfigPage::reinitCFDTable()
     cfdTable->verticalHeader()->hide();
 
     QStringList headers;
-    headers << QString("N") << QString("Ticker") << QString("Name") << QString("Request URL");
+    headers << QString("N") << QString("Ticker") << QString("Name") << QString("Country") << QString("Is insta") << QString("Request URL");
     LTable::setTableHeaders(cfdTable, headers);
 }
 void ConfigPage::reinitTGTable()

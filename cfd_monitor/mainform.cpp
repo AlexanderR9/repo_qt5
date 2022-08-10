@@ -5,6 +5,7 @@
 #include "cfdpage.h"
 #include "logpage.h"
 #include "chartpage.h"
+#include "divpage.h"
 #include "htmlpage.h"
 #include "configpage.h"
 #include "cfdconfigobj.h"
@@ -39,18 +40,6 @@ MainForm::MainForm(QWidget *parent)
 {
     m_timer = new QTimer(this);
     connect(m_timer, SIGNAL(timeout()), this, SLOT(slotTimer()));
-
-
-    /*
-    qDebug()<<QString("PluginsPath: [%1]").arg(QLibraryInfo::location(QLibraryInfo::PluginsPath));
-    qDebug()<<QString("DataPath: [%1]").arg(QLibraryInfo::location(QLibraryInfo::DataPath));
-    qDebug()<<QString("LibrariesPath: [%1]").arg(QLibraryInfo::location(QLibraryInfo::LibrariesPath));
-    qDebug()<<QString("LibraryExecutablesPath: [%1]").arg(QLibraryInfo::location(QLibraryInfo::PluginsPath));
-    qDebug()<<QString("TranslationsPath: [%1]").arg(QLibraryInfo::location(QLibraryInfo::PluginsPath));
-*/
-
-
-
 }
 void MainForm::initActions()
 {
@@ -96,6 +85,14 @@ void MainForm::initPages()
     ChartPage *chart_page = new  ChartPage(this);
     m_pages.insert(BasePage::ptChart, chart_page);
     connect(chart_page, SIGNAL(signalGetSource(QStringList&)), config_page, SLOT(slotSetChartSource(QStringList&)));
+
+    DivPage *div_page = new  DivPage(this);
+    m_pages.insert(BasePage::ptDiv, div_page);
+    connect(div_page, SIGNAL(signalGetSource(QStringList&)), config_page, SLOT(slotSetChartSource(QStringList&)));
+    connect(div_page, SIGNAL(signalGetDivData(const QString&)), html_page, SLOT(slotGetDivData(const QString&)));
+    connect(html_page, SIGNAL(signalDivDataReceived(const QString&)), div_page, SLOT(slotDivDataReceived(const QString&)));
+    connect(div_page, SIGNAL(signalGetCurrentPrices(QMap<QString, double>&)), cfd_page, SLOT(slotSetCurrentPrices(QMap<QString, double>&)));
+
 
     foreach (BasePage *page, m_pages)
     {
@@ -194,44 +191,48 @@ void MainForm::initBotObj()
         slotError(QString("invalid loaded bot parameters"));
         return;
     }
-
-    //m_bot->startCheckingUpdatesTimer();
-
 }
-void MainForm::fillConfigPage()
+void MainForm::fillPages()
 {
-    ConfigPage *page = qobject_cast<ConfigPage*>(m_pages.value(BasePage::ptConfig));
-    if (!page)
+    //config page
+    ConfigPage *config_page = qobject_cast<ConfigPage*>(m_pages.value(BasePage::ptConfig));
+    if (config_page)
     {
-        qWarning()<<QString("MainForm::fillConfigPage() ERR: invalid convert to ConfigPage from m_pages");
-        return;
+        config_page->reinitCFDTable();
+        config_page->reinitTGTable();
+        config_page->setTGBotParams(m_bot->getParams());
+        QStringList data(m_configObj->getSources());
+        config_page->setSourses(data);
+
+        int n = m_configObj->cfdCount();
+        for (int i=0; i<n; i++)
+        {
+            QStringList row_data(m_configObj->getCFDObjectData(i));
+            config_page->addCFDObject(row_data);
+        }
+        config_page->updatePage();
     }
+    else qWarning()<<QString("MainForm::fillConfigPage() ERR: invalid convert to ConfigPage from m_pages");
 
-    page->reinitCFDTable();
-    page->reinitTGTable();
-
-    page->setTGBotParams(m_bot->getParams());
-
-    QStringList data(m_configObj->getSources());
-    page->setSourses(data);
-
-    int n = m_configObj->cfdCount();
-    for (int i=0; i<n; i++)
-    {
-        QStringList row_data(m_configObj->getCFDObjectData(i));
-        page->addCFDObject(row_data);
-    }
-
-    page->updatePage();
-
-    //////////////////////////////////////////
+    //chart page
     ChartPage *chart_page = qobject_cast<ChartPage*>(m_pages.value(BasePage::ptChart));
-    if (!chart_page) qWarning()<<QString("MainForm::fillConfigPage() ERR: invalid convert to ChartPage from m_pages");
-    else
+    if (chart_page)
     {
         chart_page->initSource();
         connect(chart_page, SIGNAL(signalGetChartData(const QString&, QMap<QDateTime, float>&)), m_calcObj, SLOT(slotSetChartData(const QString&, QMap<QDateTime, float>&)));
     }
+    else qWarning()<<QString("MainForm::fillConfigPage() ERR: invalid convert to ChartPage from m_pages");
+
+    //divs page
+    DivPage *div_page = qobject_cast<DivPage*>(m_pages.value(BasePage::ptDiv));
+    if (div_page)
+    {
+        div_page->initSource();
+        div_page->setReqParams(m_configObj->divParams().source_url, m_configObj->divParams().request_interval*3600);
+        div_page->setShownHistory(m_configObj->divParams().show_last);
+        connect(div_page, SIGNAL(signalGetInstaPtr(const QString&, bool&)), m_configObj, SLOT(slotSetInstaPtr(const QString&, bool&)));
+    }
+    else qWarning()<<QString("MainForm::fillConfigPage() ERR: invalid convert to DivPage from m_pages");
 }
 void MainForm::initCommonSettings()
 {
@@ -332,7 +333,7 @@ void MainForm::load()
     initCalcObj();
     initBotObj();
 
-    fillConfigPage();
+    fillPages();
 
     QStringList keys;
     keys.append(QString("log_max_size"));
@@ -341,14 +342,14 @@ void MainForm::load()
 }
 void MainForm::slotAppSettingsChanged(QStringList keys)
 {
-    qDebug("MainForm::slotAppSettingsChanged");
+   // qDebug("MainForm::slotAppSettingsChanged");
     LMainWidget::slotAppSettingsChanged(keys);
 
     QString key = QString("log_max_size");
     if (keys.contains(key))
     {
         int n = lCommonSettings.paramValue(key).toInt();
-        qDebug()<<QString("MainForm::slotAppSettingsChanged  n=%1").arg(n);
+       // qDebug()<<QString("MainForm::slotAppSettingsChanged  n=%1").arg(n);
         LogPage *page = qobject_cast<LogPage*>(m_pages.value(BasePage::ptLog));
         if (!page)
         {

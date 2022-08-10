@@ -15,6 +15,19 @@ CFDConfigObject::CFDConfigObject(const QString &fname, QObject *parent)
 {
     reset();
 }
+void CFDConfigObject::slotSetInstaPtr(const QString &ticker, bool &b)
+{
+    //qDebug("CFDConfigObject::slotSetInstaPtr");
+    int n = m_cfdList.count();
+    for (int i=0; i<n; i++)
+    {
+        if (m_cfdList.at(i).ticker == ticker)
+        {
+            b = m_cfdList.at(i).is_insta;
+            break;
+        }
+    }
+}
 QStringList CFDConfigObject::getSources() const
 {
     QStringList list;
@@ -50,6 +63,8 @@ QStringList CFDConfigObject::getCFDObjectData(int i) const
     list.append(QString::number(i+1));
     list.append(m_cfdList.at(i).ticker);
     list.append(m_cfdList.at(i).name);
+    list.append(m_cfdList.at(i).country);
+    list.append(m_cfdList.at(i).is_insta ? "true" : "false");
     list.append(m_cfdList.at(i).requestUrl(sourceByID(m_cfdList.at(i).source_id)));
     return list;
 }
@@ -116,10 +131,42 @@ void CFDConfigObject::tryLoadConfig()
 
     loadSources(sources_node);
     loadCFDList(cfdlist_node);
+    loadDivParams(root_node);
 
     sendConfigInfo();
     emit signalMsg(QString("Finished OK!"));
 
+}
+void CFDConfigObject::loadDivParams(const QDomNode &node)
+{
+    QString div_node_name("divs");
+    QDomNode div_node = node.namedItem(div_node_name);
+    if (div_node.isNull())
+    {
+        QString msg = QString("invalid struct XML document, node <%1> not found.").arg(div_node_name);
+        emit signalError(msg);
+        return;
+    }
+
+    QDomNode child_node = div_node.firstChild();
+    while (!child_node.isNull())
+    {
+        if (child_node.nodeName() == "source")
+        {
+            m_divParams.source_url = LStatic::getStringAttrValue("value", child_node, QString()).trimmed();
+            if (!m_divParams.source_url.contains("http")) m_divParams.source_url.clear();
+        }
+        else if (child_node.nodeName() == "interval")
+        {
+            m_divParams.request_interval = LStatic::getIntAttrValue("value", child_node);
+        }
+        else if (child_node.nodeName() == "show_last")
+        {
+            m_divParams.show_last = LStatic::getIntAttrValue("value", child_node);
+            if (m_divParams.show_last < 100 || m_divParams.show_last > 10000) m_divParams.show_last = 200;
+        }
+        child_node = child_node.nextSibling();
+    }
 }
 void CFDConfigObject::loadActParams(const QDomNode &node)
 {
@@ -198,8 +245,12 @@ void CFDConfigObject::loadCFDList(const QDomNode &node)
             CFDObj cfd;
             cfd.ticker = LStatic::getStringAttrValue("ticker", child_node, QString()).trimmed().toUpper();
             cfd.name = LStatic::getStringAttrValue("name", child_node, QString()).trimmed();
+            cfd.country = LStatic::getStringAttrValue("country", child_node, QString()).trimmed();
             cfd.url_text = LStatic::getStringAttrValue("url", child_node, QString()).trimmed();
             cfd.source_id = LStatic::getIntAttrValue("source", child_node, 1);
+            cfd.is_insta = (LStatic::getStringAttrValue("insta", child_node, QString()) == "true");
+
+
             if (cfd.invalid())
             {
                 qWarning()<<QString("Invalid readed CFD element from config: %1").arg(cfd.toStr());
@@ -234,6 +285,8 @@ bool CFDConfigObject::containsTicker(QString s) const
 void CFDConfigObject::sendConfigInfo()
 {
     emit signalMsg(m_actParams.toStr());
+    emit signalMsg(m_divParams.toStr());
+
     emit signalMsg(QString("readed %1 URL sourses:").arg(m_sources.count()));
     //for (int i=0; i<m_sources.count(); i++)
         //emit signalMsg(QString("   %1. %2").arg(i+1).arg(m_sources.at(i).toStr()));

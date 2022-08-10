@@ -59,7 +59,7 @@ protected:
     void start();
     void stop();
     void updateActionsEnable(bool);
-    void fillConfigPage();
+    void fillPages();
     int reqInterval() const;
 
 protected slots:

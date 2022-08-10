@@ -13,7 +13,7 @@ class BasePage : public QWidget
 {
     Q_OBJECT
 public:
-    enum PageType {ptCFDStat = 81, ptLog, ptConfig, ptHtml, ptChart};
+    enum PageType {ptCFDStat = 81, ptLog, ptConfig, ptHtml, ptChart, ptDiv};
 
     BasePage(QWidget*);
     virtual ~BasePage() {}

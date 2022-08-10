@@ -8,6 +8,7 @@
 #include <QWebEnginePage>
 #include <QPair>
 
+
 //parser prices
 class HtmlWorker
 {
@@ -45,8 +46,8 @@ private:
 
 
 class LHTMLPageRequester;
-class LHTMLRequester;
 class QTimer;
+//struct DivRecord;
 
 //HtmlPage
 class HtmlPage : public BasePage, Ui::HtmlPage
@@ -61,29 +62,33 @@ public:
 
     void updatePage() {}
     void tryRequest(const QString&);
-    void tryHTTPRequest(const QString&);
-    void getPriceFromPlainData();
 
 protected:
     LHTMLPageRequester *m_requester;
-    LHTMLRequester     *http_requester;
     HtmlWorker          m_priceParser;
     QTimer              *m_timer;
     int                 m_runingTime;
 
     void resetPage(const QString&);
     void sendLog(const QString&, int);
+    void getPriceFromPlainData();
+    void getDivsFromPlainData();
+    bool isDivRequest() const;
 
 protected slots:
     void slotDataReady(); //выполняется когда запрос полностью завершен, независимо от результата выполнения
     void slotProgress(int); //выполняется в процессе выполнения запроса
     void slotBreaked(int, int);
-    void slotRequestFinished(bool);
     void slotTimer();
 
 signals:
     void signalGetUrlByTicker(const QString&, QString&);
     void signalNewPrice(QString, double);
+    void signalDivDataReceived(const QString&);
+
+
+public slots:
+    void slotGetDivData(const QString&);
 
 };
 

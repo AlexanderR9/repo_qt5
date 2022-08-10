@@ -191,11 +191,16 @@ void CFDCalcObj::loadTickerFile(const QString &ticker)
         if (!rec.invalid()) m_currentData.append(rec);
     }
 
-    qDebug()<<QString("CFDCalcObj::loadTickerFile  ticker=[%1]  records count %2").arg(ticker).arg(m_currentData.count());
+    //qDebug()<<QString("CFDCalcObj::loadTickerFile  ticker=[%1]  records count %2").arg(ticker).arg(m_currentData.count());
+}
+QString CFDCalcObj::dataFolderPath()
+{
+    return QString("%1%2%3").arg(QApplication::applicationDirPath()).arg(QDir::separator()).arg(CFD_DATA_FOLDER);
 }
 QString CFDCalcObj::filePathByTicker(const QString &ticker) const
 {
-    QString path = QString("%1%2%3").arg(QApplication::applicationDirPath()).arg(QDir::separator()).arg(CFD_DATA_FOLDER);
+    //QString path = QString("%1%2%3").arg(QApplication::applicationDirPath()).arg(QDir::separator()).arg(CFD_DATA_FOLDER);
+    QString path = CFDCalcObj::dataFolderPath();
     path = QString("%1%2%3.%4").arg(path).arg(QDir::separator()).arg(ticker).arg(CFD_DATA_FILETYPE);
     return path;
 }
