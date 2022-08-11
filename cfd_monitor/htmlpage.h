@@ -80,6 +80,7 @@ protected slots:
     void slotProgress(int); //выполняется в процессе выполнения запроса
     void slotBreaked(int, int);
     void slotTimer();
+    void slotError(const QString&);
 
 signals:
     void signalGetUrlByTicker(const QString&, QString&);

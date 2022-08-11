@@ -18,7 +18,7 @@ ConfigPage::ConfigPage(QWidget *parent)
 }
 void ConfigPage::slotSetUrlByTicker(const QString &ticker, QString &url)
 {
-    qDebug("ConfigPage::slotSetUrlByTicker 1");
+    //qDebug("ConfigPage::slotSetUrlByTicker 1");
     url.clear();
     int source_col = cfdTable->columnCount() - 1;
     for (int i=0; i<cfdTable->rowCount(); i++)
@@ -29,7 +29,8 @@ void ConfigPage::slotSetUrlByTicker(const QString &ticker, QString &url)
             break;
         }
     }
-    qDebug()<<QString("ConfigPage::slotSetUrlByTicker URL: [%1]").arg(url);
+
+    //qDebug()<<QString("ConfigPage::slotSetUrlByTicker URL: [%1]").arg(url);
 }
 void ConfigPage::slotSetChartSource(QStringList &list)
 {

@@ -6,7 +6,8 @@
 
 #include <QTimer>
 
-#define GET_DIV_TICKER  QString("get_divs")
+#define GET_DIV_TICKER          QString("get_divs")
+#define REQUEST_TIMEOUT         90 //sec
 
 
 //HtmlPage
@@ -19,18 +20,29 @@ HtmlPage::HtmlPage(QWidget *parent)
     setupUi(this);
 
     m_requester = new LHTMLPageRequester(this);
-    connect(m_requester, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
+//    connect(m_requester, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
+    connect(m_requester, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_requester, SIGNAL(signalDataReady()), this, SLOT(slotDataReady()));
     connect(m_requester, SIGNAL(signalProgress(int)), this, SLOT(slotProgress(int)));
 
     m_timer = new QTimer(this);
     connect(m_timer, SIGNAL(timeout()), this, SLOT(slotTimer()));
-    m_timer->setInterval(500);
+    m_timer->setInterval(1000);
+}
+void HtmlPage::slotError(const QString &err)
+{
+    emit signalError(err);
+    sendLog(err, 2);
 }
 void HtmlPage::slotTimer()
 {
     m_runingTime++;
     infoLabel->setText(QString("request runing time: %1 sec.").arg(m_runingTime));
+
+    if (m_runingTime > REQUEST_TIMEOUT)
+    {
+        m_requester->breakTimeout();
+    }
 }
 void HtmlPage::slotBreaked(int terminationStatus, int exitCode)
 {

@@ -3,7 +3,8 @@
 
 #include "lhtmlrequesterbase.h"
 
-class QWebEnginePage;
+//class QWebEnginePage;
+#include <QWebEnginePage>
 
 
 
@@ -20,6 +21,23 @@ class QWebEnginePage;
 //        - plainData() : читаемый текст страницы, который можно парсить
 
 
+//LWebEnginePage
+class LWebEnginePage : public QWebEnginePage
+{
+    Q_OBJECT
+public:
+    LWebEnginePage(QObject *parent = NULL);
+    virtual ~LWebEnginePage() {}
+
+protected slots:
+    void slotProcessTerminated(RenderProcessTerminationStatus, int);
+    void slotUrlChanged(const QUrl&);
+
+signals:
+    void signalTerminate(const QString&);
+
+
+};
 
 // LHTMLPageRequester - класс для посылки http запросов на получение html кода заданной страницы
 class LHTMLPageRequester : public LHTMLRequesterBase
@@ -31,6 +49,8 @@ public:
 
     void startRequest();
     QString title() const;
+    void breakTimeout();
+
 
     inline QString htmlData() const {return html_data;}
     inline QString plainData() const {return plain_data;}
@@ -39,7 +59,7 @@ public:
     inline bool badRequest() const {return bad_request;}
 
 protected:
-    QWebEnginePage *m_page; //объект для получения html страницы
+    LWebEnginePage *m_page; //объект для получения html страницы
     QString html_data;  //код полученной html страницы
     QString plain_data; //данные html страницы в строковом виде
     bool bad_request; //признак неуспешности последнего запроса
@@ -57,7 +77,6 @@ private:
     void functorPlainData(const QString&);
     void functorHtmlData(const QString&);
 
-private slots:
 
 };
 

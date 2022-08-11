@@ -1,6 +1,6 @@
 #include "lhtmlpagerequester.h"
 
-#include <QWebEnginePage>
+//#include <QWebEnginePage>
 #include <QDebug>
 
 
@@ -13,11 +13,10 @@ LHTMLPageRequester::LHTMLPageRequester(QObject *parent)
 {
     setObjectName("lhtml_page_requester");
 
-    m_page = new QWebEnginePage(this);
+    m_page = new LWebEnginePage(this);
     connect(m_page, SIGNAL(loadFinished(bool)), this, SLOT(slotFinished(bool)));
     connect(m_page, SIGNAL(loadProgress(int)), this, SIGNAL(signalProgress(int)));
-
-    //test
+    connect(m_page, SIGNAL(signalTerminate(const QString&)), this, SIGNAL(signalError(const QString&)));
 
 
 }
@@ -49,6 +48,8 @@ void LHTMLPageRequester::startRequest()
 }
 void LHTMLPageRequester::slotFinished(bool ok)
 {
+    if (!isBuzy()) return;
+
     is_buzy = false;
     bad_request = !ok;
     emit signalFinished(ok);
@@ -72,6 +73,34 @@ void LHTMLPageRequester::functorHtmlData(const QString &data)
     html_data = data.trimmed();
     emit signalDataReady();
 }
+void LHTMLPageRequester::breakTimeout()
+{
+    emit signalError("LHTMLPageRequester::breakTimeout()");
+
+    // to do
+    slotFinished(false);
+
+}
 
 
+//LWebEnginePage
+LWebEnginePage::LWebEnginePage(QObject *parent)
+    :QWebEnginePage(parent)
+{
+    setObjectName("lweb_page");
+
+    connect(this, SIGNAL(renderProcessTerminated(RenderProcessTerminationStatus, int)), this, SLOT(slotProcessTerminated(RenderProcessTerminationStatus, int)));
+    connect(this, SIGNAL(urlChanged(const QUrl&)), this, SLOT(slotUrlChanged(const QUrl&)));
+
+}
+void LWebEnginePage::slotProcessTerminated(RenderProcessTerminationStatus status, int code)
+{
+    QString msg = QString("LWebEnginePage::slotProcessTerminated() status=%0 code=%1").arg(status).arg(code);
+    qWarning()<<QString("LWebEnginePage::slotProcessTerminated() WARNING status=%0 code=%1").arg(status).arg(code);
+    emit signalTerminate(msg);
+}
+void LWebEnginePage::slotUrlChanged(const QUrl &url)
+{
+    //qDebug()<<QString("LWebEnginePage::slotUrlChanged() url=%0").arg(url.toString());
+}
 

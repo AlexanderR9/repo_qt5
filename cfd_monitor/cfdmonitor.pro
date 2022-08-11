@@ -34,7 +34,7 @@ unix:!macx: LIBS += -L$$PWD/../libs/tg/build/ -lltg
 HEADERS += $$PWD/mainform.h \
 	$$PWD/tgbot.h \
 	$$PWD/cfdcalcobj.h \
-	$$PWD/statobj.h \
+#	$$PWD/statobj.h \
 	$$PWD/basepage.h \
 	$$PWD/cfdpage.h \
 	$$PWD/divpage.h \
@@ -49,7 +49,7 @@ SOURCES += $$PWD/main.cpp \
 	$$PWD/mainform.cpp \
 	$$PWD/tgbot.cpp \
 	$$PWD/cfdcalcobj.cpp \
-	$$PWD/statobj.cpp \
+#	$$PWD/statobj.cpp \
 	$$PWD/basepage.cpp \
 	$$PWD/cfdpage.cpp \
 	$$PWD/divpage.cpp \

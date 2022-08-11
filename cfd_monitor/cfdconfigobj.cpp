@@ -160,6 +160,21 @@ void CFDConfigObject::loadDivParams(const QDomNode &node)
         {
             m_divParams.request_interval = LStatic::getIntAttrValue("value", child_node);
         }
+        else if (child_node.nodeName() == "timer_interval")
+        {
+            m_divParams.timer_interval = LStatic::getIntAttrValue("value", child_node);
+            if (m_divParams.timer_interval < 10 || m_divParams.timer_interval > 1000) m_divParams.timer_interval = 120;
+        }
+        else if (child_node.nodeName() == "look_div_days")
+        {
+            m_divParams.look_div_days = LStatic::getIntAttrValue("value", child_node);
+            if (m_divParams.look_div_days < 5 || m_divParams.look_div_days > 60) m_divParams.look_div_days = 21;
+        }
+        else if (child_node.nodeName() == "light_div")
+        {
+            m_divParams.light_div_size = LStatic::getDoubleAttrValue("value", child_node);
+            if (m_divParams.light_div_size < 0.1 || m_divParams.light_div_size > 10) m_divParams.light_div_size = 0.5;
+        }
         else if (child_node.nodeName() == "show_last")
         {
             m_divParams.show_last = LStatic::getIntAttrValue("value", child_node);

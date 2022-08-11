@@ -49,9 +49,16 @@ struct GetDivsParams
     quint8 request_interval; //hours, 0 - off algoritm
     QString source_url;
     quint16 show_last;
+    quint16 timer_interval; //sec
+    double light_div_size;
+    quint8 look_div_days; //days
 
-    void reset() {source_url.clear(); request_interval = 0; show_last = 200;}
-    QString toStr() const {return QString("DivsParams: request_interval=%1, shown_history=%2,  source_url: %3").arg(request_interval).arg(show_last).arg(source_url);}
+    void reset() {source_url.clear(); request_interval = 0; show_last = 200; timer_interval = 120; light_div_size = 0.5; look_div_days=14;}
+    QString toStr() const
+    {
+        return QString("DivsParams: request_interval=(%1 h)/(%2 sec)  light_div_size=%3  look_div_days=%4  shown_history=%5  source_url: %6").
+                arg(request_interval).arg(timer_interval).arg(QString::number(light_div_size, 'f', 2)).arg(look_div_days).arg(show_last).arg(source_url);
+    }
 };
 
 // CalcActionParams

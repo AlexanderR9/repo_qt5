@@ -189,6 +189,15 @@ void LStatic::setAttrNode(QDomElement &node, QString a1, QString v1, QString a2,
     if (a5.trimmed().isEmpty()) return;
     node.setAttribute(a5.trimmed(), v5.trimmed());
 }
+double LStatic::getDoubleAttrValue(const QString &attr_name, const QDomNode &node, double defValue)
+{
+    QString s_value = getStringAttrValue(attr_name, node, "err");
+    if (s_value == "err") return defValue;
+
+    bool ok;
+    double a = s_value.toDouble(&ok);
+    return (ok ? a : defValue);
+}
 int LStatic::getIntAttrValue(const QString &attr_name, const QDomNode &node, int defValue)
 {
     if (attr_name.trimmed().isEmpty() || node.isNull()) return defValue;

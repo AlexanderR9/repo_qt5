@@ -13,16 +13,17 @@
 #include <QDir>
 
 #define EX_DATE_MASK            QString("dd_MM_yyyy")
-#define MAX_DAYS_FORWARD        15
-#define DIV_TIMER_INTERVAL      60 //seconds
+//#define MAX_DAYS_FORWARD        15
+//#define DIV_TIMER_INTERVAL      60 //seconds
 
-#define TICKER_COL      1
-#define SIZE_COL        2
-#define PRICE_COL       3
-#define DAYS_COL        4
-#define INSTA_COL       5
-#define INSTA_COLOR     QColor(200, 100, 30)
 
+#define TICKER_COL          1
+#define SIZE_COL            2
+#define PRICE_COL           3
+#define DAYS_COL            4
+#define INSTA_COL           5
+#define INSTA_COLOR         QColor(200, 100, 30)
+#define DATE_PREV_COLOR     QColor(Qt::lightGray)
 
 //DivPage
 DivPage::DivPage(QWidget *parent)
@@ -31,7 +32,8 @@ DivPage::DivPage(QWidget *parent)
     m_table(NULL),
     m_timer(NULL),
     m_interval(-1),
-    m_shownHistory(200)
+    m_shownHistory(200),
+    m_lookDays(30)
 {
     setupUi(this);
 
@@ -40,7 +42,21 @@ DivPage::DivPage(QWidget *parent)
 
     m_timer = new QTimer(this);
     connect(m_timer, SIGNAL(timeout()), this, SLOT(slotTimer()));
-    m_timer->start(DIV_TIMER_INTERVAL*1000);
+
+    setTickTimerInterval(90);
+}
+void DivPage::setTickTimerInterval(int t)
+{
+    if (t < 10 || t > 1000) t = 150;
+    m_timer->setInterval(t*1000);
+}
+void DivPage::tickTimerStart()
+{
+    m_timer->start();
+}
+void DivPage::tickTimerStop()
+{
+    m_timer->stop();
 }
 void DivPage::testDivDataFromFile()
 {
@@ -57,7 +73,6 @@ void DivPage::testDivDataFromFile()
 }
 void DivPage::slotTimer()
 {
-    //qDebug("DivPage::slotTimer()");
     if (invalidParams()) return;
 
     if (!m_lastDT.isValid())
@@ -68,7 +83,7 @@ void DivPage::slotTimer()
         return;
     }
     qint64 t = m_lastDT.secsTo(QDateTime::currentDateTime());
-    //qDebug()<<QString("cur d_time: %1").arg(t);
+    qDebug()<<QString("cur d_time: %1").arg(t);
     if (t < m_interval) return;
 
     //////////// send request //////////////////
@@ -99,9 +114,8 @@ void DivPage::slotDivDataReceived(const QString &plain_data)
         parseDate(s, div_date);
         if (div_date.isValid())
         {
-            //qDebug() << QString("(%0)   IS_VALID_DATE    %1").arg(s).arg(div_date.toString("dd.MM.yyyy"));
             last_div_date = div_date;
-            if (cur_date.daysTo(div_date) > MAX_DAYS_FORWARD)
+            if (cur_date.daysTo(div_date) > m_lookDays)
             {
                 qDebug()<<QString("ex_date is over:  %1").arg(div_date.toString("dd.MM.yyyy"));
                 break;
@@ -176,6 +190,10 @@ void DivPage::updateFileByReceivedData(const QList<DivRecord> &received_data)
 
         if (need_add) {addRecToFile(new_rec); n_added++;}
     }
+
+    if (n_added > 0)
+        sendLog(QString("Add %1 new records to div_file").arg(n_added), 0);
+
 
     qDebug()<<QString("DivPage::updateFileByReceivedData - was added records: %1 ").arg(n_added);
 }
@@ -253,14 +271,15 @@ void DivPage::parseDate(const QString &s, QDate &date)
         if (date <= cur_date) date = QDate();
     }
 }
-void DivPage::setReqParams(const QString &url, int t)
+void DivPage::setReqParams(const QString &url, int t, quint16 days)
 {
     m_url = url.trimmed();
     m_interval = t;
+    m_lookDays = days;
     if (m_interval < 3600) m_interval = -1;
 
     //m_interval = 60*7;
-    qDebug()<<QString("DivPage::setReqParams()  interval=%1    URL: %2").arg(m_interval).arg(url);
+    qDebug()<<QString("DivPage::setReqParams()  interval=%1  look_days=%2  URL: %3").arg(m_interval).arg(m_lookDays).arg(url);
 }
 void DivPage::slotSelectionChanged()
 {
@@ -420,18 +439,21 @@ void DivPage::reloadTable(const QList<DivRecord> &data)
     LTable::removeAllRowsTable(m_table);
 
     for (int i=0; i<data.count(); i++)
-    {
         m_table->addRecord(data.at(i));
-    }
 
     LTable::resizeTableContents(m_table);
+
+    QString title;
+    m_table->getTableTitle(title);
+    this->chartBox->setTitle(title);
 }
 
 
 
 //DivTable
 DivTable::DivTable(QWidget *parent)
-    :QTableWidget(parent)
+    :QTableWidget(parent),
+      m_lightDivSize(0.6)
 {
     setObjectName("div_table");
     verticalHeader()->hide();
@@ -467,7 +489,7 @@ void DivTable::updateColors(const DivRecord &rec)
     if (days < 0)
     {
         for (int j=0; j<cols; j++)
-            item(cur_row, j)->setTextColor(Qt::gray);
+            item(cur_row, j)->setTextColor(DATE_PREV_COLOR);
         return;
     }
 
@@ -491,7 +513,7 @@ void DivTable::updateColors(const DivRecord &rec)
     if (rec.price > 150)
         item(cur_row, PRICE_COL)->setTextColor(Qt::red);
 
-    if (rec.size_p > 0.8)
+    if (rec.size_p > m_lightDivSize)
         item(cur_row, SIZE_COL)->setTextColor(Qt::blue);
 
 }
@@ -502,6 +524,17 @@ int DivTable::daysTo(const QDate &d) const
     if (d < cur_date) return -1;
     if (d == cur_date) return 0;
     return cur_date.daysTo(d);
+}
+void DivTable::getTableTitle(QString &s)
+{
+    s = QString("Calendar");
+    int rows = rowCount();
+
+    int n_prev = 0;
+    for (int i=0; i<rows; i++)
+        if (item(i, 0)->textColor() == DATE_PREV_COLOR) n_prev++;
+
+    s = QString("%1  (records: %2/%3)").arg(s).arg(rows).arg(n_prev);
 }
 
 

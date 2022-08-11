@@ -46,8 +46,13 @@ public:
     virtual ~DivTable() {}
 
     void addRecord(const DivRecord&);
+    inline void setLightDivSize(const double &v) {m_lightDivSize = v;}
+    void getTableTitle(QString&);
 
 protected:
+    double      m_lightDivSize; //значения дивов (в %), выше которого необходимо подсвечивать
+
+
     void mouseDoubleClickEvent(QMouseEvent*);
 
     void updateColors(const DivRecord&);
@@ -75,8 +80,14 @@ public:
 
     void updatePage() {}
     void initSource();
-    void setReqParams(const QString&, int);
+    void setReqParams(const QString&, int, quint16);
+    void setTickTimerInterval(int);
+    void tickTimerStart();
+    void tickTimerStop();
+
+    inline void setLightDivSize(const double &v) {if (m_table) m_table->setLightDivSize(v);}
     inline void setShownHistory(quint16 n) {m_shownHistory = n;}
+
 
 protected:
     LSearch     *m_search;
@@ -86,6 +97,7 @@ protected:
     QString     m_url;
     int         m_interval; //интервал опроса m_url, сек
     quint16     m_shownHistory;
+    quint16     m_lookDays; //за сколько дней вперед просматривать инфу о дивах
 
     void initSearch();
     void initTable();

@@ -228,9 +228,15 @@ void MainForm::fillPages()
     if (div_page)
     {
         div_page->initSource();
-        div_page->setReqParams(m_configObj->divParams().source_url, m_configObj->divParams().request_interval*3600);
-        div_page->setShownHistory(m_configObj->divParams().show_last);
+
+        const GetDivsParams &div_params = m_configObj->divParams();
+        div_page->setReqParams(div_params.source_url, div_params.request_interval*3600, div_params.look_div_days);
+        div_page->setShownHistory(div_params.show_last);
+        div_page->setTickTimerInterval(div_params.timer_interval);
+        div_page->setLightDivSize(div_params.light_div_size);
         connect(div_page, SIGNAL(signalGetInstaPtr(const QString&, bool&)), m_configObj, SLOT(slotSetInstaPtr(const QString&, bool&)));
+
+        div_page->tickTimerStart();
     }
     else qWarning()<<QString("MainForm::fillConfigPage() ERR: invalid convert to DivPage from m_pages");
 }
