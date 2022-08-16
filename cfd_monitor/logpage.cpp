@@ -10,6 +10,7 @@
 
 #define CFD_LOG_FILETYPE   "log"
 #define CFD_LOG_FOLDER     "log"
+#define MODULE_COL          2
 
 
 //LogPage
@@ -44,11 +45,53 @@ QString LogPage::filePathByModule(int module_type) const
 }
 void LogPage::initModulesList()
 {
-    modulesListWidget->addItem("Calc object");
-    modulesListWidget->addItem("TG bot");
-    modulesListWidget->addItem("HTML page");
     modulesListWidget->addItem("Main window");
+    modulesListWidget->item(modulesListWidget->count()-1)->setData(Qt::UserRole, amtMainWindow);
+    modulesListWidget->addItem("Calc object");
+    modulesListWidget->item(modulesListWidget->count()-1)->setData(Qt::UserRole, amtCalcObj);
+    modulesListWidget->addItem("TG bot");
+    modulesListWidget->item(modulesListWidget->count()-1)->setData(Qt::UserRole, amtTGBot);
+    modulesListWidget->addItem("HTML page");
+    modulesListWidget->item(modulesListWidget->count()-1)->setData(Qt::UserRole, amtHtmlPage);
+    modulesListWidget->addItem("Chart page");
+    modulesListWidget->item(modulesListWidget->count()-1)->setData(Qt::UserRole, amtChartPage);
+    modulesListWidget->addItem("Divs page");
+    modulesListWidget->item(modulesListWidget->count()-1)->setData(Qt::UserRole, amtDivPage);
 
+    connect(modulesListWidget, SIGNAL(itemSelectionChanged()), this, SLOT(slotSelectionChanged()));
+    connect(modulesListWidget, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(slotSelectionClear()));
+
+}
+void LogPage::slotSelectionClear()
+{
+    qDebug("LogPage::slotSelectionClear()");
+    modulesListWidget->clearSelection();
+    modulesListWidget->clearFocus();
+
+    int n_rows = logTable->rowCount();
+    for (int i=0; i<n_rows; i++)
+        logTable->showRow(i);
+
+    updatePage();
+}
+void LogPage::slotSelectionChanged()
+{
+    QList<QListWidgetItem*> items = modulesListWidget->selectedItems();
+    if (items.count() != 1) return;
+
+
+    int n_rows = logTable->rowCount();
+    if (n_rows == 0) return;
+
+    LogStruct log(items.first()->data(Qt::UserRole).toInt(), 0);
+    QString module = log.strModule();
+    for (int i=0; i<n_rows; i++)
+    {
+        if (logTable->item(i, MODULE_COL)->text() == module) logTable->showRow(i);
+        else logTable->hideRow(i);
+    }
+
+    updatePage();
 }
 void LogPage::initLogTable()
 {
@@ -80,12 +123,16 @@ void LogPage::updatePage()
     if (logTable->rowCount() > n_maxSize)
     {
         for (int i=0; i<100; i++)
-        {
             logTable->removeRow(0);
-        }
     }
 
-    QString s = QString("Log (count %1/%2)").arg(logTable->rowCount()).arg(n_err);
+
+    int visible_rows = 0;
+    int n_rows = logTable->rowCount();
+    for (int i=0; i<n_rows; i++)
+        if (!logTable->isRowHidden(i)) visible_rows++;
+
+    QString s = QString("Log (visible rows: %1,   errors/warnings %2)").arg(visible_rows).arg(n_err);
     logBox->setTitle(s);
 }
 void LogPage::slotNewLog(const LogStruct &log)

@@ -48,6 +48,8 @@ public:
     void addRecord(const DivRecord&);
     inline void setLightDivSize(const double &v) {m_lightDivSize = v;}
     void getTableTitle(QString&);
+    void updateRowVisible(int, const QStringList&);
+    void showAllRows();
 
 protected:
     double      m_lightDivSize; //значения дивов (в %), выше которого необходимо подсвечивать
@@ -98,6 +100,7 @@ protected:
     int         m_interval; //интервал опроса m_url, сек
     quint16     m_shownHistory;
     quint16     m_lookDays; //за сколько дней вперед просматривать инфу о дивах
+    quint16     m_tablePriceIndex; //индекс строки таблицы в которой будет обновлена цена в очередном цикле tick_timer
 
     void initSearch();
     void initTable();
@@ -112,9 +115,10 @@ protected:
     void updateFileByReceivedData(const QList<DivRecord>&); //добавить при необходимости новые данные в файл, если таких еще нет
     void addRecToFile(const DivRecord&);
     void reloadTable(const QList<DivRecord>&);
+    void updateTable();
     void sortData(QList<DivRecord>&);
     void replaceRecords(int, int, QList<DivRecord>&); //меняет местами две записи
-
+    void updateTableNextPrice(); //обновление цены в строке m_tablePriceIndex
 
 
 protected slots:
@@ -129,6 +133,7 @@ signals:
     void signalGetDivData(const QString&);
     void signalGetCurrentPrices(QMap<QString, double>&); //key - ticker,  value - cur_price
     void signalGetInstaPtr(const QString&, bool&);
+    void signalGetLastPrice(const QString&, double&, int&); //получение последней цены для заданного тикера
 
 private:
     void testDivDataFromFile(); //имитация запроса дивов, вместо ответа html данные считаваются из статического файла

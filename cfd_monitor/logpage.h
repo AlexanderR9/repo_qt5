@@ -61,6 +61,12 @@ protected:
 public slots:
     void slotNewLog(const LogStruct&);
 
+protected slots:
+    void slotSelectionChanged();
+    void slotSelectionClear();
+
+
+
 
 };
 

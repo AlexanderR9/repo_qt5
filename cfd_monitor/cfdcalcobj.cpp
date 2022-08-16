@@ -44,6 +44,7 @@ void CFDCalcObj::slotSetChartData(const QString &ticker, QMap<QDateTime, float> 
 }
 void CFDCalcObj::slotGetLastPrice(const QString &ticker, double &price, int &hours_ago)
 {
+    //qDebug()<<QString("CFDCalcObj::slotGetLastPrice  ticker=%1").arg(ticker);
     price = -1;
     hours_ago = -1;
     loadTickerFile(ticker); //загрузить текущие данные из файла для ticker

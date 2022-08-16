@@ -12,11 +12,6 @@
 #include <QTimer>
 #include <QDir>
 
-#define EX_DATE_MASK            QString("dd_MM_yyyy")
-//#define MAX_DAYS_FORWARD        15
-//#define DIV_TIMER_INTERVAL      60 //seconds
-
-
 #define TICKER_COL          1
 #define SIZE_COL            2
 #define PRICE_COL           3
@@ -24,6 +19,10 @@
 #define INSTA_COL           5
 #define INSTA_COLOR         QColor(200, 100, 30)
 #define DATE_PREV_COLOR     QColor(Qt::lightGray)
+#define EX_DATE_MASK        QString("dd_MM_yyyy")
+
+
+
 
 //DivPage
 DivPage::DivPage(QWidget *parent)
@@ -33,7 +32,8 @@ DivPage::DivPage(QWidget *parent)
     m_timer(NULL),
     m_interval(-1),
     m_shownHistory(200),
-    m_lookDays(30)
+    m_lookDays(30),
+    m_tablePriceIndex(0)
 {
     setupUi(this);
 
@@ -79,12 +79,17 @@ void DivPage::slotTimer()
     {
         qDebug("m_lastDT invalid");
         m_lastDT = QDateTime::currentDateTime();
+        updateTable();
         //testDivDataFromFile();
         return;
     }
     qint64 t = m_lastDT.secsTo(QDateTime::currentDateTime());
     qDebug()<<QString("cur d_time: %1").arg(t);
-    if (t < m_interval) return;
+    if (t < m_interval)
+    {
+        updateTableNextPrice();
+        return;
+    }
 
     //////////// send request //////////////////
     sendLog("Try get div data", 0);
@@ -93,7 +98,7 @@ void DivPage::slotTimer()
 }
 void DivPage::slotDivDataReceived(const QString &plain_data)
 {
-    qDebug()<<QString("DivPage::slotDivDataReceived: plain_data_size %1").arg(plain_data.size());
+    //qDebug()<<QString("DivPage::slotDivDataReceived: plain_data_size %1").arg(plain_data.size());
     m_lastDT = QDateTime::currentDateTime();
     QStringList list = LStatic::trimSplitList(plain_data);
     if (list.count() < 10)
@@ -128,6 +133,9 @@ void DivPage::slotDivDataReceived(const QString &plain_data)
 
         DivRecord rec;
         rec.ex_date = last_div_date.addDays(-1);
+        if (rec.ex_date.dayOfWeek() == 7) rec.ex_date = rec.ex_date.addDays(-2);
+        else if (rec.ex_date.dayOfWeek() == 6) rec.ex_date = rec.ex_date.addDays(-1);
+
         parseDivSize(s, rec);
         if (!rec.invalid()) div_data.append(rec);
     }
@@ -145,18 +153,8 @@ void DivPage::divDataReceived(const QList<DivRecord> &data)
 
     sendLog(QString("Finded %1 validity div_records").arg(data.count()), 0);
     updateFileByReceivedData(data);
+    updateTable();
 
-    QList<DivRecord> cur_data;
-    loadDivFile(cur_data);
-    sortData(cur_data);
-
-    if (cur_data.count() > m_shownHistory)
-    {
-        while (cur_data.count() > m_shownHistory)
-            cur_data.removeLast();
-    }
-
-    reloadTable(cur_data);
 }
 void DivPage::updateFileByReceivedData(const QList<DivRecord> &received_data)
 {
@@ -164,7 +162,7 @@ void DivPage::updateFileByReceivedData(const QList<DivRecord> &received_data)
 
     QList<DivRecord> cur_data;
     loadDivFile(cur_data);
-    qDebug()<<QString("DivPage::updateFileByReceivedData - loaded records from file: %1 ").arg(cur_data.count());
+    //qDebug()<<QString("DivPage::updateFileByReceivedData - loaded records from file: %1 ").arg(cur_data.count());
 
 
     int n_added = 0;
@@ -195,7 +193,7 @@ void DivPage::updateFileByReceivedData(const QList<DivRecord> &received_data)
         sendLog(QString("Add %1 new records to div_file").arg(n_added), 0);
 
 
-    qDebug()<<QString("DivPage::updateFileByReceivedData - was added records: %1 ").arg(n_added);
+    //qDebug()<<QString("DivPage::updateFileByReceivedData - was added records: %1 ").arg(n_added);
 }
 void DivPage::updateLastPrices(QList<DivRecord> &data)
 {
@@ -279,14 +277,29 @@ void DivPage::setReqParams(const QString &url, int t, quint16 days)
     if (m_interval < 3600) m_interval = -1;
 
     //m_interval = 60*7;
-    qDebug()<<QString("DivPage::setReqParams()  interval=%1  look_days=%2  URL: %3").arg(m_interval).arg(m_lookDays).arg(url);
+    //qDebug()<<QString("DivPage::setReqParams()  interval=%1  look_days=%2  URL: %3").arg(m_interval).arg(m_lookDays).arg(url);
 }
 void DivPage::slotSelectionChanged()
 {
+    //qDebug()<<QString("DivPage::slotSelectionChanged()");
     QList<QListWidgetItem*> items = sourcesListWidget->selectedItems();
     int n = items.count();
 
-    qDebug()<<QString("DivPage::slotSelectionChanged()  selected tickers %1").arg(n);
+    if (n == 0)
+    {
+        m_table->showAllRows();
+        return;
+    }
+
+    QStringList sel_tickers;
+    foreach (const QListWidgetItem *it, items)
+        sel_tickers << it->text();
+
+    int n_rows = m_table->rowCount();
+    for (int i=0; i<n_rows; i++)
+        m_table->updateRowVisible(i, sel_tickers);
+
+    //qDebug()<<QString("DivPage::slotSelectionChanged()  selected tickers %1").arg(n);
 }
 void DivPage::initTable()
 {
@@ -378,6 +391,19 @@ void DivPage::loadDivFile(QList<DivRecord> &data)
         else qWarning() << "loaded invalid rec:  " << rec.toStr();
     }
 }
+void DivPage::updateTable()
+{
+    QList<DivRecord> cur_data;
+    loadDivFile(cur_data);
+    sortData(cur_data);
+    if (cur_data.count() > m_shownHistory)
+    {
+        while (cur_data.count() > m_shownHistory)
+            cur_data.removeLast();
+    }
+
+    reloadTable(cur_data);
+}
 void DivPage::addRecToFile(const DivRecord &rec)
 {
     if (rec.invalid()) return;
@@ -413,8 +439,6 @@ void DivPage::sortData(QList<DivRecord> &data)
             }
         }
 
-        //qDebug()<<QString("start_i=%0  n_replaced=%1   max_date=%2").arg(start_i).arg(n_replaced).arg(max_date.toString(EX_DATE_MASK));
-
         start_i += n_replaced;
         if (n_replaced == 0)
         {
@@ -447,7 +471,20 @@ void DivPage::reloadTable(const QList<DivRecord> &data)
     m_table->getTableTitle(title);
     this->chartBox->setTitle(title);
 }
+void DivPage::updateTableNextPrice()
+{
+    if (m_table->rowCount() == 0) return;
+    if (m_tablePriceIndex >= m_table->rowCount()) m_tablePriceIndex = 0;
 
+    double price = 0;
+    int hours_ago;
+    QString ticker = m_table->item(m_tablePriceIndex, TICKER_COL)->text();
+    emit signalGetLastPrice(ticker, price, hours_ago);
+    QString s_price = ((price > 5) ? QString::number(price, 'f', 2) : QString::number(-2));
+    m_table->item(m_tablePriceIndex, PRICE_COL)->setText(s_price);
+    //qDebug()<<QString("DivPage::updateTableNextPrice - %1:  price=%2/%3  table_row=%4").arg(ticker).arg(s_price).arg(QString::number(price, 'f', 2)).arg(m_tablePriceIndex);
+    m_tablePriceIndex++;
+}
 
 
 //DivTable
@@ -534,9 +571,20 @@ void DivTable::getTableTitle(QString &s)
     for (int i=0; i<rows; i++)
         if (item(i, 0)->textColor() == DATE_PREV_COLOR) n_prev++;
 
-    s = QString("%1  (records: %2/%3)").arg(s).arg(rows).arg(n_prev);
+    s = QString("%1  (records: %2/%3)  ").arg(s).arg(rows).arg(n_prev);
 }
-
+void DivTable::updateRowVisible(int row_index, const QStringList &list)
+{
+    if (row_index < 0 || row_index >= rowCount() || list.isEmpty()) return;
+    if (list.contains(item(row_index, TICKER_COL)->text())) showRow(row_index);
+    else hideRow(row_index);
+}
+void DivTable::showAllRows()
+{
+    int n_rows = rowCount();
+    for (int i=0; i<n_rows; i++)
+        showRow(i);
+}
 
 
 

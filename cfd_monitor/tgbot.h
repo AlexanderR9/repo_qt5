@@ -50,15 +50,15 @@ public:
     QMap<QString, QString> getParams() const;
 
 protected:
-    QList<TGMsg> m_msgs;
+    QList<TGMsg> m_msgs; //список сообщений отправленных пользователю
     qint64 last_update_id; //id последнего полученного сообщения
     const CalcActionParams &m_actParams;
 
     void sendLog(const QString&, int);
-    void trySendDeviation(const QString&, const double&, int);
-    void sendDeviation(const TGMsg&);
+    void trySendDeviation(const QString&, const double&, int); //попытка отправить сообщение пользователю
+    void sendDeviation(const TGMsg&); //отправить сообщение пользователю
     int findMsg(const QString&, int) const;
-    bool needUpdateInfo(const TGMsg&, const double&) const;
+    bool needUpdateInfo(const TGMsg&, const double&) const; //проверка необходимости обновить данные об изменнении цены инструмента
     void receivedUpdates(const QList<LTGUpdate>&);
     void parseUpdate(const LTGUpdate&); //проверить пришедшее сообщение/запрос и при необходимости ответить
     void replyLastPrice(const QString&); //выдать текущую цену по заданному тикеру
@@ -68,11 +68,12 @@ protected slots:
     void slotTimer();
 
 public slots:
-    void slotNewChangingPrices(const QString&, const QList<double>&);
+    void slotNewChangingPrices(const QString&, const QList<double>&); //получены новые данные об изменнении цены инструмента
 
 signals:
     void signalSendLog(const LogStruct&);
     void signalGetLastPrice(const QString&, double&, int&);
+    void signalGetInstaPtr(const QString&, bool&);
 
 
 

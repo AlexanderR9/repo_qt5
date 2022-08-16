@@ -117,7 +117,10 @@ void TGBot::trySendDeviation(const QString &ticker, const double &d, int period_
 }
 void TGBot::sendDeviation(const TGMsg &msg)
 {
-    QString text = QString("%1:  period [%2],  deviation=%3%").arg(msg.ticker).arg(msg.strPeriod()).arg(msg.strDeviation());
+    bool is_insta= false;
+    emit signalGetInstaPtr(msg.ticker, is_insta);
+    QString text = (is_insta ? QString("%1(insta)").arg(msg.ticker) : msg.ticker);
+    text = QString("%1: [%2],  deviation=%3%").arg(text).arg(msg.strPeriod()).arg(msg.strDeviation());
     this->sendMsg(text);
 
     text = QString("sended tg_message (%1 : %2%)").arg(msg.ticker).arg(msg.strDeviation());

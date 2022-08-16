@@ -25,7 +25,6 @@ ChartPage::ChartPage(QWidget *parent)
 }
 void ChartPage::slotRepaintChart()
 {
-    //qDebug("ChartPage::slotRepaintChart()");
     QList<QListWidgetItem*> items = sourcesListWidget->selectedItems();
     if (items.isEmpty() || !m_chart) return;
 
@@ -42,7 +41,6 @@ void ChartPage::slotRepaintChart()
     }
     else m_chart->addChartPoints(points, 0);
     m_chart->updateAxis();
-    //qDebug()<<m_chart->strMinMax();
 }
 void ChartPage::prepareChartPoints(const QString &ticker, QList<QPointF> &points)
 {
