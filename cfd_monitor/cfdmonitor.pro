@@ -5,6 +5,10 @@ DEFINES += QT_DEPRECATED_WARNINGS
 MOC_DIR=moc
 OBJECTS_DIR=obj
 UI_DIR=ui
+#CONFIG += warn_on
+#QMAKE_CXXFLAGS_WARN_OFF += -Wno-deprecated -Wall -Wextra
+#QMAKE_CFLAGS_WARN_ON -= -Wno-deprecated -Wmismatched-dealloc -Wmemset-transposed-args -Wpointer-sign -Warray-compare -Wunused-function -Wformat-overflow -Wmemset-elt-size
+#QMAKE_CXXFLAGS_WARN_ON -= -Wno-deprecated -Wmismatched-dealloc -Wmemset-transposed-args -Wpointer-sign -Warray-compare -Wunused-function -Wformat-overflow -Wmemset-elt-size
 
 QT -= gui
 QT *= network widgets xml
@@ -34,7 +38,6 @@ unix:!macx: LIBS += -L$$PWD/../libs/tg/build/ -lltg
 HEADERS += $$PWD/mainform.h \
 	$$PWD/tgbot.h \
 	$$PWD/cfdcalcobj.h \
-#	$$PWD/statobj.h \
 	$$PWD/basepage.h \
 	$$PWD/cfdpage.h \
 	$$PWD/divpage.h \
@@ -49,7 +52,6 @@ SOURCES += $$PWD/main.cpp \
 	$$PWD/mainform.cpp \
 	$$PWD/tgbot.cpp \
 	$$PWD/cfdcalcobj.cpp \
-#	$$PWD/statobj.cpp \
 	$$PWD/basepage.cpp \
 	$$PWD/cfdpage.cpp \
 	$$PWD/divpage.cpp \

@@ -175,6 +175,11 @@ void CFDConfigObject::loadDivParams(const QDomNode &node)
             m_divParams.light_div_size = LStatic::getDoubleAttrValue("value", child_node);
             if (m_divParams.light_div_size < 0.1 || m_divParams.light_div_size > 10) m_divParams.light_div_size = 0.5;
         }
+        else if (child_node.nodeName() == "light_price")
+        {
+            m_divParams.light_price = LStatic::getDoubleAttrValue("value", child_node);
+            if (m_divParams.light_price < 10 || m_divParams.light_price > 1000) m_divParams.light_price = 199;
+        }
         else if (child_node.nodeName() == "show_last")
         {
             m_divParams.show_last = LStatic::getIntAttrValue("value", child_node);

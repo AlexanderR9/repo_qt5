@@ -234,7 +234,8 @@ void MainForm::fillPages()
         div_page->setReqParams(div_params.source_url, div_params.request_interval*3600, div_params.look_div_days);
         div_page->setShownHistory(div_params.show_last);
         div_page->setTickTimerInterval(div_params.timer_interval);
-        div_page->setLightDivSize(div_params.light_div_size);
+        div_page->setLightValues(div_params.light_div_size, div_params.light_price);
+
         connect(div_page, SIGNAL(signalGetInstaPtr(const QString&, bool&)), m_configObj, SLOT(slotSetInstaPtr(const QString&, bool&)));
         connect(div_page, SIGNAL(signalGetLastPrice(const QString&, double&, int&)), m_calcObj, SLOT(slotGetLastPrice(const QString&, double&, int&)));
 
@@ -260,9 +261,6 @@ void MainForm::initCommonSettings()
     combo_list.clear();
     combo_list << "200" << "500" << "1000" << "2000" << "3000" << "5000";
     lCommonSettings.setComboList(key, combo_list);
-
-
-
 }
 void MainForm::slotAction(int type)
 {

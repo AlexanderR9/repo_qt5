@@ -12,6 +12,8 @@
 class LSearch;
 class QListWidgetItem;
 class QMouseEvent;
+class QCheckBox;
+
 
 //DivRecord
 struct DivRecord
@@ -46,13 +48,16 @@ public:
     virtual ~DivTable() {}
 
     void addRecord(const DivRecord&);
-    inline void setLightDivSize(const double &v) {m_lightDivSize = v;}
+    inline void setLightValues(const double &limit_div, const double &limit_price) {m_lightDivSize = limit_div; m_lightPrice = limit_price;}
     void getTableTitle(QString&);
-    void updateRowVisible(int, const QStringList&);
-    void showAllRows();
+    void updateRowVisible(int, const QStringList&, bool);
+    void showAllRows(bool);
+    void updatePrice(int, const double&);
+    bool isInstaRow(int) const;
 
 protected:
-    double      m_lightDivSize; //значения дивов (в %), выше которого необходимо подсвечивать
+    double m_lightDivSize; //значения дивов (в %), выше которого необходимо подсвечивать
+    double m_lightPrice; //значения цены, выше которого необходимо подсвечивать
 
 
     void mouseDoubleClickEvent(QMouseEvent*);
@@ -87,13 +92,14 @@ public:
     void tickTimerStart();
     void tickTimerStop();
 
-    inline void setLightDivSize(const double &v) {if (m_table) m_table->setLightDivSize(v);}
+    inline void setLightValues(const double &limit_div, const double &limit_price) {if (m_table) m_table->setLightValues(limit_div, limit_price);}
     inline void setShownHistory(quint16 n) {m_shownHistory = n;}
 
 
 protected:
     LSearch     *m_search;
     DivTable    *m_table;
+    QCheckBox   *m_onlyInstaCheckBox;
     QDateTime   m_lastDT;
     QTimer      *m_timer;
     QString     m_url;

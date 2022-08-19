@@ -6,11 +6,12 @@
 #include "lfile.h"
 #include "cfdcalcobj.h"
 
-#include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QDebug>
 #include <QDateTime>
 #include <QTimer>
 #include <QDir>
+#include <QCheckBox>
 
 #define TICKER_COL          1
 #define SIZE_COL            2
@@ -18,10 +19,12 @@
 #define DAYS_COL            4
 #define INSTA_COL           5
 #define INSTA_COLOR         QColor(200, 100, 30)
-#define DATE_PREV_COLOR     QColor(Qt::lightGray)
+#define OVER_PRICE_COLOR    QColor(190, 10, 10)
+#define DATE_PREV_COLOR     QColor(Qt::lightGray) //цвет строк прошедших дат
 #define EX_DATE_MASK        QString("dd_MM_yyyy")
 
 
+#define TEST_REQ_INTERVAL   -1 //тестовый интервал HTTP-запросов дивов (сек), если < 0 то значит отключен и работает тот, который загружен из конфига
 
 
 //DivPage
@@ -29,6 +32,7 @@ DivPage::DivPage(QWidget *parent)
     :BasePage(parent),
     m_search(NULL),
     m_table(NULL),
+    m_onlyInstaCheckBox(NULL),
     m_timer(NULL),
     m_interval(-1),
     m_shownHistory(200),
@@ -80,7 +84,7 @@ void DivPage::slotTimer()
         qDebug("m_lastDT invalid");
         m_lastDT = QDateTime::currentDateTime();
         updateTable();
-        //testDivDataFromFile();
+        testDivDataFromFile();
         return;
     }
     qint64 t = m_lastDT.secsTo(QDateTime::currentDateTime());
@@ -98,7 +102,6 @@ void DivPage::slotTimer()
 }
 void DivPage::slotDivDataReceived(const QString &plain_data)
 {
-    //qDebug()<<QString("DivPage::slotDivDataReceived: plain_data_size %1").arg(plain_data.size());
     m_lastDT = QDateTime::currentDateTime();
     QStringList list = LStatic::trimSplitList(plain_data);
     if (list.count() < 10)
@@ -116,13 +119,14 @@ void DivPage::slotDivDataReceived(const QString &plain_data)
         s = LStatic::removeLongSpaces(s, true);
 
         QDate div_date;
-        parseDate(s, div_date);
+        parseDate(s, div_date); //попытка в этой строке найти очередную дату
         if (div_date.isValid())
         {
+            //qDebug()<<QString("find valid next date: %1").arg(div_date.toString("dd.MM.yyyy"));
             last_div_date = div_date;
             if (cur_date.daysTo(div_date) > m_lookDays)
             {
-                qDebug()<<QString("ex_date is over:  %1").arg(div_date.toString("dd.MM.yyyy"));
+                qDebug()<<QString("ex_date is over maxLookDays:  %1").arg(div_date.toString("dd.MM.yyyy"));
                 break;
             }
             continue;
@@ -162,8 +166,6 @@ void DivPage::updateFileByReceivedData(const QList<DivRecord> &received_data)
 
     QList<DivRecord> cur_data;
     loadDivFile(cur_data);
-    //qDebug()<<QString("DivPage::updateFileByReceivedData - loaded records from file: %1 ").arg(cur_data.count());
-
 
     int n_added = 0;
     for (int i=0; i<received_data.count(); i++)
@@ -190,10 +192,7 @@ void DivPage::updateFileByReceivedData(const QList<DivRecord> &received_data)
     }
 
     if (n_added > 0)
-        sendLog(QString("Add %1 new records to div_file").arg(n_added), 0);
-
-
-    //qDebug()<<QString("DivPage::updateFileByReceivedData - was added records: %1 ").arg(n_added);
+        sendLog(QString("Added %1 new records to div_file").arg(n_added), 0);
 }
 void DivPage::updateLastPrices(QList<DivRecord> &data)
 {
@@ -276,18 +275,19 @@ void DivPage::setReqParams(const QString &url, int t, quint16 days)
     m_lookDays = days;
     if (m_interval < 3600) m_interval = -1;
 
-    //m_interval = 60*7;
-    //qDebug()<<QString("DivPage::setReqParams()  interval=%1  look_days=%2  URL: %3").arg(m_interval).arg(m_lookDays).arg(url);
+    //режим тестирования
+    if (TEST_REQ_INTERVAL > 10)
+        m_interval = TEST_REQ_INTERVAL;
 }
 void DivPage::slotSelectionChanged()
 {
-    //qDebug()<<QString("DivPage::slotSelectionChanged()");
     QList<QListWidgetItem*> items = sourcesListWidget->selectedItems();
     int n = items.count();
 
+    bool only_insta = m_onlyInstaCheckBox->isChecked();
     if (n == 0)
     {
-        m_table->showAllRows();
+        m_table->showAllRows(only_insta);
         return;
     }
 
@@ -297,19 +297,20 @@ void DivPage::slotSelectionChanged()
 
     int n_rows = m_table->rowCount();
     for (int i=0; i<n_rows; i++)
-        m_table->updateRowVisible(i, sel_tickers);
-
-    //qDebug()<<QString("DivPage::slotSelectionChanged()  selected tickers %1").arg(n);
+        m_table->updateRowVisible(i, sel_tickers, only_insta);
 }
 void DivPage::initTable()
 {
     m_table = new DivTable(this);
+    m_onlyInstaCheckBox = new QCheckBox("Show only insta tickers", this);
 
     chartBox->setTitle("Calendar");
     if (chartBox->layout()) delete chartBox->layout();
-    QHBoxLayout *h_lay = new QHBoxLayout(0);
-    chartBox->setLayout(h_lay);
-    h_lay->addWidget(m_table);
+    QVBoxLayout *v_lay = new QVBoxLayout(0);
+    chartBox->setLayout(v_lay);
+    v_lay->addWidget(m_table);
+    v_lay->addWidget(m_onlyInstaCheckBox);
+
 
     QStringList headers;
     headers << "ExDate" << "Ticker" << "Div size" << "Price" << "Days_to" << "Insta";
@@ -317,6 +318,7 @@ void DivPage::initTable()
 
     connect(m_table, SIGNAL(signalDoubleClicked()), sourcesListWidget, SLOT(clearSelection()));
     connect(m_table, SIGNAL(signalGetInstaPtr(const QString&, bool&)), this, SIGNAL(signalGetInstaPtr(const QString&, bool&)));
+    connect(m_onlyInstaCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotSelectionChanged()));
 
 }
 void DivPage::initSearch()
@@ -403,6 +405,7 @@ void DivPage::updateTable()
     }
 
     reloadTable(cur_data);
+    slotSelectionChanged();
 }
 void DivPage::addRecToFile(const DivRecord &rec)
 {
@@ -475,27 +478,38 @@ void DivPage::updateTableNextPrice()
 {
     if (m_table->rowCount() == 0) return;
     if (m_tablePriceIndex >= m_table->rowCount()) m_tablePriceIndex = 0;
+    if (m_table->item(m_tablePriceIndex, 0)->textColor() == DATE_PREV_COLOR) m_tablePriceIndex = 0;
 
     double price = 0;
     int hours_ago;
     QString ticker = m_table->item(m_tablePriceIndex, TICKER_COL)->text();
     emit signalGetLastPrice(ticker, price, hours_ago);
     QString s_price = ((price > 5) ? QString::number(price, 'f', 2) : QString::number(-2));
-    m_table->item(m_tablePriceIndex, PRICE_COL)->setText(s_price);
-    //qDebug()<<QString("DivPage::updateTableNextPrice - %1:  price=%2/%3  table_row=%4").arg(ticker).arg(s_price).arg(QString::number(price, 'f', 2)).arg(m_tablePriceIndex);
+    m_table->updatePrice(m_tablePriceIndex, s_price.toDouble());
     m_tablePriceIndex++;
 }
+
+
 
 
 //DivTable
 DivTable::DivTable(QWidget *parent)
     :QTableWidget(parent),
-      m_lightDivSize(0.6)
+      m_lightDivSize(0.6),
+      m_lightPrice(100)
 {
     setObjectName("div_table");
     verticalHeader()->hide();
     setSelectionMode(QAbstractItemView::SingleSelection);
     setSelectionBehavior(QAbstractItemView::SelectRows);
+}
+void DivTable::updatePrice(int row_index, const double &price)
+{
+    if (row_index < 0 || row_index >= rowCount()) return;
+
+    item(row_index, PRICE_COL)->setText(QString::number(price, 'f', 2));
+    if (price > m_lightPrice)
+        item(row_index, PRICE_COL)->setTextColor(OVER_PRICE_COLOR);
 }
 void DivTable::mouseDoubleClickEvent(QMouseEvent*)
 {
@@ -547,11 +561,13 @@ void DivTable::updateColors(const DivRecord &rec)
         item(cur_row, DAYS_COL)->setTextColor(Qt::darkGreen);
     }
 
-    if (rec.price > 150)
-        item(cur_row, PRICE_COL)->setTextColor(Qt::red);
+    if (rec.price > m_lightPrice)
+        item(cur_row, PRICE_COL)->setTextColor(OVER_PRICE_COLOR);
 
     if (rec.size_p > m_lightDivSize)
         item(cur_row, SIZE_COL)->setTextColor(Qt::blue);
+    else if (rec.size_p < 0.4)
+        item(cur_row, SIZE_COL)->setTextColor(DATE_PREV_COLOR);
 
 }
 int DivTable::daysTo(const QDate &d) const
@@ -573,17 +589,39 @@ void DivTable::getTableTitle(QString &s)
 
     s = QString("%1  (records: %2/%3)  ").arg(s).arg(rows).arg(n_prev);
 }
-void DivTable::updateRowVisible(int row_index, const QStringList &list)
+void DivTable::updateRowVisible(int row_index, const QStringList &list, bool only_insta)
 {
     if (row_index < 0 || row_index >= rowCount() || list.isEmpty()) return;
-    if (list.contains(item(row_index, TICKER_COL)->text())) showRow(row_index);
-    else hideRow(row_index);
+
+    if (!list.contains(item(row_index, TICKER_COL)->text()))
+    {
+        hideRow(row_index);
+        return;
+    }
+    if (only_insta)
+    {
+        if (isInstaRow(row_index)) showRow(row_index);
+        else hideRow(row_index);
+    }
+    else showRow(row_index);
 }
-void DivTable::showAllRows()
+void DivTable::showAllRows(bool only_insta)
 {
     int n_rows = rowCount();
     for (int i=0; i<n_rows; i++)
-        showRow(i);
+    {
+        if (!only_insta) showRow(i);
+        else
+        {
+            if (isInstaRow(i)) showRow(i);
+            else hideRow(i);;
+        }
+    }
+}
+bool DivTable::isInstaRow(int row_index) const
+{
+    if (row_index < 0 || row_index >= rowCount()) return false;
+    return (item(row_index, INSTA_COL)->text() == QString("yes"));
 }
 
 

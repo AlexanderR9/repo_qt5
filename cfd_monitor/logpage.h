@@ -54,6 +54,8 @@ protected:
     QStringList headerLabels() const;
     QString filePathByModule(int) const;
     void addLogToFile(const LogStruct&);
+    void tryRemoveRow(int&);
+    int rowModule(int) const;
 
     int                 n_err;
     int                 n_maxSize;

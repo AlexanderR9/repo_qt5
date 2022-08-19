@@ -120,12 +120,13 @@ void LogPage::addLogToFile(const LogStruct &log)
 }
 void LogPage::updatePage()
 {
+    LTable::resizeTableContents(logTable);
     if (logTable->rowCount() > n_maxSize)
     {
+        int k = 0;
         for (int i=0; i<100; i++)
-            logTable->removeRow(0);
+            tryRemoveRow(k);
     }
-
 
     int visible_rows = 0;
     int n_rows = logTable->rowCount();
@@ -134,6 +135,24 @@ void LogPage::updatePage()
 
     QString s = QString("Log (visible rows: %1,   errors/warnings %2)").arg(visible_rows).arg(n_err);
     logBox->setTitle(s);
+}
+void LogPage::tryRemoveRow(int &k)
+{
+    if (rowModule(k) == amtHtmlPage)
+    {
+        logTable->removeRow(k);
+        return;
+    }
+
+    QString s_date = logTable->item(k, 0)->text().trimmed();
+    QDate dt = QDate::fromString("dd.MM.yyyy");
+    if (dt.daysTo(QDate::currentDate()) < 20) k++;
+    else logTable->removeRow(k);
+}
+int LogPage::rowModule(int row) const
+{
+    if (row < 0 || row >= logTable->rowCount()) return -1;
+    return logTable->item(row, 0)->data(Qt::UserRole).toInt();
 }
 void LogPage::slotNewLog(const LogStruct &log)
 {
@@ -154,6 +173,7 @@ void LogPage::slotNewLog(const LogStruct &log)
     row_data.append(log.strStatus());
     LTable::addTableRow(logTable, row_data);
     logTable->item(logTable->rowCount()-1, logTable->columnCount()-1)->setTextColor(log.logColor());
+    logTable->item(logTable->rowCount()-1, 0)->setData(Qt::UserRole, log.module);
     LTable::resizeTableContents(logTable);
 
     updatePage();
