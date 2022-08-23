@@ -4,80 +4,55 @@
 #include "lmainwidget.h"
 #include "lsimpleobj.h"
 
+#include <QDataStream>
+
 class LProtocolBox;
 class QSplitter;
 class QTextEdit;
 class QProgressBar;
 class QGroupBox;
-class QTcpServer;
-class QTcpSocket;
+class LTcpServerObj;
+class LTcpClientObj;
 
 
-/*
-// LTcpServer
-class LTcpServer : public LSimpleObject
+struct w32_SYSTEMTIME
 {
-    Q_OBJECT
-public:
-    enum EmulatorMode {emServer = 0, emClient};
+    w32_SYSTEMTIME() {reset();}
 
+    qint16 wYear;
+    qint16 wMonth;
+    qint16 wDayOfWeek;
+    qint16 wDay;
+    qint16 wHour;
+    qint16 wMinute;
+    qint16 wSecond;
+    qint16 wMilliseconds;
 
-    LTcpServer(QObject*);
-    virtual ~LTcpServer() {}
+    void reset() {wYear=2022; wMonth=8; wDayOfWeek=1; wDay=22; wHour=15; wMinute=35; wSecond=wMilliseconds=0;}
+};
 
-    inline void setConnectionParams(QString host, quint16 port = 0) {m_host = host; m_port = port;}
-    inline void setMaxServerClients(quint8 n) {m_maxConnections = n;} //only server
-    inline bool isClient() const {return (m_mode == emClient);}
-    inline bool isServer() const {return (m_mode == emServer);}
-    void setEmulatorMode(int);
+struct PackHeader
+{
+    PackHeader() {reset();}
 
-    void startEmulator();
-    void stopEmulator();
-    bool emulatorStarted() const;
+    char            subSys;
+    char            dataType;
+    quint64         len;
+    //SYSTEMTIME    time;
+    w32_SYSTEMTIME  time;
+    quint16         roundCtr;
 
+    void toByteArray(QByteArray *ba)
+    {
+        QDataStream stream(ba, QIODevice::WriteOnly);
+        stream << subSys << len << time.wYear << time.wMonth << time.wDayOfWeek << time.wDay
+               << time.wHour << time.wMinute << time.wSecond << time.wMilliseconds << roundCtr;
 
-    static uint socketNumber;
-
-protected:
-    QTcpServer          *m_server;
-    QList<QTcpSocket*>   m_sockets;
-
-    QTcpSocket          *m_client;
-
-    QString     m_host;
-    quint16     m_port;
-    quint8      m_maxConnections;
-    int         m_mode;
-
-    //static int socketNumber;
-
-    void initServer();
-    void initClient();
-    void addConnectedSocket(QTcpSocket*);
-    void tryCloseAllSockets();
-
-
-    void startListening();
-    void stopListening();
-    void startClient();
-    void stopClient();
-
-
-protected slots:
-    //for tcp_server
-    void slotNewConnection();
-    void slotServerError();
-
-    //for tcp_sockets
-    void slotSocketConnected();
-    void slotSocketDisconnected();
-    void slotSocketError();
-    void slotSocketStateChanged();
-    void slotReadyRead();
-
+    }
+    void reset() {subSys=dataType=1; len=0; time.reset(); roundCtr=0;}
 
 };
-*/
+
 
 
 
@@ -86,12 +61,20 @@ class MainForm : public LMainWidget
 {
     Q_OBJECT
 public:
+    enum EmulatorMode {emServer = 0, emClient};
+
     MainForm(QWidget *parent = 0);
     virtual ~MainForm() {}
     
+    inline bool isClient() const {return (m_mode == emClient);}
+    inline bool isServer() const {return (m_mode == emServer);}
+
 protected:
     LProtocolBox        *m_protocol;
-    //LTcpServer          *m_server;
+    LTcpServerObj       *m_server;
+    LTcpClientObj       *m_client;
+    int                 m_mode;
+    QByteArray          ba_header;
 
     QString projectName() const {return "tcpemulator";}
     QString mainTitle() const {return QString("TCP emulator (Qt5)!");}
@@ -101,16 +84,19 @@ protected:
     void save();
     void load();
 
-    void initServer();
+    void initTcpObjects();
     void start();
     void stop();
+    void sendPack();
 
 protected slots:
     void slotAction(int); //virtual slot from parent
+    void slotAppSettingsChanged(QStringList); //virtual slot from parent
     void slotError(const QString&);
     void slotMsg(const QString&);
-
-
+    void slotServerPackReceived(const QByteArray&);
+    void slotClientPackReceived(const QByteArray&);
+    void slotTimer();
 
 };
 

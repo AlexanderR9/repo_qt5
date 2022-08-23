@@ -4,6 +4,8 @@
 #include "lfile.h"
 #include "lstatic.h"
 #include "lfile.h"
+#include "tcpclientobj.h"
+#include "tcpserverobj.h"
 
 
 #include <QDebug>
@@ -28,35 +30,80 @@
 // MainForm
 MainForm::MainForm(QWidget *parent)
     :LMainWidget(parent),
-    m_protocol(NULL)
-    //m_server(NULL)
+    m_protocol(NULL),
+    m_server(NULL),
+    m_client(NULL),
+    m_mode(emServer)
 {
     setObjectName("main_form_tcpemulator");
+    QTimer *timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(slotTimer()));
+    timer->start(1000);
 
+    initTcpObjects();
+    PackHeader p_header;
+    QByteArray ba;
+    p_header.toByteArray(&ba);
+    qDebug()<<QString("size PackHeader %1,   time_size %2,  ba size %3").arg(sizeof(p_header)).arg(sizeof(p_header.time)).arg(ba.size());
 
-//    QTimer *timer = new QTimer(this);
-//    connect(timer, SIGNAL(timeout()), this, SLOT(slotTimer()));
-//    timer->start(30000);
-
-    //LTcpServer::initSocketNumber();
-
-
-    initServer();
 }
-void MainForm::initServer()
+void MainForm::slotTimer()
 {
-    //LTcpServer::initSocketNumber();
-/*
-    m_server = new LTcpServer(this);
-
+    qDebug("MainForm::slotTimer() tick");
+    qDebug()<<QString("connected lients %1").arg(m_server->clientsCount());
+    //return;
+    if (isServer())
+    {
+        if (m_server->hasConnectedClients())
+        {
+            ba_header.clear();
+            QDataStream stream(&ba_header, QIODevice::WriteOnly);
+            for (int i=0; i<18; i++)
+            {
+                quint16 a = qrand()%100;
+                stream << a;
+            }
+            qDebug()<<QString("MainForm::slotTimer()  ba_header size %1").arg(ba_header.size());
+            m_server->trySendPacketToClient(1, ba_header);
+        }
+    }
+    if (isClient())
+    {
+        sendPack();
+    }
+}
+void MainForm::initTcpObjects()
+{
+    m_server = new LTcpServerObj(this);
     connect(m_server, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_server, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
-*/
+    connect(m_server, SIGNAL(signalPackReceived(const QByteArray&)), this, SLOT(slotServerPackReceived(const QByteArray&)));
+
+    m_client = new LTcpClientObj(this);
+    connect(m_client, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
+    connect(m_client, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
+    connect(m_client, SIGNAL(signalPackReceived(const QByteArray&)), this, SLOT(slotClientPackReceived(const QByteArray&)));
+}
+void MainForm::slotServerPackReceived(const QByteArray &ba)
+{
+    qDebug("MainForm::slotServerPackReceived");
+    ba_header.clear();
+    ba_header.append(ba);
+    slotMsg(LStatic::baToStr(ba, 12));
+
+}
+void MainForm::slotClientPackReceived(const QByteArray &ba)
+{
+    qDebug("MainForm::slotClientPackReceived");
+    ba_header.clear();
+    ba_header.append(ba);
+    slotMsg(LStatic::baToStr(ba, 12));
 }
 void MainForm::initActions()
 {
     addAction(LMainWidget::atStart);
     addAction(LMainWidget::atStop);
+    addAction(LMainWidget::atSendMsg);
     addAction(LMainWidget::atSettings);
     addAction(LMainWidget::atExit);
 }
@@ -67,6 +114,7 @@ void MainForm::slotAction(int type)
         case LMainWidget::atSettings: {actCommonSettings(); break;}
         case LMainWidget::atStart: {start(); break;}
         case LMainWidget::atStop: {stop(); break;}
+        case LMainWidget::atSendMsg: {sendPack(); break;}
         default: break;
     }
 }
@@ -96,11 +144,11 @@ void MainForm::initCommonSettings()
         combo_list.append(QString::number(i));
     
     QString key = QString("host");
-    lCommonSettings.addParam(QString("Listening host"), LSimpleDialog::sdtString, key);
+    lCommonSettings.addParam(QString("Host"), LSimpleDialog::sdtString, key);
     lCommonSettings.setDefValue(key, QString());
 
     key = QString("port");
-    lCommonSettings.addParam(QString("Listening port"), LSimpleDialog::sdtIntLine, key);
+    lCommonSettings.addParam(QString("Port"), LSimpleDialog::sdtIntLine, key);
     lCommonSettings.setDefValue(key, QString("0"));
 
     key = QString("mode");
@@ -108,7 +156,6 @@ void MainForm::initCommonSettings()
     combo_list.clear();
     combo_list << "Server" << "Client";
     lCommonSettings.setComboList(key, combo_list);
-    //lCommonSettings.setDefValue(key, QString("0"));
 
 }
 void MainForm::save()
@@ -137,256 +184,74 @@ void MainForm::slotMsg(const QString &text)
 }
 void MainForm::start()
 {
-    /*
-    if (m_server->emulatorStarted())
+    m_protocol->addSpace();
+    if (m_server->isListening())
     {
-        m_protocol->addText("TCP emulator already started, need stop", LProtocolBox::ttWarning);
+        m_protocol->addText("Server is listening now", LProtocolBox::ttWarning);
+        return;
+    }
+    if (m_client->isConnected())
+    {
+        m_protocol->addText("Client connected now", LProtocolBox::ttWarning);
         return;
     }
 
-    QString mode = lCommonSettings.paramValue("mode").toString().trimmed().toLower();
-    qDebug()<<QString("MODE=%1").arg(mode);
-
-    m_server->setEmulatorMode((mode == "client") ? LTcpServer::emClient : LTcpServer::emServer);
+    qDebug("///////////////////////////////////////");
+    qDebug()<<QString("MainForm::start()  mode=%1").arg(m_mode);
 
     QString host = lCommonSettings.paramValue("host").toString().trimmed();
     quint16 port = lCommonSettings.paramValue("port").toUInt();
-    m_server->setConnectionParams(host, port);
-    m_server->startEmulator();
-    */
-}
-void MainForm::stop()
-{
-   // m_server->stopEmulator();
-}
+    m_mode = ((lCommonSettings.paramValue("mode").toString().trimmed().toLower() == "client") ? emClient : emServer);
 
-
-/*
-
-//LTcpServer
-LTcpServer::LTcpServer(QObject *parent)
-    :LSimpleObject(parent),
-      m_server(NULL),
-      m_client(NULL),
-      m_host(QString()),
-      m_port(0),
-      m_maxConnections(3),
-      m_mode(emServer)
-{
-    setObjectName("ltcp_server");
-    initServer();
-    initClient();
-
-}
-void LTcpServer::startListening()
-{
-    if (m_server->isListening())
+    if (isClient())
     {
-        emit signalError(QString("LTcpServer: server allready listening"));
-        return;
-    }
-
-    bool result = false;
-    if (m_host.trimmed().isEmpty()) result = m_server->listen(QHostAddress::Any, m_port);
-    else result = m_server->listen(QHostAddress(m_host), m_port);
-
-    QString msg = QString("LTcpServer: started listening");
-    msg = QString("%1 (HOST=%2  PORT=%3)").arg(msg).arg(m_host.trimmed().isEmpty()?"any":m_host).arg(m_port);
-    emit signalMsg(msg);
-
-    if (!result)
-        emit signalError("LTcpServer: RESULT=[fault]");
-}
-void LTcpServer::stopListening()
-{
-    if (!m_server->isListening())
-    {
-        emit signalError(QString("LTcpServer: server is stoped"));
-        return;
-    }
-
-    m_server->close();
-    qDeleteAll(m_sockets);
-    m_sockets.clear();
-    m_server->deleteLater();
-
-    emit signalMsg(QString("LTcpServer: stoped listening"));
-
-    QTest::qWait(200);
-    m_server = NULL;
-
-    initServer();
-}
-void LTcpServer::startEmulator()
-{
-    if (isClient()) startClient();
-    else if (isServer()) startListening();
-    else emit signalError(QString("LTcpServer: emulator is INVALID_MODE,  mode=(%1)"));
-}
-void LTcpServer::stopEmulator()
-{
-    if (isClient()) stopClient();
-    else if (isServer()) stopListening();
-    else emit signalError(QString("LTcpServer: emulator is INVALID_MODE,  mode=(%1)"));
-}
-bool LTcpServer::emulatorStarted() const
-{
-    if (isServer())
-    {
-        if (m_server->isListening()) return true;
+        m_client->setConnectionParams(host, port);
+        m_client->tryConnect();
     }
     else
     {
-        if (m_client->isOpen()) return true;
+        m_server->setConnectionParams(host, port);
+        m_server->startListening();
     }
-    return false;
 }
-void LTcpServer::stopClient()
+void MainForm::stop()
 {
-    if (m_client->isOpen()) m_client->close();
-
-
-
-}
-void LTcpServer::startClient()
-{
-    if (!isClient())
+    if (m_server->isListening())
     {
-        emit signalError(QString("LTcpServer: emulator is not CLIENT_MODE,  mode=(%1)"));
-        return;
+        m_server->stopListening();
     }
-
-    tryCloseAllSockets();
-    qDeleteAll(m_sockets);
-    m_sockets.clear();
-
-    if (m_host.trimmed().isEmpty())
+    if (m_client->isConnected())
     {
-        emit signalError(QString("LTcpClient: host is empty"));
-        return;
+        m_client->tryDisconnect();
     }
-
-    emit signalMsg("LTcpClient: try connecting ..............");
-    m_client->connectToHost(QHostAddress(m_host), m_port, QIODevice::ReadOnly);
-
 }
-void LTcpServer::setEmulatorMode(int m)
+void MainForm::slotAppSettingsChanged(QStringList keys)
 {
-    m_mode = m;
-    if (m_mode != emServer && m_mode != emClient) m_mode = emServer;
-}
-void LTcpServer::initServer()
-{
-    m_server = new QTcpServer(this);
-
-    connect(m_server, SIGNAL(acceptError(QAbstractSocket::SocketError)), this, SLOT(slotServerError()));
-    connect(m_server, SIGNAL(newConnection()), this, SLOT(slotNewConnection()));
-}
-void LTcpServer::initClient()
-{
-    m_client = new QTcpSocket(this);
-    m_client->setObjectName("client");
-
-    connect(m_client, SIGNAL(connected()), this, SLOT(slotSocketConnected()));
-    connect(m_client, SIGNAL(disconnected()), this, SLOT(slotSocketDisconnected()));
-    connect(m_client, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(slotSocketError()));
-    connect(m_client, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(slotSocketStateChanged()));
-
-    connect(m_client, SIGNAL(readyRead()), this, SLOT(slotReadyRead()));
-}
-void LTcpServer::slotReadyRead()
-{
-    qDebug()<<QString("LTcpServer::slotReadyRead() buffer: %1 bytes").arg(m_client->bytesAvailable());
-    QByteArray ba(m_client->readAll());
-}
-void LTcpServer::tryCloseAllSockets()
-{
-    for (int i=0; i<m_sockets.count(); i++)
+    foreach (QString key, keys)
     {
-        if (m_sockets.at(i))
-            if (m_sockets.at(i)->isOpen())
-                m_sockets.at(i)->close();
+        if (key == "mode")
+            m_mode = ((lCommonSettings.paramValue("mode").toString().trimmed().toLower() == "client") ? emClient : emServer);
     }
 }
-void LTcpServer::slotNewConnection()
+void MainForm::sendPack()
 {
-    emit signalMsg("LTcpServer: was new connection");
-
-    QTcpSocket *socket = m_server->nextPendingConnection();
-    if (!socket)
+    if (isServer() && m_server->hasConnectedClients())
     {
-        emit signalError(QString("LTcpServer: connected socket is null"));
-        return;
+        //ba_header.clear();
+        //QDataStream stream(&ba_header, QIODevice::WriteOnly);
+        //for (int i=0; i<18; i++)
+        {
+            //quint16 a = qrand()%100;
+            //stream << a;
+        }
+        m_server->trySendPacketToClient(1, ba_header);
     }
 
-    socket->setObjectName(QString("client_%1").arg(socketNumber));
-    socketNumber++;
-    emit signalMsg(QString("LTcpServer: connected socket_name: [%1]").arg(socket->objectName()));
-
-    addConnectedSocket(socket);
-}
-void LTcpServer::slotServerError()
-{
-    int err = m_server->serverError();
-    QString s_err = m_server->errorString();
-
-    emit signalError(QString("LTcpServer: %1  (code=%2)").arg(s_err).arg(err));
-}
-void LTcpServer::addConnectedSocket(QTcpSocket *socket)
-{
-    m_sockets.append(socket);
-
-
-    connect(socket, SIGNAL(connected()), this, SLOT(slotSocketConnected()));
-    connect(socket, SIGNAL(disconnected()), this, SLOT(slotSocketDisconnected()));
-    connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(slotSocketError()));
-    connect(socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(slotSocketStateChanged()));
-
-}
-void LTcpServer::slotSocketConnected()
-{
-    qDebug()<<QString("LTcpServer::slotSocketConnected()  sender=[%1]").arg(sender()->objectName());
-
-    if (isClient())
+    if (isClient() && m_client->isConnected())
     {
-        emit signalMsg(QString("LTcpClient: connected"));
-    }
-
-}
-void LTcpServer::slotSocketDisconnected()
-{
-    qDebug()<<QString("LTcpServer::slotSocketDisconnected()  sender=[%1]").arg(sender()->objectName());
-
-    emit signalError(QString("LTcpServer: %1  disconected").arg(sender()->objectName()));
-
-    QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
-    if (socket) socket->close();
-}
-void LTcpServer::slotSocketError()
-{
-    const QTcpSocket *socket = qobject_cast<const QTcpSocket*>(sender());
-    QString err = QString("%1 (code=%2)").arg(socket ? socket->errorString() : "?????").arg(socket ? socket->error() : -99);
-    qDebug()<<QString("LTcpServer::slotSocketError()  sender=[%1]  ERR: %2").arg(sender()->objectName()).arg(err);
-
-    if (isClient())
-    {
-        emit signalError(QString("LTcpServer::slotSocketError()  sender=[%1]  ERR: %2").arg(sender()->objectName()).arg(err));
+        m_client->trySendPacket(ba_header);
     }
 }
-void LTcpServer::slotSocketStateChanged()
-{
-    const QTcpSocket *socket = qobject_cast<const QTcpSocket*>(sender());
-    QString s_state = QString("state=%1").arg(socket ? QString::number(socket->state()) : "?");
-    qDebug()<<QString("LTcpServer::slotSocketStateChanged()  sender=[%1]  %2").arg(sender()->objectName()).arg(s_state);
-
-}
-*/
-
-
-
-
-
-
 
 
 

@@ -70,6 +70,11 @@ void CFDPage::updateCellColors()
         getCellValue(m_table->item(i, MONTH_COL)->text(), value, ok);
         color = (ok ? getColorByLimits(value, 15.5) : Qt::gray);
         m_table->item(i, MONTH_COL)->setTextColor(color);
+
+        //check insta ticker
+        emit signalGetInstaPtr(m_table->item(i, TICKER_COL)->text(), ok);
+        color = (ok ? QColor(200, 100, 30) : Qt::black);
+        m_table->item(i, TICKER_COL)->setTextColor(color);
     }
 }
 QColor CFDPage::getColorByLimits(const double &value, double limit) const

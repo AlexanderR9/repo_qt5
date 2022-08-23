@@ -1,4 +1,6 @@
 tcpemulator.pro.user
+tcpemulator.debug
+tcpemulator
 .qmake.stash
 moc
 obj

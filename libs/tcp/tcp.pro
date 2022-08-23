@@ -5,7 +5,7 @@ MOC_DIR = moc
 OBJECTS_DIR = obj
 
 QT -= gui
-QT += network
+QT *= network widgets xml testlib
 
 INCLUDEPATH += .\
             $$PWD/../base \

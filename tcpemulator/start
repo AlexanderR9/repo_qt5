@@ -1,4 +1,4 @@
 #!/bin/bash
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../libs/base/build
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../libs/base/build:../libs/tcp/build
 
 ./tcpemulator

@@ -171,6 +171,8 @@ void MainForm::initCalcObj()
         return;
     }
     connect(m_calcObj, SIGNAL(signalUpdateCFDTable(const QStringList&)), cfd_page, SLOT(slotNewPrice(const QStringList&)));
+    connect(cfd_page, SIGNAL(signalGetInstaPtr(const QString&, bool&)), m_configObj, SLOT(slotSetInstaPtr(const QString&, bool&)));
+
 }
 void MainForm::initBotObj()
 {

@@ -34,6 +34,9 @@ private:
     void getCellValue(const QString&, double&, bool&);
     QColor getColorByLimits(const double&, double) const;
 
+signals:
+    void signalGetInstaPtr(const QString&, bool&);
+
 };
 
 
