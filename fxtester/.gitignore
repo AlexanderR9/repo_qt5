@@ -1,0 +1,12 @@
+fxtester.pro.user
+fxtester.debug
+.qmake.stash
+moc
+obj
+Makefile
+fxtester
+full_clear
+data
+ui_fxcentralwidget.h
+
+

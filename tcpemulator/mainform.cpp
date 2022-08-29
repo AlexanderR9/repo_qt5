@@ -7,6 +7,11 @@
 #include "tcpclientobj.h"
 #include "tcpserverobj.h"
 
+#include <stdio.h>
+//#include "winsock2.h"
+
+
+#pragma GCC diagnostic ignored "-Wsign-compare"
 
 #include <QDebug>
 #include <QDir>
@@ -33,7 +38,8 @@ MainForm::MainForm(QWidget *parent)
     m_protocol(NULL),
     m_server(NULL),
     m_client(NULL),
-    m_mode(emServer)
+    m_mode(emServer),
+    m_counter(0)
 {
     setObjectName("main_form_tcpemulator");
     QTimer *timer = new QTimer(this);
@@ -46,14 +52,28 @@ MainForm::MainForm(QWidget *parent)
     p_header.toByteArray(&ba);
     qDebug()<<QString("size PackHeader %1,   time_size %2,  ba size %3").arg(sizeof(p_header)).arg(sizeof(p_header.time)).arg(ba.size());
 
+
+    PortalPackHeader h1;
+    ARecord rec;
+    h1.toByteArray(&ba);
+    qDebug()<<QString("size PortalPackHeader %1,   ARecord %2,  ba size %3").arg(h1.size2()).arg(rec.size2()).arg(ba.size());
+
+
+    prepareFloatPacket(ba);
+
 }
 void MainForm::slotTimer()
 {
-    qDebug("MainForm::slotTimer() tick");
-    qDebug()<<QString("connected lients %1").arg(m_server->clientsCount());
+    //qDebug("MainForm::slotTimer() tick");
+    //qDebug()<<QString("connected lients %1").arg(m_server->clientsCount());
     //return;
+
+    if (!autoSendPack()) return;
+
     if (isServer())
     {
+        sendPack();
+        /*
         if (m_server->hasConnectedClients())
         {
             ba_header.clear();
@@ -66,6 +86,7 @@ void MainForm::slotTimer()
             qDebug()<<QString("MainForm::slotTimer()  ba_header size %1").arg(ba_header.size());
             m_server->trySendPacketToClient(1, ba_header);
         }
+        */
     }
     if (isClient())
     {
@@ -157,6 +178,9 @@ void MainForm::initCommonSettings()
     combo_list << "Server" << "Client";
     lCommonSettings.setComboList(key, combo_list);
 
+    key = QString("autosendpack");
+    lCommonSettings.addParam(QString("Auto send packet"), LSimpleDialog::sdtBool, key);
+
 }
 void MainForm::save()
 {
@@ -233,24 +257,88 @@ void MainForm::slotAppSettingsChanged(QStringList keys)
             m_mode = ((lCommonSettings.paramValue("mode").toString().trimmed().toLower() == "client") ? emClient : emServer);
     }
 }
+bool MainForm::autoSendPack() const
+{
+    return lCommonSettings.paramValue("autosendpack").toBool();
+}
 void MainForm::sendPack()
 {
     if (isServer() && m_server->hasConnectedClients())
     {
-        //ba_header.clear();
-        //QDataStream stream(&ba_header, QIODevice::WriteOnly);
-        //for (int i=0; i<18; i++)
-        {
-            //quint16 a = qrand()%100;
-            //stream << a;
-        }
-        m_server->trySendPacketToClient(1, ba_header);
-    }
+        //m_server->trySendPacketToClient(1, ba_header);
 
+        QByteArray ba;
+        prepareFloatPacket(ba);
+        if (!ba.isEmpty())
+            m_server->trySendPacketToClient(1, ba);
+
+        prepareDiscretePacket(ba);
+        if (!ba.isEmpty())
+            m_server->trySendPacketToClient(1, ba);
+
+    }
     if (isClient() && m_client->isConnected())
     {
         m_client->trySendPacket(ba_header);
     }
+}
+void MainForm::prepareFloatPacket(QByteArray &ba)
+{
+    ba.clear();
+    if (QTime::currentTime().second()%2 == 1) return;
+
+    PortalPackHeader header;
+    header.subSys_id = QChar('I').toLatin1();
+    header.dataType_id = QChar('A').toLatin1();
+    header.counter = m_counter++;
+    header.time.setCurrentTime();
+
+    QByteArray ba_rec;
+    QDataStream stream(&ba_rec, QIODevice::WriteOnly);
+    stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    int n_group = 374;
+    for (int i=0; i<n_group; i++)
+    {
+        ARecord f_rec(12.3+float(i)/10);
+        f_rec.toByteArray(stream);
+    }
+    qDebug()<<QString("ba_rec %1").arg(ba_rec.size());
+
+
+    //header.len = n_group*ARecord::size() + header.size();
+    header.len = n_group;
+    header.toByteArray(&ba);
+    qDebug()<<QString("ba_header %1").arg(ba.size());
+    ba.append(ba_rec);
+
+    qDebug()<<header.toStr();
+}
+void MainForm::prepareDiscretePacket(QByteArray &ba)
+{
+    ba.clear();
+    if (QTime::currentTime().second()%2 == 0) return;
+
+    PortalPackHeader header;
+    header.subSys_id = QChar('I').toLatin1();
+    header.dataType_id = QChar('D').toLatin1();
+    header.counter = m_counter++;
+    header.time.setCurrentTime();
+
+    QByteArray ba_rec;
+    QDataStream stream(&ba_rec, QIODevice::WriteOnly);
+    int n_group = 93;
+    for (int i=0; i<n_group; i++)
+    {
+        DRecord d_rec(qrand()%2);
+        d_rec.toByteArray(stream);
+    }
+    qDebug()<<QString("ba_rec(discrete) %1").arg(ba_rec.size());
+
+    header.len = n_group;
+    header.toByteArray(&ba);
+    ba.append(ba_rec);
+    qDebug()<<header.toStr();
+
 }
 
 

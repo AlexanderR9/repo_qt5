@@ -121,18 +121,20 @@ void LTcpServerObj::addConnectedSocket(QTcpSocket *socket)
     socket->setObjectName(nextSocketName());
     m_sockets.append(socket);
 
-    connect(socket, SIGNAL(connected()), this, SLOT(slotSocketConnected()));
+    //connect(socket, SIGNAL(connected()), this, SLOT(slotSocketConnected()));
     connect(socket, SIGNAL(disconnected()), this, SLOT(slotSocketDisconnected()));
     connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(slotSocketError()));
     connect(socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(slotSocketStateChanged()));
     connect(socket, SIGNAL(readyRead()), this, SLOT(slotSocketReadyRead()));
 
 }
+/*
 void LTcpServerObj::slotSocketConnected()
 {
     qDebug()<<QString("LTcpServerObj::slotSocketConnected()  sender=[%1]").arg(sender()->objectName());
 
 }
+*/
 void LTcpServerObj::slotSocketDisconnected()
 {
     qDebug()<<QString("LTcpServerObj::slotSocketDisconnected()  sender=[%1]").arg(sender()->objectName());
