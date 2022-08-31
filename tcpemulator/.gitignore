@@ -8,3 +8,4 @@ Makefile
 tcpemulator_tester
 full_clear
 config
+dtsstructs.h

@@ -3,11 +3,13 @@ TEMPLATE = lib
 DEFINES += LIB_LIBRARY QT_DEPRECATED_WARNINGS
 MOC_DIR = moc
 OBJECTS_DIR = obj
+UI_DIR=ui
 
 QT -= gui
 QT *= network widgets xml testlib
 
 INCLUDEPATH += .\
+            $$PWD/ui \
             $$PWD/../base \
             $$PWD
 
@@ -21,9 +23,14 @@ unix:!macx: LIBS += -L$$PWD/../base/build/ -llbase
 # Input
 HEADERS += $$PWD/tcpserverobj.h \
 	$$PWD/tcpclientobj.h \
+	$$PWD/tcpstatuswidget.h \
 	$$PWD/tcp_global.h
 
 SOURCES += $$PWD/tcpserverobj.cpp \
+	$$PWD/tcpstatuswidget.cpp \
 	$$PWD/tcpclientobj.cpp
+
+FORMS += $$PWD/ui/tcpstatuswidget.ui
+
 
 

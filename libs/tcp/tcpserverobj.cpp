@@ -145,10 +145,11 @@ void LTcpServerObj::slotSocketDisconnected()
 
     if (pos >= 0)
     {
-        m_sockets[pos]->close();
+        if (m_sockets.at(pos)->isOpen())
+            m_sockets[pos]->close();
         QTest::qWait(200);
-        //delete m_sockets[pos];
-        //m_sockets.removeAt(pos);
+        QTcpSocket *socket = m_sockets.takeAt(pos);
+        if (socket) socket->deleteLater();
         emit signalMsg(QString("%0: current clients %1").arg(name()).arg(clientsCount()));
     }
 }

@@ -5,3 +5,5 @@ obj
 build
 Makefile
 full_clear
+ui_tcpstatuswidget.h
+
