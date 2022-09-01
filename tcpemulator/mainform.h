@@ -15,8 +15,8 @@ class LTcpServerObj;
 class LTcpClientObj;
 class LTCPStatusWidget;
 
-struct w32_SYSTEMTIME;
-struct w32_FILETIME;
+struct w32_time;
+struct w32_system_time;
 
 
 
@@ -33,18 +33,13 @@ public:
     inline bool isClient() const {return (m_mode == emClient);}
     inline bool isServer() const {return (m_mode == emServer);}
 
-    static QDateTime toQDateTime(const w32_SYSTEMTIME&, Qt::TimeSpec ts = Qt::UTC);
-    static QDateTime toQDateTime(const w32_FILETIME&, Qt::TimeSpec ts = Qt::UTC);
-    static void toSystemTime_w32(const QDateTime&, w32_SYSTEMTIME&);
-    static void toFileTime_w32(const QDateTime&, w32_FILETIME&);
-
 protected:
     LProtocolBox        *m_protocol;
     LTCPStatusWidget     *m_statusWidget;
     LTcpServerObj       *m_server;
     LTcpClientObj       *m_client;
     int                 m_mode;
-    QByteArray          ba_header;
+    //QByteArray          ba_header;
     quint16 m_counter;
 
     QString projectName() const {return "tcpemulator";}

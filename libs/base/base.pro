@@ -23,6 +23,7 @@ INCLUDEPATH += .\
 SOURCES += \
     lmath.cpp \
     lfile.cpp \
+    ltime.cpp \
     lprotocol.cpp \
     lsearch.cpp \
     lsplash.cpp \
@@ -38,6 +39,7 @@ HEADERS += \
     base_global.h \ 
     lmath.h \
     lfile.h \
+    ltime.h \
     lprotocol.h \
     lsearch.h \
     lsplash.h \

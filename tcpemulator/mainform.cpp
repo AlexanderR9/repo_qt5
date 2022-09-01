@@ -9,7 +9,7 @@
 #include "dtsstructs.h"
 #include "tcpstatuswidget.h"
 
-
+#include <ctime>
 //#include <stdio.h>
 //#pragma GCC diagnostic ignored "-Wsign-compare"
 
@@ -50,14 +50,12 @@ MainForm::MainForm(QWidget *parent)
     QByteArray ba;
     prepareFloatPacket(ba);
 
-    w32_FILETIME f_time;
+    w32_time f_time;
+    QDateTime cur_dt_utc = QDateTime::currentDateTimeUtc();
+    qDebug()<<QString("cur_dt_utc: %1      time_t=%2").arg(LTime::strDateTime(cur_dt_utc)).arg(cur_dt_utc.toTime_t());
+    f_time.setTime(cur_dt_utc);
     qDebug()<<f_time.toStr();
-    toFileTime_w32(QDateTime::currentDateTimeUtc(), f_time);
-    qDebug()<<f_time.toStr();
-
-    QDateTime dt = toQDateTime(f_time);
-    qDebug()<<dt.toString("dd.MM.yyyy     hh:mm:ss.zzz");
-
+    qDebug()<<QString("converted result: ")<<LTime::strDateTime(f_time.toQDateTime());
 
 
 }
@@ -90,8 +88,8 @@ void MainForm::initTcpObjects()
 void MainForm::slotServerPackReceived(const QByteArray &ba)
 {
     qDebug("MainForm::slotServerPackReceived");
-    ba_header.clear();
-    ba_header.append(ba);
+    //ba_header.clear();
+    //ba_header.append(ba);
     slotMsg(LStatic::baToStr(ba, 12));
 
 }
@@ -316,7 +314,7 @@ void MainForm::sendPack()
     }
     if (isClient() && m_client->isConnected())
     {
-        m_client->trySendPacket(ba_header);
+        //m_client->trySendPacket(ba_header);
     }
 }
 void MainForm::prepareFloatPacket(QByteArray &ba)
@@ -346,6 +344,7 @@ void MainForm::prepareFloatPacket(QByteArray &ba)
     {
         ARecord f_rec(12.3+float(i)/10);
         f_rec.quality = qualSig();
+        f_rec.time.setCurrentTimeUtc();
         f_rec.toByteArray(stream);
 
         if (i==0) qDebug()<<QString("a_rec[0]=%1").arg(f_rec.toStr());
@@ -378,6 +377,7 @@ void MainForm::prepareDiscretePacket(QByteArray &ba)
     {
         DRecord d_rec(i%2);
         d_rec.quality = qualSig();
+        d_rec.time.setCurrentTimeUtc();
         d_rec.toByteArray(stream);
 
         if (i==0) qDebug()<<QString("d_rec[0]=%1").arg(d_rec.toStr());
@@ -423,45 +423,4 @@ void MainForm::DTSTDataReady(const QByteArray &ba)
         */
     }
 }
-QDateTime MainForm::toQDateTime(const w32_SYSTEMTIME &dtsDT, Qt::TimeSpec ts)
-{
-    QDate qt_date(dtsDT.wYear, dtsDT.wMonth, dtsDT.wDay);
-    QTime qt_time(dtsDT.wHour, dtsDT.wMinute, dtsDT.wSecond, dtsDT.wMilliseconds);
-    QDateTime result(qt_date, qt_time);
-    if (ts == Qt::LocalTime) return result.addSecs(3600*3);
-    return result;
-}
-QDateTime MainForm::toQDateTime(const w32_FILETIME &dtsDT, Qt::TimeSpec ts)
-{
-    quint64 before_unix = 11644473600000ULL; //количество мсек до начала эпохи unix
-    quint64 tmp = (dtsDT.dwHigh * 0x100000000ULL + dtsDT.dwLow)/10000ULL; // => msecs;  4294967296
-    if (tmp < before_unix) {qWarning()<<QString("MainForm::toQDateTime WARNING tmp(%1) < before_unix").arg(tmp); return QDateTime();}
-    else tmp -= before_unix;
-
-    QDateTime result;
-    result.setTime_t(tmp/1000ULL); //Устанавливает дату и время, параметр - количество секунд, прошедших с (1970-01-01 00:00:00), универсальное время (Qt::UTC).
-    result.setTime(result.time().addMSecs(tmp%1000)); //добавляет остаток мсек при целочисленно делении
-    if (ts == Qt::LocalTime) return result.addSecs(3600*3);
-    return result;
-}
-void MainForm::toSystemTime_w32(const QDateTime &dt, w32_SYSTEMTIME &sys_time)
-{
-    sys_time.setTime(dt);
-}
-void MainForm::toFileTime_w32(const QDateTime &dt, w32_FILETIME &f_time)
-{
-    quint64 tmp = dt.toTime_t()*1000; //конвертация dt в количество милисекунд, прошедших с (1970-01-01 00:00:00)
-    quint64 before_unix = 11644473600000ULL; //количество мсек до начала эпохи unix
-    tmp += before_unix;
-    tmp *= 10000ULL; // конвертация милисекунд в 100-наносекундные интервалы;
-    qDebug()<<QString::number(tmp)<<"   "<<QString::number(tmp, 16);
-    //int n_offset = 32;
-    //f_time.dwHigh = (tmp >> n_offset);
-    //f_time.dwLow = ((tmp << n_offset) >> n_offset);
-    f_time.dwHigh = tmp/0x100000000ULL;
-    f_time.dwLow = tmp%0x100000000ULL;
-
-}
-
-//019dd71a 84ba8a00  =  116485674277440000
 

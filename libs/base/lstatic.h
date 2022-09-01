@@ -10,9 +10,6 @@
 class LStatic
 {
 public:
-    static QString strCurrentTime(bool with_ms = true); //hh:mm:ss_zzz
-    static QString strCurrentDate(QString mask = "dd.MM.yyyy");
-    static QString strCurrentDateTime(QString mask = "dd.MM.yyyy hh:mm:ss");
     static int defIconSize() {return 40;}
 
 	//for strings

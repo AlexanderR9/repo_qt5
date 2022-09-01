@@ -7,19 +7,6 @@
 #include <QDateTime>
 
 //////////////// LStatic /////////////////////////
-QString LStatic::strCurrentTime(bool with_ms)
-{
-    QString mask = with_ms ? "hh:mm:ss_zzz" : "hh:mm:ss";
-    return QTime::currentTime().toString(mask);
-}
-QString LStatic::strCurrentDateTime(QString mask)
-{
-    return QDateTime::currentDateTime().toString(mask);
-}
-QString LStatic::strCurrentDate(QString mask)
-{
-    return QDate::currentDate().toString(mask);
-}
 int LStatic::subCount(const QString &s, const QString sub_s)
 {
     int n = 0;
