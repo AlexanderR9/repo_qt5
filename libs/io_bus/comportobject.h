@@ -25,9 +25,9 @@ public:
     inline void setAutoClean(bool b) {m_autoClean = b;}
     inline void setMinReceivedBytes(int n) {m_minReceivedBytes = n; if (m_minReceivedBytes <= 0) m_minReceivedBytes = -1;}
 
-    void tryOpen(QString&); //попытка открыть порт, в случае ошибки в параметр запишится текст ошибки
-    void tryClose(QString&);//попытка закрыть порт, в случае ошибки в параметр запишится текст ошибки
-    void tryWrite(const QByteArray&, QString&);//попытка записать данные в порт, в случае ошибки в параметр запишится текст ошибки
+    void tryOpen(QString&); //попытка открыть порт, в случае ошибки в параметр запишется текст ошибки
+    void tryClose(QString&);//попытка закрыть порт, в случае ошибки в параметр запишется текст ошибки
+    void tryWrite(const QByteArray&, QString&);//попытка записать данные в порт, в случае ошибки в параметр запишется текст ошибки
     bool portOpened() const; //признак того что порт открыт
 
 protected:

@@ -2,6 +2,7 @@
 #include "lstatic.h"
 #include "ltable.h"
 #include "lfile.h"
+#include "ltime.h"
 
 #include <QDebug>
 #include <QDir>
@@ -24,19 +25,6 @@ ParamsPage::ParamsPage(QWidget *parent)
 
     initTable();
 }
-/*
-QString ParamsPage::commandName() const
-{
-    //return cmdLineEdit->text().trimmed();
-    return QString();
-}
-QStringList ParamsPage::getArgs() const
-{
-    QString s = argsLineEdit->text().trimmed();
-    if (s.isEmpty()) return QStringList();
-    return LStatic::trimSplitList(s, ";");
-}
-*/
 bool ParamsPage::isSudo() const
 {
     //return isSudoCheckBox->isChecked();
@@ -44,12 +32,14 @@ bool ParamsPage::isSudo() const
 }
 void ParamsPage::save(QSettings &settings)
 {
+    Q_UNUSED(settings);
     //settings.setValue("paramspage/command", cmdLineEdit->text());
     //settings.setValue("paramspage/args", argsLineEdit->text());
     //settings.setValue("paramspage/sudo", isSudoCheckBox->isChecked());
 }
 void ParamsPage::load(QSettings &settings)
 {
+    Q_UNUSED(settings);
     //cmdLineEdit->setText(settings.value("paramspage/command").toString());
     //argsLineEdit->setText(settings.value("paramspage/args").toString());
     //isSudoCheckBox->setChecked(settings.value("paramspage/sudo").toBool());
@@ -178,7 +168,7 @@ void ParamsPage::startCommand(QString cmd, QString fname)
 {
     QStringList row_data;
     row_data.append(QString::number(logTable->rowCount()+1));
-    row_data.append(QString("%1 - ?").arg(LStatic::strCurrentTime(false)));
+    row_data.append(QString("%1 - ?").arg(LTime::strCurrentTime()));
     row_data.append(cmd);
     row_data.append(fname);
     row_data.append(QString("?"));
@@ -203,7 +193,7 @@ void ParamsPage::finishedCommand(QString result)
     else r_item->setTextColor(Qt::gray);
 
     QString s_time = logTable->item(n-1, TIME_COL)->text();
-    s_time.replace("?", LStatic::strCurrentTime(false));
+    s_time.replace("?", LTime::strCurrentTime());
     logTable->item(n-1, TIME_COL)->setText(s_time);
 
     LTable::resizeTableContents(logTable);

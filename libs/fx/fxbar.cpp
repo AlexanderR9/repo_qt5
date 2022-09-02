@@ -1,13 +1,10 @@
 #include "fxbar.h"
 #include "lstatic.h"
-#include "lfile.h"
-#include "fxenums.h"
 
 #include <QDebug>
 
 #define FX_DATE_FORMAT      QString("yyyy.MM.dd")
 #define FX_TIME_FORMAT      QString("hh:mm")
-#define FX_FILE_FORMAT      QString(".csv")
 
 
 // FXBar
@@ -40,6 +37,8 @@ void FXBar::fromFileLine(const QString &fline, QString sep_values)
         return;
     }
 
+    qDebug()<<QString("FXBar::fromFileLine:  ")<<fline;
+
     int k = 0;
     bool ok;
     m_time.setDate(QDate::fromString(list.at(k), FX_DATE_FORMAT)); k++;
@@ -71,107 +70,6 @@ QString FXBar::toStr() const
     s = QString("%1 (%2 %3)").arg(s).arg(m_time.date().toString(FX_DATE_FORMAT)).arg(m_time.time().toString(FX_TIME_FORMAT));
     s = QString("%1   open/close=%2/%3").arg(s).arg(QString::number(m_open, 'f', m_digist)).arg(QString::number(m_close, 'f', m_digist));
     s = QString("%1   high/low=%2/%3").arg(s).arg(QString::number(m_high, 'f', m_digist)).arg(QString::number(m_low, 'f', m_digist));
-    return s;
-}
-
-
-
-
-
-
-//FXBarContainer
-FXBarContainer::FXBarContainer(const QString &fname, QObject *parent)
-    :LSimpleObject(parent),
-    m_fileName(fname.trimmed())
-{
-    reset();
-}
-void FXBarContainer::reset()
-{
-    m_data.clear();
-    m_timeframe = -1;
-    m_couple.clear();
-    m_digist = 2;
-}
-void FXBarContainer::tryLoadData(QString sep_values)
-{
-    reset();
-    checkFileName();
-    if (invalid()) return;
-
-    emit signalMsg(QString("Try load datafile: %1 ......").arg(m_fileName));
-    QStringList list;
-    QString err = LFile::readFileSL(m_fileName, list);
-    if (!err.isEmpty()) {emit signalError(err); return;}
-
-    int invalid_bars = 0;
-    for (int i=0; i<list.count(); i++)
-    {
-        QString s = list.at(i).trimmed();
-        if (s.isEmpty()) continue;
-        FXBar bar(m_digist);
-        bar.fromFileLine(s, sep_values);
-        if (bar.invalid()) invalid_bars++;
-        else m_data.append(bar);
-    }
-
-    emit signalMsg(toStr());
-}
-void FXBarContainer::checkFileName()
-{
-    if (m_fileName.isEmpty())
-    {
-        emit signalError("FXBarContainer: datafile name is empty");
-        return;
-    }
-
-    QString short_name = LFile::shortDirName(m_fileName);
-    if (short_name.right(FX_FILE_FORMAT.length()) != FX_FILE_FORMAT)
-    {
-        emit signalError(QString("FXBarContainer: datafile(%1) is not [%1] type").arg(m_fileName).arg(FX_FILE_FORMAT));
-        return;
-    }
-    if (!LFile::fileExists(m_fileName))
-    {
-        emit signalError(QString("FXBarContainer: datafile(%1) not found").arg(m_fileName));
-        return;
-    }
-
-    QString s = LStatic::strTrimRight(short_name, FX_FILE_FORMAT.length());
-    QStringList list = LStatic::trimSplitList(s, QString("_"));
-    if (list.count() != 3)
-    {
-        emit signalError(QString("FXBarContainer: datafile(%1) invalid format, must be: couplename_timeframe_digist.csv").arg(short_name));
-        return;
-    }
-
-    bool ok;
-    m_couple = list.first().trimmed();
-    m_timeframe = list.at(1).toInt(&ok);
-    if (!ok || !FXEnumStaticObj::timeFrames().contains(m_timeframe))
-    {
-        m_timeframe = -1;
-        emit signalError(QString("FXBarContainer: datafile(%1) invalid timeframe %1").arg(short_name).arg(list.at(1)));
-        return;
-    }
-    m_digist = list.at(2).toUInt();
-    if (!ok || m_digist > 8)
-    {
-        m_digist = 99;
-        emit signalError(QString("FXBarContainer: datafile(%1) invalid digist %1").arg(short_name).arg(list.at(2)));
-        return;
-    }
-}
-bool FXBarContainer::invalid() const
-{
-    if (m_couple.isEmpty() || m_timeframe <= 0 || m_digist > 8) return true;
-    return m_data.isEmpty();
-}
-QString FXBarContainer::toStr() const
-{
-    QString s("FXBarContainer:");
-    s = QString("%1 couple=%2  timeframe=%3  digist=%4").arg(s).arg(m_couple).arg(m_timeframe).arg(m_digist);
-    s = QString("%1    DATA_SIZE %2").arg(s).arg(m_data.count());
     return s;
 }
 

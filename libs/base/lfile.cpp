@@ -54,6 +54,12 @@ bool LFile::fileExists(QString fname)
     if (fname.trimmed().isEmpty()) return false;
     return QFileInfo::exists(fname);
 }
+bool LFile::dirExists(QString dir_path)
+{
+    if (dir_path.trimmed().isEmpty()) return false;
+    QDir dir(dir_path.trimmed());
+    return dir.exists();
+}
 int LFile::fileSizeB(QString fname)
 {
     if (!fileExists(fname)) return -1;

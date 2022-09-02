@@ -4,6 +4,7 @@
 #include "lfile.h"
 #include "lstatic.h"
 #include "fxcentralwidget.h"
+#include "fxdataloader.h"
 
 #include <QDebug>
 #include <QDir>
@@ -24,24 +25,26 @@ MainForm::MainForm(QWidget *parent)
     :LMainWidget(parent),
     m_centralWidget(NULL),
     m_protocol(NULL),
-    v_splitter(NULL)
+    v_splitter(NULL),
+    m_dataLoader(NULL)
 {
-    /*
-    m_processObj = new LProcessObj(this);
-    m_processObj->setDebugLevel(1);
-    connect(m_processObj, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
-    connect(m_processObj, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMessage(const QString&)));
-    connect(m_processObj, SIGNAL(signalFinished()), this, SLOT(slotFinished()));
-    connect(m_processObj, SIGNAL(signalReadyRead()), this, SLOT(slotReadyRead()));
+    setObjectName("fxtester_mainwindow");
 
+    initDataLoader();
+}
+void MainForm::initDataLoader()
+{
+    m_dataLoader = new FXDataLoader(this);
+    connect(m_dataLoader, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
+    connect(m_dataLoader, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMessage(const QString&)));
 
-    */
 
 }
 void MainForm::initActions()
 {
     addAction(LMainWidget::atStart);
     addAction(LMainWidget::atStop);
+    addAction(LMainWidget::atLoadData);
     addToolBarSeparator();
     addAction(LMainWidget::atSettings);
     addAction(LMainWidget::atExit);
@@ -51,18 +54,8 @@ void MainForm::slotAction(int type)
     switch (type)
     {
         case LMainWidget::atStart: {break;}
-    /*
+        case LMainWidget::atLoadData: {reloadData(); break;}
         case LMainWidget::atSettings: {actCommonSettings(); break;}
-        case LMainWidget::atISO: {startMakerISO(); break;}
-        case LMainWidget::atStop: {stopBreak(); break;}
-        case LMainWidget::atClear: {m_protocol->clearProtocol(); break;}
-        case LMainWidget::atBurn: {tryBurn(); break;}
-        case LMainWidget::atEject: {eject(); break;}
-        case LMainWidget::atRemove: {umount(); break;}
-        case LMainWidget::atCDErase: {tryErase(); break;}
-        case LMainWidget::atCalcCRC: {calcMD5_CD(); break;}
-        case LMainWidget::atFoldersStruct: {showFoldersStructCD(); break;}
-        */
         default: break;
     }
 }
@@ -81,6 +74,12 @@ void MainForm::initCommonSettings()
 {
     QStringList combo_list;
 
+    QString key = QString("data_dir");
+    lCommonSettings.addParam(QString("FX data dir"), LSimpleDialog::sdtDirPath, key);
+    lCommonSettings.setDefValue(key, QString(""));
+
+
+
     /*
     QString key = QString("source");
     lCommonSettings.addParam(QString("Source dir"), LSimpleDialog::sdtDirPath, key);
@@ -98,6 +97,16 @@ void MainForm::initCommonSettings()
 */
 
 }
+void MainForm::reloadData()
+{
+    m_protocol->addSpace();
+    m_protocol->addText("Try load data .......", LProtocolBox::ttFile);
+    m_protocol->addText(QString("DATA_DIR: [%1]").arg(dataDir()));
+    m_dataLoader->setDataDir(dataDir());
+    m_dataLoader->reloadData();
+    m_protocol->addText("Finished!");
+
+}
 void MainForm::slotError(const QString &text)
 {
     m_protocol->addText(text, LProtocolBox::ttErr);
@@ -112,8 +121,6 @@ void MainForm::save()
 
     QSettings settings(companyName(), projectName());
     settings.setValue(QString("%1/v_splitter/state").arg(objectName()), v_splitter->saveState());
-
-    //m_paramsPage->save(settings);
 }
 void MainForm::load()
 {
@@ -122,9 +129,10 @@ void MainForm::load()
     QSettings settings(companyName(), projectName());
     QByteArray ba(settings.value(QString("%1/v_splitter/state").arg(objectName()), QByteArray()).toByteArray());
     if (!ba.isEmpty()) v_splitter->restoreState(ba);
-
-    //m_paramsPage->load(settings);
-    //m_paramsPage->reloadISOList(sourcePath());
+}
+QString MainForm::dataDir() const
+{
+    return lCommonSettings.paramValue("data_dir").toString();
 }
 
 

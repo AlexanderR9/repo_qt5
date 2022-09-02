@@ -13,8 +13,6 @@ public:
     ParamsPage(QWidget*);
     virtual ~ParamsPage() {}
 
-    //QString commandName() const;
-    //QStringList getArgs() const;
     bool isSudo() const;
 
     void save(QSettings&);

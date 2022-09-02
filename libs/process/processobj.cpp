@@ -105,7 +105,6 @@ void LProcessObj::startCommand()
 {
     if (m_debugLevel > 0)
     {
-        qDebug("");
         qDebug("------------- try start new command --------------");
     }
 
@@ -237,14 +236,14 @@ QString LProcessObj::fullCommand() const
         if (!s.isEmpty()) s.append(QString(" cmd1=[%1").arg(m_processChild->program()));
         else s = QString("cmd1=[%1").arg(m_processChild->program());
 
-        if (!m_processChild->arguments().isEmpty());
+        if (!m_processChild->arguments().isEmpty())
         {
             for (int i=0; i<m_processChild->arguments().count(); i++)
                  s = QString("%1 %2").arg(s).arg(m_processChild->arguments().at(i));
         }
 
         s = QString("%1] %2 cmd2[%3").arg(s).arg(GREP_SYMBOL).arg(m_command);
-        if (!m_args.isEmpty());
+        if (!m_args.isEmpty())
         {
             for (int i=0; i<m_args.count(); i++)
                 s = QString("%1 %2").arg(s).arg(m_args.at(i));

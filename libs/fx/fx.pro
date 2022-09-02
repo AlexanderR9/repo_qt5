@@ -6,7 +6,6 @@ OBJECTS_DIR = obj
 
 QT -= gui
 QT *= widgets xml
-#xml testlib
 
 INCLUDEPATH += .\
             $$PWD/../base \
@@ -15,15 +14,20 @@ INCLUDEPATH += .\
 
 #path for libs files
 DEPENDPATH += $$PWD/../base/build
+
 #include libs
 unix:!macx: LIBS += -L$$PWD/../base/build/ -llbase
 
 
 # Input
 HEADERS += $$PWD/fxbar.h \
-        $$PWD/fxenums.h
+        $$PWD/fxbarcontainer.h \
+        $$PWD/fxenums.h \
+        $$PWD/fxdataloader.h
 
 
 SOURCES += $$PWD/fxbar.cpp \
-        $$PWD/fxenums.cpp
+        $$PWD/fxbarcontainer.cpp \
+        $$PWD/fxenums.cpp \
+        $$PWD/fxdataloader.cpp
 

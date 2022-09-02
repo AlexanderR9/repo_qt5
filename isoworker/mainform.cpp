@@ -4,6 +4,7 @@
 #include "processobj.h"
 #include "paramspage.h"
 #include "lfile.h"
+#include "ltime.h"
 #include "lstatic.h"
 #include "foldersstructdialog.h"
 
@@ -82,6 +83,7 @@ void MainForm::initWidgets()
     setActionTooltip(atRemove, "Umount CD");
     setActionTooltip(atStop, "Break process");
     setActionTooltip(atFoldersStruct, "Show CD struct");
+    setActionTooltip(atCalcCRC, "Calc MD5 sum of CD");
     updateActionsEnable(true);
 
     connect(m_processObj, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
@@ -261,18 +263,18 @@ void MainForm::prepareCommand(QString title)
 }
 void MainForm::showFoldersStructCD()
 {
-    qDebug("--------------MainForm::showFoldersStructCD()-------------------");
+    //qDebug("--------------MainForm::showFoldersStructCD()-------------------");
     prepareCommand("GET CD MOUNT POINT");
     m_processObj->setCommand("df");
     m_processObj->setArgs(QStringList() << "-h");
 
-    qDebug()<<QString("showFoldersStructCD   %1").arg(LStatic::strCurrentTime());
+    //qDebug()<<QString("showFoldersStructCD   %1").arg(LStatic::strCurrentTime());
     runProcess(isoShowStructCD);
     QTest::qWait(200);
     while (m_processObj->isRunning())
         QTest::qWait(100);
 
-    qDebug()<<QString("showFoldersStructCD   %1").arg(LStatic::strCurrentTime());
+    //qDebug()<<QString("showFoldersStructCD   %1").arg(LStatic::strCurrentTime());
 
     QStringList list(m_processObj->bufferList());
     QString cd_path;
@@ -300,11 +302,11 @@ void MainForm::showFoldersStructCD()
 }
 void MainForm::slotReadyRead()
 {
-    qDebug("MainForm::slotReadyRead()");
+    //qDebug("MainForm::slotReadyRead()");
 }
 void MainForm::slotFinished()
 {
-    qDebug("MainForm::slotFinished()");
+    //qDebug("MainForm::slotFinished()");
     QString s_result = (m_processObj->isOk() ? "Ok" : "Fault");
     int p_type = (m_processObj->isOk() ? LProtocolBox::ttText : LProtocolBox::ttErr);
     m_protocol->addText(QString("process finished, result_code=[%1]").arg(s_result), p_type);
@@ -789,7 +791,7 @@ QString MainForm::isoFileNameBySourceName(const QString &dir_source) const
 QString MainForm::isoLabelBySourceName(const QString &dir_source) const
 {
     QString label = dir_source.trimmed();
-    return QString("%1 (%2)").arg(label).arg(LStatic::strCurrentDate());
+    return QString("%1 (%2)").arg(label).arg(LTime::strCurrentDate());
 }
 QStringList MainForm::makeArgsBySourcePath(const QString &source_path, const QString &target_path) const
 {
@@ -815,7 +817,7 @@ void MainForm::slotMessage(const QString &text)
 
 void MainForm::slotAppSettingsChanged(QStringList keys)
 {
-    qDebug("MainForm::slotAppSettingsChanged");
+    //qDebug("MainForm::slotAppSettingsChanged");
     LMainWidget::slotAppSettingsChanged(keys);
 
     if (keys.contains("source"))

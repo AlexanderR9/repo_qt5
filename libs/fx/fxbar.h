@@ -1,9 +1,6 @@
 #ifndef FXBAR_H
 #define FXBAR_H
 
-
-//#include <QObject>
-#include "lsimpleobj.h"
 #include <QDateTime>
 
 
@@ -35,37 +32,8 @@ protected:
 
     //сброс всех атрибутов свечи
     void reset();
-
-
 };
 
-//FXBarContainer
-class FXBarContainer : public LSimpleObject
-{
-    Q_OBJECT
-public:
-    FXBarContainer(QObject *parent) :LSimpleObject(parent), m_fileName(QString()) {reset();}
-    FXBarContainer(const QString&, QObject*); //параметр - полный путь файла данных
-    virtual ~FXBarContainer() {}
-
-    void tryLoadData(QString sep_values = ","); // загрузка данных в контейнер m_data, sep_values - разделитель значений
-    bool invalid() const;
-    QString toStr() const;
-
-
-protected:
-    QList<FXBar>    m_data; //загруженные данные из файла
-    QString         m_fileName; //имя файла(полный путь) - источника данных, формат имени: couplename_timeframe_digist.csv (пример USDJPY_1440_2.csv)
-    int             m_timeframe; //период (определяется автоматически при загрузке данных)
-    QString         m_couple; //название инструмента (определяется автоматически при загрузке данных)
-    quint8          m_digist; //точность значений цен (определяется автоматически при загрузке данных)
-
-
-    void reset();
-    void checkFileName(); //проверка формата названия файла данных
-
-
-};
 
 
 #endif //FXBAR_H
