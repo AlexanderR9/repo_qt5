@@ -7,6 +7,20 @@ QList<int> FXEnumStaticObj::timeFrames()
     list << tf5m << tf15m << tf1h <<  tf4h << tf1d <<  tf1w;
     return list;
 }
+QString FXEnumStaticObj::strTimeFrame(int tf)
+{
+    switch (tf)
+    {
+        case tf5m:      return QString("M5");
+        case tf15m:     return QString("M15");
+        case tf1h:      return QString("H1");
+        case tf4h:      return QString("H4");
+        case tf1d:      return QString("D1");
+        case tf1w:      return QString("W1");
+        default: break;
+    }
+    return "?";
+}
 bool FXEnumStaticObj::invalidTimeframe(int tf)
 {
     return (!timeFrames().contains(tf));

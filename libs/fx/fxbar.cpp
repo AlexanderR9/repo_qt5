@@ -37,7 +37,7 @@ void FXBar::fromFileLine(const QString &fline, QString sep_values)
         return;
     }
 
-    qDebug()<<QString("FXBar::fromFileLine:  ")<<fline;
+    //qDebug()<<QString("FXBar::fromFileLine:  ")<<fline;
 
     int k = 0;
     bool ok;
@@ -55,11 +55,13 @@ void FXBar::fromFileLine(const QString &fline, QString sep_values)
 
     m_volume = list.at(k).toUInt(&ok); k++;
     if (!ok) m_volume = 0;
+
+    //qDebug()<<toStr();
 }
 bool FXBar::invalid() const
 {
     if (m_open <= 0 || m_close <= 0 || m_high <= 0 || m_low <= 0) return true;
-    if (m_high < m_low || m_open > m_low || m_close > m_low) return true;
+    if (m_open < m_low || m_open > m_high || m_close < m_low || m_close > m_high) return true;
     if (m_time.isNull() || !m_time.isValid()) return true;
     if (m_time.date().year() < 2000)  return true;
     return false;

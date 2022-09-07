@@ -46,6 +46,7 @@ MainForm::MainForm(QWidget *parent)
 
     initTcpObjects();
 
+
 ///////////test//////////////////////////
     QByteArray ba;
     prepareFloatPacket(ba);
@@ -62,6 +63,8 @@ MainForm::MainForm(QWidget *parent)
 void MainForm::slotTimer()
 {
     updateStatusWidget();
+    updateButtonsState();
+
     if (!autoSendPack()) return;
 
     if (isServer())
@@ -127,6 +130,7 @@ void MainForm::initWidgets()
     m_statusWidget = new LTCPStatusWidget(this);
     addWidget(m_statusWidget, 1, 0, 1, 1);
 
+    updateButtonsState();
 
     /*
     QGroupBox *view_box = NULL;
@@ -150,11 +154,11 @@ void MainForm::initCommonSettings()
     
     QString key = QString("host");
     lCommonSettings.addParam(QString("Host"), LSimpleDialog::sdtString, key);
-    lCommonSettings.setDefValue(key, QString());
+    lCommonSettings.setDefValue(key, QString("127.0.0.1"));
 
     key = QString("port");
     lCommonSettings.addParam(QString("Port"), LSimpleDialog::sdtIntLine, key);
-    lCommonSettings.setDefValue(key, QString("0"));
+    lCommonSettings.setDefValue(key, QString("12345"));
 
     key = QString("qual");
     lCommonSettings.addParam(QString("Quality of signals"), LSimpleDialog::sdtIntLine, key);
@@ -169,16 +173,22 @@ void MainForm::initCommonSettings()
 
     key = QString("autosendpack");
     lCommonSettings.addParam(QString("Auto send packet"), LSimpleDialog::sdtBool, key);
+    lCommonSettings.setDefValue(key, true);
 
-    key = QString("recs");
-    lCommonSettings.addParam(QString("Records count of group"), LSimpleDialog::sdtIntLine, key);
-    lCommonSettings.setDefValue(key, QString("2"));
+    key = QString("f_recs");
+    lCommonSettings.addParam(QString("Records count of group (float)"), LSimpleDialog::sdtIntLine, key);
+    lCommonSettings.setDefValue(key, QString("374"));
+
+    key = QString("d_recs");
+    lCommonSettings.addParam(QString("Records count of group (discrete)"), LSimpleDialog::sdtIntLine, key);
+    lCommonSettings.setDefValue(key, QString("93"));
 
     key = QString("byteorder");
     lCommonSettings.addParam(QString("DataStream bytes order"), LSimpleDialog::sdtStringCombo, key);
     combo_list.clear();
     combo_list << "BigEndian" << "LitleEndian";
     lCommonSettings.setComboList(key, combo_list);
+    lCommonSettings.setDefValue(key, QString("LitleEndian"));
 
 
 }
@@ -218,6 +228,14 @@ void MainForm::updateStatusWidget()
     else m_statusWidget->setTextMode("INVALID MODE!!!");
 
 }
+void MainForm::updateButtonsState()
+{
+    bool started = (m_server->isListening() || m_client->isConnected() || m_client->isConnecting());
+    getAction(atStart)->setEnabled(!started);
+    getAction(atStop)->setEnabled(started);
+    getAction(atSendMsg)->setEnabled(started);
+    getAction(atSettings)->setEnabled(!started);
+}
 void MainForm::slotError(const QString &text)
 {
     m_protocol->addText(text, LProtocolBox::ttErr);
@@ -256,6 +274,7 @@ void MainForm::start()
         m_server->setConnectionParams(host, port);
         m_server->startListening();
     }
+    updateButtonsState();
 }
 void MainForm::stop()
 {
@@ -269,9 +288,12 @@ void MainForm::stop()
     }
     QTest::qWait(200);
     updateStatusWidget();
+    updateButtonsState();
 }
 void MainForm::slotAppSettingsChanged(QStringList keys)
 {
+    LMainWidget::slotAppSettingsChanged(keys);
+
     foreach (QString key, keys)
     {
         if (key == "mode")
@@ -285,9 +307,13 @@ bool MainForm::autoSendPack() const
 {
     return lCommonSettings.paramValue("autosendpack").toBool();
 }
-int MainForm::recsCount() const
+int MainForm::floatRecsCount() const
 {
-    return lCommonSettings.paramValue("recs").toInt();
+    return lCommonSettings.paramValue("f_recs").toInt();
+}
+int MainForm::discreteRecsCount() const
+{
+    return lCommonSettings.paramValue("d_recs").toInt();
 }
 int MainForm::byteOrder() const
 {
@@ -335,7 +361,7 @@ void MainForm::prepareFloatPacket(QByteArray &ba)
     header.counter = m_counter++;
     header.time.setCurrentTime();
 
-    int n_group = recsCount();
+    int n_group = floatRecsCount();
     header.len = n_group*ARecord::static_size()+header.size();
     header.toByteArray(stream);
     qDebug()<<QString("ba_header_size %1,  %2").arg(ba.size()).arg(header.toStr());
@@ -368,7 +394,7 @@ void MainForm::prepareDiscretePacket(QByteArray &ba)
     header.counter = m_counter++;
     header.time.setCurrentTime();
 
-    int n_group = 93;
+    int n_group = discreteRecsCount();
     header.len = n_group*DRecord::static_size()+header.size();
     header.toByteArray(stream);
     qDebug()<<QString("ba_header_size %1,  %2").arg(ba.size()).arg(header.toStr());

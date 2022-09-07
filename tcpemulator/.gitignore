@@ -9,3 +9,4 @@ tcpemulator_tester
 full_clear
 config
 dtsstructs.h
+tcp_emulator.tar.gz

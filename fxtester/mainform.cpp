@@ -5,6 +5,8 @@
 #include "lstatic.h"
 #include "fxcentralwidget.h"
 #include "fxdataloader.h"
+#include "fxdataloaderwidget.h"
+#include "fxbarcontainer.h"
 
 #include <QDebug>
 #include <QDir>
@@ -31,6 +33,17 @@ MainForm::MainForm(QWidget *parent)
     setObjectName("fxtester_mainwindow");
 
     initDataLoader();
+}
+void MainForm::slotSetLoadedDataByReq(const QList<FXCoupleDataParams> &req, QList<const FXBarContainer*> &list)
+{
+    list.clear();
+    foreach (const FXCoupleDataParams &v, req)
+    {
+        qDebug()<<v.toStr();
+        const FXBarContainer *couple_data = m_dataLoader->container(v.couple, v.timeframe);
+        if (couple_data) list.append(couple_data);
+        else qWarning()<<QString("MainForm::slotSetLoadedDataByReq WARNING: m_dataLoader->container return NULL");
+    }
 }
 void MainForm::initDataLoader()
 {
@@ -59,7 +72,6 @@ void MainForm::slotAction(int type)
         default: break;
     }
 }
-
 void MainForm::initWidgets()
 {
     m_centralWidget = new FXCentralWidget(this);
@@ -69,6 +81,12 @@ void MainForm::initWidgets()
 
     v_splitter->addWidget(m_centralWidget);
     v_splitter->addWidget(m_protocol);
+
+    connect(m_centralWidget, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
+    connect(m_centralWidget, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMessage(const QString&)));
+    connect(m_centralWidget, SIGNAL(signalGetLoadedDataByReq(const QList<FXCoupleDataParams>&, QList<const FXBarContainer*>&)),
+                       this, SLOT(slotSetLoadedDataByReq(const QList<FXCoupleDataParams>&, QList<const FXBarContainer*>&)));
+
 }
 void MainForm::initCommonSettings()
 {
@@ -106,6 +124,7 @@ void MainForm::reloadData()
     m_dataLoader->reloadData();
     m_protocol->addText("Finished!");
 
+    m_centralWidget->loaderDataUpdate(m_dataLoader);
 }
 void MainForm::slotError(const QString &text)
 {
@@ -121,6 +140,10 @@ void MainForm::save()
 
     QSettings settings(companyName(), projectName());
     settings.setValue(QString("%1/v_splitter/state").arg(objectName()), v_splitter->saveState());
+
+    if (m_centralWidget)
+        m_centralWidget->save(settings);
+
 }
 void MainForm::load()
 {
@@ -129,6 +152,9 @@ void MainForm::load()
     QSettings settings(companyName(), projectName());
     QByteArray ba(settings.value(QString("%1/v_splitter/state").arg(objectName()), QByteArray()).toByteArray());
     if (!ba.isEmpty()) v_splitter->restoreState(ba);
+
+    if (m_centralWidget)
+        m_centralWidget->load(settings);
 }
 QString MainForm::dataDir() const
 {

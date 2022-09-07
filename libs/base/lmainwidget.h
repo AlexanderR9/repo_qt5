@@ -1,7 +1,7 @@
- #ifndef LMAINWIDGET_H
- #define LMAINWIDGET_H
+#ifndef LMAINWIDGET_H
+#define LMAINWIDGET_H
 
- #include <QWidget>
+#include <QWidget>
 
 class QToolBar;
 
@@ -67,7 +67,7 @@ protected slots:
 
 
 
- #endif
+#endif
 
 
 

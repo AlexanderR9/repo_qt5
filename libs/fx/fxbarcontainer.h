@@ -4,6 +4,7 @@
 #include "lsimpleobj.h"
 #include "fxbar.h"
 
+class QPointF;
 
 //FXBarContainer
 class FXBarContainer : public LSimpleObject
@@ -15,13 +16,15 @@ public:
     virtual ~FXBarContainer() {clearData();}
 
     void tryLoadData(QString sep_values = ","); // загрузка данных в контейнер m_data, sep_values - разделитель значений
+    void getChartPoints(QList<QPointF>&) const; //выдать набор точек для отображения цен инструмента на графике
+
     bool invalid() const;
     QString toStr() const;
 
     inline QString couple() const {return m_couple;}
     inline int timeframe() const {return m_timeframe;} //значение из множества FXTimeFrame
     inline void setDigist(quint8 d) {m_digist = d;} //точность пункта
-    inline int barCount() const {return m_data.count();} //количество валидных загруженных свечей
+    inline quint16 barCount() const {return m_data.count();} //количество валидных загруженных свечей
     inline bool dataEmpty() const {return m_data.isEmpty();}
 
     static QString dataFileFormat() {return QString("csv");}

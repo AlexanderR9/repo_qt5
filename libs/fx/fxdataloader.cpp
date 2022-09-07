@@ -58,7 +58,7 @@ void FXDataLoader::tryLoadFile(const QString &fname)
         return;
     }
 
-    m_data.insert(container->couple(), container);
+    m_data.append(container);
     qWarning()<<QString("loaded ok, bar count %1").arg(container->barCount());
 }
 void FXDataLoader::clearData()
@@ -66,4 +66,18 @@ void FXDataLoader::clearData()
     qDeleteAll(m_data);
     m_data.clear();
 }
+const FXBarContainer* FXDataLoader::containerAt(int i) const
+{
+    if (i < 0 || i >= count()) return NULL;
+    return m_data.at(i);
+}
+const FXBarContainer* FXDataLoader::container(const QString &name, int t) const
+{
+    foreach (FXBarContainer *v, m_data)
+        if (v->couple() == name && v->timeframe() == t) return v;
+
+    return NULL;
+}
+
+
 

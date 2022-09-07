@@ -3,6 +3,7 @@
 #include "lfile.h"
 #include "fxenums.h"
 
+#include <QPointF>
 #include <QDebug>
 
 
@@ -24,6 +25,17 @@ void FXBarContainer::clearData()
 {
     //qDeleteAll(m_data);
     m_data.clear();
+}
+void FXBarContainer::getChartPoints(QList<QPointF> &chart_data) const
+{
+    chart_data.clear();
+    foreach (const FXBar &v, m_data)
+    {
+        QPointF point;
+        point.setX(v.time().toSecsSinceEpoch());
+        point.setY(v.open());
+        chart_data.append(point);
+    }
 }
 void FXBarContainer::tryLoadData(QString sep_values)
 {
@@ -47,6 +59,9 @@ void FXBarContainer::tryLoadData(QString sep_values)
         if (bar.invalid()) invalid_bars++;
         else m_data.append(bar);
     }
+
+    if (invalid_bars > 0)
+        qWarning()<<QString("FXBarContainer::tryLoadData WARNING (%1)    was invalid_bars %2").arg(m_fileName).arg(invalid_bars);
 
     emit signalMsg(toStr());
 }

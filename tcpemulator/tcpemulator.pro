@@ -4,7 +4,6 @@ TARGET = tcpemulator
 DEFINES += QT_DEPRECATED_WARNINGS
 MOC_DIR=moc
 OBJECTS_DIR=obj
-#UI_DIR=ui
 
 QT -= gui
 QT *= network widgets xml testlib
@@ -27,18 +26,13 @@ unix:!macx: LIBS += -L$$PWD/../libs/base/build/ -llbase
 unix:!macx: LIBS += -L$$PWD/../libs/tcp/build/ -lltcp
 
 
-
 # Input
 HEADERS += $$PWD/mainform.h \
-#	    $$PWD/tcpstatuswidget.h \
 	    $$PWD/dtsstructs.h
 	    
 
 SOURCES += $$PWD/main.cpp \
-#	$$PWD/tcpstatuswidget.cpp \
 	$$PWD/mainform.cpp
-
-#FORMS += $$PWD/tcpstatuswidget.ui
 
 
 

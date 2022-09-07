@@ -7,6 +7,9 @@ class LProtocolBox;
 class QSplitter;
 class FXCentralWidget;
 class FXDataLoader;
+class FXBarContainer;
+struct FXCoupleDataParams;
+
 
 
 // MainForm
@@ -41,6 +44,7 @@ protected slots:
     void slotAction(int); //virtual slot from parent
     void slotError(const QString&);
     void slotMessage(const QString&);
+    void slotSetLoadedDataByReq(const QList<FXCoupleDataParams>&, QList<const FXBarContainer*>&);
 
 private:
     QString dataDir() const;

@@ -17,6 +17,7 @@ public:
     inline void setConnectionParams(QString host, quint16 port = 0) {m_host = host; m_port = port;} //задать параметры для сетевого подключения
     inline void setReadOnly(bool b) {m_readOnly = b;} //задать режим обмена с хостом
     bool isConnected() const; //вернет true если m_clientSocket подключен в текущий момент
+    bool isConnecting() const; //вернет true если m_clientSocket пытается подключиться в текущий момент
     void tryConnect(); //попытаться подключиться к хосту
     void tryDisconnect();
     void trySendPacket(const QByteArray&); // попытаться отправить пакет подключенному хосту

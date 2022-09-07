@@ -39,8 +39,7 @@ protected:
     LTcpServerObj       *m_server;
     LTcpClientObj       *m_client;
     int                 m_mode;
-    //QByteArray          ba_header;
-    quint16 m_counter;
+    quint16             m_counter;
 
     QString projectName() const {return "tcpemulator";}
     QString mainTitle() const {return QString("TCP emulator (Qt5)!");}
@@ -55,6 +54,7 @@ protected:
     void stop();
     void sendPack();
     void updateStatusWidget();
+    void updateButtonsState();
 
     void prepareFloatPacket(QByteArray&);
     void prepareDiscretePacket(QByteArray&);
@@ -70,7 +70,8 @@ protected slots:
 
 private:
     bool autoSendPack() const;
-    int recsCount() const;
+    int floatRecsCount() const;
+    int discreteRecsCount() const;
     int byteOrder() const;
     quint16 qualSig() const;
 

@@ -9,6 +9,7 @@ QT *= widgets xml
 
 INCLUDEPATH += .\
             $$PWD/../base \
+            $$PWD/../base/ui_h \
             $$PWD
 
 
@@ -23,11 +24,15 @@ unix:!macx: LIBS += -L$$PWD/../base/build/ -llbase
 HEADERS += $$PWD/fxbar.h \
         $$PWD/fxbarcontainer.h \
         $$PWD/fxenums.h \
-        $$PWD/fxdataloader.h
+        $$PWD/fxdataloader.h \
+        $$PWD/fxchartwidget.h \
+        $$PWD/fxdataloaderwidget.h
 
 
 SOURCES += $$PWD/fxbar.cpp \
         $$PWD/fxbarcontainer.cpp \
         $$PWD/fxenums.cpp \
-        $$PWD/fxdataloader.cpp
+        $$PWD/fxdataloader.cpp \
+        $$PWD/fxchartwidget.cpp \
+        $$PWD/fxdataloaderwidget.cpp
 

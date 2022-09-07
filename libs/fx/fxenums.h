@@ -35,6 +35,8 @@ public:
     //если инструмент некорректен то вернет 99
     static quint8 digistByCouple(const QString&);
 
+    static QString strTimeFrame(int); //строковое название задонного таймфрейма
+
 };
 
 

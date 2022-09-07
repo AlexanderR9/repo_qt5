@@ -72,6 +72,10 @@ bool LTcpClientObj::isConnected() const
 {
     return (m_clientSocket->state() == QAbstractSocket::ConnectedState);
 }
+bool LTcpClientObj::isConnecting() const
+{
+    return (m_clientSocket->state() == QAbstractSocket::ConnectingState);
+}
 void LTcpClientObj::tryConnect()
 {
     if (isConnected())
