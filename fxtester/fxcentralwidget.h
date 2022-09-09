@@ -3,7 +3,6 @@
 
 #include "lsimplewidget.h"
 
-#include <QWidget>
 #include <QMap>
 
 
@@ -14,19 +13,20 @@ class QListWidget;
 class QSettings;
 struct FXCoupleDataParams;
 class FXBarContainer;
+struct FXChartSettings;
 
-
-// MainForm
+// FXCentralWidget
 class FXCentralWidget : public LSimpleWidget
 {
     Q_OBJECT
 public:
-    enum FXPageType {fxptChart = 170, fxptTester};
+    enum FXPageType {fxptChart = 170, fxptTester, fxptQualData};
 
     FXCentralWidget(QWidget *parent = 0);
-    virtual ~FXCentralWidget() {}
+    virtual ~FXCentralWidget() {clearPages();}
 
     void loaderDataUpdate(const FXDataLoader*); //обновить поле с информацией о загруженных данных
+    void setChartSettings(const FXChartSettings&);
     void load(QSettings&);
     void save(QSettings&);
 
@@ -39,6 +39,8 @@ protected:
 
     void initWidgets();
     void createPages();
+    void clearPages();
+    void clearStackedWidget();
 
 protected slots:
     void slotSelectionDataChanged(); //выполняется когда изменился выделенный набор строк в m_loaderWidget

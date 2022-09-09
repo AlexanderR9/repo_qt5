@@ -52,8 +52,6 @@ struct LChartMousePos
     void drag() {drag_point.setX(x); drag_point.setY(y);}
     void drop() {drop_point.setX(x); drop_point.setY(y);}
     bool needRepaintDragRect() const  {return (drag_point.x() > 0);}
-    
-
 
     void resetDragDrop() {drag_point.setX(-1); drag_point.setY(-1); drop_point.setX(-1); drop_point.setY(-1);}
     void resetCrossPoint() {cross_point.setX(-1); cross_point.setY(-1);}
@@ -188,25 +186,23 @@ public:
 
     //other params
     inline void setVisibleMouseCross(bool b) {m_mousePos.visible = b;}    
-//    inline void setColorMouseCross(const QColor &color) {m_mousePos.cross_color = color;}    
     inline void setLineWidth(int w) {m_lineWidth = w;}
     inline void setPointSize(int w) {m_pointSize = w;}
     inline void setOnlyPoints(bool b) {m_onlyPoints = b;}
-    inline void addChart(const LChartParams &chart) {/*qDebug("add chart"); */m_charts.append(chart);} 
+    inline void addChart(const LChartParams &chart) {m_charts.append(chart);} //добавить один график в колекцию m_charts
     inline int chartsCount() const {return m_charts.count();} //количество линий (графиков)
     inline void setCrossColor(QColor c) {m_mousePos.setCrossColor(c);}
-    inline void setCrossXAxisTextViewMode(int t) {m_mousePos.setXAxisTextViewMode(t);}
+    inline void setCrossXAxisTextViewMode(int t) {m_mousePos.setXAxisTextViewMode(t);} //установить режим отображения текстовых меток на оси Х, t - элемент множества XValuesType
+
 
     void setChartPointsColor(const QColor &color, int i = -1); //задать цвет точек заданного графика (при i<0 для всех графиков)
     void setChartLineColor(const QColor &color, int i = -1);//задать цвет линии заданного графика (при i<0 для всех графиков)
     void clearChartPoints(int i = -1); //удаление точек заданного графика, но график при этом остается (при i<0 удаляются точки со всех графиков)
     void addChartPoints(const QList<QPointF>&, int i); // добавление точек к заданному графику
     void removeChart(int i = -1); //удаление заданного график с индексом i (при i<0 удаляются все графики из контейнера m_charts)
-
-    //пересчет мин. макс. с учетов масштабирования и cross точки, далее перерисовка картинки
-    void updateAxis();
+    void rescaleBySliders(quint8, quint8); //перерисовать график, увеличенный в заданном промежутке по оси Х, где параметры это начальное и конечное значение в % от длины всей оси Х
+    void updateAxis(); //пересчет мин. макс. с учетов масштабирования и cross точки, далее перерисовка картинки
     
-
 protected:
     QList<LChartParams> m_charts;
     LChartMousePos m_mousePos;
@@ -223,27 +219,22 @@ protected:
     virtual void recalcMinMaxScale();
     virtual void recalcCrossPoint();
     virtual void recalcPosFactors();
-    virtual void repaintAxis(QPainter&);
-    virtual void repaintAxisText(QPainter&);
+    virtual void repaintAxis(QPainter&); //перерисовка осей
+    virtual void repaintAxisText(QPainter&); //перерисовка надписей осей
     virtual void repaintMouseCross(QPainter&);
     virtual void repaintDragRect(QPainter&);
     virtual void repaintCharts(QPainter&);
     virtual void repaintChart(int, QPainter&);
     virtual void rescaleByDrag();
     
-
     // qt events funcs
     void paintEvent(QPaintEvent*);
-    void resizeEvent(QResizeEvent*);
-    void mouseMoveEvent(QMouseEvent*);
-    void wheelEvent(QWheelEvent*);
-    void mouseDoubleClickEvent(QMouseEvent*);
-//    void dragEnterEvent(QDragEnterEvent*);
-//    void dragMoveEvent(QDragMoveEvent*);
-//    void dropEvent(QDropEvent*);
-    void mousePressEvent(QMouseEvent*);
-    void mouseReleaseEvent(QMouseEvent*);
-
+    void resizeEvent(QResizeEvent*); //выполняется когда пользователь меняет размер всего окна программы (растягивает/сужает)
+    void mouseMoveEvent(QMouseEvent*); //выполняется когда указатель мыши ползет по области графика
+    void wheelEvent(QWheelEvent*); //выполняется когда указатель в области графика и пользователь прокручивает колесо
+    void mouseDoubleClickEvent(QMouseEvent*); //выполняется по двойному клику, происходит сброс масшабирования
+    void mousePressEvent(QMouseEvent*); //выполняется при нажатии левой кнопки мыши
+    void mouseReleaseEvent(QMouseEvent*); //выполняется при отпускании левой кнопки мыши, проиходит увеличение выбранной области графика
 
 private:
     void convertPoint(const QPointF&, QPointF&); //пересчет координат точки графика в координаты виджета для корректного отображения этой точки
@@ -263,17 +254,9 @@ public:
     virtual ~LChartDialog() {}
 
     void updateChart() {if (m_chart) m_chart->updateAxis();} //пересчет и обновление всей картинки
-
-//    void clearPoints() {if (m_chart) m_chart->clearPoints();}
     void addChart(const LChartParams &chart) {if (m_chart) m_chart->addChart(chart);}
     void clearChartPoints(int i) {if (m_chart) m_chart->clearChartPoints(i);}
     void addChartPoints(const QList<QPointF> &points, int i) {if (m_chart) m_chart->addChartPoints(points, i);}
-//    void repaintChart(int i) {if (m_chart) m_chart->repaintChart(i);}
-//    void addChartPoint(const QPointF &point, int i) {QList<QPointF> points; points << point; addChartPoints(points, i);}
-    //void setPrecisionX(int p) {if (m_chart) m_chart->setPrecisionX(p);}
-    //void setPrecisionY(int p) {if (m_chart) m_chart->setPrecisionY(p);}
-
-
     void setAxisMarksInterval(int a, int b) {if (m_chart) m_chart->setAxisMarksInterval(a, b);}
     void setAxisPrecision(int px, int py) {if (m_chart) m_chart->setAxisPrecision(px, py);} //задать точности значений на осях
     void setAxisFixedMinMax(const double &x1, const double &x2, const double &y1, const double &y2) {if (m_chart) m_chart->setAxisFixedMinMax(x1, x2, y1, y2);}
@@ -281,8 +264,6 @@ public:
     void setAxisColor(const QColor &color) {if (m_chart) m_chart->setAxisColor(color);}
     void setCrossColor(const QColor &color) {if (m_chart) m_chart->setCrossColor(color);}
     void setAxisVisible(bool b) {if (m_chart) m_chart->setAxisVisible(b);}
-
-
     void setLineWidth(int w) {if (m_chart) m_chart->setLineWidth(w);}
     void setPointSize(int w) {if (m_chart) m_chart->setPointSize(w);}
     void setOnlyPoints(bool b) {if (m_chart) m_chart->setOnlyPoints(b);}

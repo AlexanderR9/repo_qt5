@@ -11,7 +11,6 @@ class FXBarContainer;
 struct FXCoupleDataParams;
 
 
-
 // MainForm
 class MainForm : public LMainWidget
 {
@@ -26,25 +25,25 @@ protected:
     QSplitter           *v_splitter;
     FXDataLoader        *m_dataLoader;
 
-
     QString projectName() const {return "fxtester";}
     QString mainTitle() const {return QString("FX tester (Qt5)!");}
     void initActions();
     void initWidgets();
     void initCommonSettings();
 
-
     void save();
     void load();
 
     void reloadData();
     void initDataLoader();
+    void updateChartSettings();
 
 protected slots:
     void slotAction(int); //virtual slot from parent
     void slotError(const QString&);
     void slotMessage(const QString&);
     void slotSetLoadedDataByReq(const QList<FXCoupleDataParams>&, QList<const FXBarContainer*>&);
+    void slotAppSettingsChanged(QStringList);
 
 private:
     QString dataDir() const;

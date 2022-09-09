@@ -9,6 +9,7 @@ class QTableWidget;
 class QTableWidgetItem;
 class QStringList;
 
+//статический класс с набором функций для работы с объектов QTableWidget
 
 ///////////LStatic//////////////////////////
 class LTable

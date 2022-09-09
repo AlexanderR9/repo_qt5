@@ -1,10 +1,15 @@
 #include "lsimplewidget.h"
+#include "ltable.h"
 
 
 #include <QDebug>
 #include <QSettings>
 #include <QSplitter>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QTableWidget>
+#include <QListWidget>
+#include <QHeaderView>
 
 
 //LSimpleWidget
@@ -83,4 +88,65 @@ bool LSimpleWidget::onlyHorizontal() const
     if (invalidType()) return false;
     return (m_spliterType/10 == 2);
 }
+
+
+
+//LTableWidgetBox
+LTableWidgetBox::LTableWidgetBox(QWidget *parent, int t)
+    :QGroupBox("Table Box", parent),
+      m_table(NULL)
+{
+    setObjectName("ltable_widget_box");
+
+    if(layout()) delete layout();
+    if (t == 2) setLayout(new QHBoxLayout(0));
+    else setLayout(new QVBoxLayout(0));
+
+    init();
+}
+void LTableWidgetBox::init()
+{
+    m_table = new QTableWidget(this);
+    LTable::fullClearTable(m_table);
+    layout()->addWidget(m_table);
+}
+void LTableWidgetBox::setHeaderLabels(const QStringList &list)
+{
+    LTable::setTableHeaders(m_table, list);
+}
+void LTableWidgetBox::vHeaderHide()
+{
+    m_table->verticalHeader()->hide();
+}
+
+
+
+
+
+//LListWidgetBox
+LListWidgetBox::LListWidgetBox(QWidget *parent, int t)
+    :QGroupBox("List Box", parent),
+      m_listWidget(NULL)
+{
+    setObjectName("llist_widget_box");
+
+    if(layout()) delete layout();
+    if (t == 2) setLayout(new QHBoxLayout(0));
+    else setLayout(new QVBoxLayout(0));
+
+    init();
+}
+void LListWidgetBox::init()
+{
+    m_listWidget = new QListWidget(this);
+    m_listWidget->clear();
+    layout()->addWidget(m_listWidget);
+}
+
+
+
+
+
+
+
 

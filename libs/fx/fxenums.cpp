@@ -96,13 +96,52 @@ quint8 FXEnumStaticObj::digistByCouple(const QString &name)
         }
         case ckStock:   {digist = 2; break;}
         case ckCrypto:  {digist = 0; break;}
-        case ckIndex:   {digist = 1; break;}
+        case ckIndex:   {digist = 0; break;}
         default: break;
     }
     return digist;
 }
-
-
-
+double FXEnumStaticObj::pipsPriceByCouple(const QString &name)
+{
+    double pp = -1;
+    int kind = coupleKindByName(name);
+    switch (kind)
+    {
+        case ckCurrency:    {pp = 1; break;}
+        case ckStock:       {pp = 1; break;}
+        case ckCrypto:      {pp = 1; break;}
+        case ckIndex:       {pp = 1; break;}
+        default: break;
+    }
+    return pp;
+}
+double FXEnumStaticObj::spreadByCouple(const QString &name)
+{
+    double pp = -1;
+    int kind = coupleKindByName(name);
+    switch (kind)
+    {
+        case ckCurrency:    {pp = 3; break;}
+        case ckStock:       {pp = 3; break;}
+        case ckCrypto:      {pp = 2; break;}
+        case ckIndex:       {pp = 2; break;}
+        default: break;
+    }
+    return pp;
+}
+double FXEnumStaticObj::marginFactorByCouple(const QString &name)
+{
+    double pp = -1;
+    int kind = coupleKindByName(name);
+    switch (kind)
+    {
+        case ckCurrency:    {pp = 1; break;}
+        case ckStock:       {pp = 10; break;}
+        case ckCrypto:      {pp = 1; break;}
+        case ckIndex:       {pp = 1; break;}
+        default: break;
+    }
+    return pp;
+}
 
 

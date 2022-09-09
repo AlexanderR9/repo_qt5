@@ -28,12 +28,18 @@ unix:!macx: LIBS += -L$$PWD/../libs/fx/build/ -llfx
 
 # Input
 HEADERS += $$PWD/mainform.h \
-        $$PWD/fxcentralwidget.h
+        $$PWD/fxcentralwidget.h \
+        $$PWD/fxtestpage.h \
+        $$PWD/fxqualdatapage.h \
+        $$PWD/fxtest.h
 
 
 SOURCES += $$PWD/main.cpp \
         $$PWD/mainform.cpp \
-        $$PWD/fxcentralwidget.cpp
+        $$PWD/fxcentralwidget.cpp \
+        $$PWD/fxtestpage.cpp \
+        $$PWD/fxqualdatapage.cpp \
+        $$PWD/fxtest.cpp
 
 
 FORMS += $$PWD/ui/fxcentralwidget.ui

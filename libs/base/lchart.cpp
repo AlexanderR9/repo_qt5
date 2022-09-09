@@ -26,7 +26,6 @@ LChartWidget::LChartWidget(QWidget *parent)
     init();
     setBackgroundColor(DEFAULT_BACKGROUND_COLOR);
     setMouseTracking(true);
-//    setAcceptDrops(true);
 }
 void LChartWidget::init()
 {
@@ -47,26 +46,26 @@ void LChartWidget::setChartPointsColor(const QColor &color, int chart_index)
 {
     if (chart_index < 0)
     {
-	for (int i=0; i<m_charts.count(); i++)
-	    m_charts[i].pointsColor = color;
+        for (int i=0; i<m_charts.count(); i++)
+            m_charts[i].pointsColor = color;
     }
     else
     {
-	if (chart_index < m_charts.count())
-	    m_charts[chart_index].pointsColor = color;	    
+        if (chart_index < m_charts.count())
+            m_charts[chart_index].pointsColor = color;
     }
 }
 void LChartWidget::setChartLineColor(const QColor &color, int chart_index)
 {
     if (chart_index < 0)
     {
-	for (int i=0; i<m_charts.count(); i++)
-	    m_charts[i].lineColor = color;
+        for (int i=0; i<m_charts.count(); i++)
+            m_charts[i].lineColor = color;
     }
     else
     {
-	if (chart_index < m_charts.count())
-	    m_charts[chart_index].lineColor = color;	    
+        if (chart_index < m_charts.count())
+            m_charts[chart_index].lineColor = color;
     }
 }
 void LChartWidget::addChartPoints(const QList<QPointF> &list, int chart_index)
@@ -78,25 +77,25 @@ void LChartWidget::clearChartPoints(int chart_index)
 {
     if (chart_index < 0)
     {
-	for (int i=0; i<m_charts.count(); i++)
-	    m_charts[i].points.clear();
+        for (int i=0; i<m_charts.count(); i++)
+            m_charts[i].points.clear();
     }
     else
     {
-	if (chart_index < m_charts.count())
-	    m_charts[chart_index].points.clear();
+        if (chart_index < m_charts.count())
+            m_charts[chart_index].points.clear();
     }
 }
 void LChartWidget::removeChart(int chart_index)
 {
     if (chart_index < 0)
     {
-	m_charts.clear();
+        m_charts.clear();
     }
     else
     {
-	if (chart_index < m_charts.count())
-	    m_charts.removeAt(chart_index);
+        if (chart_index < m_charts.count())
+            m_charts.removeAt(chart_index);
     }
 }
 void LChartWidget::updateAxis()
@@ -127,14 +126,11 @@ void LChartWidget::recalcMinMax()
     if (m_charts.isEmpty()) return;
 
     for (int i=0; i<m_charts.count(); i++)
-	for (int j=0; j<m_charts.at(i).points.count(); j++)
-	    m_axis.updateMinMax(m_charts.at(i).points.at(j), (i==0 && j==0));
-
-//    qDebug()<<QString("LChartWidget::recalcMinMax()  %1 scale_step=%2").arg(m_axis.strMinMax()).arg(m_mousePos.scale_step);
+        for (int j=0; j<m_charts.at(i).points.count(); j++)
+            m_axis.updateMinMax(m_charts.at(i).points.at(j), (i==0 && j==0));
 }
 void LChartWidget::rescaleByDrag()
 {
-//    qDebug("LChartWidget::rescaleByDrag()");
     m_mousePos.scale_step = 0;
     int x_len = qAbs(m_mousePos.drag_point.x() - m_mousePos.drop_point.x());
     int y_len = qAbs(m_mousePos.drag_point.y() - m_mousePos.drop_point.y());
@@ -143,8 +139,6 @@ void LChartWidget::rescaleByDrag()
 
     int drag_x = qMin(m_mousePos.drag_point.x(), m_mousePos.drop_point.x());
     int drag_y = qMax(m_mousePos.drag_point.y(), m_mousePos.drop_point.y());
-//    int drop_x = qMax(m_mousePos.drag_point.x(), m_mousePos.drop_point.x());
-//    int drop_y = qMin(m_mousePos.drag_point.y(), m_mousePos.drop_point.y());
     double xf_start = double(drag_x - m_axis.xOffset())/double(m_axis.xLen);
     double yf_start = double(m_axis.yLen - (drag_y - m_axis.rtOffset()))/double(m_axis.yLen);
     
@@ -184,16 +178,13 @@ void LChartWidget::recalcCrossPoint()
 }
 void LChartWidget::recalcMinMaxScale()
 {
-//    qDebug("LChartWidget::recalcMinMaxScale()");
     if (m_mousePos.scale_step == 0 || m_mousePos.invalidPos())
     {
-	m_axis.syncCurMinMax();
-//	qDebug()<<QString("LChartWidget::recalcMinMaxScale()  %1 scale_step=%2").arg(m_axis.strMinMax()).arg(m_mousePos.scale_step);
-	return;
+        m_axis.syncCurMinMax();
+        return;
     }
 
     double sf = m_mousePos.scaleFactor();
-
     double dx = m_axis.max.x() - m_axis.min.x();
     double px = m_axis.min.x() + dx*m_mousePos.dx_factor;
     m_axis.cur_min.setX(px - (dx*m_mousePos.dx_factor/sf));
@@ -215,27 +206,26 @@ void LChartWidget::repaintChart(int index, QPainter &painter)
     QPen pen;
     if (!m_onlyPoints)
     {
-	pen.setColor(m_charts.at(index).lineColor);
-	pen.setWidth(m_lineWidth);
-	painter.setPen(pen);
+        pen.setColor(m_charts.at(index).lineColor);
+        pen.setWidth(m_lineWidth);
+        painter.setPen(pen);
 
-	bool isOut = false;
-	QPainterPath p_path(converted_points.first());
-	for (int i=1; i<converted_points.count(); i++)
-	{
-	    if (m_axis.isOutPoint(m_charts.at(index).points.at(i)))
-	    {
-		isOut = true;
-	    }
-	    else
-	    {
-		if (isOut) p_path.moveTo(converted_points.at(i));
-		else p_path.lineTo(converted_points.at(i));
-		isOut = false;
-	    }
-	}
-
-	painter.drawPath(p_path);
+        bool isOut = false;
+        QPainterPath p_path(converted_points.first());
+        for (int i=1; i<converted_points.count(); i++)
+        {
+            if (m_axis.isOutPoint(m_charts.at(index).points.at(i)))
+            {
+                isOut = true;
+            }
+            else
+            {
+                if (isOut) p_path.moveTo(converted_points.at(i));
+                else p_path.lineTo(converted_points.at(i));
+                isOut = false;
+            }
+        }
+        painter.drawPath(p_path);
     }
 
     if (m_pointSize <= 0) return;
@@ -245,8 +235,8 @@ void LChartWidget::repaintChart(int index, QPainter &painter)
     painter.setPen(pen);
     for (int i=0; i<converted_points.count(); i++)
     {
-	if (!m_axis.isOutPoint(m_charts.at(index).points.at(i)))
-	    painter.drawPoint(converted_points.at(i));
+        if (!m_axis.isOutPoint(m_charts.at(index).points.at(i)))
+            painter.drawPoint(converted_points.at(i));
     }
 }
 void LChartWidget::repaintCharts(QPainter &painter)
@@ -269,10 +259,10 @@ void LChartWidget::repaintAxisText(QPainter &painter)
     y_text = m_axis.zero_point.y() + m_axis.marksTextXOffset();
     for (int i=0; i<x_marks.count(); i++)
     {
-	QString str_value = m_axis.valueByXType(x_values.at(i));
-	int symbols = str_value.length();
-	x_text = x_marks.at(i) - int(sw*double(symbols)/2);
-    	painter.drawText(x_text, y_text, str_value);
+        QString str_value = m_axis.valueByXType(x_values.at(i));
+        int symbols = str_value.length();
+        x_text = x_marks.at(i) - int(sw*double(symbols)/2);
+        painter.drawText(x_text, y_text, str_value);
     }
 
     // y values
@@ -281,12 +271,11 @@ void LChartWidget::repaintAxisText(QPainter &painter)
     x_text = m_axis.zero_point.x() - m_axis.marksTextYOffset();
     for (int i=0; i<y_marks.count(); i++)
     {
-	QString str_value = QString::number(y_values.at(i), 'f', m_axis.precisionY);
-	int y_text = y_marks.at(i) + sw/2;
+        QString str_value = QString::number(y_values.at(i), 'f', m_axis.precisionY);
+        int y_text = y_marks.at(i) + sw/2;
     	painter.drawText(x_text, y_text, str_value);
     }
 }
-
 void LChartWidget::repaintAxis(QPainter &painter)
 {
     if (!m_axis.visible) return;
@@ -294,7 +283,6 @@ void LChartWidget::repaintAxis(QPainter &painter)
     QPen pen(m_axis.color);    
     pen.setWidth(m_axis.width);
     painter.setPen(pen);
-
     const QPoint &zp = m_axis.zero_point;
     int x2 = zp.x() + m_axis.xLen;
     int y2 = zp.y() - m_axis.yLen;
@@ -307,34 +295,30 @@ void LChartWidget::repaintAxis(QPainter &painter)
     // arrows
     if (m_axis.arrowLen() > 0)
     {
-	painter.drawLine(QPoint(zp.x(), y2), QPoint(zp.x()-m_axis.arrowDeviation(), y2+m_axis.arrowLen()));
-	painter.drawLine(QPoint(zp.x(), y2), QPoint(zp.x()+m_axis.arrowDeviation(), y2+m_axis.arrowLen()));
-	painter.drawLine(QPoint(x2, zp.y()), QPoint(x2-m_axis.arrowLen(), zp.y()-m_axis.arrowDeviation()));
-	painter.drawLine(QPoint(x2, zp.y()), QPoint(x2-m_axis.arrowLen(), zp.y()+m_axis.arrowDeviation()));
+        painter.drawLine(QPoint(zp.x(), y2), QPoint(zp.x()-m_axis.arrowDeviation(), y2+m_axis.arrowLen()));
+        painter.drawLine(QPoint(zp.x(), y2), QPoint(zp.x()+m_axis.arrowDeviation(), y2+m_axis.arrowLen()));
+        painter.drawLine(QPoint(x2, zp.y()), QPoint(x2-m_axis.arrowLen(), zp.y()-m_axis.arrowDeviation()));
+        painter.drawLine(QPoint(x2, zp.y()), QPoint(x2-m_axis.arrowLen(), zp.y()+m_axis.arrowDeviation()));
     }
 
     //marks
     if (m_axis.marksLen() > 0)
     {
-	QList<int> x_marks = m_axis.marksXList();	
-	for (int i=0; i<x_marks.count(); i++)
-	    painter.drawLine(QPoint(x_marks.at(i), zp.y()-mlh), QPoint(x_marks.at(i), zp.y()+mlh));
+        QList<int> x_marks = m_axis.marksXList();
+        for (int i=0; i<x_marks.count(); i++)
+            painter.drawLine(QPoint(x_marks.at(i), zp.y()-mlh), QPoint(x_marks.at(i), zp.y()+mlh));
 
-	QList<int> y_marks = m_axis.marksYList();	
-	for (int i=0; i<y_marks.count(); i++)
-	    painter.drawLine(QPoint(zp.x()-mlh, y_marks.at(i)), QPoint(zp.x()+mlh, y_marks.at(i)));
+        QList<int> y_marks = m_axis.marksYList();
+        for (int i=0; i<y_marks.count(); i++)
+            painter.drawLine(QPoint(zp.x()-mlh, y_marks.at(i)), QPoint(zp.x()+mlh, y_marks.at(i)));
     }
 }
 void LChartWidget::repaintDragRect(QPainter &painter)
-{
-//    if (m_mousePos.invalidPos()) return;
-//    if (!m_mousePos.visible) return;
-    
+{   
     QPen pen(m_mousePos.cross_color);    
     pen.setWidth(1);
     painter.setPen(pen);
     painter.drawRect(QRect(m_mousePos.drag_point, QPoint(m_mousePos.x, m_mousePos.y)));
-
 }
 void LChartWidget::repaintMouseCross(QPainter &painter)
 {
@@ -358,13 +342,12 @@ void LChartWidget::repaintMouseCross(QPainter &painter)
     //draw text values of cross point
     QString str_value = m_axis.valueByXType(m_mousePos.cross_point.x());
     int x_text = x - int(sw*double(str_value.length())/2);
-
     int y_text = m_axis.zero_point.y() + m_axis.marksTextXOffset();;
     switch(m_mousePos.mode_axis_x_value)
     {
-	case 1: {y_text -= 12; break;}
-	case 2: {y_text += 12; break;}
-	default: break;
+        case 1: {y_text -= 12; break;}
+        case 2: {y_text += 12; break;}
+        default: break;
     }
 
     painter.drawText(x_text, y_text, str_value);
@@ -373,6 +356,36 @@ void LChartWidget::repaintMouseCross(QPainter &painter)
     y_text = y + sw;
     painter.drawText(x_text, y_text, str_value);
 }
+void LChartWidget::rescaleBySliders(quint8 xp1, quint8 xp2)
+{
+    //qDebug()<<QString("LChartWidget::rescaleBySliders  X_range: %1%/%2%").arg(xp1).arg(xp2);
+    if (xp1 < 1 || xp1 > 100 || xp2 < 1 || xp2 > 100 || xp1 >= xp2)
+    {
+        qWarning()<<QString("LChartWidget::rescaleBySliders:  WARNING invalid X_range: %1%/%2%").arg(xp1).arg(xp2);
+        return;
+    }
+
+    //reset scale
+    m_mousePos.scale_step = 0;
+    m_mousePos.resetDragDrop();
+    recalcMinMaxScale();
+
+    //эмитация выделения области графика мышкой
+    //необходимо определить точки m_mousePos.drag_point и m_mousePos.drop_point
+    m_mousePos.drag_point.setY(m_axis.rtOffset());
+    m_mousePos.drop_point.setY(m_mousePos.drag_point.y() + m_axis.yLen);
+    int x_pixel0 = m_axis.x_offset; //начальная координата X на виджете в пикселях соответствующая началу координатных осей
+    int x_len = m_axis.xLen; //длина оси Х в пикселях
+    m_mousePos.drag_point.setX(x_pixel0 + int(double(x_len)*(double(xp1)/double(100))));
+    m_mousePos.drop_point.setX(x_pixel0 + int(double(x_len)*(double(xp2)/double(100))));
+
+    //recalc and repaint chart
+    rescaleByDrag();
+    m_mousePos.resetDragDrop();
+    update();
+
+}
+
 
 //////////////EVENTS///////////////////////
 void LChartWidget::resizeEvent(QResizeEvent*)
@@ -381,8 +394,8 @@ void LChartWidget::resizeEvent(QResizeEvent*)
 }
 void LChartWidget::paintEvent(QPaintEvent*)
 {
+    //qDebug("LChartWidget::paintEvent");
     QPainter painter(this);
-
     repaintAxis(painter);
     repaintAxisText(painter);
     repaintCharts(painter);
@@ -398,14 +411,14 @@ void LChartWidget::mouseMoveEvent(QMouseEvent *event)
     
     if (event->x() < dx || event->x() > (width() - drt) || event->y() < drt || event->y() > (height() - dy))
     { 
-	m_mousePos.outRange();
-	m_mousePos.resetDragDrop();
+        m_mousePos.outRange();
+        m_mousePos.resetDragDrop();
     }
     else
     {
-	m_mousePos.x = event->x();
-	m_mousePos.y = event->y();
-	recalcPosFactors();
+        m_mousePos.x = event->x();
+        m_mousePos.y = event->y();
+        recalcPosFactors();
     }
 
     recalcCrossPoint();
@@ -413,16 +426,11 @@ void LChartWidget::mouseMoveEvent(QMouseEvent *event)
 }
 void LChartWidget::wheelEvent(QWheelEvent *event)
 {
+
     if (m_mousePos.invalidPos()) return;
 
-    if (event->delta() > 0) 
-    {
-	m_mousePos.upScale();
-    }
-    else if (event->delta() < 0) 
-    {
-	m_mousePos.downScale();
-    }
+    if (event->delta() > 0) m_mousePos.upScale();
+    else if (event->delta() < 0) m_mousePos.downScale();
     else return;
 
     recalcMinMaxScale();
@@ -430,42 +438,30 @@ void LChartWidget::wheelEvent(QWheelEvent *event)
 }
 void LChartWidget::mouseDoubleClickEvent(QMouseEvent*)
 {
-    //qDebug("LChartWidget::mouseDoubleClickEvent(QMouseEvent*)");
-    m_mousePos.scale_step = 0; 
+    m_mousePos.scale_step = 0;
     m_mousePos.resetDragDrop();
     recalcMinMaxScale();
     update();
 }
 void LChartWidget::mouseReleaseEvent(QMouseEvent *event)
 {
-//    qDebug("LChartWidget::mouseReleaseEvent(QMouseEvent*)");
-
     if (m_mousePos.invalidPos() || event->button() != Qt::LeftButton || !m_mousePos.needRepaintDragRect())
     {
-	m_mousePos.resetDragDrop();
-	return;
+        m_mousePos.resetDragDrop();
+        return;
     }
 
-//    qDebug()<<QString("drop");
     m_mousePos.drop();
     rescaleByDrag();
     m_mousePos.resetDragDrop();
     update();
-
 }
 void LChartWidget::mousePressEvent(QMouseEvent *event)
 {
-//    qDebug("LChartWidget::mousePressEvent(QMouseEvent*)");
-
     if (m_mousePos.invalidPos()) return;
     if (event->button() != Qt::LeftButton) return;
-
-//    qDebug("\n start drag");
     m_mousePos.drag();
 }
-
-
-
 
 
 
@@ -487,8 +483,8 @@ void LChartWidget::convertPoints(const QList<QPointF> &list1, QList<QPointF> &li
     QPointF convert_point;
     for (int i=0; i<list1.count(); i++)
     {
-	convertPoint(list1.at(i), convert_point);
-	list2.append(convert_point);
+        convertPoint(list1.at(i), convert_point);
+        list2.append(convert_point);
     }
 }
 
@@ -576,7 +572,6 @@ bool LChartAxisParams::isOutPoint(const QPointF &p) const
 }
 void LChartAxisParams::recalc(int w, int h)
 {
-//    qDebug("LChartAxisParams::recalc");
     recalcAxisLen(w, h);
     recalcZeroPoint(h);
 }
@@ -595,9 +590,9 @@ QList<int> LChartAxisParams::marksXList() const
     int x = xOffset();
     for (;;)
     {
-	x += marksXInterval;
-	if (x > (xOffset() + xLen)) break;
-	list.append(x);
+        x += marksXInterval;
+        if (x > (xOffset() + xLen)) break;
+        list.append(x);
     }
     return list;
 }
@@ -637,13 +632,11 @@ QList<double> LChartAxisParams::marksXValues() const
     double factor = double(marksXInterval)/double(xLen);
     int n_marks = xMarksCount();
     for (int i=0; i<n_marks; i++)
-	list.append(cur_min.x() + (i+1)*d*factor);
-
+        list.append(cur_min.x() + (i+1)*d*factor);
     return list;
 }
 QList<double> LChartAxisParams::marksYValues() const
 {
-//    qDebug()<<QString("LChartAxisParams::marksYValues() : ")<<strMinMax();
     QList<double> list;
     if (yLen < marksYInterval) return list;
 
@@ -651,49 +644,36 @@ QList<double> LChartAxisParams::marksYValues() const
     double factor = double(marksYInterval)/double(yLen);
     int n_marks = yMarksCount();
     for (int i=0; i<n_marks; i++)
-	list.append(cur_min.y() + (i+1)*d*factor);
-
+        list.append(cur_min.y() + (i+1)*d*factor);
     return list;
 }
 QString LChartAxisParams::valueByXType(const double &x_value) const
 {
     switch(xType)
     {
-	case xvtSimple: {return QString::number(x_value, 'f', precisionX);}
-	case xvtDateTime: 
-	{
-	    QDateTime dt = QDateTime::fromTime_t(uint(x_value));
-	    if (!dt.isValid()) return QString("invalid datetime");
-	    return dt.toString(dateTimeMask());
-	}
-	case xvtDate: 
-	{
-	    QDateTime dt = QDateTime::fromTime_t(uint(x_value));
-	    if (!dt.isValid()) return QString("invalid date");
-	    return dt.toString(dateMask());
-	}
-	case xvtTime: 
-	{
-	    QDateTime dt = QDateTime::fromTime_t(uint(x_value));
-	    if (!dt.isValid()) return QString("invalid time");
-	    return dt.toString(timeMask());
-	}
-	default: break;
+        case xvtSimple: {return QString::number(x_value, 'f', precisionX);}
+        case xvtDateTime:
+        {
+            QDateTime dt = QDateTime::fromTime_t(uint(x_value));
+            if (!dt.isValid()) return QString("invalid datetime");
+            return dt.toString(dateTimeMask());
+        }
+        case xvtDate:
+        {
+            QDateTime dt = QDateTime::fromTime_t(uint(x_value));
+            if (!dt.isValid()) return QString("invalid date");
+            return dt.toString(dateMask());
+        }
+        case xvtTime:
+        {
+            QDateTime dt = QDateTime::fromTime_t(uint(x_value));
+            if (!dt.isValid()) return QString("invalid time");
+            return dt.toString(timeMask());
+        }
+        default: break;
     }
     return QString("err xtype");
 }
-/*
-int LChartAxisParams::marksTextXOffset() const
-{
-    return symbolWidth()*2;
-}
-int LChartAxisParams::marksTextYOffset() const
-{
-    int left_symbols = QString(QString::number(qCeil(max.y()))).trimmed().length(); //максимальное количество знаков до запятой
-    int n = symbolWidth()*(left_symbols + precisionY + 1);
-    return (n + 5);
-}
-*/
 void LChartAxisParams::setOffsets(int xo, int yo, int rt)
 {
     if (rt > 0) rt_offset = rt;

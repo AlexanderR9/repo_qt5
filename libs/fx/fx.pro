@@ -25,6 +25,7 @@ HEADERS += $$PWD/fxbar.h \
         $$PWD/fxbarcontainer.h \
         $$PWD/fxenums.h \
         $$PWD/fxdataloader.h \
+        $$PWD/fxabstracttest.h \
         $$PWD/fxchartwidget.h \
         $$PWD/fxdataloaderwidget.h
 
@@ -32,6 +33,7 @@ HEADERS += $$PWD/fxbar.h \
 SOURCES += $$PWD/fxbar.cpp \
         $$PWD/fxbarcontainer.cpp \
         $$PWD/fxenums.cpp \
+        $$PWD/fxabstracttest.cpp \
         $$PWD/fxdataloader.cpp \
         $$PWD/fxchartwidget.cpp \
         $$PWD/fxdataloaderwidget.cpp

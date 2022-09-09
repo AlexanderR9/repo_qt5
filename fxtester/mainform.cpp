@@ -7,6 +7,7 @@
 #include "fxdataloader.h"
 #include "fxdataloaderwidget.h"
 #include "fxbarcontainer.h"
+#include "fxchartwidget.h"
 
 #include <QDebug>
 #include <QDir>
@@ -18,8 +19,6 @@
 #include <QProgressBar>
 #include <QGroupBox>
 #include <QMessageBox>
-
-
 
 
 // MainForm
@@ -96,24 +95,17 @@ void MainForm::initCommonSettings()
     lCommonSettings.addParam(QString("FX data dir"), LSimpleDialog::sdtDirPath, key);
     lCommonSettings.setDefValue(key, QString(""));
 
-
-
-    /*
-    QString key = QString("source");
-    lCommonSettings.addParam(QString("Source dir"), LSimpleDialog::sdtDirPath, key);
-    lCommonSettings.setDefValue(key, QString(""));
-
-    key = QString("speed");
-    lCommonSettings.addParam(QString("Write speed"), LSimpleDialog::sdtStringCombo, key);
+    key = QString("chart_width");
+    lCommonSettings.addParam(QString("Chart line width"), LSimpleDialog::sdtIntCombo, key);
     combo_list.clear();
-    combo_list << "none" << "4x" << "8x" << "12x" << "16x" << "24x" << "36x" << "48x";
+    combo_list << "1" << "2" << "3" << "4" << "5";
     lCommonSettings.setComboList(key, combo_list);
 
-    key = QString("cd_dev");
-    lCommonSettings.addParam(QString("CDRW device"), LSimpleDialog::sdtString, key);
-    lCommonSettings.setDefValue(key, QString("/dev/cdrom"));
-*/
-
+    key = QString("chart_precision");
+    lCommonSettings.addParam(QString("Chart axis precision"), LSimpleDialog::sdtIntCombo, key);
+    combo_list.clear();
+    combo_list << "0" << "1" << "2" << "3" << "4" << "5";
+    lCommonSettings.setComboList(key, combo_list);
 }
 void MainForm::reloadData()
 {
@@ -155,44 +147,31 @@ void MainForm::load()
 
     if (m_centralWidget)
         m_centralWidget->load(settings);
+
+    updateChartSettings();
 }
 QString MainForm::dataDir() const
 {
     return lCommonSettings.paramValue("data_dir").toString();
 }
-
-
-/*
-void MainForm::updateActionsEnable(bool stoped)
+void MainForm::updateChartSettings()
 {
-    getAction(LMainWidget::atStop)->setEnabled(!stoped);
-    getAction(LMainWidget::atISO)->setEnabled(stoped);
-    getAction(LMainWidget::atBurn)->setEnabled(stoped);
-    getAction(LMainWidget::atEject)->setEnabled(stoped);
-    getAction(LMainWidget::atRemove)->setEnabled(stoped);
-    getAction(LMainWidget::atCDErase)->setEnabled(stoped);
-    //getAction(LMainWidget::atCalcCRC)->setEnabled(false);
-    getAction(LMainWidget::atCalcCRC)->setEnabled(stoped);
-    getAction(LMainWidget::atSettings)->setEnabled(stoped);
-    getAction(LMainWidget::atExit)->setEnabled(stoped);
+    quint8 w = lCommonSettings.paramValue("chart_width").toUInt();
+    quint8 p = lCommonSettings.paramValue("chart_precision").toUInt();
+    FXChartSettings chs;
+    chs.line_width = w;
+    chs.axis_presision = p;
+
+    m_centralWidget->setChartSettings(chs);
 }
-
-
-
-
 void MainForm::slotAppSettingsChanged(QStringList keys)
 {
-    qDebug("MainForm::slotAppSettingsChanged");
+    //qDebug("MainForm::slotAppSettingsChanged");
     LMainWidget::slotAppSettingsChanged(keys);
 
-    if (keys.contains("source"))
-    {
-        m_protocol->addSpace();
-        m_protocol->addText(QString("Changed source dir: %1").arg(sourcePath()));
-        m_protocol->addText(QString("reloading ISO file list ...."));
-        m_paramsPage->reloadISOList(sourcePath());
-        m_protocol->addText(QString("done!"));
-    }
+    if (keys.contains("chart_width") || keys.contains("chart_precision"))
+        updateChartSettings();
+
+
 }
-*/
 

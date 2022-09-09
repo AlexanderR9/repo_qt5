@@ -37,6 +37,16 @@ void FXBarContainer::getChartPoints(QList<QPointF> &chart_data) const
         chart_data.append(point);
     }
 }
+QDateTime FXBarContainer::firstTime() const
+{
+    if (dataEmpty()) return QDateTime();
+    return m_data.first().time();
+}
+QDateTime FXBarContainer::lastTime() const
+{
+    if (dataEmpty()) return QDateTime();
+    return m_data.last().time();
+}
 void FXBarContainer::tryLoadData(QString sep_values)
 {
     reset();
@@ -114,6 +124,11 @@ void FXBarContainer::checkFileName()
     if (m_digist > 8)
         emit signalError(QString("FXBarContainer: invalid digist(%1) for couple %2").arg(m_digist).arg(m_couple));
 
+}
+const FXBar* FXBarContainer::barAt(int i) const
+{
+    if (i < 0 || i >= barCount()) return NULL; //FXBar();
+    return &m_data.at(i);
 }
 bool FXBarContainer::invalid() const
 {

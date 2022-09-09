@@ -2,6 +2,8 @@
 #include "fxdataloader.h"
 #include "fxdataloaderwidget.h"
 #include "fxchartwidget.h"
+#include "fxtestpage.h"
+#include "fxqualdatapage.h"
 #include "fxbarcontainer.h"
 
 #include <QStackedWidget>
@@ -26,6 +28,15 @@ FXCentralWidget::FXCentralWidget(QWidget *parent)
     initWidgets();
     createPages();
 
+}
+void FXCentralWidget::setChartSettings(const FXChartSettings &chs)
+{
+    FXChartWidget *chart_page = qobject_cast<FXChartWidget*>(m_pages.value(fxptChart));
+    if (chart_page)
+    {
+        chart_page->setChartSettings(chs);
+        if (chart_page->isActiveWindow()) chart_page->update();
+    }
 }
 void FXCentralWidget::loaderDataUpdate(const FXDataLoader *loader)
 {
@@ -68,21 +79,39 @@ void FXCentralWidget::initWidgets()
 
     connect(m_loaderWidget, SIGNAL(signalSelectionChanged()), this, SLOT(slotSelectionDataChanged()));
     connect(m_pagesListWidget, SIGNAL(itemSelectionChanged()), this, SLOT(slotSelectedPageChanged()));
-
-
 }
-void FXCentralWidget::createPages()
+void FXCentralWidget::clearPages()
 {
-    //clear m_stackedWidget
+    clearStackedWidget();
+    qDeleteAll(m_pages);
+    m_pages.clear();
+}
+void FXCentralWidget::clearStackedWidget()
+{
     while (m_stackedWidget->count() > 0)
     {
         QWidget *w = m_stackedWidget->widget(0);
         m_stackedWidget->removeWidget(w);
     }
+}
+void FXCentralWidget::createPages()
+{
+    //clear m_stackedWidget and m_pages
+    clearPages();
 
     //create chart page
     FXChartWidget *w_chart = new FXChartWidget(this);
     m_pages.insert(fxptChart, w_chart);
+
+    //create testing page
+    FXTestPage *t_page = new FXTestPage(this);
+    m_pages.insert(fxptTester, t_page);
+
+    //create testing page
+    FXQualDataPage *qd_page = new FXQualDataPage(this);
+    m_pages.insert(fxptQualData, qd_page);
+
+
 
     //fill stack
     int i = 0;
@@ -90,6 +119,7 @@ void FXCentralWidget::createPages()
     {
         m_stackedWidget->insertWidget(i, page);
         QListWidgetItem *p_item = new QListWidgetItem(QIcon(page->iconPath()), page->caption());
+        p_item->setData(Qt::UserRole, i);
         m_pagesListWidget->addItem(p_item);
         i++;
     }
@@ -102,15 +132,26 @@ void FXCentralWidget::load(QSettings &settings)
     LSimpleWidget::load(settings);
     foreach (LSimpleWidget *page, m_pages)
         page->load(settings);
+
+    int p_index = settings.value(QString("%1/page_index").arg(objectName()), 0).toInt();
+    m_pagesListWidget->clearFocus();
+    m_pagesListWidget->clearSelection();
+    m_pagesListWidget->item(p_index)->setSelected(true);
+    //slotSelectedPageChanged();
+
 }
 void FXCentralWidget::save(QSettings &settings)
 {
     LSimpleWidget::save(settings);
     foreach (LSimpleWidget *page, m_pages)
         page->save(settings);
+
+    settings.setValue(QString("%1/page_index").arg(objectName()), m_stackedWidget->currentIndex());
 }
 void FXCentralWidget::slotSelectionDataChanged()
 {
+    if (!m_loaderWidget) return;
+
     qDebug("FXCentralWidget::slotSelectionDataChanged()");
     if (m_pages.value(fxptChart)->isActiveWindow())
     {
@@ -128,6 +169,12 @@ void FXCentralWidget::slotSelectionDataChanged()
 void FXCentralWidget::slotSelectedPageChanged()
 {
     qDebug("FXCentralWidget::slotSelectedPageChanged()");
+    QList<QListWidgetItem*> list =  m_pagesListWidget->selectedItems();
+    if (list.isEmpty()) return;
+
+    int p_index = list.last()->data(Qt::UserRole).toInt();
+    if (p_index >= 0 && p_index < m_stackedWidget->count())
+        m_stackedWidget->setCurrentIndex(p_index);
 
 }
 
