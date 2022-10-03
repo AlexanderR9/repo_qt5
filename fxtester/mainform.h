@@ -33,6 +33,7 @@ protected:
 
     void save();
     void load();
+    void actStart();
 
     void reloadData();
     void initDataLoader();

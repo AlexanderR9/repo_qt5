@@ -16,10 +16,10 @@ enum FXTimeFrame {
 
 
 //типы инструментов
-enum FXCoupleKind {ckCurrency = 355, ckStock, ckCrypto, ckIndex};
+enum FXCoupleKind {ckCurrency = 391, ckStock, ckCrypto, ckIndex};
 
 
-// множество входных параметров для стратегии тестирования
+// множество входных параметров для тестирования стратегии
 enum FXInputParam {ipStop = 301, ipProfit, ipDist, ipNBars, ipNPips, ipTimeFrame, ipStartLot, ipFixLot, ipNextLotFactor, ipNextLineFactor,
                    ipStartSum, ipMondayTime, ipFridayTime, ipDecStep, exipIncStep, ipStopFactor};
 
@@ -29,6 +29,9 @@ enum FXStateParam {spStep = 401, spPrevStep, spMaxStep, spSum, spNumber, spWinNu
                    spLossNumber, spFullLossNumber, spLossPips, spLotSize, spStopLossCount, spTakeProfitCount, spMinSum, spMaxSum,
                    spLineNumber};
 
+
+// типы тестов (стратегий)
+enum FXTestType {ttSpring = 501, ttChannel, ttExtremum, ttPeriodShadows};
 
 
 //набор статических функций для работы с этими множествами

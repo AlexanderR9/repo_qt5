@@ -74,5 +74,9 @@ QString FXBar::toStr() const
     s = QString("%1   high/low=%2/%3").arg(s).arg(QString::number(m_high, 'f', m_digist)).arg(QString::number(m_low, 'f', m_digist));
     return s;
 }
+QString FXBar::strTime() const
+{
+    return QString("%1 %2").arg(m_time.date().toString(FX_DATE_FORMAT)).arg(m_time.time().toString(FX_TIME_FORMAT));
+}
 
 

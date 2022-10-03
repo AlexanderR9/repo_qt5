@@ -41,6 +41,7 @@ public:
     virtual QString caption() const {return QString("Simple page!!!");} //некая надпись соответствующая этому виджету
     virtual QString iconPath() const {return QString();} //некая иконка соответствующая этому виджету
 
+    void setSpacing(int); //задать отступы для внутренних виджетов (друг от друга)
 
 protected:
     int             m_spliterType;
@@ -77,6 +78,7 @@ public:
     void setHeaderLabels(const QStringList&);
     void vHeaderHide();
 
+    QTableWidget* table() const;
 
 protected:
     QTableWidget    *m_table;
@@ -98,6 +100,9 @@ class LListWidgetBox : public QGroupBox
 public:
     LListWidgetBox(QWidget *parent = NULL, int type = 1);
     virtual ~LListWidgetBox() {}
+
+    QListWidget* listWidget() const;
+
 
 protected:
     QListWidget    *m_listWidget;

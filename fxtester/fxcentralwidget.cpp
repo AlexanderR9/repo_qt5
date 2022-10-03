@@ -38,6 +38,38 @@ void FXCentralWidget::setChartSettings(const FXChartSettings &chs)
         if (chart_page->isActiveWindow()) chart_page->update();
     }
 }
+int FXCentralWidget::currentPageType() const
+{
+    QList<QListWidgetItem*> list = m_pagesListWidget->selectedItems();
+    if (list.isEmpty()) return -1;
+    return (list.last()->data(Qt::UserRole).toInt() + fxptChart);
+}
+void FXCentralWidget::checkQualData()
+{
+    QList<FXCoupleDataParams> list;
+    m_loaderWidget->getSelection(list);
+    if (list.isEmpty())
+    {
+        emit signalError("FXCentralWidget: data selection is empty");
+        return;
+    }
+    if (list.count() > 1)
+    {
+        emit signalError("FXCentralWidget: select only one couple");
+        return;
+    }
+
+    QList<const FXBarContainer*> data;
+    emit signalGetLoadedDataByReq(list, data);
+    if (data.isEmpty())
+    {
+        emit signalError("FXCentralWidget: ckecking data is empty");
+        return;
+    }
+
+    FXQualDataPage *q_page = qobject_cast<FXQualDataPage*>(m_pages.value(fxptQualData));
+    if (q_page) q_page->check(data.first());
+}
 void FXCentralWidget::loaderDataUpdate(const FXDataLoader *loader)
 {
 
@@ -107,13 +139,31 @@ void FXCentralWidget::createPages()
     FXTestPage *t_page = new FXTestPage(this);
     m_pages.insert(fxptTester, t_page);
 
-    //create testing page
+    //create quality page
     FXQualDataPage *qd_page = new FXQualDataPage(this);
     m_pages.insert(fxptQualData, qd_page);
 
 
 
     //fill stack
+    /*
+    int i = 0;
+    QMap<int, LSimpleWidget*>::const_iterator it = m_pages.constBegin();
+    while (it != m_pages.constEnd())
+    {
+        m_stackedWidget->insertWidget(i, it.value());
+        QListWidgetItem *p_item = new QListWidgetItem(QIcon(it.value()->iconPath()), it.value()->caption());
+        p_item->setData(Qt::UserRole, it.key());
+        m_pagesListWidget->addItem(p_item);
+
+        connect(it.value(), SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
+        connect(it.value(), SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
+
+        i++;
+        it++;
+    }
+    */
+
     int i = 0;
     foreach (LSimpleWidget *page, m_pages)
     {
@@ -121,6 +171,10 @@ void FXCentralWidget::createPages()
         QListWidgetItem *p_item = new QListWidgetItem(QIcon(page->iconPath()), page->caption());
         p_item->setData(Qt::UserRole, i);
         m_pagesListWidget->addItem(p_item);
+
+        connect(page, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
+        connect(page, SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
+
         i++;
     }
 

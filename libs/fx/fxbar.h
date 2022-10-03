@@ -22,6 +22,8 @@ public:
     inline quint32 volume() const {return m_volume;}
     inline const QDateTime& time() const {return m_time;}
 
+    QString strTime() const;
+
     //попытка загрузить данные свечи из строки файла, sep_values - разделитель значений
     //пример строки: 2019.10.13,00:00,179.49,183.72,177.63,179.71,1336
     void fromFileLine(const QString&, QString sep_values = ",");

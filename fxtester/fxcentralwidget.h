@@ -29,6 +29,9 @@ public:
     void setChartSettings(const FXChartSettings&);
     void load(QSettings&);
     void save(QSettings&);
+    int currentPageType() const; //вернет тип открытой страницы из множества FXPageType
+    void checkQualData();
+
 
 protected:
     QStackedWidget          *m_stackedWidget;

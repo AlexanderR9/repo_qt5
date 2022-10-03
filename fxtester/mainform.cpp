@@ -38,7 +38,7 @@ void MainForm::slotSetLoadedDataByReq(const QList<FXCoupleDataParams> &req, QLis
     list.clear();
     foreach (const FXCoupleDataParams &v, req)
     {
-        qDebug()<<v.toStr();
+        qDebug() << v.toStr();
         const FXBarContainer *couple_data = m_dataLoader->container(v.couple, v.timeframe);
         if (couple_data) list.append(couple_data);
         else qWarning()<<QString("MainForm::slotSetLoadedDataByReq WARNING: m_dataLoader->container return NULL");
@@ -65,10 +65,26 @@ void MainForm::slotAction(int type)
 {
     switch (type)
     {
-        case LMainWidget::atStart: {break;}
+        case LMainWidget::atStart: {actStart(); break;}
         case LMainWidget::atLoadData: {reloadData(); break;}
         case LMainWidget::atSettings: {actCommonSettings(); break;}
         default: break;
+    }
+}
+void MainForm::actStart()
+{
+    switch (m_centralWidget->currentPageType())
+    {
+        case FXCentralWidget::fxptQualData:
+        {
+            m_centralWidget->checkQualData();
+            break;
+        }
+        default:
+        {
+            qWarning()<<QString("MainForm::actStart() - WARNING: invalid page type %1").arg(m_centralWidget->currentPageType());
+            break;
+        }
     }
 }
 void MainForm::initWidgets()

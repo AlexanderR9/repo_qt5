@@ -23,6 +23,11 @@ LSimpleWidget::LSimpleWidget(QWidget *parent, int t)
 
     init();
 }
+void LSimpleWidget::setSpacing(int a)
+{
+    if (a < 0 || a > 100) return;
+    if (layout()) layout()->setSpacing(a);
+}
 void LSimpleWidget::init()
 {
     if (layout()) delete layout();
@@ -118,6 +123,10 @@ void LTableWidgetBox::vHeaderHide()
 {
     m_table->verticalHeader()->hide();
 }
+QTableWidget* LTableWidgetBox::table() const
+{
+    return m_table;
+}
 
 
 
@@ -141,6 +150,10 @@ void LListWidgetBox::init()
     m_listWidget = new QListWidget(this);
     m_listWidget->clear();
     layout()->addWidget(m_listWidget);
+}
+QListWidget* LListWidgetBox::listWidget() const
+{
+    return m_listWidget;
 }
 
 

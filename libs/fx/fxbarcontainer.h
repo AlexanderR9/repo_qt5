@@ -31,6 +31,7 @@ public:
     inline QString couple() const {return m_couple;}
     inline int timeframe() const {return m_timeframe;} //значение из множества FXTimeFrame
     inline void setDigist(quint8 d) {m_digist = d;} //точность пункта
+    inline quint8 digist() const {return m_digist;}
     inline quint16 barCount() const {return m_data.count();} //количество валидных загруженных свечей
     inline bool dataEmpty() const {return m_data.isEmpty();}
 

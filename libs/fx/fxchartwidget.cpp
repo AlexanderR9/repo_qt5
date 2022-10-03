@@ -75,11 +75,11 @@ QColor FXChartWidget::nextColor() const
 {
     switch (m_legendTable->rowCount())
     {
-        case 0: return Qt::red;
+        case 0: return QColor(200, 10, 10);
         case 1: return QColor(150, 100, 200);
-        case 2: return QColor(160, 40, 40);
+        case 2: return QColor(50, 200, 30);
         case 3: return QColor(0, 0, 220);
-        case 4: return QColor(50, 200, 30);
+        case 4: return QColor(160, 40, 40);
         default: break;
     }
     return Qt::gray;
