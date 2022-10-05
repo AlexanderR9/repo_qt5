@@ -14,7 +14,7 @@ public:
     enum AcitonType {atSettings = 0, atExit, atStart, atStop, atPause, atAdd, atRemove, atOk, atCancel, atUp, atDown, atLeft, atRight, 
 			atLoadData, atClear, atRedo, atUndo, atChart, atClock, atOpen, atSave, atSearch, atMonitoring, atRefresh, atData,
             atBuy, atSell, atBag, atBScale, atRScale, atSScale, atCoin, atChain, atHouse, atPerimetr, atSendMsg,
-            atEject, atISO, atBurn, atCDErase, atCalcCRC, atFoldersStruct};
+            atEject, atISO, atBurn, atCDErase, atCalcCRC, atFoldersStruct, atISOCD};
 
     LMainWidget(QWidget *parent);
     virtual ~LMainWidget() {}

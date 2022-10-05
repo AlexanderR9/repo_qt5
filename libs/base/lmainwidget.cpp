@@ -176,6 +176,7 @@ QString LMainWidget::actionIconName(int type)
         case atPerimetr: return QString("perimetr");
         case atEject: return QString("eject.png");
         case atISO: return QString("isofile.png");
+        case atISOCD: return QString("iso_cd.png");
         case atBurn: return QString("burn.png");
         case atCDErase: return QString("cd_erase.png");
         case atCalcCRC: return QString("crc.png");
@@ -229,7 +230,8 @@ QString LMainWidget::actionText(int type)
         case atHouse: return QString("House");
         case atPerimetr: return QString("Perimetr");
         case atEject: return QString("Eject");
-        case atISO: return QString("Make ISO");
+        case atISO: return QString("Make ISO of data");
+        case atISOCD: return QString("Make ISO by CD");
         case atBurn: return QString("Burn CD");
         case atCDErase: return QString("Erase CD");
         case atCalcCRC: return QString("Calc CRC");

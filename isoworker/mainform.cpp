@@ -19,6 +19,7 @@
 #include <QProgressBar>
 #include <QGroupBox>
 #include <QMessageBox>
+#include <QFileDialog>
 
 
 #define MAKE_ISO_COMMAND        QString("genisoimage")
@@ -26,7 +27,8 @@
 #define CDRECORD_COMMAND        QString("cdrecord")
 #define UMOUNT_COMMAND          QString("umount")
 #define ISOINFO_COMMAND         QString("isoinfo")
-#define MAKE_ISO_INTERVAL       1700
+#define DD_COMMAND              QString("dd")
+#define MAKE_ISO_INTERVAL       1333
 
 
 
@@ -58,14 +60,19 @@ MainForm::MainForm(QWidget *parent)
 void MainForm::initActions()
 {
     addAction(LMainWidget::atISO);
+    addAction(LMainWidget::atRefresh);
     addAction(LMainWidget::atBurn);
     addAction(LMainWidget::atCDErase);
+    addAction(LMainWidget::atISOCD);
     addAction(LMainWidget::atStop);
-    addAction(LMainWidget::atEject);
-    addAction(LMainWidget::atRemove);
     addAction(LMainWidget::atCalcCRC);
     addAction(LMainWidget::atFoldersStruct);
     addToolBarSeparator();
+
+    addAction(LMainWidget::atEject);
+    addAction(LMainWidget::atRemove);
+    addToolBarSeparator();
+
     addAction(LMainWidget::atClear);
     addAction(LMainWidget::atSettings);
     addAction(LMainWidget::atExit);
@@ -84,6 +91,8 @@ void MainForm::initWidgets()
     setActionTooltip(atStop, "Break process");
     setActionTooltip(atFoldersStruct, "Show CD struct");
     setActionTooltip(atCalcCRC, "Calc MD5 sum of CD");
+    setActionTooltip(atRefresh, "Recalc MD5sum of ISO files and rewrite md5_file");
+    setActionTooltip(atClear, "Clear protocol");
     updateActionsEnable(true);
 
     connect(m_processObj, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
@@ -114,6 +123,8 @@ void MainForm::slotAction(int type)
     {
         case LMainWidget::atSettings: {actCommonSettings(); break;}
         case LMainWidget::atISO: {startMakerISO(); break;}
+        case LMainWidget::atRefresh: {startUpdateMD5File(); break;}
+        case LMainWidget::atISOCD: {makeISOByCD(); break;}
         case LMainWidget::atStop: {stopBreak(); break;}
         case LMainWidget::atClear: {m_protocol->clearProtocol(); break;}
         case LMainWidget::atBurn: {tryBurn(); break;}
@@ -124,6 +135,44 @@ void MainForm::slotAction(int type)
         case LMainWidget::atFoldersStruct: {showFoldersStructCD(); break;}
         default: break;
     }
+}
+void MainForm::makeISOByCD()
+{
+    prepareCommand("ISO FOR COPY CD");
+    m_protocol->addText(QString("CDROM: %1").arg(cdDevice()));
+    if (cdDevice().isEmpty())
+    {
+        slotError("invalid CDROM device");
+        return;
+    }
+
+    QString iso_file;
+    QFileDialog d(this, QString("Enter name of ISO file"), sourcePath(), "*.iso");
+    d.setWindowModality(Qt::WindowModal);
+    d.setAcceptMode(QFileDialog::AcceptSave);
+    d.setFileMode(QFileDialog::ExistingFile);
+    if (d.exec() == QDialog::Accepted)
+    {
+        iso_file = d.selectedFiles().first().trimmed();
+        if (iso_file.right(4) != ".iso") iso_file.append(".iso");
+        //qDebug()<<QString("exec true, file: %1").arg(iso_file);
+    }
+    else
+    {
+        m_protocol->addText("make copy CD canceled", LProtocolBox::ttWarning);
+        return;
+    }
+
+    m_paramsPage->startCommand("ISO FOR COPY CD", LFile::shortFileName(iso_file));
+    m_protocol->addText(QString("target file: %1").arg(iso_file));
+
+    //prepare process obj
+    m_processObj->setCommand(DD_COMMAND);
+    QStringList args;
+    args << QString("if=%1").arg(cdDevice());
+    args << QString("of=%1").arg(iso_file);
+    m_processObj->setArgs(args);
+    runProcess(isoCopyCD);
 }
 void MainForm::tryBurn()
 {
@@ -325,7 +374,10 @@ void MainForm::checkProcessFinishedResult()
         case isoEjectCDROM: {checkEjectProcessFinishedResult(); break;}
         case isoNeedCalcMD5_CD: {checkMD5CDProcessFinishedResult(); break;}
         case isoUmountCD: {checkUmountProcessFinishedResult(); break;}
+
+        case isoCopyCD: {checkISOCopyCDProcessFinishedResult(); break;}
         case isoShowStructCD: {checkStructCDProcessFinishedResult(); break;}
+
         default: {checkISOProcessFinishedResult(); break;}
     }
 }
@@ -340,6 +392,20 @@ void MainForm::checkBurnProcessFinishedResult()
     else m_paramsPage->finishedCommand("ok");
     stopOk();
 }
+void MainForm::checkISOCopyCDProcessFinishedResult()
+{
+    QString buff(m_processObj->buffer().trimmed().toLower());
+    if (!m_processObj->isOk())
+    {
+        slotError(buff);
+        m_paramsPage->finishedCommand("fault");
+    }
+    else m_paramsPage->finishedCommand("ok");
+    stopOk();
+
+    m_protocol->addText(buff, LProtocolBox::ttWarning);
+}
+
 void MainForm::checkMD5CDProcessFinishedResult()
 {
     QString buff(m_processObj->buffer().trimmed().toLower());
@@ -378,7 +444,7 @@ void MainForm::checkMD5CDProcessFinishedResult()
 
 
             //command: dd if=/dev/sr0 bs=2048 count=354854 conv=notrunc,noerror | md5sum -b
-            m_processObj->setCommand("dd");
+            m_processObj->setCommand(DD_COMMAND);
             QStringList args;
             args << QString("if=%1").arg(cdDevice()) << QString("bs=2048") << QString("count=%1").arg(m_cdBlockSize);
             args << QString("conv=notrunc,noerror") << QString("|") << QString("md5sum") << QString("-b");
@@ -488,6 +554,7 @@ void MainForm::checkISOProcessFinishedResult()
     }
 
     if (m_processObj->command() == MD5SUM_COMMAND) parseMD5();
+    if (m_stage == isoUpdateMD5File) return;
 
 
     if (!m_sourceDirISO.isEmpty()) m_stage = isoMakeNext;
@@ -534,11 +601,13 @@ void MainForm::updateActionsEnable(bool stoped)
 {
     getAction(LMainWidget::atStop)->setEnabled(!stoped);
     getAction(LMainWidget::atISO)->setEnabled(stoped);
+    getAction(LMainWidget::atRefresh)->setEnabled(stoped);
+    getAction(LMainWidget::atISOCD)->setEnabled(stoped);
+
     getAction(LMainWidget::atBurn)->setEnabled(stoped);
     getAction(LMainWidget::atEject)->setEnabled(stoped);
     getAction(LMainWidget::atRemove)->setEnabled(stoped);
     getAction(LMainWidget::atCDErase)->setEnabled(stoped);
-    //getAction(LMainWidget::atCalcCRC)->setEnabled(false);
     getAction(LMainWidget::atCalcCRC)->setEnabled(stoped);
     getAction(LMainWidget::atSettings)->setEnabled(stoped);
     getAction(LMainWidget::atExit)->setEnabled(stoped);
@@ -574,6 +643,73 @@ void MainForm::startMakerISO()
     {
         m_protocol->addText("maker ISO canceled", LProtocolBox::ttWarning);
     }
+}
+void MainForm::startUpdateMD5File()
+{
+    m_paramsPage->resetColors();
+    m_curISOFile.clear();
+    m_protocol->addSpace();
+    m_protocol->addText(QString("Starting cenarii for update %1").arg(ParamsPage::md5File()), LProtocolBox::ttOk);
+    QString q_text = QString("Working directory: %1").arg(sourcePath());
+    q_text = QString("%1\n%2").arg(q_text).arg(QString("File %1 in working directory will be overwritten.").arg(ParamsPage::md5File()));
+    q_text = QString("%1\n%2").arg(q_text).arg(QString("Are you sure you want to continue?"));
+    int res = QMessageBox::question(this, "Rewite MD5 data file!!!", q_text, QMessageBox::Ok, QMessageBox::Cancel);
+    if (res == QMessageBox::Ok)
+    {
+        m_protocol->addText("started cenarii", LProtocolBox::ttData);
+        m_stage = isoStarting;
+        updateActionsEnable(false);
+        resetMD5File();
+        prepareISOList();
+        m_timer->start();
+    }
+    else
+    {
+        m_protocol->addText("recalc md5sum of ISO files canceled", LProtocolBox::ttWarning);
+    }
+}
+void MainForm::resetMD5File()
+{
+    m_protocol->addText(QString("try reset file: %1 ...........").arg(ParamsPage::md5File()), LProtocolBox::ttText);
+    QString f_name = QString("%1%2%3").arg(sourcePath()).arg(QDir::separator()).arg(ParamsPage::md5File());
+    if (!LFile::fileExists(f_name))
+    {
+        m_protocol->addText(QString("file is not exist"), LProtocolBox::ttWarning);
+        return;
+    }
+
+    QString err = LFile::writeFile(f_name, QString());
+    if (!err.isEmpty()) slotError(err);
+    else m_protocol->addText(QString("Ok!"), LProtocolBox::ttText);
+
+    m_protocol->addSpace();
+}
+void MainForm::prepareISOList()
+{
+    m_sourceDirISO.clear();
+    m_protocol->addText("preparing ISO files list ........");
+    QString err = LFile::dirFiles(sourcePath(), m_sourceDirISO, "iso");
+    if (!err.isEmpty())
+    {
+        slotError(err);
+        m_stage = isoNeedBreak;
+        return;
+    }
+
+    m_protocol->addSpace();
+    m_protocol->addText(QString("ISO files count: %1").arg(m_sourceDirISO.count()), LProtocolBox::ttData);
+    if (m_sourceDirISO.isEmpty())
+    {
+        m_protocol->addText("ISO files list is empty", LProtocolBox::ttWarning);
+        m_stage = isoNeedBreak;
+        return;
+    }
+
+    for (int i=0; i<m_sourceDirISO.count(); i++)
+       m_protocol->addText(QString("   %1.  %2").arg(i+1).arg(m_sourceDirISO.at(i)));
+
+    m_protocol->addText("source folder list prepared!");
+    m_stage = isoUpdateMD5File;
 }
 void MainForm::prepareSourceDirISO()
 {
@@ -630,6 +766,11 @@ void MainForm::slotTimer()
             finishedAll();
             break;
         }
+        case isoUpdateMD5File:
+        {
+            updateMD5FileNextISO();
+            break;
+        }
         case isoNeedCalcMD5:
         {
             calcMD5();
@@ -648,6 +789,21 @@ void MainForm::slotTimer()
             break;
         }
     }
+}
+void MainForm::updateMD5FileNextISO()
+{
+    if (m_sourceDirISO.isEmpty())
+    {
+        m_stage = isoFinishedAll;
+        return;
+    }
+
+    m_curISOFile = m_sourceDirISO.takeFirst();
+    qDebug()<<QString("iso files count %1").arg(m_sourceDirISO.count());
+    calcMD5();
+    m_stage = isoUpdateMD5File;
+    //m_curISOFile = "iso";
+    m_processObj->startCommand();
 }
 void MainForm::finishedAll()
 {

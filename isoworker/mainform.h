@@ -21,7 +21,7 @@ class MainForm : public LMainWidget
 public:
     enum ISOStages {isoStoped = 270, isoStarting, isoInitSourceDirs, isoFinishedAll, isoMakeNext, isoProcessRun,
                     isoNeedCalcMD5,  isoNeedCalcMD5_CD, isoBurningCD,  isoEraseCD, isoEjectCDROM,
-                    isoUmountCD, isoShowStructCD, isoNeedBreak = -1};
+                    isoUmountCD, isoShowStructCD, isoCopyCD, isoUpdateMD5File, isoNeedBreak = -1};
 
     MainForm(QWidget *parent = 0);
     virtual ~MainForm() {}
@@ -47,10 +47,15 @@ protected:
     void readParamsPage();
 
     void startMakerISO();
+    void makeISOByCD(); //сделать копию CD диска в виде iso файла
+    void startUpdateMD5File(); //переписать файл md5_iso.txt по текущим образам, лежащим в папке ресурсов
+    void updateMD5FileNextISO();
+    void resetMD5File(); //затереть содержимое файла md5_iso.txt, если он существует
     void stopBreak();
     void stopOk();
     void updateActionsEnable(bool);
     void prepareSourceDirISO();
+    void prepareISOList();
     void makeISO();
     void calcMD5();
     void calcMD5_CD();
@@ -79,6 +84,7 @@ protected:
     void checkMD5CDProcessFinishedResult();
     void checkUmountProcessFinishedResult();
     void checkStructCDProcessFinishedResult();
+    void checkISOCopyCDProcessFinishedResult();
 
 
     void save();
