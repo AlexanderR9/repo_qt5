@@ -31,7 +31,8 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/fxcentralwidget.h \
         $$PWD/fxtestpage.h \
         $$PWD/fxqualdatapage.h \
-        $$PWD/fxtest.h
+        $$PWD/fxtest.h \
+        $$PWD/fxtesterobj.h
 
 
 SOURCES += $$PWD/main.cpp \
@@ -39,7 +40,8 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/fxcentralwidget.cpp \
         $$PWD/fxtestpage.cpp \
         $$PWD/fxqualdatapage.cpp \
-        $$PWD/fxtest.cpp
+        $$PWD/fxtest.cpp \
+        $$PWD/fxtesterobj.cpp
 
 
 FORMS += $$PWD/ui/fxcentralwidget.ui

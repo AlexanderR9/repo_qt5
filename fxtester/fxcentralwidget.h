@@ -30,7 +30,8 @@ public:
     void load(QSettings&);
     void save(QSettings&);
     int currentPageType() const; //вернет тип открытой страницы из множества FXPageType
-    void checkQualData();
+    void checkQualData(); //запуск проверки качества данных
+    void startTesting(); //запуск тестирования по всем загруженным инструментам
 
 
 protected:

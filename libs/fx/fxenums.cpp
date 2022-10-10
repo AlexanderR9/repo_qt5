@@ -7,6 +7,82 @@ QList<int> FXEnumStaticObj::timeFrames()
     list << tf5m << tf15m << tf1h <<  tf4h << tf1d <<  tf1w;
     return list;
 }
+QList<int> FXEnumStaticObj::testTypes()
+{
+    QList<int> list;
+    list << ttSpring << ttChannel << ttExtremum <<  ttPeriodShadows;
+    return list;
+}
+QString FXEnumStaticObj::paramShortName(int param)
+{
+//    enum FXInputParam {ipStopPips = 301, ipProfitPips, ipDist, ipNBars, ipNPips, ipTimeFrame, ipStartLot, ipFixLot, ipNextLotFactor, ipNextLineFactor,
+  //                     ipStartSum, ipMondayTime, ipFridayTime, ipDecStep, exipIncStep, ipStopFactor};
+
+
+//    enum FXStateParam {spStep = 401, spPrevStep, spMaxStep, spSum, spNumber, spWinNumber, spCWinNumber, spFullWinNumber, spWinPips,
+//                       spLossNumber, spFullLossNumber, spLossPips, spLotSize, spStopLossCount, spTakeProfitCount, spMinSum, spMaxSum, spLineNumber};
+
+
+    switch (param)
+    {
+        //input
+        case ipStartSum:        return QString("Start sum");
+        case ipStopPips:        return QString("Stop pips");
+        case ipProfitPips:      return QString("Profit pips");
+        case ipDist:            return QString("Dist steps");
+        case ipNBars:           return QString("N bars");
+        case ipNPips:           return QString("N pips");
+        case ipStartLot:        return QString("Start lot");
+        case ipFixLot:          return QString("Fix lot");
+        case ipNextLotFactor:   return QString("Lot factor");
+        case ipNextLineFactor:  return QString("Line factor");
+        case ipStopFactor:      return QString("Stop factor");
+        case ipProfitFactor:    return QString("Profit factor");
+        case ipSpreadPips:      return QString("Spread pips");
+
+
+        //out
+        case spSum:    return QString("Sum");
+        case spMinSum:    return QString("Min sum");
+        case spMaxSum:    return QString("Max sum");
+        case spStep:    return QString("Step");
+        case spMaxStep:    return QString("Max step");
+        case spNumber:    return QString("Number");
+        case spWinNumber:    return QString("Win number");
+        case spCWinNumber:    return QString("CWin number");
+        case spLossPips:    return QString("Loss pips");
+        case spWinPips:    return QString("Win pips");
+        case spLotSize:    return QString("Lot size");
+
+
+        default: break;
+    }
+    return "?";
+}
+QString FXEnumStaticObj::testShortName(int t)
+{
+    switch (t)
+    {
+        case ttSpring:              return QString("Spring");
+        case ttChannel:             return QString("Standard channel");
+        case ttExtremum:            return QString("Find extremums");
+        case ttPeriodShadows:       return QString("Take shadows");
+        default: break;
+    }
+    return "?";
+}
+QString FXEnumStaticObj::testDesc(int t)
+{
+    switch (t)
+    {
+        case ttSpring:              return QString("каждый следующий шаг делается на расстоянии n_pips");
+        case ttChannel:             return QString("to do");
+        case ttExtremum:            return QString("to do");
+        case ttPeriodShadows:       return QString("to do");
+        default: break;
+    }
+    return "?";
+}
 QString FXEnumStaticObj::strTimeFrame(int tf)
 {
     switch (tf)

@@ -44,6 +44,11 @@ int FXCentralWidget::currentPageType() const
     if (list.isEmpty()) return -1;
     return (list.last()->data(Qt::UserRole).toInt() + fxptChart);
 }
+void FXCentralWidget::startTesting()
+{
+    emit signalMsg(" -------------- Start testing ---------------");
+
+}
 void FXCentralWidget::checkQualData()
 {
     QList<FXCoupleDataParams> list;
@@ -72,7 +77,6 @@ void FXCentralWidget::checkQualData()
 }
 void FXCentralWidget::loaderDataUpdate(const FXDataLoader *loader)
 {
-
     QList<FXCoupleDataParams> list;
     if (loader->dataEmpty())
     {
@@ -91,6 +95,9 @@ void FXCentralWidget::loaderDataUpdate(const FXDataLoader *loader)
         }
     }
     m_loaderWidget->reloadData(list);
+
+    FXTestPage *t_page = qobject_cast<FXTestPage*>(m_pages.value(fxptTester));
+    if (t_page) t_page->updateLoadedData(loader);
 }
 void FXCentralWidget::initWidgets()
 {
@@ -142,27 +149,6 @@ void FXCentralWidget::createPages()
     //create quality page
     FXQualDataPage *qd_page = new FXQualDataPage(this);
     m_pages.insert(fxptQualData, qd_page);
-
-
-
-    //fill stack
-    /*
-    int i = 0;
-    QMap<int, LSimpleWidget*>::const_iterator it = m_pages.constBegin();
-    while (it != m_pages.constEnd())
-    {
-        m_stackedWidget->insertWidget(i, it.value());
-        QListWidgetItem *p_item = new QListWidgetItem(QIcon(it.value()->iconPath()), it.value()->caption());
-        p_item->setData(Qt::UserRole, it.key());
-        m_pagesListWidget->addItem(p_item);
-
-        connect(it.value(), SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
-        connect(it.value(), SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
-
-        i++;
-        it++;
-    }
-    */
 
     int i = 0;
     foreach (LSimpleWidget *page, m_pages)

@@ -20,8 +20,8 @@ enum FXCoupleKind {ckCurrency = 391, ckStock, ckCrypto, ckIndex};
 
 
 // множество входных параметров для тестирования стратегии
-enum FXInputParam {ipStop = 301, ipProfit, ipDist, ipNBars, ipNPips, ipTimeFrame, ipStartLot, ipFixLot, ipNextLotFactor, ipNextLineFactor,
-                   ipStartSum, ipMondayTime, ipFridayTime, ipDecStep, exipIncStep, ipStopFactor};
+enum FXInputParam {ipStopPips = 301, ipProfitPips, ipDist, ipNBars, ipNPips, ipTimeFrame, ipStartLot, ipFixLot, ipNextLotFactor, ipNextLineFactor,
+                   ipStartSum, ipMondayTime, ipFridayTime, ipDecStep, exipIncStep, ipStopFactor, ipProfitFactor, ipSpreadPips};
 
 
 // множество параметров текущего состояния тестирования (они же выходные)
@@ -39,13 +39,17 @@ class FXEnumStaticObj
 {
 public:
     static QList<int> timeFrames(); //список всех валидных значений периодов свечей
-    static bool invalidTimeframe(int); //вернет true если такой timeframe не найден в множестве FXTimeFrame
+    static QList<int> testTypes(); //список всех видов тестов
+    static QStringList couplesAll(); //список типов всех возможных инструментов
 
-    static QStringList couplesAll(); //список имен всех возможных инструментов
+    static bool invalidTimeframe(int); //вернет true если такой timeframe не найден в множестве FXTimeFrame
+    static QString testShortName(int); //название теста (для интерфейса)
+    static QString testDesc(int); //описание стратегии теста (для интерфейса)
     static QStringList couplesByKind(int); //список имен инструментов конкретного типа
     static int coupleKindByName(const QString&); //вернет тип инструмента из множества FXCoupleKind или -1, (регистр важен)
     static bool invalidCouple(const QString&); //вернет true если такое имя инструмента не надено, (регистр важен)
     static QString strTimeFrame(int); //строковое название заданного таймфрейма
+    static QString paramShortName(int); //название входного/выходного параметра (для интерфейса)
 
 
     ///////////////////////////ГЛОБАЛЬНЫЕ НАСТРОЙКИ///////////////////////////////////

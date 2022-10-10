@@ -80,6 +80,11 @@ void MainForm::actStart()
             m_centralWidget->checkQualData();
             break;
         }
+        case FXCentralWidget::fxptTester:
+        {
+            m_centralWidget->startTesting();
+            break;
+        }
         default:
         {
             qWarning()<<QString("MainForm::actStart() - WARNING: invalid page type %1").arg(m_centralWidget->currentPageType());

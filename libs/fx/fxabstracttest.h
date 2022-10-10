@@ -30,9 +30,15 @@ public:
 
     inline bool hasErr() const {return (!m_err.isEmpty());} //наличие ошибки
     inline void setTimeInterval(const QDate &d1, const QDate &d2) {m_startTime = d1; m_finishTime = d2;} //установить временной интервал тестирования
-    inline void addInputParam(int key, double v) {m_inputParams.insert(key, v);} //задать значение одного входного параметра
+    inline void setInputParam(int key, double v) {m_inputParams.insert(key, v);} //задать значение одного входного параметра
 
     static QString testDateMask() {return QString("dd.MM.yyyy");}
+
+    //pure virtual funcs
+    virtual QList<int> inputParamsTypes() const = 0; //список входных параметров
+    virtual QList<int> outputParamsTypes() const = 0; //список выходных параметров
+    virtual int type() const = 0; //тип теста, элемент множества FXTestType
+
 
 protected:
     const FXBarContainer    *m_data; //данные для тестирования
