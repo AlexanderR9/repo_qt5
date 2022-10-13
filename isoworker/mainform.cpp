@@ -603,7 +603,6 @@ void MainForm::updateActionsEnable(bool stoped)
     getAction(LMainWidget::atISO)->setEnabled(stoped);
     getAction(LMainWidget::atRefresh)->setEnabled(stoped);
     getAction(LMainWidget::atISOCD)->setEnabled(stoped);
-
     getAction(LMainWidget::atBurn)->setEnabled(stoped);
     getAction(LMainWidget::atEject)->setEnabled(stoped);
     getAction(LMainWidget::atRemove)->setEnabled(stoped);
@@ -611,6 +610,8 @@ void MainForm::updateActionsEnable(bool stoped)
     getAction(LMainWidget::atCalcCRC)->setEnabled(stoped);
     getAction(LMainWidget::atSettings)->setEnabled(stoped);
     getAction(LMainWidget::atExit)->setEnabled(stoped);
+    getAction(LMainWidget::atFoldersStruct)->setEnabled(stoped);
+
 }
 void MainForm::readParamsPage()
 {

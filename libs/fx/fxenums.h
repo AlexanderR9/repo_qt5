@@ -21,7 +21,7 @@ enum FXCoupleKind {ckCurrency = 391, ckStock, ckCrypto, ckIndex};
 
 // множество входных параметров для тестирования стратегии
 enum FXInputParam {ipStopPips = 301, ipProfitPips, ipDist, ipNBars, ipNPips, ipTimeFrame, ipStartLot, ipFixLot, ipNextLotFactor, ipNextLineFactor,
-                   ipStartSum, ipMondayTime, ipFridayTime, ipDecStep, exipIncStep, ipStopFactor, ipProfitFactor, ipSpreadPips};
+                   ipStartSum, ipMondayTime, ipFridayTime, ipDecStep, exipIncStep, ipStopFactor, ipProfitFactor, ipSpreadPips, ipTralingPips};
 
 
 // множество параметров текущего состояния тестирования (они же выходные)

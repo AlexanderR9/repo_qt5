@@ -12,6 +12,7 @@ QT *= network widgets xml testlib
 INCLUDEPATH += . \
             $$PWD \
             $$PWD/ui \
+            $$PWD/tests \
             $$PWD/../libs/base \
             $$PWD/../libs/base/ui_h \
             $$PWD/../libs/fx
@@ -24,6 +25,9 @@ DEPENDPATH += $$PWD/../libs/base/build \
 #include libs
 unix:!macx: LIBS += -L$$PWD/../libs/base/build/ -llbase
 unix:!macx: LIBS += -L$$PWD/../libs/fx/build/ -llfx
+
+#include pri
+include($$PWD/tests/tests.pri)
 
 
 # Input
