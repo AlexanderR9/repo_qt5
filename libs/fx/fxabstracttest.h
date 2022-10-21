@@ -36,7 +36,7 @@ public:
 
     //pure virtual funcs
     virtual QList<int> inputParamsTypes() const = 0; //список входных параметров
-    virtual QList<int> outputParamsTypes() const = 0; //список выходных параметров
+    virtual QList<int> outputParamsTypes() const = 0; //список выходных параметров (в результирующей таблице интерфейса)
     virtual int type() const = 0; //тип теста, элемент множества FXTestType
 
 

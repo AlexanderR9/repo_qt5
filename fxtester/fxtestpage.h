@@ -13,6 +13,7 @@ class FXTesterObj;
 // FXInputParamsWidget
 class FXInputParamsWidget : public LSimpleWidget
 {
+    Q_OBJECT
 public:
     FXInputParamsWidget(QWidget *parent = 0);
     virtual ~FXInputParamsWidget() {}
@@ -32,6 +33,9 @@ protected:
 
     void initWidgets();
     void fillTestsBox();
+
+signals:
+    void signalTestChanged();
 
 };
 
@@ -65,6 +69,9 @@ protected:
     void initResultsTable();
     void addDataContainer(const FXBarContainer*);
     void reinitTests(const FXDataLoader*);
+
+protected slots:
+    void slotTestChanged();
 
 };
 

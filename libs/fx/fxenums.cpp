@@ -15,14 +15,6 @@ QList<int> FXEnumStaticObj::testTypes()
 }
 QString FXEnumStaticObj::paramShortName(int param)
 {
-//    enum FXInputParam {ipStopPips = 301, ipProfitPips, ipDist, ipNBars, ipNPips, ipTimeFrame, ipStartLot, ipFixLot, ipNextLotFactor, ipNextLineFactor,
-  //                     ipStartSum, ipMondayTime, ipFridayTime, ipDecStep, exipIncStep, ipStopFactor};
-
-
-//    enum FXStateParam {spStep = 401, spPrevStep, spMaxStep, spSum, spNumber, spWinNumber, spCWinNumber, spFullWinNumber, spWinPips,
-//                       spLossNumber, spFullLossNumber, spLossPips, spLotSize, spStopLossCount, spTakeProfitCount, spMinSum, spMaxSum, spLineNumber};
-
-
     switch (param)
     {
         //input
@@ -57,7 +49,7 @@ QString FXEnumStaticObj::paramShortName(int param)
 
         default: break;
     }
-    return "?";
+    return "??";
 }
 QString FXEnumStaticObj::testShortName(int t)
 {

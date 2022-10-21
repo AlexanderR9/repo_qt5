@@ -32,6 +32,8 @@ FXTestPage::FXTestPage(QWidget *parent)
     initResultsTable();
 
     m_tester = new FXTesterObj(this);
+
+    connect(m_inputWidget, SIGNAL(signalTestChanged()), this, SLOT(slotTestChanged()));
 }
 void FXTestPage::initWidgets()
 {
@@ -122,6 +124,15 @@ void FXTestPage::save(QSettings &settings)
     LSimpleWidget::save(settings);
     m_inputWidget->save(settings);
 }
+void FXTestPage::slotTestChanged()
+{
+    qDebug("FXTestPage::slotTestChanged()");
+    int tt = m_inputWidget->currentTest();
+    emit signalMsg(QString("Test changed: %1").arg(tt));
+
+
+
+}
 
 
 //FXInputParamsWidget
@@ -138,6 +149,8 @@ FXInputParamsWidget::FXInputParamsWidget(QWidget *parent)
     setSpacing(0);
 
     fillTestsBox();
+    connect(m_testTypeBox, SIGNAL(currentIndexChanged(int)), this, SIGNAL(signalTestChanged()));
+
 }
 void FXInputParamsWidget::initWidgets()
 {

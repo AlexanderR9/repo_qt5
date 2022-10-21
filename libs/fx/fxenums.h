@@ -40,7 +40,7 @@ class FXEnumStaticObj
 public:
     static QList<int> timeFrames(); //список всех валидных значений периодов свечей
     static QList<int> testTypes(); //список всех видов тестов
-    static QStringList couplesAll(); //список типов всех возможных инструментов
+    static QStringList couplesAll(); //список всех возможных инструментов
 
     static bool invalidTimeframe(int); //вернет true если такой timeframe не найден в множестве FXTimeFrame
     static QString testShortName(int); //название теста (для интерфейса)
