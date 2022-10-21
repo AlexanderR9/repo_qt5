@@ -52,6 +52,7 @@ struct w32_system_time
 };
 
 
+struct timespec;
 //static funcs time
 class LTime
 {
@@ -76,6 +77,14 @@ public:
 
     //вернет указанное время и дату в виде строки в заданном формате
     static QString strDateTime(const QDateTime&, QString mask = "dd.MM.yyyy hh:mm:ss");
+
+    //функция запишет в переменную tm(сишная структура) текущее значение времени.
+    //параметр ts указывает какой часовой пояс нужен (utc либо местное время).
+    //параметр def_nsec: если >= 0, то в поле tv_nsec запишется принудительно это значение
+    static void getTimeSpecCPP(timespec &tm, Qt::TimeSpec ts = Qt::UTC, qint64 def_nsec = -1);
+
+    //врернет смещение локального времени относительно UTC (в часах)
+    static int utcOffset();
 
 };
 

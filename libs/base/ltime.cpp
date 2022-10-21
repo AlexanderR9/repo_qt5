@@ -1,7 +1,10 @@
 #include "ltime.h"
+#include <time.h>
 
 #include <QDataStream>
 #include <QDebug>
+#include <QTimeZone>
+
 
 
 //LTime
@@ -29,6 +32,19 @@ QString LTime::strDateTime(const QDateTime &dt, QString mask)
 {
     return dt.toString(mask);
 }
+void LTime::getTimeSpecCPP(timespec &tm, Qt::TimeSpec ts, qint64 def_nsec)
+{
+    timespec_get(&tm, TIME_UTC);
+    if (ts == Qt::LocalTime) tm.tv_sec += (3600 * utcOffset());
+    if (def_nsec >= 0) tm.tv_nsec = def_nsec;
+}
+int LTime::utcOffset()
+{
+    QDateTime td_loc(QDateTime::currentDateTime());
+    QTimeZone z(td_loc.timeZone());
+    return (z.offsetFromUtc(td_loc)/3600);
+}
+
 
 
 //w32_time
