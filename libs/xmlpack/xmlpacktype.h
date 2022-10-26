@@ -2,10 +2,9 @@
 #define LXMLPACK_TYPE_H
 
 
-#include "lsimpleobj.h"
+//#include "lsimpleobj.h"
 
-class QProcess;
-class QTimer;
+#include <QString>
 
 
 enum XMLPackElementType {petInt8 = 601, petInt16, petInt32, petInt64, petUint8, petUint16, petUint32, petUint64,
@@ -21,6 +20,7 @@ public:
     static bool isDoubleType(int);
     static bool isIntegerType(int);
     static bool isUnsignedType(int);
+    static quint8 sizeOf(int); //вернет размер типа в байтах либо 0
 
 
     static QString rootNodeName() {return QString("packet");}

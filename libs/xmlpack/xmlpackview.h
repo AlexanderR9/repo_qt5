@@ -14,7 +14,6 @@ class LXMLPackElement;
 // LXMLPackViewItem
 class LXMLPackViewItem : public QTreeWidgetItem
 {
-    Q_OBJECT
 public:
     LXMLPackViewItem(const LXMLPackElement*, QTreeWidgetItem *parent = NULL);
     virtual ~LXMLPackViewItem() {}
@@ -22,6 +21,9 @@ public:
 protected:
     const LXMLPackElement     *m_node;
 
+    void loadNodeChilds();
+    void updateColumnsText();
+    void updateColumnsColor();
 
 };
 
@@ -38,6 +40,7 @@ public:
 
 
     void setPacket(LXMLPackObj*);
+    void resizeColumns();
 
     inline const LXMLPackObj* getPacket() const {return m_packet;}
     inline void setReadOnly(bool b) {m_readOnly = b;}

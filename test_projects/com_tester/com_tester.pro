@@ -15,13 +15,13 @@ QT *= network widgets xml serialport
 
 INCLUDEPATH += . \
             $$PWD \
-            $$PWD/../lib \
-            $$PWD/../lib/ui_h
+            $$PWD/../../lib \
+            $$PWD/../../lib/ui_h
             
             
                                     
-DEPENDPATH += $$PWD/../lib/build
-unix:!macx: LIBS += -L$$PWD/../lib/build -llib
+DEPENDPATH += $$PWD/../../lib/build
+unix:!macx: LIBS += -L$$PWD/../../lib/build -llib
 
 # Input
 HEADERS += mainform.h \

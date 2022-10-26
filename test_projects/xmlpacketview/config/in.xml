@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<packet caption="Input packet (example)">
+
+ <device caption="Device 1">
+    <signal caption="signal tem" type="int16"/>    
+    <signal caption="signal volt" type="uint16"/>    
+    <signal caption="signal boil" type="uint64" />    
+    <signal caption="sig_f" type="double" arr_size="6"/>    
+
+    <sec caption="section next"  arr_size="2">
+	<signal caption="signal volt" type="uint16"/>    
+	<signal caption="signal boil" type="uint64" />    
+    </sec>
+
+
+ </device>
+
+ <device caption="Device 2">
+	<signal caption="signal volt" type="float"/>    
+	<signal caption="signal boil" type="float" />    
+    
+ </device>
+
+
+
+
+
+</packet>

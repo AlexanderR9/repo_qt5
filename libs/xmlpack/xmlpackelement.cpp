@@ -1,32 +1,23 @@
-#include "xmlpack.h"
 #include "xmlpackelement.h"
 #include "xmlpacktype.h"
-#include "lfile.h"
-//#include "lstatic.h"
+//#include "lfile.h"
+#include "lstatic.h"
 
 
 #include <QDebug>
-#include <QDomDocument>
+//#include <QDomDocument>
 #include <QDomElement>
-#include <QDataStream>
-#include <QByteArray>
 
-
+/*
 //LXMLPackObj
 LXMLPackObj::LXMLPackObj(const QString &fname, QObject *parent)
     :LSimpleObject(parent),
     m_rootNode(NULL),
-    m_fileName(fname.trimmed()),
-    m_byteOrder(QDataStream::LittleEndian)
+    m_fileName(fname.trimmed())
 {
 
 
 
-}
-void LXMLPackObj::setByteOrder(int bo)
-{
-    if (bo == QDataStream::LittleEndian) m_byteOrder = bo;
-    else if (bo == QDataStream::BigEndian) m_byteOrder = bo;
 }
 void LXMLPackObj::tryLoadPacket(bool &ok)
 {
@@ -104,37 +95,10 @@ void LXMLPackObj::retransformArrNodes()
     if (m_rootNode)
         m_rootNode->retransformArrChilds();
 }
-quint32 LXMLPackObj::size() const
-{
-    if (invalid()) return 0;
-    return m_rootNode->size();
-}
-void LXMLPackObj::destroyObj()
-{
-    if (m_rootNode)
-    {
-        delete m_rootNode;
-        m_rootNode = NULL;
-    }
-}
-void LXMLPackObj::toByteArray(QByteArray &ba, bool singleFloatPrecision)
-{
-
-}
-void LXMLPackObj::fromByteArray(const QByteArray &ba, bool &ok, bool singleFloatPrecision)
-{
 
 
-}
+*/
 
-
-
-
-
-
-
-
-/*
 //LXMLPackElement
 LXMLPackElement::LXMLPackElement()
     :m_parentNode(NULL)
@@ -368,6 +332,6 @@ void LXMLPackElement::retransformArrChild(int i)
     }
 }
 
-*/
+
 
 

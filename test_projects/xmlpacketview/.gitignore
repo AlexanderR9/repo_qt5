@@ -1,0 +1,11 @@
+xmlpacketview.pro.user
+xmlpacketview.debug
+.qmake.stash
+moc
+obj
+Makefile
+xmlpacketview
+full_clear
+data
+
+

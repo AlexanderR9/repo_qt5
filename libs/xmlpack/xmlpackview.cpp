@@ -1,9 +1,12 @@
 #include "xmlpackview.h"
 #include "xmlpack.h"
+#include "xmlpackelement.h"
+#include "xmlpacktype.h"
 
 #include <QDebug>
 #include <QTreeWidget>
 #include <QVBoxLayout>
+#include <QHeaderView>
 
 
 // LXMLPackView
@@ -26,6 +29,16 @@ void LXMLPackView::initWidget()
 
     m_view = new QTreeWidget(this);
     v_lay->addWidget(m_view);
+
+    m_view->setColumnCount(4);
+    m_view->header()->setDefaultAlignment(Qt::AlignCenter);
+    QStringList headers;
+    headers << "Cation" << "Type" << "Size, b" << "Offset" << "Childs";
+    m_view->setHeaderLabels(headers);
+
+    m_view->setSelectionBehavior(QAbstractItemView::SelectItems);
+    m_view->setSelectionMode(QAbstractItemView::NoSelection);
+
 }
 void LXMLPackView::setPacket(LXMLPackObj *p)
 {
@@ -44,6 +57,16 @@ void LXMLPackView::reloadView()
     if (!m_packet) return;
     if (m_packet->invalid()) return;
 
+    m_rootItem = new LXMLPackViewItem(m_packet->rootElement());
+    m_view->addTopLevelItem(m_rootItem);
+    m_view->expandAll();
+    resizeColumns();
+}
+void LXMLPackView::resizeColumns()
+{
+    int n = m_view->columnCount();
+    for (int i=0; i<n; i++)
+        m_view->resizeColumnToContents(i);
 }
 void LXMLPackView::resetView()
 {
@@ -53,9 +76,6 @@ void LXMLPackView::resetView()
         delete m_rootItem;
         m_rootItem = NULL;
     }
-
-    m_rootItem = new LXMLPackViewItem(m_packet->rootElement());
-
 }
 
 
@@ -64,8 +84,51 @@ LXMLPackViewItem::LXMLPackViewItem(const LXMLPackElement *node, QTreeWidgetItem 
     :QTreeWidgetItem(parent),
       m_node(node)
 {
+    updateColumnsText();
+    updateColumnsColor();
+
+    if (m_node->hasChilds())
+        loadNodeChilds();
+}
+void LXMLPackViewItem::loadNodeChilds()
+{
+    int n = m_node->childsCount();
+    for (int i=0; i<n; i++)
+    {
+        const LXMLPackElement *child_node = m_node->childAt(i);
+        if (!child_node) continue;
+        if (child_node->invalid()) continue;
+
+        LXMLPackViewItem *child_item = new LXMLPackViewItem(child_node, this);
+        Q_UNUSED(child_item);
+    }
+}
+void LXMLPackViewItem::updateColumnsText()
+{
+    setText(0, m_node->caption());
+    setText(1, XMLPackStatic::xmlAttrName(m_node->dataType()));
+    setText(2, QString::number(m_node->size()));
+    setText(3, QString::number(m_node->offset()));
+    setText(4, QString::number(m_node->childsCount()));
+}
+void LXMLPackViewItem::updateColumnsColor()
+{
+    if (m_node->isRoot())
+    {
+        for (int i=0; i<columnCount(); i++)
+        {
+            setTextColor(i, Qt::blue);
+        }
+        setText(1, "root");
+    }
+    if (m_node->isArr())
+    {
+        for (int i=0; i<columnCount(); i++) setTextColor(i, QColor(220, 120, 0));
+        setText(1, QString("arr[%1]").arg(m_node->arrSize()));
+    }
 
 
 }
+
 
 

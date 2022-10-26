@@ -50,6 +50,28 @@ bool XMLPackStatic::isIntegerType(int t)
     }
     return false;
 }
+quint8 XMLPackStatic::sizeOf(int t)
+{
+    switch (t)
+    {
+        case petInt8:
+        case petUint8: return 1;
+
+        case petInt16:
+        case petUint16: return 2;
+
+        case petFloat:
+        case petInt32:
+        case petUint32: return 4;
+
+        case petDouble:
+        case petInt64:
+        case petUint64: return 8;
+
+        default: break;
+    }
+    return 0;
+}
 bool XMLPackStatic::isUnsignedType(int t)
 {
     switch (t)
