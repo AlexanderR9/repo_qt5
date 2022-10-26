@@ -55,6 +55,10 @@ void ViewWidget::initWidget()
     h_splitter->addWidget(m_inView);
     h_splitter->addWidget(m_outView);
     v_splitter->addWidget(m_protocol);
+
+    m_inView->setReadOnly(false);
+    m_outView->setReadOnly(true);
+
 }
 void ViewWidget::load(QSettings &settings)
 {
@@ -71,6 +75,40 @@ void ViewWidget::slotError(const QString &text)
 void ViewWidget::slotMessage(const QString &text)
 {
     m_protocol->addText(text, LProtocolBox::ttText);
+}
+void ViewWidget::toLeft(int bytes_order, bool single_floating)
+{
+    const LXMLPackObj *pack = m_outView->getPacket();
+    if (!pack)
+    {
+        m_protocol->addText("Packet-2 is NULL", LProtocolBox::ttErr);
+        return;
+    }
+
+    QByteArray ba;
+    m_outView->fromPacket(ba, single_floating);
+    m_protocol->addText(QString("Out packet size %1 bytes").arg(ba.size()), LProtocolBox::ttData);
+
+    //------------------------------------------
+
+    bool ok;
+    m_inView->setPacketByteOrder(bytes_order);
+    m_inView->setPacketData(ba, ok);
+    m_inView->updateValues();
+    if (!ok) slotError(QString("result fault"));
+    else m_protocol->addText("Ok!", LProtocolBox::ttOk);
+
+}
+void ViewWidget::toRight(int bytes_order, bool single_floating)
+{
+    m_outView->setPacketByteOrder(bytes_order);
+
+
+}
+void ViewWidget::setDoublePrecision(quint8 p)
+{
+    m_inView->setDoublePrecision(p);
+    m_outView->setDoublePrecision(p);
 }
 
 

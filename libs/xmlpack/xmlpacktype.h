@@ -2,16 +2,15 @@
 #define LXMLPACK_TYPE_H
 
 
-//#include "lsimpleobj.h"
-
 #include <QString>
 
 
+//типы данных элементов xml пакета
 enum XMLPackElementType {petInt8 = 601, petInt16, petInt32, petInt64, petUint8, petUint16, petUint32, petUint64,
                             petFloat, petDouble, petSection, petInvalid = -1};
 
 
-
+//XMLPackStatic (набор статических функций)
 class XMLPackStatic
 {
 public:

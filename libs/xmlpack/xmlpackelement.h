@@ -2,12 +2,11 @@
 #define LXMLPACK_ELEMENT_H
 
 
-//#include "lsimpleobj.h"
 #include <QList>
 
 
-//class QDomDocument;
 class QDomNode;
+class QDataStream;
 
 
 //структура описания 1-го значения элемента пакета.
@@ -24,6 +23,9 @@ struct LXMLPackValue
 
     void reset() {i_value = 0; d_value = 0; rand_deviation = 0; isDouble = false;}
     void copy(const LXMLPackValue &pv) {i_value = pv.i_value; d_value = pv.d_value; rand_deviation = pv.rand_deviation; isDouble = pv.isDouble;}
+    QString strValue(quint8 p) const {return (isDouble ? QString::number(d_value, 'f', p) : QString::number(i_value));}
+    QString strDeviation() const {return QString::number(rand_deviation, 'f', 2);}
+
 };
 
 
@@ -44,6 +46,12 @@ public:
     LXMLPackElement* clone(LXMLPackElement *parent = NULL) const; //клонирование елемента
     void appendChild(LXMLPackElement*);
     void retransformArrChilds(); //размножить все ноды-массивы найденые среди m_childs, выполняется после загрузки пакета
+    void writeToStream(QDataStream&); //записать содержимое елемента в поток данных
+    void readFromStream(QDataStream&); //читать содержимое елемента из потока данных
+    QString strValue(quint8) const; //получить текущее значение элемента в строковом виде
+    QString strValueDeviation() const; //получить возможное отклонение значения элемента в строковом виде
+    void setNewValue(const QString&, bool &ok); // попытка установить новое значение
+    void setNewValueDeviation(const QString&, bool &ok); // попытка установить новое отклонение значения
 
 
     bool isNode() const; //элемент является секцией
@@ -64,6 +72,7 @@ public:
     inline int childsCount() const {return m_childs.count();}
     inline bool hasChilds() const {return !m_childs.isEmpty();}
     inline const LXMLPackElement* childAt(int i) const {return ((i<0 || i>=childsCount()) ? NULL : m_childs.at(i));}
+    inline LXMLPackElement* childAtVar(int i) const {return ((i<0 || i>=childsCount()) ? NULL : m_childs.at(i));}
     inline void setValueInfo(const LXMLPackValue &v) {m_value.copy(v);}
 
 
@@ -87,39 +96,14 @@ protected:
 private:
     quint32 sectionSize(const LXMLPackElement*) const; //возвращает размер в байтах секции целиком
     void reset(); //сброс переменных
+    void writeValueToStream(QDataStream&); //записать m_value в поток данных в зависимости от типа данных элемента
+    void readValueFromStream(QDataStream&); //считать m_value из потока данных в зависимости от типа данных элемента
+    void setIntValue(qint64);
 
 };
 
-/*
-//класс для загрузки и хранения структуры одного xml-пакета
-class LXMLPackObj : public LSimpleObject
-{
-    Q_OBJECT
-public:
-    LXMLPackObj(const QString&, QObject *parent = NULL); //params: xmlfilename of packet, obj_parent
-    virtual ~LXMLPackObj() {delete m_rootNode;}
-
-    void tryLoadPacket(bool&); //загрузить пакет из файла xml (m_fileName)
 
 
-    inline bool invalid() const {return (m_rootNode == NULL);}
-    inline quint32 size() const {return (invalid() ? 0 : m_rootNode->size());} //возвращает размер пакета в байтах
-    inline const LXMLPackElement* rootElement() const {return m_rootNode;}
-
-protected:
-    LXMLPackElement *m_rootNode;
-    QString m_fileName; //xml файл с описанием пакета
-
-    void loadDom(const QDomDocument&, bool&); //создать структуру пакета из считанного QDomDocument
-    void recalcOffset(); //пересчитать параметр m_offset для всех нод, выполняется после загрузки пакета
-    void retransformArrNodes(); //размножить все ноды-массивы, выполняется после загрузки пакета
-
-protected:
-
-
-};
-
-*/
 
 #endif // LXMLPACK_ELEMENT_H
 

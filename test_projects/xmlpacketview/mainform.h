@@ -32,17 +32,22 @@ protected:
 
     QString packDir() const;
     void reloadPackets();
+    void toLeft(); //переслать пакет из правой вьюхи в левую
+    void toRight(); //переслать пакет из левой вьюхи в правую
 
 
 protected slots:
     void slotAction(int); //virtual slot from parent
-    //void slotError(const QString&);
-    //void slotMessage(const QString&);
     void slotAppSettingsChanged(QStringList);
 
 signals:
     void signalError(const QString&);
     void signalMsg(const QString&);
+
+private:
+    bool singleFloating() const;
+    int byteOrder() const;
+    quint8 doublePrecision() const;
 
 
 };

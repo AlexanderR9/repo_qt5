@@ -2,8 +2,6 @@
 #include "xmlpackelement.h"
 #include "xmlpacktype.h"
 #include "lfile.h"
-//#include "lstatic.h"
-
 
 #include <QDebug>
 #include <QDomDocument>
@@ -118,256 +116,44 @@ void LXMLPackObj::destroyObj()
     }
 }
 void LXMLPackObj::toByteArray(QByteArray &ba, bool singleFloatPrecision)
-{
+{    
+    ba.clear();
+    if (invalid())
+    {
+        emit signalError("Packet object is invalid");
+        return;
+    }
 
+    QDataStream stream(&ba, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::ByteOrder(m_byteOrder));
+    if (singleFloatPrecision) stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    m_rootNode->writeToStream(stream);
 }
 void LXMLPackObj::fromByteArray(const QByteArray &ba, bool &ok, bool singleFloatPrecision)
 {
-
-
-}
-
-
-
-
-
-
-
-
-/*
-//LXMLPackElement
-LXMLPackElement::LXMLPackElement()
-    :m_parentNode(NULL)
-{
-    reset();
-}
-LXMLPackElement::LXMLPackElement(LXMLPackElement *parent_node)
-    :m_parentNode(parent_node)
-{
-    reset();
-}
-void LXMLPackElement::reset()
-{
-    m_dataType = petSection;
-    m_arrSize = 1;
-    m_offset = 0;
-    m_value.reset();
-}
-bool LXMLPackElement::isNode() const
-{
-    return (m_dataType == petSection);
-}
-bool LXMLPackElement::isRoot() const
-{
-    return (m_parentNode == NULL);
-}
-bool LXMLPackElement::isData() const
-{
-    if (isNode() || invalid() || isOff()) return false;
-    return true;
-}
-void LXMLPackElement::destroyChilds()
-{
-    qDeleteAll(m_childs);
-    m_childs.clear();
-}
-void LXMLPackElement::loadNode(const QDomNode &node, QString &err)
-{
-    //qDebug()<<QString("LXMLPackElement::loadNode  %1").arg(node.nodeName());
-    QString attr;
-    err.clear();
-
-    //read caption
-    setCation(LStatic::getStringAttrValue(XMLPackStatic::cationAttrName(), node));
-
-    //read datatype
-    if (node.attributes().contains(XMLPackStatic::dataTypeAttrName()))
-    {
-        attr = LStatic::getStringAttrValue(XMLPackStatic::dataTypeAttrName(), node);
-        m_dataType = XMLPackStatic::typeByXmlAttr(attr);
-    }
-    else m_dataType = petSection;
-
+    ok = false;
     if (invalid())
     {
-        err = QString("loading node [%1] - invalid datatype %2").arg(node.nodeName()).arg(attr);
+        emit signalError("Packet object is invalid");
         return;
     }
-    //if (isRoot()) return;
-
-    //calcOffset();
-
-    //read arr_size
-    m_arrSize = 1;
-    if (node.attributes().contains(XMLPackStatic::arrSizeAttrName()))
+    if (ba.isEmpty())
     {
-        int a = LStatic::getIntAttrValue(XMLPackStatic::arrSizeAttrName(), node);
-        if (a < 0)
-        {
-            err = QString("loading node [%1] - invalid arr_size %2").arg(node.nodeName()).arg(attr);
-            return;
-        }
-        m_arrSize = quint16(a);
-        qDebug()<<QString("find arr[%1] for %2").arg(arrSize()).arg(caption());
+        emit signalError("ByteArray is empty");
+        return;
     }
-
-    //load value and load childs
-    loadValueAttrs(node);
-    loadChilds(node);
-
-    //qDebug()<<QString("node: %1,  childs %2").arg(caption()).arg(childsCount());
-}
-void LXMLPackElement::loadValueAttrs(const QDomNode &node)
-{
-    m_value.reset();
-    if (invalid() || isOff() || isNode()) return;
-
-    m_value.isDouble = XMLPackStatic::isDoubleType(m_dataType);
-
-    if (node.attributes().contains(XMLPackStatic::defValueAttrName()))
+    if (ba.size() != int(size()))
     {
-        if (m_value.isDouble)
-        {
-            m_value.d_value = LStatic::getDoubleAttrValue(XMLPackStatic::defValueAttrName(), node, -1);
-        }
-        else
-        {
-            m_value.i_value = LStatic::getIntAttrValue(XMLPackStatic::defValueAttrName(), node, -1);
-        }
-    }
-
-    if (node.attributes().contains(XMLPackStatic::errValueAttrName()))
-    {
-        m_value.rand_deviation = LStatic::getDoubleAttrValue(XMLPackStatic::errValueAttrName(), node, 0);
-    }
-}
-void LXMLPackElement::loadChilds(const QDomNode &node)
-{
-    if (invalid() || isOff() || !isNode()) return;
-
-    QString err;
-    QDomNode child = node.firstChild();
-    while (!child.isNull())
-    {
-        LXMLPackElement *el = new LXMLPackElement(this);
-
-        el->loadNode(child, err);
-        if (!err.isEmpty())
-        {
-            delete el;
-            el = NULL;
-            qWarning("");
-            qWarning()<<QString("LXMLPackElement: [%1], invalid loading child node [%2]").arg(caption()).arg(child.nodeName());
-            qWarning()<<QString("error: %1").arg(err);
-        }
-        else if (el->isOff())
-        {
-            delete el;
-            el = NULL;
-            qWarning("");
-            qWarning()<<QString("LXMLPackElement: [%1], child node [%2] is OFF").arg(caption()).arg(child.nodeName());
-        }
-        else
-        {
-            m_childs.append(el);
-        }
-
-        child = child.nextSibling();
-    }
-}
-bool LXMLPackElement::invalid() const
-{
-    if (m_dataType == petInvalid) return true;
-    if (isOff()) return true;
-    return false;
-}
-quint32 LXMLPackElement::size() const
-{
-    if (invalid()) return 0;
-    if (isData()) return XMLPackStatic::sizeOf(dataType());
-    return sectionSize(this);
-}
-quint32 LXMLPackElement::offset() const
-{
-    return m_offset;
-}
-quint32 LXMLPackElement::sectionSize(const LXMLPackElement*) const
-{
-    quint32 sec_size = 0;
-    int n = childsCount();
-    for (int i=0; i<n; i++)
-        sec_size += childAt(i)->size();
-    return sec_size;
-}
-void LXMLPackElement::calcOffset(LXMLPackElement*, quint32 &cur_offset)
-{
-    //qDebug()<<QString("LXMLPackElement::calcOffset  %1").arg(caption());
-    m_offset = cur_offset;
-    if (invalid()) return;
-    if (!hasChilds())
-    {
-        cur_offset += size();
+        emit signalError(QString("ByteArray size(%1) != packet size(%2)").arg(ba.size()).arg(size()));
         return;
     }
 
-    int n = childsCount();
-    for (int i=0; i<n; i++)
-    {
-        m_childs[i]->calcOffset(this, cur_offset);
-    }
-}
-LXMLPackElement* LXMLPackElement::clone(LXMLPackElement *parent) const
-{
-    LXMLPackElement *el = new LXMLPackElement(parent);
-    el->setCation(caption());
-    el->setDataType(dataType());
-
-    if (isData()) el->setValueInfo(m_value);
-    if (!hasChilds()) return el;
-
-    //clone childs
-    for (int i=0; i<childsCount(); i++)
-    {
-        LXMLPackElement *el_child = childAt(i)->clone(el);
-        if (el_child) el->appendChild(el_child);
-    }
-    return el;
-}
-void LXMLPackElement::appendChild(LXMLPackElement *child)
-{
-    if (child) m_childs.append(child);
-}
-void LXMLPackElement::retransformArrChilds()
-{
-    if (!hasChilds()) return;
-
-    for (int i=0; i<childsCount(); i++)
-    {
-        m_childs[i]->retransformArrChilds();
-        if (childAt(i)->isArr()) retransformArrChild(i);
-    }
-}
-void LXMLPackElement::retransformArrChild(int i)
-{
-    if (childAt(i)->invalid()) return;
-
-    LXMLPackElement *el = m_childs.takeAt(i);
-
-    LXMLPackElement *el_header = new LXMLPackElement(this);
-    el_header->setCation(el->caption());
-    el_header->setDataType(petSection);
-    el_header->setArrSize(el->arrSize());
-    m_childs.insert(i, el_header);
-
-
-    for (int i=0; i<el->arrSize(); i++)
-    {
-        LXMLPackElement *el_arr = el->clone(el_header);
-        el_arr->setCation(QString("%1 (%2)").arg(el->caption()).arg(i+1));
-        el_header->appendChild(el_arr);
-    }
+    QDataStream stream(ba);
+    stream.setByteOrder(QDataStream::ByteOrder(m_byteOrder));
+    if (singleFloatPrecision) stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    m_rootNode->readFromStream(stream);
+    ok =  true;
 }
 
-*/
 
 

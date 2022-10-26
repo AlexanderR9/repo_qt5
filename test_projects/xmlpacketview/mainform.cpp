@@ -27,6 +27,8 @@ void MainForm::initActions()
     addAction(LMainWidget::atStart);
     addAction(LMainWidget::atStop);
     addAction(LMainWidget::atLoadData);
+    addAction(LMainWidget::atLeft);
+    addAction(LMainWidget::atRight);
     addToolBarSeparator();
     addAction(LMainWidget::atSettings);
     addAction(LMainWidget::atExit);
@@ -35,7 +37,8 @@ void MainForm::slotAction(int type)
 {
     switch (type)
     {
-        //case LMainWidget::atStart: {actStart(); break;}
+        case LMainWidget::atLeft: {toLeft(); break;}
+        case LMainWidget::atRight: {toRight(); break;}
         case LMainWidget::atLoadData: {reloadPackets(); break;}
         case LMainWidget::atSettings: {actCommonSettings(); break;}
         default: break;
@@ -57,11 +60,23 @@ void MainForm::initCommonSettings()
     lCommonSettings.addParam(QString("Packets dir"), LSimpleDialog::sdtDirPath, key);
     lCommonSettings.setDefValue(key, QString(""));
 
-    key = QString("chart_width");
-    lCommonSettings.addParam(QString("Chart line width"), LSimpleDialog::sdtIntCombo, key);
+    key = QString("precision");
+    lCommonSettings.addParam(QString("Double precision"), LSimpleDialog::sdtIntCombo, key);
     combo_list.clear();
     combo_list << "1" << "2" << "3" << "4" << "5";
     lCommonSettings.setComboList(key, combo_list);
+
+    key = QString("byteorder");
+    lCommonSettings.addParam(QString("DataStream bytes order"), LSimpleDialog::sdtStringCombo, key);
+    combo_list.clear();
+    combo_list << "BigEndian" << "LitleEndian";
+    lCommonSettings.setComboList(key, combo_list);
+    lCommonSettings.setDefValue(key, QString("LitleEndian"));
+
+    key = QString("singlefloating");
+    lCommonSettings.addParam(QString("Single floating"), LSimpleDialog::sdtBool, key);
+    lCommonSettings.setDefValue(key, false);
+
 }
 QString MainForm::packDir() const
 {
@@ -97,9 +112,11 @@ void MainForm::reloadPackets()
         return;
     }
 
+    m_centralWidget->setDoublePrecision(doublePrecision());
+
     m_centralWidget->loadInPack(list.at(0));
     if (list.count() > 1)
-        m_centralWidget->loadInPack(list.at(1));
+        m_centralWidget->loadOutPack(list.at(1));
 
 }
 void MainForm::save()
@@ -125,5 +142,30 @@ void MainForm::slotAppSettingsChanged(QStringList keys)
   //      updateChartSettings();
 
 
+}
+void MainForm::toLeft()
+{
+    emit signalMsg("");
+    emit signalMsg(QString("Try send right packet to left vew ..........."));
+    m_centralWidget->toLeft(byteOrder(), singleFloating());
+}
+void MainForm::toRight()
+{
+    emit signalMsg("");
+    emit signalMsg(QString("Try send left packet to right vew ..........."));
+    m_centralWidget->toRight(byteOrder(), singleFloating());
+}
+bool MainForm::singleFloating() const
+{
+    return lCommonSettings.paramValue("singlefloating").toBool();
+}
+int MainForm::byteOrder() const
+{
+    if (lCommonSettings.paramValue("byteorder").toString().toLower().contains("big")) return QDataStream::BigEndian;
+    return QDataStream::LittleEndian;
+}
+quint8 MainForm::doublePrecision() const
+{
+    return lCommonSettings.paramValue("precision").toUInt();
 }
 

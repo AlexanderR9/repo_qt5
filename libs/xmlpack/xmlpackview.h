@@ -15,15 +15,21 @@ class LXMLPackElement;
 class LXMLPackViewItem : public QTreeWidgetItem
 {
 public:
-    LXMLPackViewItem(const LXMLPackElement*, QTreeWidgetItem *parent = NULL);
+    LXMLPackViewItem(LXMLPackElement*, QTreeWidgetItem *parent = NULL);
     virtual ~LXMLPackViewItem() {}
 
+    void changePackValue(int); //значение или отклонение изменилось, необходимо обновить его в пакете
+    void setReadOnly(bool); //установить возможность редактирования значения или отклонения в пакете
+    void updateValues(); //обновить значения
+
+
 protected:
-    const LXMLPackElement     *m_node;
+    LXMLPackElement *m_node;
 
     void loadNodeChilds();
     void updateColumnsText();
     void updateColumnsColor();
+    void updateValue();
 
 };
 
@@ -39,33 +45,42 @@ public:
     virtual ~LXMLPackView() {resetView();}
 
 
-    void setPacket(LXMLPackObj*);
-    void resizeColumns();
+    void setPacket(LXMLPackObj*); //установить экземпляр пакета для отображения
+    void setPacketData(const QByteArray&, bool&); //записать массив байт в пакет
+    void setPacketByteOrder(int); //устанавливает порядок байт для записи пакета в поток данных в m_packet
+    void resizeColumns(); //подогнать размеры столбцов под контент
+    void fromPacket(QByteArray&, bool singleFloatPrecision = false); //запись пакета в массив байт
+    void updateValues(); //обновить значения итемов
+
 
     inline const LXMLPackObj* getPacket() const {return m_packet;}
     inline void setReadOnly(bool b) {m_readOnly = b;}
     inline bool isReadOnly() const {return m_readOnly;}
-
+    inline void  setDoublePrecision(quint8 p) {m_doublePrecision = p;}
 
 protected:
     QTreeWidget         *m_view;
     LXMLPackViewItem    *m_rootItem;
     LXMLPackObj         *m_packet;
     bool                 m_readOnly;
-
+    quint8               m_doublePrecision;
 
     void initWidget();
     void reloadView();
     void resetView();
+
+protected slots:
+    void slotItemActivate(QTreeWidgetItem*, int);
+    void slotItemValueChanged(QTreeWidgetItem*, int);
+
+private:
+    bool isEditableCol(int) const;
 
 };
 
 
 
 #endif // LXMLPACK_VIEW_H
-
-
-
 
 
 

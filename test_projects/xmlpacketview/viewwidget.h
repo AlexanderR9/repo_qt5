@@ -32,6 +32,9 @@ public:
 
     void loadInPack(const QString&);
     void loadOutPack(const QString&);
+    void toLeft(int, bool); //переслать пакет из правой вьюхи в левую
+    void toRight(int, bool); //переслать пакет из левой вьюхи в правую
+    void  setDoublePrecision(quint8);
 
 protected:
     LXMLPackView            *m_inView;
