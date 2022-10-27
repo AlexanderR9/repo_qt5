@@ -2,6 +2,7 @@
 #include "lprotocol.h"
 #include "xmlpackview.h"
 #include "xmlpack.h"
+#include "lstatic.h"
 
 #include <QSplitter>
 #include <QVBoxLayout>
@@ -88,22 +89,39 @@ void ViewWidget::toLeft(int bytes_order, bool single_floating)
     QByteArray ba;
     m_outView->fromPacket(ba, single_floating);
     m_protocol->addText(QString("Out packet size %1 bytes").arg(ba.size()), LProtocolBox::ttData);
+    m_protocol->addText(LStatic::baToStr(ba, 4));
 
     //------------------------------------------
-
-    bool ok;
-    m_inView->setPacketByteOrder(bytes_order);
-    m_inView->setPacketData(ba, ok);
-    m_inView->updateValues();
-    if (!ok) slotError(QString("result fault"));
-    else m_protocol->addText("Ok!", LProtocolBox::ttOk);
-
+    setPacketData(m_inView, ba, bytes_order, single_floating);
 }
 void ViewWidget::toRight(int bytes_order, bool single_floating)
 {
-    m_outView->setPacketByteOrder(bytes_order);
+    const LXMLPackObj *pack = m_inView->getPacket();
+    if (!pack)
+    {
+        m_protocol->addText("Packet-1 is NULL", LProtocolBox::ttErr);
+        return;
+    }
+
+    QByteArray ba;
+    m_inView->fromPacket(ba, single_floating);
+    m_protocol->addText(QString("Input packet size %1 bytes").arg(ba.size()), LProtocolBox::ttData);
+    m_protocol->addText(LStatic::baToStr(ba, 4));
 
 
+    //------------------------------------------
+    setPacketData(m_outView, ba, bytes_order, single_floating);
+}
+void ViewWidget::ViewWidget::setPacketData(LXMLPackView *view, const QByteArray &ba, int bytes_order, bool single_floating)
+{
+    if (!view) return;
+
+    bool ok;
+    view->setPacketByteOrder(bytes_order);
+    view->setPacketData(ba, ok, single_floating);
+    view->updateValues();
+    if (!ok) slotError(QString("result fault"));
+    else m_protocol->addText("Ok!", LProtocolBox::ttOk);
 }
 void ViewWidget::setDoublePrecision(quint8 p)
 {

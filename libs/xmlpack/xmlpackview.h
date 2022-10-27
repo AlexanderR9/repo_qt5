@@ -46,11 +46,13 @@ public:
 
 
     void setPacket(LXMLPackObj*); //установить экземпляр пакета для отображения
-    void setPacketData(const QByteArray&, bool&); //записать массив байт в пакет
     void setPacketByteOrder(int); //устанавливает порядок байт для записи пакета в поток данных в m_packet
     void resizeColumns(); //подогнать размеры столбцов под контент
-    void fromPacket(QByteArray&, bool singleFloatPrecision = false); //запись пакета в массив байт
     void updateValues(); //обновить значения итемов
+
+    // DataStream operation (in/out )
+    void setPacketData(const QByteArray&, bool&, bool singleFloatPrecision = false); //записать массив байт в пакет
+    void fromPacket(QByteArray&, bool singleFloatPrecision = false); //запись пакета в массив байт
 
 
     inline const LXMLPackObj* getPacket() const {return m_packet;}

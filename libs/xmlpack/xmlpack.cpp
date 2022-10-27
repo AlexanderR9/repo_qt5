@@ -26,6 +26,10 @@ void LXMLPackObj::setByteOrder(int bo)
     if (bo == QDataStream::LittleEndian) m_byteOrder = bo;
     else if (bo == QDataStream::BigEndian) m_byteOrder = bo;
 }
+void LXMLPackObj::nextRandValues()
+{
+    if (m_rootNode) m_rootNode->nextRandValue();
+}
 void LXMLPackObj::tryLoadPacket(bool &ok)
 {
     ok = false;
@@ -126,7 +130,8 @@ void LXMLPackObj::toByteArray(QByteArray &ba, bool singleFloatPrecision)
 
     QDataStream stream(&ba, QIODevice::WriteOnly);
     stream.setByteOrder(QDataStream::ByteOrder(m_byteOrder));
-    if (singleFloatPrecision) stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    if (singleFloatPrecision)
+        stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
     m_rootNode->writeToStream(stream);
 }
 void LXMLPackObj::fromByteArray(const QByteArray &ba, bool &ok, bool singleFloatPrecision)
@@ -150,7 +155,8 @@ void LXMLPackObj::fromByteArray(const QByteArray &ba, bool &ok, bool singleFloat
 
     QDataStream stream(ba);
     stream.setByteOrder(QDataStream::ByteOrder(m_byteOrder));
-    if (singleFloatPrecision) stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    if (singleFloatPrecision)
+        stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
     m_rootNode->readFromStream(stream);
     ok =  true;
 }

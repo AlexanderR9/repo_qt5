@@ -29,13 +29,17 @@ bool LXMLPackElement::isNode() const
 {
     return (m_dataType == petSection);
 }
+bool LXMLPackElement::isTime() const
+{
+    return (m_dataType == petTimeSpec);
+}
 bool LXMLPackElement::isRoot() const
 {
     return (m_parentNode == NULL);
 }
 bool LXMLPackElement::isData() const
 {
-    if (isNode() || invalid() || isOff()) return false;
+    if (isNode() || invalid() || isOff() || isTime()) return false;
     return true;
 }
 void LXMLPackElement::destroyChilds()
@@ -65,9 +69,12 @@ void LXMLPackElement::loadNode(const QDomNode &node, QString &err)
         err = QString("loading node [%1] - invalid datatype %2").arg(node.nodeName()).arg(attr);
         return;
     }
-    //if (isRoot()) return;
 
-    //calcOffset();
+    if (isTime())
+    {
+        transformTimeSpec();
+        return;
+    }
 
     //read arr_size
     m_arrSize = 1;
@@ -186,6 +193,20 @@ void LXMLPackElement::calcOffset(LXMLPackElement*, quint32 &cur_offset)
         m_childs[i]->calcOffset(this, cur_offset);
     }
 }
+void LXMLPackElement::nextRandValue()
+{
+    if (invalid() || isTime()) return;
+
+    if (isData())
+    {
+        m_value.next();
+        return;
+    }
+
+    int n = childsCount();
+    for (int i=0; i<n; i++)
+        m_childs[i]->nextRandValue();
+}
 LXMLPackElement* LXMLPackElement::clone(LXMLPackElement *parent) const
 {
     LXMLPackElement *el = new LXMLPackElement(parent);
@@ -216,6 +237,20 @@ void LXMLPackElement::retransformArrChilds()
         m_childs[i]->retransformArrChilds();
         if (childAt(i)->isArr()) retransformArrChild(i);
     }
+}
+void LXMLPackElement::transformTimeSpec()
+{
+    if (invalid() || !isTime()) return;
+
+    LXMLPackElement *el_sec = new LXMLPackElement(this);
+    el_sec->setCation("seconds");
+    el_sec->setDataType(petInt64);
+    appendChild(el_sec);
+
+    LXMLPackElement *el_nsec = new LXMLPackElement(this);
+    el_nsec->setCation("nano seconds");
+    el_nsec->setDataType(petInt64);
+    appendChild(el_nsec);
 }
 void LXMLPackElement::retransformArrChild(int i)
 {
@@ -248,7 +283,7 @@ void LXMLPackElement::writeToStream(QDataStream &stream)
             m_childs[i]->writeToStream(stream);
     }
 }
-void LXMLPackElement::writeValueToStream(QDataStream &stream)
+void LXMLPackElement::writeValueToStream(QDataStream &stream) //записать в поток
 {
     switch (dataType())
     {
@@ -276,8 +311,9 @@ void LXMLPackElement::readFromStream(QDataStream &stream)
             m_childs[i]->readFromStream(stream);
     }
 }
-void LXMLPackElement::readValueFromStream(QDataStream &stream)
+void LXMLPackElement::readValueFromStream(QDataStream &stream) //считать из потока
 {
+    qDebug()<<QString("LXMLPackElement::readValueFromStream %1  dt=%2").arg(caption()).arg(dataType());
     switch (dataType())
     {
         case petInt8:       {qint8 v=0; stream >> v; m_value.i_value = v; break;}
@@ -289,10 +325,11 @@ void LXMLPackElement::readValueFromStream(QDataStream &stream)
         case petUint32:     {quint32 v=0; stream >> v; m_value.i_value = v; break;}
         case petUint64:     {quint64 v=0; stream >> v; m_value.i_value = v; break;}
 
-        case petFloat:      {float v=0; stream >> v; m_value.d_value = v; break;}
+        case petFloat:      {float v=0; stream >> v; m_value.d_value = v;  qDebug()<<QString("readed float value %1").arg(v); break;}
         case petDouble:     {stream >> m_value.d_value; break;}
         default: break;
     }
+    qDebug()<<m_value.toStr();
 }
 QString LXMLPackElement::strValue(quint8 precision) const
 {

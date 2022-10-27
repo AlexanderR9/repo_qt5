@@ -34,7 +34,7 @@ public:
     void loadOutPack(const QString&);
     void toLeft(int, bool); //переслать пакет из правой вьюхи в левую
     void toRight(int, bool); //переслать пакет из левой вьюхи в правую
-    void  setDoublePrecision(quint8);
+    void setDoublePrecision(quint8);
 
 protected:
     LXMLPackView            *m_inView;
@@ -43,6 +43,7 @@ protected:
 
     void initWidget();
     void loadPack(LXMLPackView*, const QString&);
+    void setPacketData(LXMLPackView*, const QByteArray&, int, bool);
 
 public slots:
     void slotError(const QString&);

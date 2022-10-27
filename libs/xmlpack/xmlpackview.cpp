@@ -57,21 +57,27 @@ void LXMLPackView::setPacket(LXMLPackObj *p)
         return;
     }
 
+    qDebug("LXMLPackView::setPacket 1");
     disconnect(m_view, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(slotItemActivate(QTreeWidgetItem*, int)));
     disconnect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
 
+    //qDebug("LXMLPackView::setPacket 2");
+    resetView();
+
+    //qDebug("LXMLPackView::setPacket 3");
     m_packet = p;
     reloadView();
+    //qDebug("LXMLPackView::setPacket 4");
 
     if (m_rootItem)
         m_rootItem->setReadOnly(m_readOnly);
 
     connect(m_view, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(slotItemActivate(QTreeWidgetItem*, int)));
     connect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
+    qDebug("LXMLPackView::setPacket 5");
 }
 void LXMLPackView::reloadView()
 {
-    resetView();
     if (!m_packet) return;
     if (m_packet->invalid()) return;
 
@@ -79,8 +85,6 @@ void LXMLPackView::reloadView()
     m_view->addTopLevelItem(m_rootItem);
     m_view->expandAll();
     resizeColumns();
-
-
 }
 void LXMLPackView::resizeColumns()
 {
@@ -91,10 +95,19 @@ void LXMLPackView::resizeColumns()
 void LXMLPackView::resetView()
 {
     m_view->clear();
+    m_rootItem = NULL;
+    /*
     if (m_rootItem)
     {
         delete m_rootItem;
         m_rootItem = NULL;
+    }
+    */
+
+    if (m_packet)
+    {
+        delete m_packet;
+        m_packet = NULL;
     }
 }
 void LXMLPackView::slotItemActivate(QTreeWidgetItem *item, int column)
@@ -104,11 +117,11 @@ void LXMLPackView::slotItemActivate(QTreeWidgetItem *item, int column)
         m_view->editItem(item, column);
     }
 }
-void LXMLPackView::setPacketData(const QByteArray &ba, bool &ok)
+void LXMLPackView::setPacketData(const QByteArray &ba, bool &ok, bool singleFloatPrecision)
 {
     ok = false;
     if (m_packet)
-        m_packet->fromByteArray(ba, ok);
+        m_packet->fromByteArray(ba, ok, singleFloatPrecision);
 }
 void LXMLPackView::fromPacket(QByteArray &ba, bool singleFloatPrecision)
 {
@@ -198,6 +211,11 @@ void LXMLPackViewItem::updateColumnsColor()
         for (int i=0; i<n_col; i++)
             setTextColor(i, QColor(150, 150, 150));
     }
+    else if (m_node->isTime())
+    {
+        for (int i=0; i<n_col; i++)
+            setTextColor(i, QColor(30, 170, 170));
+    }
 
     setBackgroundColor(VALUE_COL, QColor(250, 250, 220));
     setBackgroundColor(DEVIATION_COL, QColor(250, 250, 220));
@@ -256,7 +274,8 @@ void LXMLPackViewItem::updateValues()
     for (int i=0; i<n; i++)
     {
         LXMLPackViewItem *pack_item = static_cast<LXMLPackViewItem*>(child(i));
-        if (pack_item) pack_item->updateValue();
+        if (pack_item) pack_item->updateValues();
+        else qWarning("LXMLPackViewItem::updateValues() WARNING child pack_item is NULL");
     }
 }
 

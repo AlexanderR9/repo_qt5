@@ -25,6 +25,13 @@ struct LXMLPackValue
     void copy(const LXMLPackValue &pv) {i_value = pv.i_value; d_value = pv.d_value; rand_deviation = pv.rand_deviation; isDouble = pv.isDouble;}
     QString strValue(quint8 p) const {return (isDouble ? QString::number(d_value, 'f', p) : QString::number(i_value));}
     QString strDeviation() const {return QString::number(rand_deviation, 'f', 2);}
+    QString toStr() const {return QString("PackValue: iv=%1  dv=%2 err=%3  type(%4)").arg(i_value).arg(QString::number(d_value, 'f', 4)).arg(QString::number(rand_deviation, 'f', 4)).arg(isDouble?"double":"integer");}
+    void next() {if (rand_deviation >= 0.01) {isDouble ? (d_value *= nextFactor()) : (i_value *= nextFactor());}}
+
+private:
+    double rf() const {return (rand_deviation/double(1+qrand()%10))/double(100);}
+    int r_sign() const {return ((qrand()%100 < 50) ? -1 : 1);}
+    double nextFactor() const {return (1+r_sign()*rf());}
 
 };
 
@@ -52,9 +59,11 @@ public:
     QString strValueDeviation() const; //получить возможное отклонение значения элемента в строковом виде
     void setNewValue(const QString&, bool &ok); // попытка установить новое значение
     void setNewValueDeviation(const QString&, bool &ok); // попытка установить новое отклонение значения
+    void nextRandValue(); //обновить значение m_value с учетом rand_deviation, (если rand_deviation == 0, то значение не измениться)
 
 
     bool isNode() const; //элемент является секцией
+    bool isTime() const; //элемент является структурой TimeSpec
     bool isRoot() const; //элемент является рутовой нодой (кстати она так же является isNode())
     bool isData() const; //элемент является конечным элементом данных ветки
     bool isArr() const {return (m_arrSize > 1);}
@@ -92,6 +101,7 @@ protected:
     void loadValueAttrs(const QDomNode&); //загрузить атрибуты значения элемента
     void loadChilds(const QDomNode&); //загрузить детей
     void retransformArrChild(int); //размножить найденный элемент-массив среди детей
+    void transformTimeSpec();//сформировать структуру элементов для типа TimeSpec
 
 private:
     quint32 sectionSize(const LXMLPackElement*) const; //возвращает размер в байтах секции целиком

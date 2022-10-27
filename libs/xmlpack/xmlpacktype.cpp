@@ -19,6 +19,7 @@ QString XMLPackStatic::xmlAttrName(int t)
         case petFloat:      return QString("float");
         case petDouble:     return QString("double");
         case petSection:     return QString("section");
+        case petTimeSpec:     return QString("timespec");
 
         default: break;
     }
@@ -68,6 +69,7 @@ quint8 XMLPackStatic::sizeOf(int t)
         case petInt64:
         case petUint64: return 8;
 
+        case petTimeSpec: return 16;
         default: break;
     }
     return 0;
@@ -97,6 +99,7 @@ int XMLPackStatic::typeByXmlAttr(QString attr)
 
     if (attr == "float")     return petFloat;
     if (attr == "double")    return petDouble;
+    if (attr == "timespec")    return petTimeSpec;
 
     return petInvalid;
 }
