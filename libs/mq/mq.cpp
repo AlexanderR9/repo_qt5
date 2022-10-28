@@ -7,11 +7,14 @@
  #include <cerrno>
  #include <cstring>
  #include "lstatic.h"
+ #include "lfile.h"
+ #include "mqworker.h"
   
   
  #include <QDebug>  
- #include <QColor>  
- #include <QIODevice>  
+ #include <QColor>
+ #include <QDir>
+ #include <QIODevice>
  #include <QByteArray>
 
 #define MSG_PRIOR	1
@@ -42,6 +45,7 @@ QString MQ::strState() const
 		case mqsCreated: 	return "Created";
 		case mqsClosed: 	return "Closed";
 		case mqsInvalid: 	return "Invalid";
+        case mqsNotFound:   return "Not found";
 		default: break;
     }
     return "Not init";	
@@ -71,6 +75,7 @@ QColor MQ::colorStatus() const
     {
 		case mqsOpened: return Qt::blue;
 		case mqsClosed: return Qt::black;
+        case mqsNotFound:
 		case mqsInvalid: return Qt::red;
 		default: break;
     }
@@ -165,7 +170,10 @@ void MQ::tryDestroy(bool &ok)
 }
 void MQ::tryOpen(int mode, bool &ok)
 {
-    ok = false;
+    checkQueueFile(false);
+    if (invalid()) return;
+
+    ok = false;    
     QString msg;
     if (isOpened())
     {
@@ -289,7 +297,47 @@ void MQ::tryReadMsg(QByteArray &ba)
 
     updateAttrs();
 }
+void MQ::updateAttrs()
+{
+    m_size = -1;
+    checkQueueFile();
+    if (invalid()) return;
 
+    if (!isOpened())
+    {
+        qWarning()<<QString("MQ::mqAttrs - WARNING queue [%1] is not opened").arg(name());
+        if (m_attrs) {delete m_attrs; m_attrs = NULL;}
+        return;
+    }
+
+    m_attrs = new mq_attr();
+    if (mq_getattr(m_handle , m_attrs) != 0)
+    {
+        delete m_attrs;
+        m_attrs = NULL;
+
+        QString err(std::strerror(errno));
+        qWarning()<<QString("MQ::mqAttrs - WARNING errno=%1  str(%2)").arg(errno).arg(LStatic::fromCodec(err));
+        QString msg = QString("MQ[%1]: get mq_attrs error, errno=%2, err_msg: %3").arg(name()).arg(errno).arg(LStatic::fromCodec(err));
+        emit signalError(msg);
+    }
+
+    m_size = m_attrs->mq_curmsgs * m_attrs->mq_msgsize;
+}
+void MQ::checkQueueFile(bool check_invalid)
+{
+    if (check_invalid && invalid()) return;
+
+    if (!existPosixFile())
+    {
+        bool ok;
+        if (isOpened()) tryClose(ok);
+        qWarning()<<QString("MQ::checkQueueFile - WARNING queue [%1] not found").arg(name());
+        if (m_attrs) {delete m_attrs; m_attrs = NULL;}
+        m_state = mqsNotFound;
+        m_handle = -1;
+    }
+}
 
 
 //private funcs
@@ -308,29 +356,11 @@ int MQ::mqModeByMode() const
     }
     return O_RDONLY;
 }
-void MQ::updateAttrs()
+bool MQ::existPosixFile() const
 {
-	m_size = -1;
-    if (!isOpened())
-    {
-    	qWarning()<<QString("MQ::mqAttrs - WARNING queue [%1] is not opened").arg(name());
-    	if (m_attrs) {delete m_attrs; m_attrs = NULL;}
-    	return;
-    }
-
-    m_attrs = new mq_attr();
-    if (mq_getattr(m_handle , m_attrs) != 0)
-    {
-    	delete m_attrs;
-    	m_attrs = NULL;
-
-    	QString err(std::strerror(errno));
-    	qWarning()<<QString("MQ::mqAttrs - WARNING errno=%1  str(%2)").arg(errno).arg(LStatic::fromCodec(err));
-    	QString msg = QString("MQ[%1]: get mq_attrs error, errno=%2, err_msg: %3").arg(name()).arg(errno).arg(LStatic::fromCodec(err));
-    	emit signalError(msg);
-    }
-
-    m_size = m_attrs->mq_curmsgs * m_attrs->mq_msgsize;
+    QString fname = LStatic::strTrimLeft(name(), 1);
+    fname = QString("%1%2%3").arg(MQWorker::mqLinuxDir()).arg(QDir::separator()).arg(fname);
+    return LFile::fileExists(fname);
 }
 
 

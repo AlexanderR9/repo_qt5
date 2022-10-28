@@ -8,6 +8,8 @@
 #include <QDebug>
 
 
+#define MQ_STATE_COL    4
+#define MQ_ATTR_COL     5
 
 
 //MQGeneralPage
@@ -18,7 +20,9 @@ MQGeneralPage::MQGeneralPage(QWidget *parent)
 {
     setObjectName(QString("mq_general_page"));
 
+    m_queues.clear();
     initWidget();
+
 }
 void MQGeneralPage::initWidget()
 {
@@ -49,16 +53,37 @@ void MQGeneralPage::slotAppendMQ(const QString &diana_name, quint32 msg_size, co
     if (!mq) return;
 
     qDebug()<<QString("slotAppendMQ  [%1]").arg(mq->name());
+    m_queues.insert(m_tableBox->table()->rowCount(), mq);
 
     QStringList row_data;
     row_data << diana_name;
-    QString s_type = "?";
-    if (mq->name().contains("input")) s_type = "ReadOnly";
-    else if (mq->name().contains("output")) s_type = "WriteOnly";
-    row_data << s_type;
-    row_data << mq->name() << QString::number(msg_size) << mq->strState() << mq->strAttrs();
+
+    //QString s_type = "?";
+    //if (mq->name().contains("input")) s_type = "ReadOnly";
+    //else if (mq->name().contains("output")) s_type = "WriteOnly";
+    //row_data << s_type;
+
+    row_data << mq->strMode() << mq->name() << QString::number(msg_size) << mq->strState() << mq->strAttrs();
 
     LTable::addTableRow(m_tableBox->table(), row_data);
     LTable::resizeTableContents(m_tableBox->table());
+    updateMQState();
 }
+void MQGeneralPage::updateMQState()
+{
+    qDebug("MQGeneralPage::updateMQState()");
+
+    for(int i=0; i<m_tableBox->table()->rowCount(); i++)
+    {
+        const MQ *mq = m_queues.value(i);
+        if (mq)
+        {
+            m_tableBox->table()->item(i, MQ_STATE_COL)->setText(mq->strState());
+            m_tableBox->table()->item(i, MQ_STATE_COL)->setTextColor(mq->colorStatus());
+            m_tableBox->table()->item(i, MQ_ATTR_COL)->setText(mq->strAttrs());
+        }
+    }
+
+}
+
 

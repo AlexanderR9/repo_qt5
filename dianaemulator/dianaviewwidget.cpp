@@ -82,6 +82,10 @@ void DianaViewWidget::setDoublePrecision(quint8 p)
     m_outView->setDoublePrecision(p);
     m_outView->updateValues();
 }
+void DianaViewWidget::updateMQState()
+{
+    m_dianaObj->updateMQState();
+}
 
 
 

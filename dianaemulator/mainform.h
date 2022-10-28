@@ -54,13 +54,17 @@ protected:
     void updateButtonsState();
     void tryAddPage(const QString&); //попытка создания новой страницы для указанной дианы, при условии что такой еще нет
     void checkMQLinuxDir(bool&); //проверка наличия примонтированного раздела /dev/mqueue в Linux
-
+    void restartStateTimer();
+    void restartExchangeTimer();
 
 protected slots:
     void slotAction(int); //virtual slot from parent
     void slotAppSettingsChanged(QStringList); //virtual slot from parent
     void slotError(const QString&);
     void slotMsg(const QString&);
+    void slotUpdateMQStateTimer();
+    void slotMQExchangeTimer();
+
 
 
 private:
@@ -70,7 +74,8 @@ private:
     quint8 doublePrecision() const;
     int modeSettings() const;
     void parseConfigName(const QString&, QPair<QString, QString>&); //проверка корректности имени файла-конфига
-
+    int mqStateInterval();
+    int mqExchangeInterval();
 
 };
 

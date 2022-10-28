@@ -3,6 +3,7 @@
 
 #include "lsimplewidget.h"
 
+#include <QMap>
 
 class QSettings;
 class MQ;
@@ -16,10 +17,12 @@ public:
     MQGeneralPage(QWidget *parent = 0);
     virtual ~MQGeneralPage() {}
 
+    void updateMQState();
 
 protected:
     LTableWidgetBox     *m_tableBox;
     LTreeWidgetBox      *m_viewBox;
+    QMap<int, const MQ*>    m_queues;
 
     void initWidget();
 

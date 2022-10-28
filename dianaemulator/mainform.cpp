@@ -44,8 +44,8 @@ void MainForm::initTimers()
     m_stateTimer = new QTimer(this);
     m_stateTimer->stop();
 
-    //connect(timer, SIGNAL(timeout()), this, SLOT(slotTimer()));
-
+    connect(m_exchangeTimer, SIGNAL(timeout()), this, SLOT(slotMQExchangeTimer()));
+    connect(m_stateTimer, SIGNAL(timeout()), this, SLOT(slotUpdateMQStateTimer()));
 }
 void MainForm::initActions()
 {
@@ -92,11 +92,9 @@ void MainForm::initCommonSettings()
     for (int i=0; i<=5; i++)
         combo_list.append(QString::number(i));
 
-
     QString key = QString("config_dir");
     lCommonSettings.addParam(QString("Packets folder"), LSimpleDialog::sdtDirPath, key);
     lCommonSettings.setDefValue(key, QString(""));
-
 
     key = QString("mode");
     lCommonSettings.addParam(QString("Emulator mode"), LSimpleDialog::sdtStringCombo, key);
@@ -104,14 +102,12 @@ void MainForm::initCommonSettings()
     combo_list << "Server" << "Client";
     lCommonSettings.setComboList(key, combo_list);
 
-
     key = QString("byteorder");
     lCommonSettings.addParam(QString("DataStream bytes order"), LSimpleDialog::sdtStringCombo, key);
     combo_list.clear();
     combo_list << "BigEndian" << "LitleEndian";
     lCommonSettings.setComboList(key, combo_list);
     lCommonSettings.setDefValue(key, QString("LitleEndian"));
-
 
     key = QString("precision");
     lCommonSettings.addParam(QString("View double values precision"), LSimpleDialog::sdtIntCombo, key);
@@ -123,12 +119,39 @@ void MainForm::initCommonSettings()
     lCommonSettings.addParam(QString("Expand packets level"), LSimpleDialog::sdtIntCombo, key);
     lCommonSettings.setComboList(key, combo_list);
 
+
+    //timers settings
+    key = QString("mq_state_interval");
+    lCommonSettings.addParam(QString("Update queues state timer interval, ms"), LSimpleDialog::sdtIntCombo, key);
+    combo_list.clear();
+    combo_list << "100" << "200" << "300" << "500" << "1000" << "2000" << "5000";
+    lCommonSettings.setComboList(key, combo_list);
+    lCommonSettings.setDefValue(key, combo_list.at(3));
+
+    key = QString("mq_exchange_interval");
+    lCommonSettings.addParam(QString("Exchange queues timer interval, ms"), LSimpleDialog::sdtIntCombo, key);
+    combo_list.clear();
+    combo_list << "500" << "1000" << "2000" << "5000" << "10000";
+    lCommonSettings.setComboList(key, combo_list);
+    lCommonSettings.setDefValue(key, combo_list.at(1));
+
 }
 void MainForm::start()
 {
 
 }
 void MainForm::stop()
+{
+
+}
+void MainForm::slotUpdateMQStateTimer()
+{
+    foreach (DianaViewWidget *page, m_pages)
+        page->updateMQState();
+
+    m_generalPage->updateMQState();
+}
+void MainForm::slotMQExchangeTimer()
 {
 
 }
@@ -139,6 +162,14 @@ QString MainForm::configDir() const
 quint8 MainForm::doublePrecision() const
 {
     return lCommonSettings.paramValue("precision").toUInt();
+}
+int MainForm::mqStateInterval()
+{
+    return lCommonSettings.paramValue("mq_state_interval").toInt();
+}
+int MainForm::mqExchangeInterval()
+{
+    return lCommonSettings.paramValue("mq_exchange_interval").toInt();
 }
 int MainForm::byteOrder() const
 {
@@ -182,7 +213,6 @@ void MainForm::load()
     checkMQLinuxDir(ok);
     if (!ok) return;
 
-
     m_mode = modeSettings();
     loadMQConfig();
 
@@ -195,6 +225,7 @@ void MainForm::load()
     m_tab->setCurrentIndex(settings.value(QString("%1/tab_index").arg(objectName()), 0).toInt());
 
 
+    restartStateTimer();
 }
 void MainForm::updateButtonsState()
 {
@@ -231,6 +262,10 @@ void MainForm::slotAppSettingsChanged(QStringList keys)
             foreach (DianaViewWidget *page, m_pages)
                 page->setDoublePrecision(doublePrecision());
         }
+        else if (key == "mq_state_interval") restartStateTimer();
+        else if (key == "mq_exchange_interval" && m_exchangeTimer->isActive()) restartExchangeTimer();
+
+
     }
 }
 void MainForm::checkMQLinuxDir(bool &ok)
@@ -294,7 +329,7 @@ void MainForm::loadMQConfig()
 }
 void MainForm::loadMQPacket(const QString &fname, const QString &diana_name)
 {
-    qDebug()<<QString("loadMQPacket: %1").arg(fname);
+    //qDebug()<<QString("loadMQPacket: %1").arg(fname);
     DianaViewWidget *page = m_pages.value(diana_name);
     if (page)
     {
@@ -307,7 +342,7 @@ void MainForm::tryAddPage(const QString &diana_name)
 {
     if (m_pages.contains(diana_name))
     {
-        qWarning()<<QString("Diana page (%1) allready exist");
+        //qWarning()<<QString("Diana page (%1) allready exist");
         return;
     }
 
@@ -345,6 +380,19 @@ void MainForm::parseConfigName(const QString &fname, QPair<QString, QString> &pa
             if (!pair.first.isEmpty()) pair.second = "output";
         }
     }
+}
+void MainForm::restartStateTimer()
+{
+    m_stateTimer->stop();
+    m_stateTimer->setInterval(mqStateInterval());
+    m_stateTimer->start();
+}
+void MainForm::restartExchangeTimer()
+{
+    m_exchangeTimer->stop();
+    m_exchangeTimer->setInterval(mqExchangeInterval());
+    m_exchangeTimer->start();
+
 }
 
 

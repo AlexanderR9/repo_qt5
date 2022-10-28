@@ -38,3 +38,13 @@ const MQ* DianaObject::outputQueue() const
             return mq_manager->queueAt(i);
     return NULL;
 }
+void DianaObject::updateMQState()
+{
+    if (inputQueue()->isDeinit())
+        mq_manager->openQueue(0, QIODevice::ReadOnly);
+
+    if (outputQueue()->isDeinit())
+        mq_manager->openQueue(1, QIODevice::WriteOnly);
+
+    mq_manager->updateState();
+}

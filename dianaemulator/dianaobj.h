@@ -19,6 +19,8 @@ public:
     void addQueue(const QString&);
     const MQ* inputQueue() const;
     const MQ* outputQueue() const;
+    void updateMQState();
+
 
 protected:
     MQWorker    *mq_manager;

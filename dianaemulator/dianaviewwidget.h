@@ -23,6 +23,8 @@ public:
     QString name() const {return objectName();}
     void setExpandLevel(int);
     void setDoublePrecision(quint8);
+    void updateMQState();
+
 
     //void load(QSettings&);
     //void save(QSettings&);

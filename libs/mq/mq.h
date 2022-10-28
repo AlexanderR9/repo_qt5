@@ -20,7 +20,7 @@ class MQ : public LSimpleObject
 {
     Q_OBJECT
 public:
-    enum MQState {mqsDeinit = 221,  mqsOpened, mqsClosed, mqsCreated, mqsInvalid};
+    enum MQState {mqsDeinit = 221,  mqsOpened, mqsClosed, mqsCreated, mqsNotFound, mqsInvalid};
 
     MQ(const QString&, QObject *parent = NULL);
     virtual ~MQ() {}
@@ -30,6 +30,9 @@ public:
     inline bool invalid() const {return (m_handle <= 0);}
     inline int handle() const {return m_handle;} //дескриптор очереди, к которой подключен объект
     inline bool isOpened() const {return (m_state == mqsOpened || m_state == mqsCreated);}
+    inline bool isNotFound() const {return (m_state == mqsNotFound);}
+    inline bool isDeinit() const {return (m_state == mqsDeinit);}
+
     
     
     QString strMode() const;
@@ -37,7 +40,7 @@ public:
     QString strStatus() const;
     QString strAttrs() const;
     QColor colorStatus() const;
-    void updateAttrs(); //обвновить информацию об текущем состоянии очереди
+    void updateAttrs(); //обновить информацию об текущем состоянии очереди
 
     void tryOpen(int, bool&); //подключиться к существующей очереди POSIX
     void tryClose(bool&); //отключиться от очереди POSIX
@@ -55,9 +58,13 @@ protected:
     int 		m_mode; 	//IODevice enum element
     mq_attr 	*m_attrs; 	//current attributes
     
+    void checkQueueFile(bool check_invalid = true); //проверить наличие файла-очереди в каталоге /dev/mqueue
+
+
 private:
     const char* charName() const; 
     int mqModeByMode() const;
+    bool existPosixFile() const; //признак наличия файла-очереди /dev/mqueue/mq_name
     
 };
  
