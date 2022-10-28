@@ -26,6 +26,11 @@ void LXMLPackObj::setByteOrder(int bo)
     if (bo == QDataStream::LittleEndian) m_byteOrder = bo;
     else if (bo == QDataStream::BigEndian) m_byteOrder = bo;
 }
+QString LXMLPackObj::caption() const
+{
+    if (m_rootNode) return m_rootNode->caption();
+    return "??";
+}
 void LXMLPackObj::nextRandValues()
 {
     if (m_rootNode) m_rootNode->nextRandValue();

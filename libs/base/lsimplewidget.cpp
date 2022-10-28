@@ -10,6 +10,7 @@
 #include <QTableWidget>
 #include <QListWidget>
 #include <QHeaderView>
+#include <QTreeWidget>
 
 
 //LSimpleWidget
@@ -158,6 +159,36 @@ QListWidget* LListWidgetBox::listWidget() const
 
 
 
+
+
+//LTreeWidgetBox
+LTreeWidgetBox::LTreeWidgetBox(QWidget *parent, int t)
+    :QGroupBox("Tree view Box", parent),
+      m_view(NULL)
+{
+    setObjectName("ltreeview_widget_box");
+
+    if(layout()) delete layout();
+    if (t == 2) setLayout(new QHBoxLayout(0));
+    else setLayout(new QVBoxLayout(0));
+
+    init();
+}
+void LTreeWidgetBox::init()
+{
+    m_view = new QTreeWidget(this);
+    m_view->clear();
+    layout()->addWidget(m_view);
+}
+void LTreeWidgetBox::setHeaderLabels(const QStringList &list)
+{
+    m_view->setColumnCount(list.count());
+    m_view->header()->setDefaultAlignment(Qt::AlignCenter);
+    m_view->setHeaderLabels(list);
+    m_view->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_view->setSelectionMode(QAbstractItemView::NoSelection);
+
+}
 
 
 

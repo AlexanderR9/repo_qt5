@@ -282,6 +282,7 @@ void MQ::tryReadMsg(QByteArray &ba)
     }
     else
     {
+        if (ba.size() > result) ba.truncate(result);
     	msg = QString("MQ[%1]: received msg, size=%2, prior=%3").arg(name()).arg(result).arg(prior);
     	emit signalMsg(msg);
     }

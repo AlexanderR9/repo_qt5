@@ -12,9 +12,12 @@ INCLUDEPATH += .\
             $$PWD
 
 #path for libs files
-DEPENDPATH += $$PWD/../base/build
+DEPENDPATH += $$PWD/../base/build \
+                $$PWD/lib64
+
 #include libs
 unix:!macx: LIBS += -L$$PWD/../base/build/ -llbase
+unix:!macx: LIBS += -L$$PWD/lib64/ -lrt
 
 
 # Input

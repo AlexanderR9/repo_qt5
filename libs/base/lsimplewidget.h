@@ -11,7 +11,7 @@ class QSplitter;
 class QSettings;
 class QTableWidget;
 class QListWidget;
-
+class QTreeWidget;
 
 
 //простой виджет-заготовка с двумя сплитерами.
@@ -106,6 +106,29 @@ public:
 
 protected:
     QListWidget    *m_listWidget;
+
+    void init();
+};
+
+
+//виджет-заготовка, представляет из себя групбокс, содержащий QTreeWidget
+//в конструкторе параметр type указывает тип layout, на котором размещается QListWdiget (1-QVBoxLayout, 2-QHBoxLayout)
+//при некорректном значении type используется  QVBoxLayout
+
+//LTreeWidgetBox
+class LTreeWidgetBox : public QGroupBox
+{
+    Q_OBJECT
+public:
+    LTreeWidgetBox(QWidget *parent = NULL, int type = 1);
+    virtual ~LTreeWidgetBox() {}
+
+    QTreeWidget* view() const {return m_view;}
+    void setHeaderLabels(const QStringList&);
+
+
+protected:
+    QTreeWidget    *m_view;
 
     void init();
 };

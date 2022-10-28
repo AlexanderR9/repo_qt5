@@ -18,7 +18,7 @@ public:
     virtual ~MQWorker() {}
 
     void reset();
-    void createQueueObj(const QString&); //создать новый обьект MQ и добавить в m_queues
+    void createQueueObj(const QString&); //создать новый обьект MQ и добавить в m_queues (это не означает что будет создана реальная очередь POSIX)
     void destroyQueueObj(const QString&); //разрушить обьект MQ и удалить из m_queues
 
     //user actions
@@ -37,6 +37,8 @@ public:
     bool queueContains(const QString&) const; //проверить, существует ли очередь с таким именем
     inline bool isEmpty() const {return m_queues.isEmpty();}
     inline int count() const {return m_queues.count();}
+
+    static QString mqLinuxDir() {return QString("/dev/mqueue");}
 
 protected:
     QList<MQ*>	m_queues;

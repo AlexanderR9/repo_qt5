@@ -45,9 +45,6 @@ void LXMLPackView::initWidget()
     m_view->setSelectionMode(QAbstractItemView::NoSelection);
     m_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-    //qDebug()<<QString("LXMLPackView::initWidget() headers size %1,   ColumnCount %2").arg(headers.count()).arg(m_view->columnCount());
-
-
 }
 void LXMLPackView::setPacket(LXMLPackObj *p)
 {   
@@ -57,24 +54,18 @@ void LXMLPackView::setPacket(LXMLPackObj *p)
         return;
     }
 
-    qDebug("LXMLPackView::setPacket 1");
     disconnect(m_view, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(slotItemActivate(QTreeWidgetItem*, int)));
     disconnect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
 
-    //qDebug("LXMLPackView::setPacket 2");
     resetView();
-
-    //qDebug("LXMLPackView::setPacket 3");
     m_packet = p;
     reloadView();
-    //qDebug("LXMLPackView::setPacket 4");
 
     if (m_rootItem)
         m_rootItem->setReadOnly(m_readOnly);
 
     connect(m_view, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(slotItemActivate(QTreeWidgetItem*, int)));
     connect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
-    qDebug("LXMLPackView::setPacket 5");
 }
 void LXMLPackView::reloadView()
 {
@@ -85,6 +76,9 @@ void LXMLPackView::reloadView()
     m_view->addTopLevelItem(m_rootItem);
     m_view->expandAll();
     resizeColumns();
+
+    if (isReadOnly())
+        m_view->hideColumn(DEVIATION_COL);
 }
 void LXMLPackView::resizeColumns()
 {
@@ -96,13 +90,6 @@ void LXMLPackView::resetView()
 {
     m_view->clear();
     m_rootItem = NULL;
-    /*
-    if (m_rootItem)
-    {
-        delete m_rootItem;
-        m_rootItem = NULL;
-    }
-    */
 
     if (m_packet)
     {
@@ -151,15 +138,25 @@ bool LXMLPackView::isEditableCol(int col) const
 void LXMLPackView::updateValues()
 {
     if (m_rootItem)
+    {
+        m_rootItem->setDoublePrecision(m_doublePrecision);
         m_rootItem->updateValues();
+    }
+}
+void LXMLPackView::setExpandLevel(int level)
+{
+    if (!m_rootItem) return;
+    if (m_view) m_view->expandToDepth(level-1);
 }
 
 
 //LXMLPackViewItem
 LXMLPackViewItem::LXMLPackViewItem(LXMLPackElement *node, QTreeWidgetItem *parent)
     :QTreeWidgetItem(parent),
-      m_node(node)
+      m_node(node),
+      m_editable(false)
 {
+    setData(VALUE_COL, Qt::UserRole, 3);
     updateColumnsText();
     updateValue();
     updateColumnsColor();
@@ -214,19 +211,19 @@ void LXMLPackViewItem::updateColumnsColor()
     else if (m_node->isTime())
     {
         for (int i=0; i<n_col; i++)
-            setTextColor(i, QColor(30, 170, 170));
+            setTextColor(i, QColor(30, 140, 30));
     }
 
-    setBackgroundColor(VALUE_COL, QColor(250, 250, 220));
-    setBackgroundColor(DEVIATION_COL, QColor(250, 250, 220));
-
+    QColor value_col = (isEditable() ? QColor(250, 250, 220) : QColor(220, 220, 220));
+    setBackgroundColor(VALUE_COL, value_col);
+    setBackgroundColor(DEVIATION_COL, value_col);
 }
 void LXMLPackViewItem::updateValue()
 {
     if (m_node->isData())
     {
         setText(DEVIATION_COL, m_node->strValueDeviation());
-        setText(VALUE_COL, m_node->strValue(3));
+        setText(VALUE_COL, m_node->strValue(data(VALUE_COL, Qt::UserRole).toInt()));
     }
 }
 void LXMLPackViewItem::changePackValue(int col)
@@ -256,6 +253,7 @@ void LXMLPackViewItem::changePackValue(int col)
 }
 void LXMLPackViewItem::setReadOnly(bool b)
 {
+    m_editable = !b;
     if (!b && m_node && m_node->isData()) setFlags(Qt::ItemIsEnabled | Qt::ItemIsEditable);
     else setFlags(Qt::ItemIsEnabled);
 
@@ -264,6 +262,18 @@ void LXMLPackViewItem::setReadOnly(bool b)
     {
         LXMLPackViewItem *pack_item = static_cast<LXMLPackViewItem*>(child(i));
         if (pack_item) pack_item->setReadOnly(b);
+    }
+
+    updateColumnsColor();
+}
+void LXMLPackViewItem::setDoublePrecision(quint8 dp)
+{
+    setData(VALUE_COL, Qt::UserRole, dp);
+    int n = childCount();
+    for (int i=0; i<n; i++)
+    {
+        LXMLPackViewItem *pack_item = static_cast<LXMLPackViewItem*>(child(i));
+        if (pack_item) pack_item->setDoublePrecision(dp);
     }
 }
 void LXMLPackViewItem::updateValues()

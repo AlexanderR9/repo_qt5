@@ -22,6 +22,7 @@ public:
     quint32 size() const; //возвращает размер пакета в байтах
     void setByteOrder(int); //устанавливает порядок байт для записи пакета в поток данных
     void nextRandValues(); //обновить значения всех элементов пакета с учетом rand_deviation, (если rand_deviation == 0, то значение не измениться)
+    QString caption() const; //caption рутовой ноды
 
     inline bool invalid() const {return (m_rootNode == NULL);}
     inline const LXMLPackElement* rootElement() const {return m_rootNode;}

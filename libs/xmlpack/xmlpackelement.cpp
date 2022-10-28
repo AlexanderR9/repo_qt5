@@ -87,14 +87,12 @@ void LXMLPackElement::loadNode(const QDomNode &node, QString &err)
             return;
         }
         m_arrSize = quint16(a);
-        qDebug()<<QString("find arr[%1] for %2").arg(arrSize()).arg(caption());
+        //qDebug()<<QString("find arr[%1] for %2").arg(arrSize()).arg(caption());
     }
 
     //load value and load childs
     loadValueAttrs(node);
     loadChilds(node);
-
-    //qDebug()<<QString("node: %1,  childs %2").arg(caption()).arg(childsCount());
 }
 void LXMLPackElement::loadValueAttrs(const QDomNode &node)
 {
@@ -178,7 +176,6 @@ quint32 LXMLPackElement::sectionSize(const LXMLPackElement*) const
 }
 void LXMLPackElement::calcOffset(LXMLPackElement*, quint32 &cur_offset)
 {
-    //qDebug()<<QString("LXMLPackElement::calcOffset  %1").arg(caption());
     m_offset = cur_offset;
     if (invalid()) return;
     if (!hasChilds())
@@ -313,7 +310,6 @@ void LXMLPackElement::readFromStream(QDataStream &stream)
 }
 void LXMLPackElement::readValueFromStream(QDataStream &stream) //считать из потока
 {
-    qDebug()<<QString("LXMLPackElement::readValueFromStream %1  dt=%2").arg(caption()).arg(dataType());
     switch (dataType())
     {
         case petInt8:       {qint8 v=0; stream >> v; m_value.i_value = v; break;}
@@ -325,11 +321,10 @@ void LXMLPackElement::readValueFromStream(QDataStream &stream) //считать 
         case petUint32:     {quint32 v=0; stream >> v; m_value.i_value = v; break;}
         case petUint64:     {quint64 v=0; stream >> v; m_value.i_value = v; break;}
 
-        case petFloat:      {float v=0; stream >> v; m_value.d_value = v;  qDebug()<<QString("readed float value %1").arg(v); break;}
+        case petFloat:      {float v=0; stream >> v; m_value.d_value = v; break;}
         case petDouble:     {stream >> m_value.d_value; break;}
         default: break;
     }
-    qDebug()<<m_value.toStr();
 }
 QString LXMLPackElement::strValue(quint8 precision) const
 {

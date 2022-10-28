@@ -1,0 +1,12 @@
+dianaemulator.pro.user
+dianaemulator.debug
+dianaemulator
+.qmake.stash
+moc
+obj
+Makefile
+tcpemulator_tester
+full_clear
+config
+dtsstructs.h
+diana_emulator.tar.gz

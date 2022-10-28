@@ -21,10 +21,15 @@ public:
     void changePackValue(int); //значение или отклонение изменилось, необходимо обновить его в пакете
     void setReadOnly(bool); //установить возможность редактирования значения или отклонения в пакете
     void updateValues(); //обновить значения
+    void  setDoublePrecision(quint8);
+
+    inline bool isEditable() const {return m_editable;}
 
 
 protected:
     LXMLPackElement *m_node;
+    bool m_editable;
+
 
     void loadNodeChilds();
     void updateColumnsText();
@@ -49,6 +54,8 @@ public:
     void setPacketByteOrder(int); //устанавливает порядок байт для записи пакета в поток данных в m_packet
     void resizeColumns(); //подогнать размеры столбцов под контент
     void updateValues(); //обновить значения итемов
+    void setExpandLevel(int); //раскрывает элементы дерева до заданной глубины
+
 
     // DataStream operation (in/out )
     void setPacketData(const QByteArray&, bool&, bool singleFloatPrecision = false); //записать массив байт в пакет
@@ -59,6 +66,7 @@ public:
     inline void setReadOnly(bool b) {m_readOnly = b;}
     inline bool isReadOnly() const {return m_readOnly;}
     inline void  setDoublePrecision(quint8 p) {m_doublePrecision = p;}
+    inline bool invalid() const {return (m_rootItem == NULL);}
 
 protected:
     QTreeWidget         *m_view;
