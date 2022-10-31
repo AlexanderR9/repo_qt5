@@ -55,6 +55,7 @@ public:
     void resizeColumns(); //подогнать размеры столбцов под контент
     void updateValues(); //обновить значения итемов
     void setExpandLevel(int); //раскрывает элементы дерева до заданной глубины
+    void nextRandValues(); //обновить значения всех элементов пакета с учетом rand_deviation, (если rand_deviation == 0, то значение не измениться)
 
 
     // DataStream operation (in/out )

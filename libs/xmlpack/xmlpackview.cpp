@@ -120,6 +120,14 @@ void LXMLPackView::setPacketByteOrder(int bo)
     if (m_packet)
         m_packet->setByteOrder(bo);
 }
+void LXMLPackView::nextRandValues()
+{
+    if (m_packet)
+    {
+        m_packet->nextRandValues();
+        updateValues();
+    }
+}
 void LXMLPackView::slotItemValueChanged(QTreeWidgetItem *item, int column)
 {
     LXMLPackViewItem *pack_item = static_cast<LXMLPackViewItem*>(item);

@@ -7,6 +7,7 @@
 
 class QSettings;
 class MQ;
+class QTreeWidget;
 
 
 // MQGeneralPage
@@ -25,9 +26,18 @@ protected:
     QMap<int, const MQ*>    m_queues;
 
     void initWidget();
+    void appendDianaToView(const QString&, const QString&);
+    QTreeWidget* view() const;
 
 public slots:
     void slotAppendMQ(const QString&, quint32, const MQ*);
+    void slotSendMsgOk(const QString&);
+    void slotReceiveMsgOk(const QString&);
+    void slotSendMsgErr(const QString&);
+    void slotReceiveMsgErr(const QString&);
+
+private:
+    int viewDianaIndex(const QString&) const; //вернет индекс заглавного итема по имени дианы или -1
 
 };
 

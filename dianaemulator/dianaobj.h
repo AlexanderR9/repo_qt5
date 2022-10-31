@@ -5,6 +5,7 @@
 
 class MQWorker;
 class MQ;
+class QByteArray;
 
 
 //MBConfigLoader
@@ -20,10 +21,18 @@ public:
     const MQ* inputQueue() const;
     const MQ* outputQueue() const;
     void updateMQState();
+    void sendMsgToQueue(const QByteArray&); //записать пакет в очередь (input)
 
 
 protected:
     MQWorker    *mq_manager;
+
+signals:
+    void signalSendMsgOk(const QString&);
+    void signalReceiveMsgOk(const QString&);
+    void signalSendMsgErr(const QString&);
+    void signalReceiveMsgErr(const QString&);
+
 
 };
 

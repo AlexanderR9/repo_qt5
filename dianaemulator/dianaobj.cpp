@@ -48,3 +48,25 @@ void DianaObject::updateMQState()
 
     mq_manager->updateState();
 }
+void DianaObject::sendMsgToQueue(const QByteArray &ba)
+{
+    const MQ *mq = inputQueue();
+    if (mq)
+    {
+        bool ok;
+        mq_manager->sendMsg(0, ba, ok);
+
+        if (ok) emit signalSendMsgOk(name().toLower());
+        else emit signalSendMsgErr(name().toLower());
+    }
+}
+
+
+
+
+
+
+
+
+
+

@@ -70,6 +70,7 @@ protected slots:
 private:
     QString configDir() const;
     int byteOrder() const;
+    bool autoUpdatePackets() const;
     int viewExpandLevel() const;
     quint8 doublePrecision() const;
     int modeSettings() const;

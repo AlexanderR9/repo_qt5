@@ -4,13 +4,20 @@
 
 #include <QTableWidget>
 #include <QTreeWidget>
+#include <QTreeWidgetItem>
 #include <QSplitter>
 #include <QDebug>
 
 
 #define MQ_STATE_COL    4
 #define MQ_ATTR_COL     5
+#define INPUT_TEXT      QString("input")
+#define OUT_TEXT        QString("output")
 
+
+#define VIEW_RECEIVED_COL   1
+#define VIEW_SENDED_COL     2
+#define VIEW_ERRS_COL       3
 
 //MQGeneralPage
 MQGeneralPage::MQGeneralPage(QWidget *parent)
@@ -40,13 +47,12 @@ void MQGeneralPage::initWidget()
     m_tableBox->vHeaderHide();
 
     headers.clear();
-    headers << "Queue name" << "Received msg" << "Sended msg";
+    headers << "Queue name" << "Received msg" << "Sended msg" << "Errors";
     m_viewBox->setHeaderLabels(headers);
 
     m_tableBox->table()->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tableBox->table()->setSelectionMode(QAbstractItemView::SingleSelection);
     LTable::removeAllRowsTable(m_tableBox->table());
-
 }
 void MQGeneralPage::slotAppendMQ(const QString &diana_name, quint32 msg_size, const MQ *mq)
 {
@@ -58,16 +64,56 @@ void MQGeneralPage::slotAppendMQ(const QString &diana_name, quint32 msg_size, co
     QStringList row_data;
     row_data << diana_name;
 
+
     QString s_type = "?";
-    if (mq->name().contains("input")) s_type = "ReadOnly";
-    else if (mq->name().contains("output")) s_type = "WriteOnly";
+    if (mq->name().contains(INPUT_TEXT))
+    {
+        s_type = "ReadOnly";
+        appendDianaToView(diana_name, INPUT_TEXT);
+    }
+    else if (mq->name().contains(OUT_TEXT))
+    {
+        s_type = "WriteOnly";
+        appendDianaToView(diana_name, OUT_TEXT);
+    }
+
     row_data << s_type;
-
     row_data << mq->name() << QString::number(msg_size) << mq->strState() << mq->strAttrs();
-
     LTable::addTableRow(m_tableBox->table(), row_data);
     LTable::resizeTableContents(m_tableBox->table());
     updateMQState();
+
+
+}
+void MQGeneralPage::appendDianaToView(const QString &diana_name, const QString &type)
+{
+    int pos = viewDianaIndex(diana_name);
+    if (pos < 0)
+    {
+        QTreeWidgetItem *diana_item = new QTreeWidgetItem(view());
+        diana_item->setText(0, diana_name);
+        diana_item->setTextColor(0, QColor(70, 130, 180));
+        view()->addTopLevelItem(diana_item);
+        pos = view()->topLevelItemCount() - 1;
+    }
+
+    qDebug()<<QString("MQGeneralPage::appendDianaToView  %1/%2  %3").arg(diana_name).arg(pos).arg(type);
+    QTreeWidgetItem *item = new QTreeWidgetItem(view()->topLevelItem(pos));
+    item->setText(0, type);
+    item->setText(1, QString::number(0));
+    item->setText(2, QString::number(0));
+    item->setText(3, QString::number(0));
+    view()->expandAll();
+}
+int MQGeneralPage::viewDianaIndex(const QString &diana_name) const
+{
+    int n = view()->topLevelItemCount();
+    for (int i=0; i<n; i++)
+    {
+        if (view()->topLevelItem(i)->text(0) == diana_name)
+            return i;
+    }
+    return -1;
 }
 void MQGeneralPage::updateMQState()
 {
@@ -87,5 +133,80 @@ void MQGeneralPage::updateMQState()
     LTable::resizeTableContents(m_tableBox->table());
 
 }
+QTreeWidget* MQGeneralPage::view() const
+{
+    return (m_viewBox ? m_viewBox->view() : NULL);
+}
+void MQGeneralPage::slotSendMsgOk(const QString &diana_name)
+{
+    int pos = viewDianaIndex(diana_name);
+    if (pos >= 0)
+    {
+        QTreeWidgetItem *item = view()->topLevelItem(pos);
+        if (item)
+        {
+            QTreeWidgetItem *in_item = item->child(0);
+            if (in_item)
+            {
+                int n = in_item->text(VIEW_SENDED_COL).toInt() + 1;
+                in_item->setText(VIEW_SENDED_COL, QString::number(n));
+            }
+        }
+    }
+}
+void MQGeneralPage::slotReceiveMsgOk(const QString &diana_name)
+{
+    int pos = viewDianaIndex(diana_name);
+    if (pos >= 0)
+    {
+        QTreeWidgetItem *item = view()->topLevelItem(pos);
+        if (item)
+        {
+            QTreeWidgetItem *in_item = item->child(1);
+            if (in_item)
+            {
+                int n = in_item->text(VIEW_RECEIVED_COL).toInt() + 1;
+                in_item->setText(VIEW_RECEIVED_COL, QString::number(n));
+            }
+        }
+    }
+}
+void MQGeneralPage::slotSendMsgErr(const QString &diana_name)
+{
+    int pos = viewDianaIndex(diana_name);
+    if (pos >= 0)
+    {
+        QTreeWidgetItem *item = view()->topLevelItem(pos);
+        if (item)
+        {
+            QTreeWidgetItem *in_item = item->child(0);
+            if (in_item)
+            {
+                int n = in_item->text(VIEW_ERRS_COL).toInt() + 1;
+                in_item->setText(VIEW_ERRS_COL, QString::number(n));
+                in_item->setTextColor(VIEW_ERRS_COL, Qt::red);
+            }
+        }
+    }
+}
+void MQGeneralPage::slotReceiveMsgErr(const QString &diana_name)
+{
+    int pos = viewDianaIndex(diana_name);
+    if (pos >= 0)
+    {
+        QTreeWidgetItem *item = view()->topLevelItem(pos);
+        if (item)
+        {
+            QTreeWidgetItem *in_item = item->child(1);
+            if (in_item)
+            {
+                int n = in_item->text(VIEW_ERRS_COL).toInt() + 1;
+                in_item->setText(VIEW_ERRS_COL, QString::number(n));
+                in_item->setTextColor(VIEW_ERRS_COL, Qt::red);
+            }
+        }
+    }
+}
+
 
 

@@ -24,15 +24,15 @@ public:
     void setExpandLevel(int);
     void setDoublePrecision(quint8);
     void updateMQState();
+    void sendMsgToQueue(); //записать пакет в очередь (input)
 
-
-    //void load(QSettings&);
-    //void save(QSettings&);
+    inline void setAutoRecalcPackValues(bool b) {m_autoUpdatePackValues = b;}
 
 protected:
     LXMLPackView            *m_inView;
     LXMLPackView            *m_outView;
     DianaObject             *m_dianaObj;
+    bool                     m_autoUpdatePackValues; //признак того что значения отправляемого пакета будут автоматом пересчитываться с учетом случайной состовляющей
 
     void initWidget();
 
@@ -40,6 +40,10 @@ protected:
 
 signals:
     void signalMQCreated(const QString&, quint32, const MQ*);
+    void signalSendMsgOk(const QString&);
+    void signalReceiveMsgOk(const QString&);
+    void signalSendMsgErr(const QString&);
+    void signalReceiveMsgErr(const QString&);
 
 
 

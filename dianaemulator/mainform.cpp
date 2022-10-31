@@ -136,14 +136,26 @@ void MainForm::initCommonSettings()
     lCommonSettings.setComboList(key, combo_list);
     lCommonSettings.setDefValue(key, combo_list.at(1));
 
+
+    key = QString("auto_update_pack_values");
+    lCommonSettings.addParam(QString("Auto update values of sending packets"), LSimpleDialog::sdtBool, key);
+    lCommonSettings.setDefValue(key, true);
+
 }
 void MainForm::start()
 {
+     restartExchangeTimer();
+     updateButtonsState();
 
+     m_protocol->addSpace();
+     m_protocol->addText(QString("Data exchange started, interval %1 ms.").arg(mqExchangeInterval()));
 }
 void MainForm::stop()
 {
-
+    m_exchangeTimer->stop();
+    updateButtonsState();
+    m_protocol->addSpace();
+    m_protocol->addText(QString("Data exchange stopped."));
 }
 void MainForm::slotUpdateMQStateTimer()
 {
@@ -154,37 +166,9 @@ void MainForm::slotUpdateMQStateTimer()
 }
 void MainForm::slotMQExchangeTimer()
 {
+    foreach (DianaViewWidget *page, m_pages)
+        page->sendMsgToQueue();
 
-}
-QString MainForm::configDir() const
-{
-    return lCommonSettings.paramValue("config_dir").toString();
-}
-quint8 MainForm::doublePrecision() const
-{
-    return lCommonSettings.paramValue("precision").toUInt();
-}
-int MainForm::mqStateInterval()
-{
-    return lCommonSettings.paramValue("mq_state_interval").toInt();
-}
-int MainForm::mqExchangeInterval()
-{
-    return lCommonSettings.paramValue("mq_exchange_interval").toInt();
-}
-int MainForm::byteOrder() const
-{
-    if (lCommonSettings.paramValue("byteorder").toString().toLower().contains("big")) return QDataStream::BigEndian;
-    return QDataStream::LittleEndian;
-}
-int MainForm::viewExpandLevel() const
-{
-    return lCommonSettings.paramValue("view_expand").toInt();
-}
-int MainForm::modeSettings() const
-{
-    QString value = lCommonSettings.paramValue("mode").toString().trimmed();
-    return ((value.toLower() == "client") ? emClient : emServer);
 }
 void MainForm::save()
 {
@@ -224,9 +208,11 @@ void MainForm::load()
     }
 
     m_tab->setCurrentIndex(settings.value(QString("%1/tab_index").arg(objectName()), 0).toInt());
-
-
     restartStateTimer();
+
+    foreach (DianaViewWidget *page, m_pages)
+        page->setAutoRecalcPackValues(autoUpdatePackets());
+
 }
 void MainForm::updateButtonsState()
 {
@@ -262,6 +248,11 @@ void MainForm::slotAppSettingsChanged(QStringList keys)
         {
             foreach (DianaViewWidget *page, m_pages)
                 page->setDoublePrecision(doublePrecision());
+        }
+        else if (key == "auto_update_pack_values")
+        {
+            foreach (DianaViewWidget *page, m_pages)
+                page->setAutoRecalcPackValues(autoUpdatePackets());
         }
         else if (key == "mq_state_interval") restartStateTimer();
         else if (key == "mq_exchange_interval" && m_exchangeTimer->isActive()) restartExchangeTimer();
@@ -354,7 +345,61 @@ void MainForm::tryAddPage(const QString &diana_name)
     connect(dw, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(dw, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
     connect(dw, SIGNAL(signalMQCreated(const QString&, quint32, const MQ*)), m_generalPage, SLOT(slotAppendMQ(const QString&, quint32, const MQ*)));
+    connect(dw, SIGNAL(signalSendMsgOk(const QString&)), m_generalPage, SLOT(slotSendMsgOk(const QString&)));
+    connect(dw, SIGNAL(signalReceiveMsgOk(const QString&)), m_generalPage, SLOT(slotReceiveMsgOk(const QString&)));
+    connect(dw, SIGNAL(signalSendMsgErr(const QString&)), m_generalPage, SLOT(slotSendMsgErr(const QString&)));
+    connect(dw, SIGNAL(signalReceiveMsgErr(const QString&)), m_generalPage, SLOT(slotReceiveMsgErr(const QString&)));
 
+}
+void MainForm::restartStateTimer()
+{
+    m_stateTimer->stop();
+    m_stateTimer->setInterval(mqStateInterval());
+    m_stateTimer->start();
+}
+void MainForm::restartExchangeTimer()
+{
+    m_exchangeTimer->stop();
+    m_exchangeTimer->setInterval(mqExchangeInterval());
+    m_exchangeTimer->start();
+}
+
+
+
+//private funcs
+QString MainForm::configDir() const
+{
+    return lCommonSettings.paramValue("config_dir").toString();
+}
+quint8 MainForm::doublePrecision() const
+{
+    return lCommonSettings.paramValue("precision").toUInt();
+}
+int MainForm::mqStateInterval()
+{
+    return lCommonSettings.paramValue("mq_state_interval").toInt();
+}
+int MainForm::mqExchangeInterval()
+{
+    return lCommonSettings.paramValue("mq_exchange_interval").toInt();
+}
+int MainForm::byteOrder() const
+{
+    if (lCommonSettings.paramValue("byteorder").toString().toLower().contains("big")) return QDataStream::BigEndian;
+    return QDataStream::LittleEndian;
+}
+bool MainForm::autoUpdatePackets() const
+{
+    return lCommonSettings.paramValue("auto_update_pack_values").toBool();
+}
+int MainForm::viewExpandLevel() const
+{
+    return lCommonSettings.paramValue("view_expand").toInt();
+}
+int MainForm::modeSettings() const
+{
+    QString value = lCommonSettings.paramValue("mode").toString().trimmed();
+    return ((value.toLower() == "client") ? emClient : emServer);
 }
 void MainForm::parseConfigName(const QString &fname, QPair<QString, QString> &pair)
 {
@@ -382,19 +427,5 @@ void MainForm::parseConfigName(const QString &fname, QPair<QString, QString> &pa
         }
     }
 }
-void MainForm::restartStateTimer()
-{
-    m_stateTimer->stop();
-    m_stateTimer->setInterval(mqStateInterval());
-    m_stateTimer->start();
-}
-void MainForm::restartExchangeTimer()
-{
-    m_exchangeTimer->stop();
-    m_exchangeTimer->setInterval(mqExchangeInterval());
-    m_exchangeTimer->start();
-
-}
-
 
 
