@@ -23,6 +23,8 @@ public:
     void updateMQState();
     void sendMsgToQueue(const QByteArray&); //записать пакет в очередь (input)
 
+    static QString inputType() {return QString("input");}
+    static QString outputType() {return QString("output");}
 
 protected:
     MQWorker    *mq_manager;
@@ -32,6 +34,10 @@ signals:
     void signalReceiveMsgOk(const QString&);
     void signalSendMsgErr(const QString&);
     void signalReceiveMsgErr(const QString&);
+
+private:
+    int queueInputIndexOf() const;
+    int queueOutputIndexOf() const;
 
 
 };

@@ -1,6 +1,4 @@
 #include "dianaviewwidget.h"
-#include "lprotocol.h"
-//#include "lstatic.h"
 #include "dianaobj.h"
 #include "xmlpackview.h"
 #include "xmlpack.h"
@@ -9,6 +7,7 @@
 #include <QSplitter>
 #include <QVBoxLayout>
 #include <QIcon>
+#include <QDebug>
 #include <QSettings>
 
 
@@ -46,13 +45,13 @@ void DianaViewWidget::initWidget()
 }
 void DianaViewWidget::loadMQPacket(const QString &fname)
 {
-    if (fname.contains("input"))
+    if (fname.contains(DianaObject::inputType()))
     {
         loadPack(m_inView, fname);
         if (!m_inView->invalid())
             emit signalMQCreated(m_dianaObj->name().toLower(), m_inView->getPacket()->size(),  m_dianaObj->inputQueue());
     }
-    else if (fname.contains("output"))
+    else if (fname.contains(DianaObject::outputType()))
     {
         loadPack(m_outView, fname);
         if (!m_outView->invalid())
@@ -62,6 +61,7 @@ void DianaViewWidget::loadMQPacket(const QString &fname)
 }
 void DianaViewWidget::loadPack(LXMLPackView *view, const QString &fname)
 {
+    qDebug()<<QString("DianaViewWidget::loadPack  %1").arg(fname);
     LXMLPackObj *pack = new LXMLPackObj(fname, this);
     connect(pack, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
     connect(pack, SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));

@@ -7,7 +7,7 @@
 #include "dianaviewwidget.h"
 #include "mqgeneralpage.h"
 #include "mqworker.h"
-
+#include "dianaobj.h"
 
 #include <QDebug>
 #include <QDir>
@@ -408,22 +408,22 @@ void MainForm::parseConfigName(const QString &fname, QPair<QString, QString> &pa
     QString sname = LFile::shortFileName(fname);
 
     int pos = -1;
-    if (sname.contains("_input.xml"))
+    if (sname.contains(QString("_%1.xml").arg(DianaObject::inputType())))
     {
-        pos = sname.indexOf("_input.xml");
+        pos = sname.indexOf(QString("_%1.xml").arg(DianaObject::inputType()));
         if (pos > 0)
         {
             pair.first = sname.left(pos).trimmed();
-            if (!pair.first.isEmpty()) pair.second = "input";
+            if (!pair.first.isEmpty()) pair.second = QString("_%1.xml").arg(DianaObject::inputType());
         }
     }
-    else if (sname.contains("_output.xml"))
+    else if (sname.contains(QString("_%1.xml").arg(DianaObject::outputType())))
     {
-        pos = sname.indexOf("_output.xml");
+        pos = sname.indexOf(QString("_%1.xml").arg(DianaObject::outputType()));
         if (pos > 0)
         {
             pair.first = sname.left(pos).trimmed();
-            if (!pair.first.isEmpty()) pair.second = "output";
+            if (!pair.first.isEmpty()) pair.second = QString("_%1.xml").arg(DianaObject::outputType());
         }
     }
 }

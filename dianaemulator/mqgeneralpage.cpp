@@ -1,6 +1,7 @@
 #include "mqgeneralpage.h"
 #include "ltable.h"
 #include "mq.h"
+#include "dianaobj.h"
 
 #include <QTableWidget>
 #include <QTreeWidget>
@@ -9,10 +10,11 @@
 #include <QDebug>
 
 
+#define MQ_MODE_COL     1
 #define MQ_STATE_COL    4
 #define MQ_ATTR_COL     5
-#define INPUT_TEXT      QString("input")
-#define OUT_TEXT        QString("output")
+//#define INPUT_TEXT      QString("input")
+//#define OUT_TEXT        QString("output")
 
 
 #define VIEW_RECEIVED_COL   1
@@ -66,18 +68,22 @@ void MQGeneralPage::slotAppendMQ(const QString &diana_name, quint32 msg_size, co
 
 
     QString s_type = "?";
-    if (mq->name().contains(INPUT_TEXT))
-    {
-        s_type = "ReadOnly";
-        appendDianaToView(diana_name, INPUT_TEXT);
-    }
-    else if (mq->name().contains(OUT_TEXT))
+    if (mq->name().contains(DianaObject::inputType()))
     {
         s_type = "WriteOnly";
-        appendDianaToView(diana_name, OUT_TEXT);
+        appendDianaToView(diana_name, DianaObject::inputType());
+    }
+    else if (mq->name().contains(DianaObject::outputType()))
+    {
+        s_type = "ReadOnly";
+        appendDianaToView(diana_name, DianaObject::outputType());
     }
 
-    row_data << s_type;
+
+
+    //row_data << s_type;
+
+    row_data << mq->strMode();
     row_data << mq->name() << QString::number(msg_size) << mq->strState() << mq->strAttrs();
     LTable::addTableRow(m_tableBox->table(), row_data);
     LTable::resizeTableContents(m_tableBox->table());
@@ -124,6 +130,7 @@ void MQGeneralPage::updateMQState()
         const MQ *mq = m_queues.value(i);
         if (mq)
         {
+            m_tableBox->table()->item(i, MQ_MODE_COL)->setText(mq->strMode());
             m_tableBox->table()->item(i, MQ_STATE_COL)->setText(mq->strState());
             m_tableBox->table()->item(i, MQ_STATE_COL)->setTextColor(mq->colorStatus());
             m_tableBox->table()->item(i, MQ_ATTR_COL)->setText(mq->strAttrs());
