@@ -135,8 +135,6 @@ protected:
     QTimer *m_timer;
     bool m_firstValues; //признак того что в этот момент значения задаются в 1-й раз после старта эмуляции.
 
-    //const MBEmulDevice* deviceAt(quint8) const;
-
 protected slots:
     void slotTimer(); //обновить некоторые значения имитируемых сигналов
 

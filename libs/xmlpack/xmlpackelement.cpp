@@ -1,6 +1,6 @@
 #include "xmlpackelement.h"
 #include "xmlpacktype.h"
-#include "lstatic.h"
+#include "lstaticxml.h"
 
 
 #include <QDebug>
@@ -54,12 +54,12 @@ void LXMLPackElement::loadNode(const QDomNode &node, QString &err)
     err.clear();
 
     //read caption
-    setCation(LStatic::getStringAttrValue(XMLPackStatic::cationAttrName(), node));
+    setCation(LStaticXML::getStringAttrValue(XMLPackStatic::cationAttrName(), node));
 
     //read datatype
     if (node.attributes().contains(XMLPackStatic::dataTypeAttrName()))
     {
-        attr = LStatic::getStringAttrValue(XMLPackStatic::dataTypeAttrName(), node);
+        attr = LStaticXML::getStringAttrValue(XMLPackStatic::dataTypeAttrName(), node);
         m_dataType = XMLPackStatic::typeByXmlAttr(attr);
     }
     else m_dataType = petSection;
@@ -80,7 +80,7 @@ void LXMLPackElement::loadNode(const QDomNode &node, QString &err)
     m_arrSize = 1;
     if (node.attributes().contains(XMLPackStatic::arrSizeAttrName()))
     {
-        int a = LStatic::getIntAttrValue(XMLPackStatic::arrSizeAttrName(), node);
+        int a = LStaticXML::getIntAttrValue(XMLPackStatic::arrSizeAttrName(), node);
         if (a < 0)
         {
             err = QString("loading node [%1] - invalid arr_size %2").arg(node.nodeName()).arg(attr);
@@ -105,17 +105,17 @@ void LXMLPackElement::loadValueAttrs(const QDomNode &node)
     {
         if (m_value.isDouble)
         {
-            m_value.d_value = LStatic::getDoubleAttrValue(XMLPackStatic::defValueAttrName(), node, -1);
+            m_value.d_value = LStaticXML::getDoubleAttrValue(XMLPackStatic::defValueAttrName(), node, -1);
         }
         else
         {
-            m_value.i_value = LStatic::getIntAttrValue(XMLPackStatic::defValueAttrName(), node, -1);
+            m_value.i_value = LStaticXML::getIntAttrValue(XMLPackStatic::defValueAttrName(), node, -1);
         }
     }
 
     if (node.attributes().contains(XMLPackStatic::errValueAttrName()))
     {
-        m_value.rand_deviation = LStatic::getDoubleAttrValue(XMLPackStatic::errValueAttrName(), node, 0);
+        m_value.rand_deviation = LStaticXML::getDoubleAttrValue(XMLPackStatic::errValueAttrName(), node, 0);
     }
 }
 void LXMLPackElement::loadChilds(const QDomNode &node)

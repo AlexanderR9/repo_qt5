@@ -162,50 +162,32 @@ QString LStatic::fromCodec(const QString &s, QString codec_name)
     }
     return s;
 }
-void LStatic::setAttrNode(QDomElement &node, QString a1, QString v1, QString a2, QString v2, QString a3, QString v3, QString a4, QString v4, QString a5, QString v5)
+QString LStatic::systemInfo()
 {
-    if (node.isNull()) return;
-    if (a1.trimmed().isEmpty()) return;
-    node.setAttribute(a1.trimmed(), v1.trimmed());
-    if (a2.trimmed().isEmpty()) return;
-    node.setAttribute(a2.trimmed(), v2.trimmed());
-    if (a3.trimmed().isEmpty()) return;
-    node.setAttribute(a3.trimmed(), v3.trimmed());
-    if (a4.trimmed().isEmpty()) return;
-    node.setAttribute(a4.trimmed(), v4.trimmed());
-    if (a5.trimmed().isEmpty()) return;
-    node.setAttribute(a5.trimmed(), v5.trimmed());
+    QString s("\n");
+#ifdef Q_OS_LINUX
+    s += QString("-------------------- OS_LINUX ---------------------");
+#elif Q_OS_WIN32
+    s += QString("------------ OS_WIN32 ----------------");
+#elif Q_OS_WIN64
+    s += QString("------------ OS_WIN64 ----------------");
+#elif Q_OS_SOLARIS
+    s += QString("------------ OS_SOLARIS ----------------");
+#elif Q_OS_MAC
+    s += QString("------------ OS_MAC ----------------");
+#elif Q_OS_ANDROID
+    s += QString("------------ OS_ANDROID ----------------");
+#else
+    s += QString("------------ OS_UNKNOWN ----------------");
+#endif
+    s += QString("\n");
+    s += QString("name = [%1] \n").arg(QSysInfo::prettyProductName());
+    s += QString("build_abi = [%1] \n").arg(QSysInfo::buildAbi());
+    s += QString("cpu_architecture = [%1] \n").arg(QSysInfo::currentCpuArchitecture());
+    s += QString("build_cpu_architecture = [%1] \n").arg(QSysInfo::buildCpuArchitecture());
+    s += QString("product: type/version = [%1 / %2] \n").arg(QSysInfo::productType()).arg(QSysInfo::productVersion());
+    s += QString("kernel: type/version = [%1 / %2] \n").arg(QSysInfo::kernelType()).arg(QSysInfo::kernelVersion());
+    s += QString("-------------------------------------------------------\n");
+    return s;
 }
-double LStatic::getDoubleAttrValue(const QString &attr_name, const QDomNode &node, double defValue)
-{
-    QString s_value = getStringAttrValue(attr_name, node, "err");
-    if (s_value == "err") return defValue;
-
-    bool ok;
-    double a = s_value.toDouble(&ok);
-    return (ok ? a : defValue);
-}
-int LStatic::getIntAttrValue(const QString &attr_name, const QDomNode &node, int defValue)
-{
-    if (attr_name.trimmed().isEmpty() || node.isNull()) return defValue;
-    if (!node.toElement().hasAttribute(attr_name.trimmed()))  return defValue;
-    QString s_value = node.toElement().attribute(attr_name.trimmed());
-
-    bool ok;
-    int value = s_value.toInt(&ok);
-    if (!ok) return defValue;
-    return value;
-}
-QString LStatic::getStringAttrValue(const QString &attr_name, const QDomNode &node, QString defValue)
-{
-    if (attr_name.trimmed().isEmpty() || node.isNull()) return defValue;
-    if (!node.toElement().hasAttribute(attr_name.trimmed()))  return defValue;
-    return node.toElement().attribute(attr_name.trimmed());
-}
-void LStatic::createDomHeader(QDomDocument &dom)
-{
-    dom.appendChild(dom.createProcessingInstruction("xml", "version=\"1.0\" encoding=\"UTF-8\""));
-}
-
-
 

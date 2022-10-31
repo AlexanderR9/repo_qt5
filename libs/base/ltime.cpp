@@ -34,7 +34,12 @@ QString LTime::strDateTime(const QDateTime &dt, QString mask)
 }
 void LTime::getTimeSpecCPP(timespec &tm, Qt::TimeSpec ts, qint64 def_nsec)
 {
+#ifdef OS_CENTOS
+    clock_gettime (CLOCK_REALTIME, &tm);
+#else
     timespec_get(&tm, TIME_UTC);
+#endif
+
     if (ts == Qt::LocalTime) tm.tv_sec += (3600 * utcOffset());
     if (def_nsec >= 0) tm.tv_nsec = def_nsec;
 }

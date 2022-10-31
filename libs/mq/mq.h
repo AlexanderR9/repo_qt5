@@ -34,7 +34,6 @@ public:
     inline bool isDeinit() const {return (m_state == mqsDeinit);}
 
     
-    
     QString strMode() const;
     QString strState() const;
     QString strStatus() const;
@@ -58,8 +57,10 @@ protected:
     int 		m_mode; 	//IODevice enum element
     mq_attr 	*m_attrs; 	//current attributes
     
-    void checkQueueFile(bool check_invalid = true); //проверить наличие файла-очереди в каталоге /dev/mqueue
-
+    //проверить наличие файла-очереди POSIX для этого объекта в каталоге /dev/mqueue.
+    //если такая очередь не существует, а статус объекта висит как ОТКРЫТА то функция пытается ее закрыть.
+    //после выполнения этой функции нужно выполнить: if (isNotFound()) { to do }
+    void checkQueueFile(bool check_invalid = true);
 
 private:
     const char* charName() const; 

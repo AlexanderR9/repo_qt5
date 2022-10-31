@@ -58,12 +58,12 @@ void MQGeneralPage::slotAppendMQ(const QString &diana_name, quint32 msg_size, co
     QStringList row_data;
     row_data << diana_name;
 
-    //QString s_type = "?";
-    //if (mq->name().contains("input")) s_type = "ReadOnly";
-    //else if (mq->name().contains("output")) s_type = "WriteOnly";
-    //row_data << s_type;
+    QString s_type = "?";
+    if (mq->name().contains("input")) s_type = "ReadOnly";
+    else if (mq->name().contains("output")) s_type = "WriteOnly";
+    row_data << s_type;
 
-    row_data << mq->strMode() << mq->name() << QString::number(msg_size) << mq->strState() << mq->strAttrs();
+    row_data << mq->name() << QString::number(msg_size) << mq->strState() << mq->strAttrs();
 
     LTable::addTableRow(m_tableBox->table(), row_data);
     LTable::resizeTableContents(m_tableBox->table());
@@ -83,6 +83,8 @@ void MQGeneralPage::updateMQState()
             m_tableBox->table()->item(i, MQ_ATTR_COL)->setText(mq->strAttrs());
         }
     }
+
+    LTable::resizeTableContents(m_tableBox->table());
 
 }
 

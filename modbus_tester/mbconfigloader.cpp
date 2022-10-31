@@ -1,6 +1,6 @@
 #include "mbconfigloader.h"
 #include "mbdeviceemulator.h"
-#include "lstatic.h"
+#include "lstaticxml.h"
 
 
 #include <QDomNode>
@@ -85,7 +85,7 @@ void MBConfigLoader::loadDevice(const QDomNode &node)
 {
     QString msg;
     MBDeviceEmulator *emulator = qobject_cast<MBDeviceEmulator*>(parent());
-    int addr = LStatic::getIntAttrValue("addr", node);
+    int addr = LStaticXML::getIntAttrValue("addr", node);
     if (addr < 0)
     {
         msg = QString("MBConfigLoader::loadDevice: invalid device address attr_node=[addr].");
@@ -119,17 +119,14 @@ void MBConfigLoader::loadDeviceSignals(quint8 addr, const QDomNode &node)
         }
         child_node = child_node.nextSibling();
     }
-
     emulator->setEmuValueSettings(addr, evs);
-
-
 }
 void MBConfigLoader::loadDeviceSignal(quint8 addr, const QDomNode &node)
 {
     MBDeviceEmulator *emulator = qobject_cast<MBDeviceEmulator*>(parent());
 
     bool sig_ok = false;
-    QString s_reg_pos = LStatic::getStringAttrValue("pos", node);
+    QString s_reg_pos = LStaticXML::getStringAttrValue("pos", node);
     int reg_pos = -1;
     if (!s_reg_pos.isEmpty())
     {
@@ -144,13 +141,13 @@ void MBConfigLoader::loadDeviceSignal(quint8 addr, const QDomNode &node)
     if (reg_pos < 0) qWarning("MBConfigLoader::loadDeviceSignals WARNING  invalid signal reg_pos attr");
     else
     {
-        int reg_type = LStatic::getIntAttrValue("reg_type", node);
+        int reg_type = LStaticXML::getIntAttrValue("reg_type", node);
         if (reg_type != MBRegisterInfo::estBit_1 && reg_type != MBRegisterInfo::estBit_16) qWarning("MBConfigLoader::loadDeviceSignals WARNING  invalid signal reg_type attr");
         else
         {
             if (reg_type == MBRegisterInfo::estBit_1)
             {
-                int bit_index = LStatic::getIntAttrValue("bit_index", node);
+                int bit_index = LStaticXML::getIntAttrValue("bit_index", node);
                 if (bit_index < 0) qWarning("MBConfigLoader::loadDeviceSignals WARNING  invalid signal bit_index attr");
                 else
                 {
@@ -184,21 +181,21 @@ void MBConfigLoader::loadDeviceSignal(quint8 addr, const QDomNode &node)
 void MBConfigLoader::loadEmulParams(EmulValueSettings &evs, const QDomNode &node)
 {
     bool ok;
-    double v = LStatic::getStringAttrValue("value", node).toDouble(&ok);
+    double v = LStaticXML::getStringAttrValue("value", node).toDouble(&ok);
     if (ok) evs.base_value = v;
-    else qWarning()<<QString("MBConfigLoader::loadEmulParams WARNING - invalid base_value %1").arg(LStatic::getStringAttrValue("value", node));
+    else qWarning()<<QString("MBConfigLoader::loadEmulParams WARNING - invalid base_value %1").arg(LStaticXML::getStringAttrValue("value", node));
 
-    v = LStatic::getStringAttrValue("err", node).toDouble(&ok);
+    v = LStaticXML::getStringAttrValue("err", node).toDouble(&ok);
     if (ok) evs.err = v;
-    else qWarning()<<QString("MBConfigLoader::loadEmulParams WARNING - invalid error value %1").arg(LStatic::getStringAttrValue("err", node));
+    else qWarning()<<QString("MBConfigLoader::loadEmulParams WARNING - invalid error value %1").arg(LStaticXML::getStringAttrValue("err", node));
 
-    v = LStatic::getStringAttrValue("factor", node).toDouble(&ok);
+    v = LStaticXML::getStringAttrValue("factor", node).toDouble(&ok);
     if (ok) evs.factor = v;
-    else qWarning()<<QString("MBConfigLoader::loadEmulParams WARNING - invalid factor value %1").arg(LStatic::getStringAttrValue("factor", node));
+    else qWarning()<<QString("MBConfigLoader::loadEmulParams WARNING - invalid factor value %1").arg(LStaticXML::getStringAttrValue("factor", node));
 
-    v = LStatic::getStringAttrValue("adder", node).toDouble(&ok);
+    v = LStaticXML::getStringAttrValue("adder", node).toDouble(&ok);
     if (ok) evs.adder = v;
-    else qWarning()<<QString("MBConfigLoader::loadEmulParams WARNING - invalid adder value %1").arg(LStatic::getStringAttrValue("adder", node));
+    else qWarning()<<QString("MBConfigLoader::loadEmulParams WARNING - invalid adder value %1").arg(LStaticXML::getStringAttrValue("adder", node));
 }
 
 

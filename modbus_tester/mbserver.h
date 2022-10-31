@@ -21,12 +21,10 @@ public:
     MBServer(QObject *parent = NULL);
     virtual ~MBServer() {}
 
-    //void setPortParams(const ComParams&); //установка параметров COM порта
     QString cmdCounterToStr() const; //info
     QString regPosToStr() const; //info
     inline const MBConfigLoader* configLoader() const {return emul_config_loader;}
     void setEmulConfig(const QString&);
-
 
 protected:
     void reset();
@@ -41,7 +39,6 @@ protected:
     void parseCurrentBuffer();
     void tryParseAdu(const LMBAdu&);
     bool open();
-
 
     //for emulation
     void initRegistersMap();

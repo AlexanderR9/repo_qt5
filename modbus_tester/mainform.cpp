@@ -171,13 +171,11 @@ void MainForm::updatePortParams()
 
     bool ok;
     ModbusPacketParams p_pack;
-    //p_pack.emul_config = lCommonSettings.paramValue("emulconfig").toString().trimmed();
     if (type == "MASTER") p_pack.device_type = 0;
     if (type == "SLAVE") p_pack.device_type = 1;
 
     p_pack.address = lCommonSettings.paramValue("address").toInt();
     p_pack.cmd = lCommonSettings.paramValue("cmd").toString().toInt(&ok, 16);
-    //qDebug()<<QString("MainForm::updatePortParams()  cmd=%1/%2").arg(p_pack.cmd).arg(lCommonSettings.paramValue("cmd").toString());
     p_pack.start_pos = lCommonSettings.paramValue("startreg").toInt();
     p_pack.n_regs = lCommonSettings.paramValue("nreg").toInt();
     p_pack.retries = lCommonSettings.paramValue("retries").toInt();

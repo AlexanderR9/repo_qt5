@@ -4,33 +4,6 @@
 #include <QSerialPort>
 #include <QString>
 
-//ComParams
-/*
-struct ComParams
-{
-    ComParams() {reset();}
-
-    QString port_name;
-    int baud_rate;
-    int data_bits;
-    int stop_bits;
-    int parity;
-    int device_type; // 0-master, 1-slave
-
-    QString emul_config;
-
-    void reset()
-    {
-        port_name = "/dev/ttyUSB3";
-        baud_rate = QSerialPort::Baud19200;
-        data_bits = QSerialPort::Data8;
-        stop_bits = QSerialPort::OneStop;
-        parity = QSerialPort::EvenParity;
-        device_type = 0;
-        emul_config.clear();
-    }
-};
-*/
 
 //ModbusPacketParams
 struct ModbusPacketParams
@@ -81,7 +54,6 @@ struct ModbusPacketParams
                 arg(address).arg(cmd).arg(start_pos).arg(n_regs).arg(retries);
         return s;
     }
-
 
 };
 

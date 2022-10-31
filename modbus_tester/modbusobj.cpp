@@ -19,18 +19,12 @@ ModBusObj::ModBusObj(QObject *parent)
     m_mode(-1)
 {
     m_master = new QModbusRtuSerialMaster(this);
-
     m_slave = new MBServer(this);
     connect(m_slave->configLoader(), SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
     connect(m_slave->configLoader(), SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
 
-    //initDataUnitSlave();
-    //setSlaveMode();
-
     m_master->setTimeout(2000);
     m_master->setNumberOfRetries(1);
-
-    //startTimer(3000);
 }
 void ModBusObj::timerEvent(QTimerEvent *event)
 {
@@ -51,28 +45,6 @@ void ModBusObj::timerEvent(QTimerEvent *event)
         qDebug()<<QString("ModBusObj::timerEvent: change slave register %1, value %2").arg(pos).arg(reg_value);
     }
 }
-/*
-void ModBusObj::initDataUnitSlave()
-{
-    quint16 start_pos_reg = 0; //стартовая позиция регистров
-    quint16 reg_count = m_packParams.n_regs; //количество регистров в буфере, т.е. для 16 битных регистров размер буфера будет reg_count*2
-    QModbusDataUnit data_unit(QModbusDataUnit::HoldingRegisters, start_pos_reg, reg_count);
-
-    //принудительная установка значений для некоторых регистров (просто для примера)
-    data_unit.setValue(0, 0xffff);
-    data_unit.setValue(1, 0xffff);
-    data_unit.setValue(2, 0xa1);
-    data_unit.setValue(3, 0xa2);
-    data_unit.setValue(4, 0xa3);
-    data_unit.setValue(5, 0xa4);
-    data_unit.setValue(6, 0xa5a6);
-    ////////////////////////////////////////////////////////////
-
-    QModbusDataUnitMap map;
-    map.insert(data_unit.registerType(), data_unit);
-    m_slave->setMap(map);
-}
-*/
 bool ModBusObj::isConnected() const
 {
     if (isMaster()) return (m_master->state() == QModbusDevice::ConnectedState);
@@ -274,7 +246,6 @@ void ModBusObj::tryConnect(bool &ok)
     if (isMaster()) ok = m_master->connectDevice();
     else if (isSlave())
     {
-        //initDataUnitSlave();
         qDebug("try slave connect ...");
         ok = m_slave->connectDevice();
     }

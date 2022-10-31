@@ -19,6 +19,7 @@
 #include <QGroupBox>
 #include <QTabWidget>
 #include <QMessageBox>
+#include <QSysInfo>
 
 
 
@@ -34,7 +35,6 @@ MainForm::MainForm(QWidget *parent)
       m_generalPage(NULL)
 {
     setObjectName("main_form_dianaemulator");
-
 
 }
 void MainForm::initTimers()
@@ -85,6 +85,7 @@ void MainForm::initWidgets()
     updateButtonsState();
 
     slotMsg("************ APP STARTED! ***************");
+    slotMsg(LStatic::systemInfo());
 }
 void MainForm::initCommonSettings()
 {

@@ -26,7 +26,6 @@ MBDeviceEmulator::MBDeviceEmulator(QObject *parent)
 void MBDeviceEmulator::slotTimer()
 {
     qDebug("update emulation values");
-
     QMap<quint16, quint16> need_update_regs;
     QMap<quint8, MBEmulDevice>::iterator it = m_devices.begin();
     while (it != m_devices.end())
@@ -38,7 +37,6 @@ void MBDeviceEmulator::slotTimer()
     m_firstValues = false;
     if (need_update_regs.isEmpty()) return;
 
-    //qDebug("update emulation values 2");
     QMap<quint16, quint16>::const_iterator it2 = need_update_regs.constBegin();
     while (it2 != need_update_regs.constEnd())
     {
@@ -114,13 +112,11 @@ void MBDeviceEmulator::processPDU(quint8 addr, QByteArray &ba)
     if (m_devices.contains(addr))
     {
         const MBEmulDevice &d = m_devices[addr];
-        //qDebug("find device by addr");
         bool not_find = true;
         for (int i=0; i<d.signalsCount(); i++)
         {
             if (d.emul_signals.at(i).reg_info.pos == pos)
             {
-                //qDebug("find signal by pos");
                 pos = d.regPos(i, dev_pos);
                 not_find = false;
                 break;
@@ -131,33 +127,11 @@ void MBDeviceEmulator::processPDU(quint8 addr, QByteArray &ba)
     }
     else pos = dev_pos;
 
-
     //replace pos to PDU
     qDebug()<<QString("real pos %1").arg(pos);
     ba[1] = uchar(pos);
     ba[0] = uchar(pos>>8);
 }
-
-/*
-const MBEmulDevice* MBDeviceEmulator::deviceAt(quint8 addr) const
-{
-    if (m_devices.contains(addr))
-    {
-        const MBEmulDevice &d = m_devices[addr];
-    //    return static_cast<const MBEmulDevice*>(d);
-    }
-
-    QMap<quint8, MBEmulDevice>::const_iterator it = m_devices.constBegin();
-    while (it != m_devices.constEnd())
-    {
-        //if (it.key() == addr) return it*;
-        it++;
-    }
-
-
-    return NULL;
-}
-*/
 void MBDeviceEmulator::setEmuValueSettings(quint8 addr, const EmulValueSettings &evs)
 {
     if (m_devices.contains(addr))
@@ -257,7 +231,6 @@ void MBEmulDevice::setEmuValueSettings(const EmulValueSettings &evs)
     emul_settings.err = evs.err;
     emul_settings.factor = evs.factor;
     emul_settings.adder = evs.adder;
-    //qDebug()<<QString("MBEmulDevice::setEmuValueSettings  addr=%1  base_value=%2  err=%3").arg(address).arg(emul_settings.base_value).arg(emul_settings.err);
 }
 void MBEmulDevice::setEmuValueSettings(int i, const EmulValueSettings &evs)
 {
@@ -300,8 +273,6 @@ double EmulValueSettings::nextValue() const
 }
 double EmulValueSettings::nextBitValue() const
 {
-    //int bv = ((base_value > 0) ? 1 : 0);
-    //if (err <= 0 || err > 100) return bv;
     if (err < 0.1 || err > 100) return base_value;
 
     bool need_invert = (double(LMath::rndInt(0, 10000))/double(100) > err);
@@ -310,8 +281,6 @@ double EmulValueSettings::nextBitValue() const
         if (base_value == 0) return 1;
         return 0;
     }
-
-    //if (need_invert) return ((bv == 1) ? 0 : 1);
     return base_value;
 }
 QString EmulValueSettings::toStr() const

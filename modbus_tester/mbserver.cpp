@@ -26,13 +26,9 @@ MBServer::MBServer(QObject *parent)
     emul_complex(NULL)
 {
     reset();
-    //ComParams params;
-    //setPortParams(params);
 
     //for emul funcs
     initEmulComplex();
-    //startTimer(3700);
-
 }
 void MBServer::timerEvent(QTimerEvent*)
 {    
@@ -49,63 +45,6 @@ void MBServer::initEmulComplex()
     connect(emul_complex, SIGNAL(signalSetRegisterValue(int, quint16, quint16)), this, SLOT(slotSetRegisterValue(int, quint16, quint16)));
 
     emul_complex->startEmulation();
-
-/*
-
-    quint16 start_pos = 0x0100;
-    quint8 addr_offset = 0;
-
-    //init racks
-    for (quint8 addr=11; addr<=16; addr++)
-        emul_complex->addDevice(addr+addr_offset);
-
-    //init signals linear
-    for (quint8 addr=11; addr<=14; addr++)
-        for (int i=1; i<=8; i++)
-            for (int j=0; j<2; j++)
-            {
-                MBRegisterInfo info(MBRegisterInfo::estBit_16, start_pos*i + j);
-                emul_complex->addDeviceSignal(addr+addr_offset, info);
-            }
-
-    //init signals Din
-    for (int i=1; i<=9; i++)
-        for (int j=0; j<8; j++)
-        {
-            MBRegisterInfo info(MBRegisterInfo::estBit_1, start_pos*i, j);
-            emul_complex->addDeviceSignal(15+addr_offset, info);
-        }
-
-    //init signals temp
-    for (int i=1; i<=4; i++)
-        for (int j=0; j<4; j++)
-            emul_complex->addDeviceSignal(16+addr_offset, MBRegisterInfo(MBRegisterInfo::estBit_16, start_pos*i + j));
-
-
-    connect(emul_complex, SIGNAL(signalSetRegisterValue(int, quint16, quint16)), this, SLOT(slotSetRegisterValue(int, quint16, quint16)));
-
-    //emul_complex->out();
-    qDebug()<<QString("emul_complex: rack count %1,  all_signals_count %2,  reserve_reristers %3").arg(emul_complex->deviceCount()).arg(emul_complex->allSignalsCount()).arg(emul_complex->mbRegsCount());
-
-    emul_complex->setEmuValueSettings(11+addr_offset, EmulValueSettings(46.3, 0.5, 100));
-    emul_complex->setEmuValueSettings(12+addr_offset, EmulValueSettings(42.3, 0.5, 100));
-    emul_complex->setEmuValueSettings(13+addr_offset, EmulValueSettings(68.3, 0.5, 100));
-    emul_complex->setEmuValueSettings(14+addr_offset, EmulValueSettings(64.8, 0.1, 100));
-
-    emul_complex->setEmuValueSettings(15+addr_offset, EmulValueSettings(0, 0, 1));
-    emul_complex->setEmuValueSettings(16+addr_offset, EmulValueSettings(218.3, 0.5, 32, 125));
-
-    emul_complex->setEmuValueSettings(16+addr_offset, EmulValueSettings(327, 0.5, 32, 125), 6);
-    emul_complex->setEmuValueSettings(16+addr_offset, EmulValueSettings(341, 0.5, 32, 125), 7);
-    emul_complex->setEmuValueSettings(16+addr_offset, EmulValueSettings(291, 0.2, 32, 125), 8);
-
-    emul_complex->setEmuValueSettings(16+addr_offset, EmulValueSettings(281, 0.2, 32, 125), 2);
-    emul_complex->setEmuValueSettings(16+addr_offset, EmulValueSettings(281, 0.2, 32, 125), 5);
-    emul_complex->setEmuValueSettings(16+addr_offset, EmulValueSettings(281, 0.2, 32, 125), 13);
-    emul_complex->setEmuValueSettings(16+addr_offset, EmulValueSettings(281, 0.2, 32, 125), 14);
-
-    emul_complex->startEmulation();
-    */
 
 }
 void MBServer::slotSetRegisterValue(int reg_type, quint16 pos, quint16 value)
@@ -232,18 +171,6 @@ void MBServer::tryParseAdu(const LMBAdu &adu)
     if (response.isValid())
         trySendResponse(response); //запись ответ в COM
 }
-/*
-void MBServer::setPortParams(const LComParams &params)
-{
-    m_port->setPortName(params.port_name);
-    m_port->setBaudRate(params.baud_rate, QSerialPort::AllDirections);
-    m_port->setDataBits(QSerialPort::DataBits(params.data_bits));
-    m_port->setStopBits(QSerialPort::StopBits(params.stop_bits));
-    m_port->setParity(QSerialPort::Parity(params.parity));
-
-    if (emul_config_loader) setEmulConfig(params.emul_config);
-}
-*/
 void MBServer::setEmulConfig(const QString &f_name)
 {
     if (isConnected()) return;
@@ -277,29 +204,5 @@ QModbusResponse MBServer::exeptionRequest(const QModbusPdu &request) const
 
 
 
-
-
-
-/*
-QModbusResponse MBServer::dateTimeResponse(const QModbusPdu &request) const
-{
-    QByteArray ba;
-    QDataStream stream(&ba, QIODevice::WriteOnly);
-    stream.setByteOrder(QDataStream::LittleEndian);
-    stream << quint8(REQ_DATE_TIME_CODE);
-    stream << curDTPoint_double();
-    //stream << curDTPoint();
-    stream << quint16(0);
-    return QModbusResponse(request.functionCode(), ba);
-}
-qint64 MBServer::curDTPoint() const
-{
-    //struct timespec tm;
-    //int res = clock_gettime(CLOCK_REALTIME, &tm);
-    //return (((qint64)tm.tv_sec)*1000000+((qint64)tm.tv_nsec)/1000);
-
-    return 0;
-}
-*/
 
 

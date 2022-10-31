@@ -1,6 +1,6 @@
 #include "tgconfigloaderbase.h"
 #include "tgabstractbot.h"
-#include "lstatic.h"
+#include "lstaticxml.h"
 
 #include <QFile>
 #include <QDomDocument>
@@ -75,17 +75,17 @@ void LTGConfigLoaderBase::parseBotParamsNode(const QDomNode &node, LTGParamsBot 
         return;
     }
 
-    p.token = LStatic::getStringAttrValue("value", token_node);
-    p.chatID = LStatic::getIntAttrValue("value", chat_id_node);
+    p.token = LStaticXML::getStringAttrValue("value", token_node);
+    p.chatID = LStaticXML::getIntAttrValue("value", chat_id_node);
 
     //load other params
     QDomNode limit_msg_node = node.namedItem("limit_msg");
-    if (!limit_msg_node.isNull()) p.limit_msg = LStatic::getIntAttrValue("value", limit_msg_node);
+    if (!limit_msg_node.isNull()) p.limit_msg = LStaticXML::getIntAttrValue("value", limit_msg_node);
 
     QDomNode req_timeout_node = node.namedItem("req_timeout");
-    if (!req_timeout_node.isNull()) p.req_timeout = LStatic::getIntAttrValue("value", req_timeout_node);
+    if (!req_timeout_node.isNull()) p.req_timeout = LStaticXML::getIntAttrValue("value", req_timeout_node);
 
     QDomNode updates_interval_node = node.namedItem("updates_interval");
-    if (!updates_interval_node.isNull()) p.updates_interval = LStatic::getIntAttrValue("value", updates_interval_node, 0);
+    if (!updates_interval_node.isNull()) p.updates_interval = LStaticXML::getIntAttrValue("value", updates_interval_node, 0);
 
 }

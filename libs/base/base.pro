@@ -1,3 +1,4 @@
+####################  base lib  ###########################
 
 TARGET = build/lbase
 TEMPLATE = lib
@@ -6,14 +7,14 @@ UI_DIR += ui_h
 MOC_DIR = moc
 OBJECTS_DIR = obj
 
-
 QT -= gui
 QT += widgets xml testlib
-
 
 INCLUDEPATH += .\
 	    $$PWD \
 	    $$PWD/../src
+
+#DEFINES += OS_CENTOS
 
 # inputs
 HEADERS += \
@@ -26,6 +27,7 @@ HEADERS += \
     lsplash.h \
     ltable.h \
     lstatic.h \
+    lstaticxml.h \
     lsimpledialog.h \
     lchart.h \
     lcommonsettings.h \
@@ -42,6 +44,7 @@ SOURCES += \
     lsplash.cpp \
     ltable.cpp \
     lstatic.cpp \
+    lstaticxml.cpp \
     lsimpledialog.cpp \
     lchart.cpp \
     lcommonsettings.cpp \

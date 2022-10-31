@@ -1,21 +1,21 @@
- #include "mq.h"
- #include <fcntl.h>        
- #include <sys/stat.h> 
- #include <mqueue.h>
- #include <sys/types.h>
- #include <unistd.h>
- #include <cerrno>
- #include <cstring>
- #include "lstatic.h"
- #include "lfile.h"
- #include "mqworker.h"
+#include "mq.h"
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <mqueue.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <cerrno>
+#include <cstring>
+#include "lstatic.h"
+#include "lfile.h"
+#include "mqworker.h"
   
   
- #include <QDebug>  
- #include <QColor>
- #include <QDir>
- #include <QIODevice>
- #include <QByteArray>
+#include <QDebug>
+#include <QColor>
+#include <QDir>
+#include <QIODevice>
+#include <QByteArray>
 
 #define MSG_PRIOR	1
 
@@ -116,6 +116,12 @@ void MQ::tryClose(bool &ok)
 void MQ::tryCreate(int mode, bool &ok)
 {
 	ok = false;
+    if (existPosixFile()) //file mqueue POSIX allready exist
+    {
+        emit signalError(QString(QString("POSIX file [%1] allready exist").arg(name())));
+        qWarning()<<QString("MQ::tryCreate - WARNING queue [%1] allready exist").arg(name());
+        return;
+    }
 
     struct mq_attr attr = {0, 0, 0, 0, 0};
     attr.mq_flags = 0; 		// value: 0 or O_NONBLOCK
@@ -143,7 +149,6 @@ void MQ::tryCreate(int mode, bool &ok)
     }
 
 	updateAttrs();
-
 }
 void MQ::tryDestroy(bool &ok)
 {
@@ -171,7 +176,7 @@ void MQ::tryDestroy(bool &ok)
 void MQ::tryOpen(int mode, bool &ok)
 {
     checkQueueFile(false);
-    if (invalid()) return;
+    if (isNotFound()) return;
 
     ok = false;    
     QString msg;

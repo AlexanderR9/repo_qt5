@@ -67,7 +67,7 @@ void MQWorker::openQueue(int i, int mode)
     if (ok)
     {
     	qDebug()<<QString("Queue [%1] opened OK!").arg(m_queues.at(i)->name());
-    	emit signalMsg(QString("queue [%1] was opened, handle=%2!").arg(m_queues.at(i)->name()).arg(m_queues.at(i)->handle()));
+        emit signalMsg(QString("queue [%1] was opened,  handle=%2").arg(m_queues.at(i)->name()).arg(m_queues.at(i)->handle()));
     }
 }
 void MQWorker::closeQueue(int i)

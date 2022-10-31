@@ -3,7 +3,6 @@
 
 #include <QColor>
 #include <QString>
-#include <QDomElement>
 
 
 ///////////LStatic//////////////////////////
@@ -46,18 +45,10 @@ public:
     //возвращает строку в виде одиночного пробела
     static QString spaceSymbol() {return QString(" ");}
 
+    //возвращает информацию о текущей ОС
+    static QString systemInfo();
 
 
-    //for xml nodes
-	static void setAttrNode(QDomElement&, QString a1, QString v1, QString a2 = QString(), QString v2 = QString(),
-	    QString a3 = QString(), QString v3 = QString(), QString a4 = QString(), QString v4 = QString(),
-	    QString a5 = QString(), QString v5 = QString());
-
-	static int getIntAttrValue(const QString&, const QDomNode&, int defValue = -99); //get integer value of attribute, params: attr_name, node, default_value
-    static double getDoubleAttrValue(const QString&, const QDomNode&, double defValue = -99); //get double value of attribute, params: attr_name, node, default_value
-    static QString getStringAttrValue(const QString&, const QDomNode&, QString defValue = QString()); //get string value of attribute, params: attr_name, node, default_value
-    static void createDomHeader(QDomDocument&); // for create first section xml node
-	
 };
 
 

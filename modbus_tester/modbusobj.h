@@ -14,7 +14,6 @@ class QModbusRtuSerialMaster;
 class QModbusRtuSerialSlave;
 class MBServer;
 struct LComParams;
-//struct ModbusPacketParams;
 
 
 //ModBusObj
@@ -62,7 +61,6 @@ protected:
     void sendRequest(); //only master
     void prepareRequestData(QModbusDataUnit&);  //only master
     void sendReply(); // only slave
-    //void initDataUnitSlave(); //инициализация набора регистров (only slave)
     void timerEvent(QTimerEvent*); //test
 
     bool readCmd() const;
