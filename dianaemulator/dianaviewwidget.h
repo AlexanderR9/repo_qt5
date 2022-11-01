@@ -37,6 +37,10 @@ protected:
     void initWidget();
 
     void loadPack(LXMLPackView*, const QString&);
+    void readMsgFromQueue(); //проверить наличие сообщений в очереди (output) и считать его
+
+protected slots:
+    void slotReadingTimer();
 
 signals:
     void signalMQCreated(const QString&, quint32, const MQ*);
@@ -44,8 +48,6 @@ signals:
     void signalReceiveMsgOk(const QString&);
     void signalSendMsgErr(const QString&);
     void signalReceiveMsgErr(const QString&);
-
-
 
 };
 

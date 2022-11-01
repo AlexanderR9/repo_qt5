@@ -40,6 +40,7 @@ public:
     QString strAttrs() const;
     QColor colorStatus() const;
     void updateAttrs(); //обновить информацию об текущем состоянии очереди
+    bool hasMsg() const; //признак наличия сообщений в очереди
 
     void tryOpen(int, bool&); //подключиться к существующей очереди POSIX
     void tryClose(bool&); //отключиться от очереди POSIX

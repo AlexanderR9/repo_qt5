@@ -329,6 +329,12 @@ void MQ::updateAttrs()
 
     m_size = m_attrs->mq_curmsgs * m_attrs->mq_msgsize;
 }
+bool MQ::hasMsg() const
+{
+    if (invalid()) return false;
+    if (!isOpened() || !m_attrs) return false;
+    return (m_attrs->mq_curmsgs > 0);
+}
 void MQ::checkQueueFile(bool check_invalid)
 {
     if (check_invalid && invalid()) return;

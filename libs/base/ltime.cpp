@@ -43,6 +43,13 @@ void LTime::getTimeSpecCPP(timespec &tm, Qt::TimeSpec ts, qint64 def_nsec)
     if (ts == Qt::LocalTime) tm.tv_sec += (3600 * utcOffset());
     if (def_nsec >= 0) tm.tv_nsec = def_nsec;
 }
+QString LTime::strTimeSpec(const timespec &tm, Qt::TimeSpec ts, QString mask)
+{
+    QDateTime dt(QDateTime::fromMSecsSinceEpoch((tm.tv_sec*1000) + (tm.tv_nsec/1000000), ts));
+    //if (ts == Qt::UTC) LTime::strDateTime(dt.toUTC(), mask);
+    //if (dt.timeSpec())
+    return LTime::strDateTime(dt, mask);
+}
 int LTime::utcOffset()
 {
     QDateTime td_loc(QDateTime::currentDateTime());

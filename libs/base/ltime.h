@@ -83,6 +83,9 @@ public:
     //параметр def_nsec: если >= 0, то в поле tv_nsec запишется принудительно это значение
     static void getTimeSpecCPP(timespec &tm, Qt::TimeSpec ts = Qt::UTC, qint64 def_nsec = -1);
 
+    //вернет параметр timespec в виде строки в заданном формате
+    static QString strTimeSpec(const timespec &tm, Qt::TimeSpec ts = Qt::UTC, QString mask = "dd.MM.yyyy hh:mm:ss.zzz");
+
     //врернет смещение локального времени относительно UTC (в часах)
     static int utcOffset();
 

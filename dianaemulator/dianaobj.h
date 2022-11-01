@@ -22,6 +22,7 @@ public:
     const MQ* outputQueue() const;
     void updateMQState();
     void sendMsgToQueue(const QByteArray&); //записать пакет в очередь (input)
+    void tryReadMsgFromQueue(QByteArray&); //попытаться считать сообщение из очереди (output)
 
     static QString inputType() {return QString("input");}
     static QString outputType() {return QString("output");}
@@ -31,9 +32,9 @@ protected:
 
 signals:
     void signalSendMsgOk(const QString&);
-    void signalReceiveMsgOk(const QString&);
+    //void signalReceiveMsgOk(const QString&);
     void signalSendMsgErr(const QString&);
-    void signalReceiveMsgErr(const QString&);
+    //void signalReceiveMsgErr(const QString&);
 
 private:
     int queueInputIndexOf() const;

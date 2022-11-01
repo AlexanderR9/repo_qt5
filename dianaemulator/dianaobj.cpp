@@ -78,8 +78,18 @@ void DianaObject::sendMsgToQueue(const QByteArray &ba)
     else emit signalSendMsgErr(name().toLower());
 
 }
-
-
+void DianaObject::tryReadMsgFromQueue(QByteArray &ba)
+{
+    ba.clear();
+    int pos = queueOutputIndexOf();
+    if (pos >= 0)
+    {
+        if (outputQueue()->hasMsg())
+        {
+            mq_manager->readMsg(pos, ba);
+        }
+    }
+}
 
 
 

@@ -83,6 +83,7 @@ public:
     inline const LXMLPackElement* childAt(int i) const {return ((i<0 || i>=childsCount()) ? NULL : m_childs.at(i));}
     inline LXMLPackElement* childAtVar(int i) const {return ((i<0 || i>=childsCount()) ? NULL : m_childs.at(i));}
     inline void setValueInfo(const LXMLPackValue &v) {m_value.copy(v);}
+    inline const LXMLPackValue& getValue() const {return m_value;}
 
 
     bool invalid() const;
@@ -102,6 +103,7 @@ protected:
     void loadChilds(const QDomNode&); //загрузить детей
     void retransformArrChild(int); //размножить найденный элемент-массив среди детей
     void transformTimeSpec();//сформировать структуру элементов для типа TimeSpec
+    void nextTimeValue(); //обновить значение m_value типа timespec
 
 private:
     quint32 sectionSize(const LXMLPackElement*) const; //возвращает размер в байтах секции целиком

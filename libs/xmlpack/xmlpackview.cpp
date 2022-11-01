@@ -2,6 +2,7 @@
 #include "xmlpack.h"
 #include "xmlpackelement.h"
 #include "xmlpacktype.h"
+#include "ltime.h"
 
 #include <QDebug>
 #include <QTreeWidget>
@@ -45,6 +46,14 @@ void LXMLPackView::initWidget()
     m_view->setSelectionMode(QAbstractItemView::NoSelection);
     m_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
+}
+void LXMLPackView::setSelectionRowsMode()
+{
+    if (m_view)
+    {
+        m_view->setSelectionBehavior(QAbstractItemView::SelectRows);
+        m_view->setSelectionMode(QAbstractItemView::SingleSelection);
+    }
 }
 void LXMLPackView::setPacket(LXMLPackObj *p)
 {   
@@ -232,6 +241,16 @@ void LXMLPackViewItem::updateValue()
     {
         setText(DEVIATION_COL, m_node->strValueDeviation());
         setText(VALUE_COL, m_node->strValue(data(VALUE_COL, Qt::UserRole).toInt()));
+    }
+    else if (m_node->isTime())
+    {
+        if (m_node->hasChilds())
+        {
+            timespec tm;
+            tm.tv_sec = m_node->childAt(0)->getValue().i_value;
+            tm.tv_nsec = m_node->childAt(1)->getValue().i_value;
+            setText(VALUE_COL, LTime::strTimeSpec(tm));
+        }
     }
 }
 void LXMLPackViewItem::changePackValue(int col)

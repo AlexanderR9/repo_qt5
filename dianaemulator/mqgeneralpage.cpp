@@ -39,6 +39,8 @@ void MQGeneralPage::initWidget()
     m_tableBox->setTitle("MQ queues");
     m_viewBox = new LTreeWidgetBox(this);
     m_viewBox->setTitle("Exchange statistic");
+    m_viewBox->view()->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_viewBox->view()->setSelectionMode(QAbstractItemView::SingleSelection);
 
     h_splitter->addWidget(m_tableBox);
     h_splitter->addWidget(m_viewBox);
@@ -79,17 +81,11 @@ void MQGeneralPage::slotAppendMQ(const QString &diana_name, quint32 msg_size, co
         appendDianaToView(diana_name, DianaObject::outputType());
     }
 
-
-
-    //row_data << s_type;
-
     row_data << mq->strMode();
     row_data << mq->name() << QString::number(msg_size) << mq->strState() << mq->strAttrs();
     LTable::addTableRow(m_tableBox->table(), row_data);
     LTable::resizeTableContents(m_tableBox->table());
     updateMQState();
-
-
 }
 void MQGeneralPage::appendDianaToView(const QString &diana_name, const QString &type)
 {
@@ -103,7 +99,7 @@ void MQGeneralPage::appendDianaToView(const QString &diana_name, const QString &
         pos = view()->topLevelItemCount() - 1;
     }
 
-    qDebug()<<QString("MQGeneralPage::appendDianaToView  %1/%2  %3").arg(diana_name).arg(pos).arg(type);
+    //qDebug()<<QString("MQGeneralPage::appendDianaToView  %1/%2  %3").arg(diana_name).arg(pos).arg(type);
     QTreeWidgetItem *item = new QTreeWidgetItem(view()->topLevelItem(pos));
     item->setText(0, type);
     item->setText(1, QString::number(0));
@@ -123,8 +119,7 @@ int MQGeneralPage::viewDianaIndex(const QString &diana_name) const
 }
 void MQGeneralPage::updateMQState()
 {
-    qDebug("MQGeneralPage::updateMQState()");
-
+    //qDebug("MQGeneralPage::updateMQState()");
     for(int i=0; i<m_tableBox->table()->rowCount(); i++)
     {
         const MQ *mq = m_queues.value(i);
@@ -136,9 +131,7 @@ void MQGeneralPage::updateMQState()
             m_tableBox->table()->item(i, MQ_ATTR_COL)->setText(mq->strAttrs());
         }
     }
-
     LTable::resizeTableContents(m_tableBox->table());
-
 }
 QTreeWidget* MQGeneralPage::view() const
 {

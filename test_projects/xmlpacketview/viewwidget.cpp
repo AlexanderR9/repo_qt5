@@ -112,7 +112,7 @@ void ViewWidget::toRight(int bytes_order, bool single_floating)
     //------------------------------------------
     setPacketData(m_outView, ba, bytes_order, single_floating);
 }
-void ViewWidget::ViewWidget::setPacketData(LXMLPackView *view, const QByteArray &ba, int bytes_order, bool single_floating)
+void ViewWidget::setPacketData(LXMLPackView *view, const QByteArray &ba, int bytes_order, bool single_floating)
 {
     if (!view) return;
 

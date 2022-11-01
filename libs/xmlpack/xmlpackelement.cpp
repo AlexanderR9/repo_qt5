@@ -1,6 +1,7 @@
 #include "xmlpackelement.h"
 #include "xmlpacktype.h"
 #include "lstaticxml.h"
+#include "ltime.h"
 
 
 #include <QDebug>
@@ -192,17 +193,27 @@ void LXMLPackElement::calcOffset(LXMLPackElement*, quint32 &cur_offset)
 }
 void LXMLPackElement::nextRandValue()
 {
-    if (invalid() || isTime()) return;
+    if (invalid()) return;
 
-    if (isData())
+    if (isData()) m_value.next();
+    else if (isTime()) nextTimeValue();
+    else
     {
-        m_value.next();
-        return;
+        int n = childsCount();
+        for (int i=0; i<n; i++)
+            m_childs[i]->nextRandValue();
     }
-
-    int n = childsCount();
-    for (int i=0; i<n; i++)
-        m_childs[i]->nextRandValue();
+}
+void LXMLPackElement::nextTimeValue()
+{
+    timespec tm;
+    LTime::getTimeSpecCPP(tm);
+    if (hasChilds())
+    {
+        bool ok;
+        childAtVar(0)->setNewValue(QString::number(tm.tv_sec), ok);
+        childAtVar(1)->setNewValue(QString::number(tm.tv_nsec), ok);
+    }
 }
 LXMLPackElement* LXMLPackElement::clone(LXMLPackElement *parent) const
 {
