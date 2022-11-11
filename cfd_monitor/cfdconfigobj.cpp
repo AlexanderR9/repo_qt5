@@ -1,5 +1,5 @@
 #include "cfdconfigobj.h"
-#include "lstatic.h"
+#include "lstaticxml.h"
 
 #include <QFile>
 #include <QDomDocument>
@@ -153,36 +153,36 @@ void CFDConfigObject::loadDivParams(const QDomNode &node)
     {
         if (child_node.nodeName() == "source")
         {
-            m_divParams.source_url = LStatic::getStringAttrValue("value", child_node, QString()).trimmed();
+            m_divParams.source_url = LStaticXML::getStringAttrValue("value", child_node, QString()).trimmed();
             if (!m_divParams.source_url.contains("http")) m_divParams.source_url.clear();
         }
         else if (child_node.nodeName() == "interval")
         {
-            m_divParams.request_interval = LStatic::getIntAttrValue("value", child_node);
+            m_divParams.request_interval = LStaticXML::getIntAttrValue("value", child_node);
         }
         else if (child_node.nodeName() == "timer_interval")
         {
-            m_divParams.timer_interval = LStatic::getIntAttrValue("value", child_node);
+            m_divParams.timer_interval = LStaticXML::getIntAttrValue("value", child_node);
             if (m_divParams.timer_interval < 10 || m_divParams.timer_interval > 1000) m_divParams.timer_interval = 120;
         }
         else if (child_node.nodeName() == "look_div_days")
         {
-            m_divParams.look_div_days = LStatic::getIntAttrValue("value", child_node);
+            m_divParams.look_div_days = LStaticXML::getIntAttrValue("value", child_node);
             if (m_divParams.look_div_days < 5 || m_divParams.look_div_days > 60) m_divParams.look_div_days = 21;
         }
         else if (child_node.nodeName() == "light_div")
         {
-            m_divParams.light_div_size = LStatic::getDoubleAttrValue("value", child_node);
+            m_divParams.light_div_size = LStaticXML::getDoubleAttrValue("value", child_node);
             if (m_divParams.light_div_size < 0.1 || m_divParams.light_div_size > 10) m_divParams.light_div_size = 0.5;
         }
         else if (child_node.nodeName() == "light_price")
         {
-            m_divParams.light_price = LStatic::getDoubleAttrValue("value", child_node);
+            m_divParams.light_price = LStaticXML::getDoubleAttrValue("value", child_node);
             if (m_divParams.light_price < 10 || m_divParams.light_price > 1000) m_divParams.light_price = 199;
         }
         else if (child_node.nodeName() == "show_last")
         {
-            m_divParams.show_last = LStatic::getIntAttrValue("value", child_node);
+            m_divParams.show_last = LStaticXML::getIntAttrValue("value", child_node);
             if (m_divParams.show_last < 100 || m_divParams.show_last > 10000) m_divParams.show_last = 200;
         }
         child_node = child_node.nextSibling();
@@ -228,7 +228,7 @@ double CFDConfigObject::getDoubleAttrValue(const QDomNode &node) const
 {
     if (node.isNull()) return -1;
     bool ok;
-    double v = LStatic::getStringAttrValue("value", node).toDouble(&ok);
+    double v = LStaticXML::getStringAttrValue("value", node).toDouble(&ok);
     if (!ok || v < 0.05 || v > 1000) return -1;
     return v;
 }
@@ -242,8 +242,8 @@ void CFDConfigObject::loadSources(const QDomNode &node)
         if (child_node.nodeName() == "url")
         {
             CFDDataSource source;
-            source.id = LStatic::getIntAttrValue("id", child_node, -1);
-            source.url = LStatic::getStringAttrValue("value", child_node, QString("?")).trimmed();
+            source.id = LStaticXML::getIntAttrValue("id", child_node, -1);
+            source.url = LStaticXML::getStringAttrValue("value", child_node, QString("?")).trimmed();
             if (source.invalid())
             {
                 qWarning()<<QString("Invalid readed source element from config: %1").arg(source.toStr());
@@ -263,12 +263,12 @@ void CFDConfigObject::loadCFDList(const QDomNode &node)
         if (child_node.nodeName() == "cfd")
         {
             CFDObj cfd;
-            cfd.ticker = LStatic::getStringAttrValue("ticker", child_node, QString()).trimmed().toUpper();
-            cfd.name = LStatic::getStringAttrValue("name", child_node, QString()).trimmed();
-            cfd.country = LStatic::getStringAttrValue("country", child_node, QString()).trimmed();
-            cfd.url_text = LStatic::getStringAttrValue("url", child_node, QString()).trimmed();
-            cfd.source_id = LStatic::getIntAttrValue("source", child_node, 1);
-            cfd.is_insta = (LStatic::getStringAttrValue("insta", child_node, QString()) == "true");
+            cfd.ticker = LStaticXML::getStringAttrValue("ticker", child_node, QString()).trimmed().toUpper();
+            cfd.name = LStaticXML::getStringAttrValue("name", child_node, QString()).trimmed();
+            cfd.country = LStaticXML::getStringAttrValue("country", child_node, QString()).trimmed();
+            cfd.url_text = LStaticXML::getStringAttrValue("url", child_node, QString()).trimmed();
+            cfd.source_id = LStaticXML::getIntAttrValue("source", child_node, 1);
+            cfd.is_insta = (LStaticXML::getStringAttrValue("insta", child_node, QString()) == "true");
 
 
             if (cfd.invalid())

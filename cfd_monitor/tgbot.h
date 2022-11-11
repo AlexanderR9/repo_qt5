@@ -46,6 +46,7 @@ public:
 
     QString name() const {return QString("MyLBot");}
     QString toStrParams() const;
+    void loadConfig(const QString&);
 
     QMap<QString, QString> getParams() const;
 
@@ -53,6 +54,11 @@ protected:
     QList<TGMsg> m_msgs; //список сообщений отправленных пользователю
     qint64 last_update_id; //id последнего полученного сообщения
     const CalcActionParams &m_actParams;
+
+    //временной интервал в сутках, когда отключены уведомления от бота.
+    //маска такая: XX-YY, длина 5 символов, где XX час с которого и YY час до которого не слать сообщения.
+    //невалидная или пустая маска означает, что бот шлет сообщения круглосуточно
+    QString m_timeoff; //
 
     void sendLog(const QString&, int);
     void trySendDeviation(const QString&, const double&, int); //попытка отправить сообщение пользователю
@@ -75,7 +81,8 @@ signals:
     void signalGetLastPrice(const QString&, double&, int&);
     void signalGetInstaPtr(const QString&, bool&);
 
-
+private:
+    bool timeoffNow() const;
 
 };
 

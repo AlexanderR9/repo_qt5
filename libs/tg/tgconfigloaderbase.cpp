@@ -4,6 +4,7 @@
 
 #include <QFile>
 #include <QDomDocument>
+#include <QDomNodeList>
 
 
 //LTGConfigLoaderBase
@@ -11,6 +12,25 @@ LTGConfigLoaderBase::LTGConfigLoaderBase(const QString &fname)
     :m_config(fname)
 {
 
+}
+QDomNodeList LTGConfigLoaderBase::getTGConfigNodes() const
+{
+    QDomNodeList nl;
+    QFile f(m_config.trimmed());
+    if (f.exists())
+    {
+        QDomDocument dom;
+        if (dom.setContent(&f))
+        {
+            f.close();
+            QDomNode root_node = dom.namedItem("config");
+            if (root_node.isNull()) return nl;
+            QDomNode botparams_node = root_node.namedItem("bot_params");
+            if (botparams_node.isNull()) return nl;
+            return botparams_node.childNodes();
+        }
+    }
+    return nl;
 }
 void LTGConfigLoaderBase::loadBotParams(LTGParamsBot &p, QString &err)
 {

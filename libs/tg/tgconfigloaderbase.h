@@ -7,6 +7,7 @@
 struct LTGParamsBot;
 class QDomDocument;
 class QDomNode;
+class QDomNodeList;
 
 
 
@@ -20,6 +21,9 @@ public:
 
     //загрузить конфиг и установить значения в структуре TGParamsBot, в случае ошибки записать текст ошибки в параметр err
     virtual void loadBotParams(LTGParamsBot&, QString &err);
+
+    //выдать список всех нод из секции конфига: bot_params
+    virtual QDomNodeList getTGConfigNodes() const;
 
 protected:
     QString m_config;   //имя конфигурационного файла

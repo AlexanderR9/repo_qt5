@@ -2,9 +2,14 @@
 #include "logpage.h"
 #include "tgjsonworker.h"
 #include "lstatic.h"
+#include "lstaticxml.h"
 #include "cfdconfigobj.h"
+#include "tgconfigloaderbase.h"
 
 #include <QDebug>
+#include <QDomNodeList>
+#include <QDomNode>
+
 
 #define UPDATE_INTERVAL_PERIOD1     24      //hours
 #define UPDATE_INTERVAL_PERIOD2     24*3    //hours
@@ -15,9 +20,40 @@
 TGBot::TGBot(const CalcActionParams &act_params, QObject *parent)
     :LTGAbstractBot(parent),
     last_update_id(-1),
-    m_actParams(act_params)
+    m_actParams(act_params),
+    m_timeoff("01-05")
 {
     m_msgs.clear();
+}
+void TGBot::loadConfig(const QString &fname)
+{
+    LTGAbstractBot::loadConfig(fname);
+    if (invalid()) return;
+
+    LTGConfigLoaderBase loader(fname);
+    QDomNodeList nl(loader.getTGConfigNodes());
+    for (int i=0; i<nl.count(); i++)
+    {
+        if (nl.at(i).nodeName() == "time_off_msg")
+        {
+            m_timeoff = LStaticXML::getStringAttrValue("value", nl.at(i));
+            break;
+        }
+    }
+}
+bool TGBot::timeoffNow() const
+{
+    if (m_timeoff.length() != 5 || !m_timeoff.contains("-")) return false;
+    if (m_timeoff.indexOf("-") != 2) return false;
+
+    bool ok;
+    quint8 h1 = m_timeoff.left(2).toUInt(&ok);
+    if (!ok || h1 > 23)  return false;
+    quint8 h2 = m_timeoff.right(2).toUInt(&ok);
+    if (!ok || h2 > 23)  return false;
+
+    QTime cur_t(QTime::currentTime());
+    return (cur_t.hour() >= h1 && cur_t.hour() < h2);
 }
 void TGBot::slotJsonReceived(QJsonObject jobj)
 {
@@ -55,9 +91,18 @@ void TGBot::parseUpdate(const LTGUpdate &update)
 
     QString req = update.text.trimmed();
     QStringList list = LStatic::trimSplitList(req, LStatic::spaceSymbol());
-    if (list.count() == 2 && list.first().toLower() == "get")
+    if (list.count() == 2 && list.first().toLower() == "get") //пришел запрос типа: Get TICKER_NAME
     {
-        replyLastPrice(list.last());
+        replyLastPrice(list.last()); //выдать последнюю цену по TICKER_NAME
+    }
+    else if (list.count() == 1 && list.first().toLower() == "get_timeoff") //пришел запрос: get_timeoff
+    {
+        this->sendMsg(QString("timeoff=[%1]").arg(m_timeoff)); //выдать значение m_timeoff
+    }
+    else if (list.count() == 2 && list.first().toLower() == "set_timeoff") //пришел запрос типа: set_timeoff TIMEOFF_VALUE
+    {
+        m_timeoff = list.last().trimmed(); //установить значение m_timeoff
+        sendLog(QString("Changed timeoff value (%1)").arg(m_timeoff), 0);
     }
 }
 void TGBot::replyLastPrice(const QString &ticker)
@@ -121,7 +166,9 @@ void TGBot::sendDeviation(const TGMsg &msg)
     emit signalGetInstaPtr(msg.ticker, is_insta);
     QString text = (is_insta ? QString("%1(insta)").arg(msg.ticker) : msg.ticker);
     text = QString("%1: [%2],  deviation=%3%").arg(text).arg(msg.strPeriod()).arg(msg.strDeviation());
-    this->sendMsg(text);
+
+    if (!timeoffNow())
+        this->sendMsg(text);
 
     text = QString("sended tg_message (%1 : %2%)").arg(msg.ticker).arg(msg.strDeviation());
     sendLog(text, 0);
@@ -180,6 +227,7 @@ QMap<QString, QString> TGBot::getParams() const
     map.insert("Chat ID", QString::number(m_params.chatID));
     map.insert("Limit msg", QString::number(m_params.limit_msg));
     map.insert("Timeout, sec.", QString::number(m_params.req_timeout));
+    map.insert("MSG timeoff", m_timeoff);
     map.insert("State", "OK");
     return map;
 }
