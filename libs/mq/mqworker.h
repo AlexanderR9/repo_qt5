@@ -24,8 +24,10 @@ public:
     //user actions
     void openQueue(int, int); //params: 1-index_mq, 2-open_mode
     void closeQueue(int);
-    void newQueue(const QString&, int, bool&); ////params: 1-new_mq_name, 2-open_mode, 3-result
+    void newQueue(const QString&, int, quint32, bool&); ////params: 1-new_mq_name, 2-open_mode, 3-msg_size, 4-result
     void removeQueue(int);
+    void removePosixFile(int); // закрыть и удалить только реальную POSIX очередь, объект MQ останется
+    void createPosixFile(int, quint32); // создать только реальную POSIX очередь, соответствующую объекту MQ[i]
     void sendMsg(int, const QByteArray&, bool&); //отправить сообщение в заданную очередь
     void readMsg(int, QByteArray&); //считать сообщение из заданной очереди (в случае ошибки ba будет пустой)
     void updateState();

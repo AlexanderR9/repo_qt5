@@ -5,7 +5,6 @@
 TEMPLATE = app
 TARGET = com_tester
 DEFINES += QT_DEPRECATED_WARNINGS
-#CONFIG += c++11
 MOC_DIR=moc
 OBJECTS_DIR=obj
 
@@ -13,15 +12,21 @@ OBJECTS_DIR=obj
 QT -= gui
 QT *= network widgets xml serialport
 
-INCLUDEPATH += . \
+
+NCLUDEPATH += . \
             $$PWD \
-            $$PWD/../../lib \
-            $$PWD/../../lib/ui_h
+            $$PWD/../../libs/base \
+            $$PWD/../../libs/io_bus \
+            $$PWD/../../libs/base/ui_h
+
+#path for libs files
+DEPENDPATH += $$PWD/../../libs/base/build \
+            $$PWD/../../libs/io_bus/build
+
+#include libs
+unix:!macx: LIBS += -L$$PWD/../../libs/base/build/ -llbase
+unix:!macx: LIBS += -L$$PWD/../../libs/io_bus/build/ -lliobus
             
-            
-                                    
-DEPENDPATH += $$PWD/../../lib/build
-unix:!macx: LIBS += -L$$PWD/../../lib/build -llib
 
 # Input
 HEADERS += mainform.h \

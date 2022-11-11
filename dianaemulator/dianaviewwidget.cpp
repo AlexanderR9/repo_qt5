@@ -14,12 +14,14 @@
 #define READING_INTERVAL    233
 
 //DianaViewWidget
-DianaViewWidget::DianaViewWidget(const QString &diana_name, QWidget *parent)
+DianaViewWidget::DianaViewWidget(const QString &diana_name, bool serv_mode, QWidget *parent)
     :LSimpleWidget(parent, 22),
     m_inView(NULL),
     m_outView(NULL),
     m_dianaObj(NULL),
-    m_autoUpdatePackValues(false)
+    m_autoUpdatePackValues(false),
+    m_autoUpdateReadMsg(false),
+    is_serv(serv_mode)
 {
     m_dianaObj = new DianaObject(diana_name, this);
     setObjectName(QString("%1_view_widget").arg(diana_name));
@@ -32,6 +34,7 @@ DianaViewWidget::DianaViewWidget(const QString &diana_name, QWidget *parent)
     //connect(m_dianaObj, SIGNAL(signalReceiveMsgOk(const QString&)), this, SIGNAL(signalReceiveMsgOk(const QString&)));
     connect(m_dianaObj, SIGNAL(signalSendMsgErr(const QString&)), this, SIGNAL(signalSendMsgErr(const QString&)));
     //connect(m_dianaObj, SIGNAL(signalReceiveMsgErr(const QString&)), this, SIGNAL(signalReceiveMsgErr(const QString&)));
+    connect(m_dianaObj, SIGNAL(signalGetPacketSize(const QString&, quint32&)), this, SLOT(slotSetPacketSize(const QString&, quint32&)));
 
 
     QTimer *rt = new QTimer(this);
@@ -42,9 +45,7 @@ DianaViewWidget::DianaViewWidget(const QString &diana_name, QWidget *parent)
 }
 void DianaViewWidget::slotReadingTimer()
 {
-
-    readMsgFromQueue();
-
+    if (m_autoUpdateReadMsg) readMsgFromQueue();
 }
 void DianaViewWidget::initWidget()
 {
@@ -53,9 +54,9 @@ void DianaViewWidget::initWidget()
 
     h_splitter->addWidget(m_inView);
     h_splitter->addWidget(m_outView);
-    m_inView->setReadOnly(false);
+    m_inView->setReadOnly(is_serv);
     m_inView->setSelectionRowsMode();
-    m_outView->setReadOnly(true);
+    m_outView->setReadOnly(!is_serv);
     m_outView->setSelectionRowsMode();
 }
 void DianaViewWidget::loadMQPacket(const QString &fname)
@@ -76,7 +77,6 @@ void DianaViewWidget::loadMQPacket(const QString &fname)
 }
 void DianaViewWidget::loadPack(LXMLPackView *view, const QString &fname)
 {
-    //qDebug()<<QString("DianaViewWidget::loadPack  %1").arg(fname);
     LXMLPackObj *pack = new LXMLPackObj(fname, this);
     connect(pack, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
     connect(pack, SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
@@ -106,7 +106,28 @@ void DianaViewWidget::setDoublePrecision(quint8 p)
 }
 void DianaViewWidget::updateMQState()
 {
-    m_dianaObj->updateMQState();
+    m_dianaObj->updateMQState(!is_serv);
+}
+void DianaViewWidget::destroyAllQueues()
+{
+    m_dianaObj->destroyAllQueues();
+}
+void DianaViewWidget::recreatePosixQueues()
+{
+    m_dianaObj->recreatePosixQueues();
+}
+void DianaViewWidget::slotSetPacketSize(const QString &mq_name, quint32 &msg_size)
+{
+    if (mq_name.contains(DianaObject::inputType())) msg_size = m_inView->getPacket()->size();
+    else if (mq_name.contains(DianaObject::outputType())) msg_size = m_outView->getPacket()->size();
+    else msg_size = 9999;
+}
+void DianaViewWidget::readLastMsgMQ()
+{
+    if (m_inView->invalid()) return;
+    qDebug("DianaViewWidget::readLastMsgMQ()");
+
+
 }
 void DianaViewWidget::sendMsgToQueue()
 {

@@ -113,7 +113,7 @@ void MQ::tryClose(bool &ok)
 
 	updateAttrs();
 }
-void MQ::tryCreate(int mode, bool &ok)
+void MQ::tryCreate(int mode, quint32 msg_size, bool &ok)
 {
 	ok = false;
     if (existPosixFile()) //file mqueue POSIX allready exist
@@ -122,12 +122,17 @@ void MQ::tryCreate(int mode, bool &ok)
         qWarning()<<QString("MQ::tryCreate - WARNING queue [%1] allready exist").arg(name());
         return;
     }
+    if (msg_size < 1)
+    {
+        emit signalError(QString("MQ[%1]: creating error, msg_size=%2").arg(name()).arg(msg_size));
+        return;
+    }
 
     struct mq_attr attr = {0, 0, 0, 0, 0};
     attr.mq_flags = 0; 		// value: 0 or O_NONBLOCK
-    attr.mq_maxmsg = 8; 	// max number of messages allowed on queue
+    attr.mq_maxmsg = 10; 	// max number of messages allowed on queue
     attr.mq_curmsgs = 0; 	// messages count currently in queue
-    attr.mq_msgsize = 250; 	// max size of one message
+    attr.mq_msgsize = msg_size; 	// max size of one message
 
     m_mode = mode;
     int flag = (mqModeByMode() | O_CREAT);
@@ -150,27 +155,32 @@ void MQ::tryCreate(int mode, bool &ok)
 
 	updateAttrs();
 }
+void MQ::resetState()
+{
+    m_state = mqsDeinit;
+    m_mode = 0;
+    m_handle = -99;
+    updateAttrs();
+}
 void MQ::tryDestroy(bool &ok)
 {
-	ok = false;
+    if (!existPosixFile())
+    {
+        ok = true;
+        resetState();
+        return;
+    }
+
     int result = mq_unlink(charName());
-    if (result == 0)
-    {
-    	ok = true;
-    	m_state = mqsDeinit;
-    	m_mode = 0;
-    	m_handle = -99;
-    }
-    else
-    {
-    	QString err(std::strerror(errno));
-    	qWarning()<<QString("MQ::tryOpen - WARNING result=%1  str(%2)").arg(result).arg(LStatic::fromCodec(err));
-    	m_state = mqsInvalid;
+    ok = (result == 0);
+    if (ok) {resetState(); return;}
 
-    	QString msg = QString("MQ[%1]: unlink error, errno=%2, err_msg: %3").arg(name()).arg(errno).arg(LStatic::fromCodec(err));
-    	emit signalError(msg);
-    }
+    QString err(std::strerror(errno));
+    qWarning()<<QString("MQ::tryOpen - WARNING result=%1  str(%2)").arg(result).arg(LStatic::fromCodec(err));
+    m_state = mqsInvalid;
 
+    QString msg = QString("MQ[%1]: unlink error, errno=%2, err_msg: %3").arg(name()).arg(errno).arg(LStatic::fromCodec(err));
+    emit signalError(msg);
 	updateAttrs();
 }
 void MQ::tryOpen(int mode, bool &ok)

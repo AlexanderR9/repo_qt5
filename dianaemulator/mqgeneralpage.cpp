@@ -10,12 +10,9 @@
 #include <QDebug>
 
 
-#define MQ_MODE_COL     1
-#define MQ_STATE_COL    4
-#define MQ_ATTR_COL     5
-//#define INPUT_TEXT      QString("input")
-//#define OUT_TEXT        QString("output")
-
+#define MQ_MODE_COL         1
+#define MQ_STATE_COL        4
+#define MQ_ATTR_COL         5
 
 #define VIEW_RECEIVED_COL   1
 #define VIEW_SENDED_COL     2
@@ -62,27 +59,16 @@ void MQGeneralPage::slotAppendMQ(const QString &diana_name, quint32 msg_size, co
 {
     if (!mq) return;
 
-    qDebug()<<QString("slotAppendMQ  [%1]").arg(mq->name());
+    //qDebug()<<QString("slotAppendMQ  [%1]").arg(mq->name());
     m_queues.insert(m_tableBox->table()->rowCount(), mq);
 
-    QStringList row_data;
-    row_data << diana_name;
-
-
-    QString s_type = "?";
     if (mq->name().contains(DianaObject::inputType()))
-    {
-        s_type = "WriteOnly";
         appendDianaToView(diana_name, DianaObject::inputType());
-    }
     else if (mq->name().contains(DianaObject::outputType()))
-    {
-        s_type = "ReadOnly";
         appendDianaToView(diana_name, DianaObject::outputType());
-    }
 
-    row_data << mq->strMode();
-    row_data << mq->name() << QString::number(msg_size) << mq->strState() << mq->strAttrs();
+    QStringList row_data;
+    row_data << diana_name << mq->strMode() << mq->name() << QString::number(msg_size) << mq->strState() << mq->strAttrs();
     LTable::addTableRow(m_tableBox->table(), row_data);
     LTable::resizeTableContents(m_tableBox->table());
     updateMQState();

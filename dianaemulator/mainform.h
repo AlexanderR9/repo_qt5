@@ -30,8 +30,8 @@ protected:
     QSplitter           *v_splitter;
     QTabWidget          *m_tab;
     LProtocolBox        *m_protocol;
-    QTimer              *m_exchangeTimer;
-    QTimer              *m_stateTimer;
+    QTimer              *m_exchangeTimer; //таймер для записи/чтении в/из очередей, включается/выключается пользователем кнопками старт/стоп
+    QTimer              *m_stateTimer; //таймер для обновления информации о состоянии очередей, работает все время
 
 
     MQGeneralPage   *m_generalPage;
@@ -49,8 +49,13 @@ protected:
     void save();
     void load();
 
-    void start();
-    void stop();
+    //act funcs
+    void start(); //запустить обмен
+    void stop(); //остановить обмен
+    void recreateAllQueues(); //пересоздать/создать все очереди MQ согласно конфигурации  (only emServer)
+    void destroyAllQueues(); //удалить все очереди MQ согласно конфигурации (only emServer)
+
+
     void updateButtonsState();
     void tryAddPage(const QString&); //попытка создания новой страницы для указанной дианы, при условии что такой еще нет
     void checkMQLinuxDir(bool&); //проверка наличия примонтированного раздела /dev/mqueue в Linux
@@ -65,12 +70,11 @@ protected slots:
     void slotUpdateMQStateTimer();
     void slotMQExchangeTimer();
 
-
-
 private:
     QString configDir() const;
     int byteOrder() const;
     bool autoUpdatePackets() const;
+    bool autoReadMsg() const;
     int viewExpandLevel() const;
     quint8 doublePrecision() const;
     int modeSettings() const;

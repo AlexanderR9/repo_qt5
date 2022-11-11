@@ -48,13 +48,52 @@ int DianaObject::queueOutputIndexOf() const
             return i;
     return -1;
 }
-void DianaObject::updateMQState()
+void DianaObject::recreatePosixQueues()
+{
+    if (mq_manager->isEmpty())
+    {
+        emit signalError(QString("%1: MQ list is empty").arg(name()));
+        return;
+    }
+    int n = mq_manager->count();
+    for (int i=0; i<n; i++)
+    {
+        if (!mq_manager->queueAt(i)->isNotFound())
+        {
+            emit signalMsg(QString("%1: try remove queue - %2 .....").arg(name()).arg(mq_manager->queueAt(i)->name()));
+            mq_manager->removePosixFile(i);
+            emit signalMsg("done.");
+        }
+
+        quint32 msg_size = 0;
+        emit signalGetPacketSize(mq_manager->queueAt(i)->name(), msg_size);
+        emit signalMsg(QString("%1: try create queue - %2, msg_size=%3 .....").arg(name()).arg(mq_manager->queueAt(i)->name()).arg(msg_size));
+        mq_manager->createPosixFile(i, msg_size);
+        emit signalMsg("done.");
+    }
+}
+void DianaObject::destroyAllQueues()
+{
+    if (mq_manager->isEmpty())
+    {
+        emit signalError(QString("%1: MQ list is empty").arg(name()));
+        return;
+    }
+    int n = mq_manager->count();
+    for (int i=0; i<n; i++)
+    {
+        emit signalMsg(QString("%1: try remove queue - %2 .....").arg(name()).arg(mq_manager->queueAt(i)->name()));
+        mq_manager->removePosixFile(i);
+        emit signalMsg("done.");
+    }
+}
+void DianaObject::updateMQState(bool is_client)
 {
     int pos = queueInputIndexOf();
     if (pos >= 0)
     {
         if (inputQueue()->isDeinit())
-            mq_manager->openQueue(pos, QIODevice::WriteOnly);
+            mq_manager->openQueue(pos, is_client ? QIODevice::WriteOnly : QIODevice::ReadOnly);
     }
 
 
@@ -62,7 +101,7 @@ void DianaObject::updateMQState()
     if (pos >= 0)
     {
         if (outputQueue()->isDeinit())
-            mq_manager->openQueue(pos, QIODevice::ReadOnly);
+            mq_manager->openQueue(pos, is_client ? QIODevice::ReadOnly : QIODevice::WriteOnly);
     }
 
     mq_manager->updateState();

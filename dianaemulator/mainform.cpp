@@ -51,9 +51,13 @@ void MainForm::initActions()
 {
     addAction(LMainWidget::atStart);
     addAction(LMainWidget::atStop);
-    //addAction(LMainWidget::atSendMsg);
+    addAction(LMainWidget::atChain);
+    addAction(LMainWidget::atCancel);
     addAction(LMainWidget::atSettings);
     addAction(LMainWidget::atExit);
+
+    setActionTooltip(atChain, "Recreate all queues");
+    setActionTooltip(atCancel, "Destroy all queues");
 }
 void MainForm::slotAction(int type)
 {
@@ -62,7 +66,8 @@ void MainForm::slotAction(int type)
         case LMainWidget::atSettings: {actCommonSettings(); break;}
         case LMainWidget::atStart: {start(); break;}
         case LMainWidget::atStop: {stop(); break;}
-        //case LMainWidget::atSendMsg: {sendPack(); break;}
+        case LMainWidget::atChain: {recreateAllQueues(); break;}
+        case LMainWidget::atCancel: {destroyAllQueues(); break;}
         default: break;
     }
 }
@@ -75,17 +80,12 @@ void MainForm::initWidgets()
     m_tab = new QTabWidget(this);
     m_generalPage = new MQGeneralPage(this);
     m_tab->addTab(m_generalPage, "General");
-    //m_tab->clear();
-
     v_splitter->addWidget(m_tab);
     v_splitter->addWidget(m_protocol);
 
-
     initTimers();
-    updateButtonsState();
-
     slotMsg("************ APP STARTED! ***************");
-    slotMsg(LStatic::systemInfo());
+    slotMsg(LStatic::systemInfo());    
 }
 void MainForm::initCommonSettings()
 {
@@ -141,6 +141,10 @@ void MainForm::initCommonSettings()
     lCommonSettings.addParam(QString("Auto update values of sending packets"), LSimpleDialog::sdtBool, key);
     lCommonSettings.setDefValue(key, true);
 
+    key = QString("auto_read_msg");
+    lCommonSettings.addParam(QString("Auto read incoming messages"), LSimpleDialog::sdtBool, key);
+    lCommonSettings.setDefValue(key, true);
+
 }
 void MainForm::start()
 {
@@ -155,7 +159,40 @@ void MainForm::stop()
     m_exchangeTimer->stop();
     updateButtonsState();
     m_protocol->addSpace();
-    m_protocol->addText(QString("Data exchange stopped."));
+    m_protocol->addText(QString("Data exchanging stopped."));
+}
+void MainForm::recreateAllQueues()
+{
+    m_protocol->addSpace();
+    m_protocol->addText("Try recreate all POSIX file ........", LProtocolBox::ttData);
+
+
+    QString q_text = QString("Are you sure you want to recreate all queues?");
+    int res = QMessageBox::question(this, "Creating MQ files.", q_text, QMessageBox::Ok, QMessageBox::Cancel);
+    if (res == QMessageBox::Ok)
+    {
+        foreach (DianaViewWidget *page, m_pages)
+            page->recreatePosixQueues();
+
+        slotUpdateMQStateTimer();
+    }
+    else m_protocol->addText("recreate canceled", LProtocolBox::ttWarning);
+}
+void MainForm::destroyAllQueues()
+{
+    m_protocol->addSpace();
+    m_protocol->addText("Try destroy all POSIX file ........", LProtocolBox::ttData);
+
+    QString q_text = QString("Are you sure you want to destroy all queues?");
+    int res = QMessageBox::question(this, "Destroying MQ queues.", q_text, QMessageBox::Ok, QMessageBox::Cancel);
+    if (res == QMessageBox::Ok)
+    {
+        foreach (DianaViewWidget *page, m_pages)
+            page->destroyAllQueues();
+
+        slotUpdateMQStateTimer();
+    }
+    else m_protocol->addText("destroy canceled", LProtocolBox::ttWarning);
 }
 void MainForm::slotUpdateMQStateTimer()
 {
@@ -167,8 +204,10 @@ void MainForm::slotUpdateMQStateTimer()
 void MainForm::slotMQExchangeTimer()
 {
     foreach (DianaViewWidget *page, m_pages)
-        page->sendMsgToQueue();
-
+    {
+        if (isClient()) page->sendMsgToQueue();
+        else page->readLastMsgMQ();
+    }
 }
 void MainForm::save()
 {
@@ -208,10 +247,15 @@ void MainForm::load()
     }
 
     m_tab->setCurrentIndex(settings.value(QString("%1/tab_index").arg(objectName()), 0).toInt());
+    updateButtonsState();
     restartStateTimer();
-
+    /*
     foreach (DianaViewWidget *page, m_pages)
+    {
         page->setAutoRecalcPackValues(autoUpdatePackets());
+        page->setAutoReadMsg(autoReadMsg());
+    }
+    */
 
 }
 void MainForm::updateButtonsState()
@@ -219,10 +263,12 @@ void MainForm::updateButtonsState()
     bool started = m_exchangeTimer->isActive();
     getAction(atStart)->setEnabled(!started);
     getAction(atStop)->setEnabled(started);
-    //getAction(atSendMsg)->setEnabled(started);
     getAction(atSettings)->setEnabled(!started);
     getAction(atExit)->setEnabled(!started);
 
+    //accessible only server mode
+    getAction(atCancel)->setEnabled(!started && isServer());
+    getAction(atChain)->setEnabled(!started && isServer());
 }
 void MainForm::slotError(const QString &text)
 {
@@ -253,6 +299,11 @@ void MainForm::slotAppSettingsChanged(QStringList keys)
         {
             foreach (DianaViewWidget *page, m_pages)
                 page->setAutoRecalcPackValues(autoUpdatePackets());
+        }
+        else if (key == "auto_read_msg")
+        {
+            foreach (DianaViewWidget *page, m_pages)
+                page->setAutoReadMsg(autoReadMsg());
         }
         else if (key == "mq_state_interval") restartStateTimer();
         else if (key == "mq_exchange_interval" && m_exchangeTimer->isActive()) restartExchangeTimer();
@@ -328,17 +379,15 @@ void MainForm::loadMQPacket(const QString &fname, const QString &diana_name)
         page->loadMQPacket(fname);
         page->setExpandLevel(viewExpandLevel());
         page->setDoublePrecision(doublePrecision());
+        page->setAutoRecalcPackValues(autoUpdatePackets());
+        page->setAutoReadMsg(autoReadMsg());
     }
 }
 void MainForm::tryAddPage(const QString &diana_name)
 {
-    if (m_pages.contains(diana_name))
-    {
-        //qWarning()<<QString("Diana page (%1) allready exist");
-        return;
-    }
+    if (m_pages.contains(diana_name)) return;
 
-    DianaViewWidget *dw = new DianaViewWidget(diana_name, this);
+    DianaViewWidget *dw = new DianaViewWidget(diana_name, isServer(), this);
     m_pages.insert(diana_name, dw);
     m_tab->addTab(dw, diana_name);
 
@@ -391,6 +440,10 @@ int MainForm::byteOrder() const
 bool MainForm::autoUpdatePackets() const
 {
     return lCommonSettings.paramValue("auto_update_pack_values").toBool();
+}
+bool MainForm::autoReadMsg() const
+{
+    return lCommonSettings.paramValue("auto_read_msg").toBool();
 }
 int MainForm::viewExpandLevel() const
 {

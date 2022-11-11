@@ -86,11 +86,11 @@ void MQWorker::closeQueue(int i)
     	emit signalMsg(QString("queue [%1] was closed!").arg(m_queues.at(i)->name()));
     }
 }
-void MQWorker::newQueue(const QString &mq_name, int mode, bool &ok)
+void MQWorker::newQueue(const QString &mq_name, int mode, quint32 msg_size, bool &ok)
 {
 	createQueueObj(mq_name);
 
-    m_queues.last()->tryCreate(mode, ok);
+    m_queues.last()->tryCreate(mode, msg_size, ok);
     if (ok)
     {
     	qDebug()<<QString("Queue [%1] created OK!").arg(m_queues.last()->name());
@@ -101,6 +101,39 @@ void MQWorker::newQueue(const QString &mq_name, int mode, bool &ok)
     	MQ *mq = m_queues.takeLast();
     	if (mq) delete mq;
     	emit signalMsg(QString("last MQ object destroyed, queues size %1").arg(m_queues.count()));
+    }
+}
+void MQWorker::createPosixFile(int i, quint32 msg_size)
+{
+    if (i < 0 || i >= count())
+    {
+        emit signalError(QString("MQWorker: invalid queue index %1").arg(i));
+        return;
+    }
+
+    bool ok;
+    m_queues.at(i)->tryCreate(0, msg_size, ok);
+    if (ok)
+    {
+        emit signalMsg(QString("POSIX file [%1] was created!").arg(m_queues.at(i)->name()));
+        m_queues.at(i)->tryClose(ok);
+        if (ok) m_queues.at(i)->resetState();
+    }
+}
+void MQWorker::removePosixFile(int i)
+{
+    if (i < 0 || i >= count())
+    {
+        emit signalError(QString("MQWorker: invalid queue index %1").arg(i));
+        return;
+    }
+
+    bool ok;
+    m_queues.at(i)->tryDestroy(ok);
+    if (ok)
+    {
+        QString mq_name = m_queues.at(i)->name();
+        qDebug()<<QString("POSIX file [%1] removed OK!").arg(mq_name);
     }
 }
 void MQWorker::removeQueue(int i)

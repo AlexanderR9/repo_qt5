@@ -44,10 +44,12 @@ public:
 
     void tryOpen(int, bool&); //подключиться к существующей очереди POSIX
     void tryClose(bool&); //отключиться от очереди POSIX
-    void tryCreate(int, bool&); //создать очередь POSIX (после создания объкт будет к ней подключен)
+    void tryCreate(int, quint32, bool&); //создать очередь POSIX (после создания объкт будет к ней подключен)
     void tryDestroy(bool&); //уничтожить из системы очередь POSIX
     void trySendMsg(const QByteArray&, bool&); //отправить сообщение(массив байт) в очередь POSIX (объект должен быть подключен к очереди)
     void tryReadMsg(QByteArray&); //считать сообщение из очереди, в случае ошибки ba будет пустой
+
+    void resetState();
 
     	
 protected:
