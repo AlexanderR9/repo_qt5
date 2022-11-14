@@ -21,8 +21,8 @@ public:
     const MQ* inputQueue() const;
     const MQ* outputQueue() const;
     void updateMQState(bool);
-    void sendMsgToQueue(const QByteArray&); //записать пакет в очередь (input)
-    void tryReadMsgFromQueue(QByteArray&); //попытаться считать сообщение из очереди (output)
+    void sendMsgToQueue(const QByteArray&, bool); //записать пакет в очередь (input)
+    void tryReadMsgFromQueue(QByteArray&, bool); //попытаться считать сообщение из очереди (output)
     void destroyAllQueues(); //удалить все реальные MQ очереди
     void recreatePosixQueues();
 
@@ -34,9 +34,7 @@ protected:
 
 signals:
     void signalSendMsgOk(const QString&);
-    //void signalReceiveMsgOk(const QString&);
     void signalSendMsgErr(const QString&);
-    //void signalReceiveMsgErr(const QString&);
     void signalGetPacketSize(const QString&, quint32&);
 
 private:

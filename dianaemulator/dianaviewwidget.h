@@ -24,8 +24,12 @@ public:
     void setExpandLevel(int);
     void setDoublePrecision(quint8);
     void updateMQState();
-    void sendMsgToQueue(); //записать пакет в очередь типа input (функция работает в режиме клиента по таймеру)
-    void readLastMsgMQ(); //считать последний пакет из очереди типа input (функция работает в режиме эмулятора дианы по таймеру)
+
+    //если режим Client, то функция работает по таймеру и с некоторым интервалом записывает пакет в очередь типа input.
+    //в режиме Server функция может разово срабытывать по нажатию кнопки пользувателем для принудительной отправки пакета в очередь типа output.
+    void sendMsgToQueue();
+
+    void readLastMsgMQ(); //считать последний пакет из очереди типа input (функция работает в режиме Server(эмулятора дианы)  по таймеру)
 
 
     void destroyAllQueues();
@@ -46,6 +50,7 @@ protected:
 
     void loadPack(LXMLPackView*, const QString&);
     void readMsgFromQueue(); //проверить наличие сообщений в очереди (output) и считать его
+    void sengMsgFromView(LXMLPackView*);
 
 protected slots:
     void slotReadingTimer();

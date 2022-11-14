@@ -53,11 +53,14 @@ void MainForm::initActions()
     addAction(LMainWidget::atStop);
     addAction(LMainWidget::atChain);
     addAction(LMainWidget::atCancel);
+    addAction(LMainWidget::atSendMsg);
     addAction(LMainWidget::atSettings);
     addAction(LMainWidget::atExit);
 
     setActionTooltip(atChain, "Recreate all queues");
     setActionTooltip(atCancel, "Destroy all queues");
+    setActionTooltip(atSendMsg, "Send message to WRITE_MODE queue");
+
 }
 void MainForm::slotAction(int type)
 {
@@ -68,6 +71,7 @@ void MainForm::slotAction(int type)
         case LMainWidget::atStop: {stop(); break;}
         case LMainWidget::atChain: {recreateAllQueues(); break;}
         case LMainWidget::atCancel: {destroyAllQueues(); break;}
+        case LMainWidget::atSendMsg: {sendMsg(); break;}
         default: break;
     }
 }
@@ -194,6 +198,18 @@ void MainForm::destroyAllQueues()
     }
     else m_protocol->addText("destroy canceled", LProtocolBox::ttWarning);
 }
+void MainForm::sendMsg()
+{
+    QString d_name = m_tab->tabText(m_tab->currentIndex());
+    m_protocol->addSpace();
+    m_protocol->addText(QString("Try send msg to current DIANA(%1) ........").arg(d_name), LProtocolBox::ttData);
+
+    DianaViewWidget *page = qobject_cast<DianaViewWidget*>(m_pages.value(d_name, NULL));
+    if (!page) m_protocol->addText("this page is not DIANA view", LProtocolBox::ttWarning);
+    else page->sendMsgToQueue();
+
+    slotMsg("done");
+}
 void MainForm::slotUpdateMQStateTimer()
 {
     foreach (DianaViewWidget *page, m_pages)
@@ -238,6 +254,7 @@ void MainForm::load()
     if (!ok) return;
 
     m_mode = modeSettings();
+    m_generalPage->setServerMode(isServer());
     loadMQConfig();
 
     for (int i=0; i<m_tab->count(); i++)
@@ -249,14 +266,6 @@ void MainForm::load()
     m_tab->setCurrentIndex(settings.value(QString("%1/tab_index").arg(objectName()), 0).toInt());
     updateButtonsState();
     restartStateTimer();
-    /*
-    foreach (DianaViewWidget *page, m_pages)
-    {
-        page->setAutoRecalcPackValues(autoUpdatePackets());
-        page->setAutoReadMsg(autoReadMsg());
-    }
-    */
-
 }
 void MainForm::updateButtonsState()
 {

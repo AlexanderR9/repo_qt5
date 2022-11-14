@@ -106,28 +106,24 @@ void DianaObject::updateMQState(bool is_client)
 
     mq_manager->updateState();
 }
-void DianaObject::sendMsgToQueue(const QByteArray &ba)
+void DianaObject::sendMsgToQueue(const QByteArray &ba, bool is_client)
 {
-    int pos = queueInputIndexOf();
+    int pos = (is_client ? queueInputIndexOf() : queueOutputIndexOf());
     if (pos < 0) return;
 
     bool ok;
     mq_manager->sendMsg(pos, ba, ok);
     if (ok) emit signalSendMsgOk(name().toLower());
     else emit signalSendMsgErr(name().toLower());
-
 }
-void DianaObject::tryReadMsgFromQueue(QByteArray &ba)
+void DianaObject::tryReadMsgFromQueue(QByteArray &ba, bool is_client)
 {
     ba.clear();
-    int pos = queueOutputIndexOf();
-    if (pos >= 0)
-    {
-        if (outputQueue()->hasMsg())
-        {
-            mq_manager->readMsg(pos, ba);
-        }
-    }
+    int pos = (!is_client ? queueInputIndexOf() : queueOutputIndexOf());
+    if (pos < 0) return;
+
+    if (is_client && outputQueue()->hasMsg()) mq_manager->readMsg(pos, ba);
+    else if (!is_client && inputQueue()->hasMsg()) mq_manager->readMsg(pos, ba);
 }
 
 

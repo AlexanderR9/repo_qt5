@@ -31,21 +31,16 @@ DianaViewWidget::DianaViewWidget(const QString &diana_name, bool serv_mode, QWid
     connect(m_dianaObj, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
     connect(m_dianaObj, SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
     connect(m_dianaObj, SIGNAL(signalSendMsgOk(const QString&)), this, SIGNAL(signalSendMsgOk(const QString&)));
-    //connect(m_dianaObj, SIGNAL(signalReceiveMsgOk(const QString&)), this, SIGNAL(signalReceiveMsgOk(const QString&)));
     connect(m_dianaObj, SIGNAL(signalSendMsgErr(const QString&)), this, SIGNAL(signalSendMsgErr(const QString&)));
-    //connect(m_dianaObj, SIGNAL(signalReceiveMsgErr(const QString&)), this, SIGNAL(signalReceiveMsgErr(const QString&)));
     connect(m_dianaObj, SIGNAL(signalGetPacketSize(const QString&, quint32&)), this, SLOT(slotSetPacketSize(const QString&, quint32&)));
-
 
     QTimer *rt = new QTimer(this);
     connect(rt, SIGNAL(timeout()), this, SLOT(slotReadingTimer()));
     rt->start(READING_INTERVAL);
-
-
 }
 void DianaViewWidget::slotReadingTimer()
 {
-    if (m_autoUpdateReadMsg) readMsgFromQueue();
+    if (m_autoUpdateReadMsg && !is_serv) readMsgFromQueue();
 }
 void DianaViewWidget::initWidget()
 {
@@ -125,26 +120,46 @@ void DianaViewWidget::slotSetPacketSize(const QString &mq_name, quint32 &msg_siz
 void DianaViewWidget::readLastMsgMQ()
 {
     if (m_inView->invalid()) return;
-    qDebug("DianaViewWidget::readLastMsgMQ()");
+    //qDebug("DianaViewWidget::readLastMsgMQ()");
 
+    QByteArray ba;
+    m_dianaObj->tryReadMsgFromQueue(ba, !is_serv);
+    if (!ba.isEmpty())
+    {
+        bool ok;
+        m_inView->setPacketData(ba, ok);
+        if (!ok)
+        {
+            emit signalError(QString("%1: invalid set packet data to input view").arg(m_dianaObj->name()));
+            emit signalReceiveMsgErr(m_dianaObj->name().toLower());
+        }
+        else
+        {
+            emit signalMsg(QString("%1: received msg from input queue, %2 bytes").arg(m_dianaObj->name()).arg(ba.count()));
+            emit signalReceiveMsgOk(m_dianaObj->name().toLower());
+        }
+    }
+}
+void DianaViewWidget::sengMsgFromView(LXMLPackView *view)
+{
+    if (!view) return;
+    if (view->invalid()) return;
+    if (m_autoUpdatePackValues) view->nextRandValues();
 
+    QByteArray ba;
+    view->fromPacket(ba);
+    m_dianaObj->sendMsgToQueue(ba, !is_serv);
 }
 void DianaViewWidget::sendMsgToQueue()
 {
-    if (m_inView->invalid()) return;
-
-    if (m_autoUpdatePackValues)
-        m_inView->nextRandValues();
-
-    QByteArray ba;
-    m_inView->fromPacket(ba);
-    m_dianaObj->sendMsgToQueue(ba);
+    if (!is_serv) sengMsgFromView(m_inView);
+    else sengMsgFromView(m_outView);
 }
 void DianaViewWidget::readMsgFromQueue()
 {
     //qDebug("readMsgFromQueue");
     QByteArray ba;
-    m_dianaObj->tryReadMsgFromQueue(ba);
+    m_dianaObj->tryReadMsgFromQueue(ba, !is_serv);
     if (!ba.isEmpty())
     {
         bool ok;

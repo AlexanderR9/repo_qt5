@@ -19,11 +19,13 @@ public:
     virtual ~MQGeneralPage() {}
 
     void updateMQState();
+    inline void setServerMode(bool b) {is_serv = b;}
 
 protected:
     LTableWidgetBox     *m_tableBox;
     LTreeWidgetBox      *m_viewBox;
     QMap<int, const MQ*>    m_queues;
+    bool                     is_serv; //признак того что еэмулятор работает в режиме имитатора самой дианы, иначе как клиент для дианы
 
     void initWidget();
     void appendDianaToView(const QString&, const QString&);
@@ -38,6 +40,8 @@ public slots:
 
 private:
     int viewDianaIndex(const QString&) const; //вернет индекс заглавного итема по имени дианы или -1
+    int sendingItemIndexByMode() const; // вернет индекс итема-ребенка дианы (0/1) взависимости от значения is_serv
+    int receivingItemIndexByMode() const; // вернет индекс итема-ребенка дианы (0/1) взависимости от значения is_serv
 
 };
 

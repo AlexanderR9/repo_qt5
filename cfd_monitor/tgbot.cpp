@@ -52,8 +52,9 @@ bool TGBot::timeoffNow() const
     quint8 h2 = m_timeoff.right(2).toUInt(&ok);
     if (!ok || h2 > 23)  return false;
 
-    QTime cur_t(QTime::currentTime());
-    return (cur_t.hour() >= h1 && cur_t.hour() < h2);
+    quint8 cur_h = QTime::currentTime().hour();
+    if (h1 > h2) return (cur_h >= h1 || cur_h < h2);
+    return (cur_h >= h1 && cur_h < h2);
 }
 void TGBot::slotJsonReceived(QJsonObject jobj)
 {

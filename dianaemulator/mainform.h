@@ -54,6 +54,7 @@ protected:
     void stop(); //остановить обмен
     void recreateAllQueues(); //пересоздать/создать все очереди MQ согласно конфигурации  (only emServer)
     void destroyAllQueues(); //удалить все очереди MQ согласно конфигурации (only emServer)
+    void sendMsg(); //отправить одно сообщение очереди, вкладка которой открыта, и которая находится в режиме WRITE (это зависит от m_mode)
 
 
     void updateButtonsState();

@@ -22,7 +22,8 @@
 MQGeneralPage::MQGeneralPage(QWidget *parent)
     :LSimpleWidget(parent, 22),
     m_tableBox(NULL),
-    m_viewBox(NULL)
+    m_viewBox(NULL),
+    is_serv(false)
 {
     setObjectName(QString("mq_general_page"));
 
@@ -103,6 +104,14 @@ int MQGeneralPage::viewDianaIndex(const QString &diana_name) const
     }
     return -1;
 }
+int MQGeneralPage::sendingItemIndexByMode() const
+{
+    return (is_serv ? 1 : 0);
+}
+int MQGeneralPage::receivingItemIndexByMode() const
+{
+    return (is_serv ? 0 : 1);
+}
 void MQGeneralPage::updateMQState()
 {
     //qDebug("MQGeneralPage::updateMQState()");
@@ -131,7 +140,7 @@ void MQGeneralPage::slotSendMsgOk(const QString &diana_name)
         QTreeWidgetItem *item = view()->topLevelItem(pos);
         if (item)
         {
-            QTreeWidgetItem *in_item = item->child(0);
+            QTreeWidgetItem *in_item = item->child(sendingItemIndexByMode());
             if (in_item)
             {
                 int n = in_item->text(VIEW_SENDED_COL).toInt() + 1;
@@ -148,7 +157,7 @@ void MQGeneralPage::slotReceiveMsgOk(const QString &diana_name)
         QTreeWidgetItem *item = view()->topLevelItem(pos);
         if (item)
         {
-            QTreeWidgetItem *in_item = item->child(1);
+            QTreeWidgetItem *in_item = item->child(receivingItemIndexByMode());
             if (in_item)
             {
                 int n = in_item->text(VIEW_RECEIVED_COL).toInt() + 1;
@@ -165,7 +174,7 @@ void MQGeneralPage::slotSendMsgErr(const QString &diana_name)
         QTreeWidgetItem *item = view()->topLevelItem(pos);
         if (item)
         {
-            QTreeWidgetItem *in_item = item->child(0);
+            QTreeWidgetItem *in_item = item->child(sendingItemIndexByMode());
             if (in_item)
             {
                 int n = in_item->text(VIEW_ERRS_COL).toInt() + 1;
@@ -183,7 +192,7 @@ void MQGeneralPage::slotReceiveMsgErr(const QString &diana_name)
         QTreeWidgetItem *item = view()->topLevelItem(pos);
         if (item)
         {
-            QTreeWidgetItem *in_item = item->child(1);
+            QTreeWidgetItem *in_item = item->child(receivingItemIndexByMode());
             if (in_item)
             {
                 int n = in_item->text(VIEW_ERRS_COL).toInt() + 1;
