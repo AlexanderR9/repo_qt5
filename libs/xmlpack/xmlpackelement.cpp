@@ -127,8 +127,13 @@ void LXMLPackElement::loadChilds(const QDomNode &node)
     QDomNode child = node.firstChild();
     while (!child.isNull())
     {
-        LXMLPackElement *el = new LXMLPackElement(this);
+        if (child.isComment())
+        {
+            child = child.nextSibling();
+            continue;
+        }
 
+        LXMLPackElement *el = new LXMLPackElement(this);
         el->loadNode(child, err);
         if (!err.isEmpty())
         {
@@ -143,10 +148,7 @@ void LXMLPackElement::loadChilds(const QDomNode &node)
             el = NULL;
             qWarning()<<QString("LXMLPackElement: [%1], child node [%2] is OFF").arg(caption()).arg(child.nodeName());
         }
-        else
-        {
-            m_childs.append(el);
-        }
+        else m_childs.append(el);
 
         child = child.nextSibling();
     }

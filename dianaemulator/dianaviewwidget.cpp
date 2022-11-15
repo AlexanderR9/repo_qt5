@@ -3,6 +3,7 @@
 #include "xmlpackview.h"
 #include "xmlpack.h"
 #include "xmlpackelement.h"
+#include "lstatic.h"
 
 #include <QSplitter>
 #include <QVBoxLayout>
@@ -149,6 +150,7 @@ void DianaViewWidget::sengMsgFromView(LXMLPackView *view)
     QByteArray ba;
     view->fromPacket(ba);
     m_dianaObj->sendMsgToQueue(ba, !is_serv);
+
 }
 void DianaViewWidget::sendMsgToQueue()
 {
@@ -171,6 +173,7 @@ void DianaViewWidget::readMsgFromQueue()
         }
         else
         {
+            m_outView->updateValues();
             emit signalMsg(QString("%1: received msg from output queue, %2 bytes").arg(m_dianaObj->name()).arg(ba.count()));
             emit signalReceiveMsgOk(m_dianaObj->name().toLower());
         }

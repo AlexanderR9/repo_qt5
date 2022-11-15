@@ -48,7 +48,7 @@ public:
     LXMLPackElement(LXMLPackElement*);
     virtual ~LXMLPackElement() {destroyChilds();}
 
-    void loadNode(const QDomNode&, QString&); //загрузить структуру ноды
+    void loadNode(const QDomNode&, QString&); //загрузить структуру ноды (самой себя)
     void calcOffset(LXMLPackElement*, quint32&); //определить m_offset для этого элемента
     LXMLPackElement* clone(LXMLPackElement *parent = NULL) const; //клонирование елемента
     void appendChild(LXMLPackElement*);
