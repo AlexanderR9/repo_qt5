@@ -20,6 +20,11 @@
 #include <QTabWidget>
 #include <QMessageBox>
 #include <QSysInfo>
+#include <QLabel>
+#include <QToolBar>
+#include <QWidget>
+#include <QHBoxLayout>
+#include <QFontDatabase>
 
 
 
@@ -91,6 +96,32 @@ void MainForm::initWidgets()
     slotMsg("************ APP STARTED! ***************");
     slotMsg(LStatic::systemInfo());    
 }
+void MainForm::initModeLabel()
+{
+    QStringList family(QFontDatabase().families(QFontDatabase::Latin));
+    //foreach (QString fname, family)
+        //qDebug()<<QString("FONT_NAME: [%1]").arg(fname);
+
+
+    QLabel *mode_label = new QLabel(QString("MODE: %1  ").arg(isClient() ? "Client" : "Server"), this);
+    QFont fml(family.at(6), 14, -1, true);
+    fml.setBold(true);
+    mode_label->setFont(fml);
+    mode_label->setStyleSheet("QLabel { color : #A08080; }");
+    mode_label->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    qDebug()<<QString("Font name of mode label:  %1").arg(mode_label->font().family());
+
+
+    QWidget *w = new QWidget(this);
+    if (w->layout()) delete w->layout();
+    QHBoxLayout *hlay = new QHBoxLayout(0);
+    w->setLayout(hlay);
+    hlay->setMargin(0);
+    hlay->setSpacing(0);
+    hlay->addSpacerItem(new QSpacerItem(10000, 10, QSizePolicy::Maximum));
+    hlay->addWidget(mode_label);
+    m_toolBar->addWidget(w);
+}
 void MainForm::initCommonSettings()
 {
     QStringList combo_list;
@@ -148,6 +179,13 @@ void MainForm::initCommonSettings()
     key = QString("auto_read_msg");
     lCommonSettings.addParam(QString("Auto read incoming messages"), LSimpleDialog::sdtBool, key);
     lCommonSettings.setDefValue(key, true);
+
+    key = QString("pack_line_bytes");
+    lCommonSettings.addParam(QString("Bytes count of line"), LSimpleDialog::sdtIntCombo, key);
+    combo_list.clear();
+    combo_list << "1" << "2" << "4" << "8" << "16" << "24" << "32" << "48" << "64";
+    lCommonSettings.setComboList(key, combo_list);
+    lCommonSettings.setDefValue(key, combo_list.at(4));
 
 }
 void MainForm::start()
@@ -255,6 +293,7 @@ void MainForm::load()
 
     m_mode = modeSettings();
     m_generalPage->setServerMode(isServer());
+    initModeLabel();
     loadMQConfig();
 
     for (int i=0; i<m_tab->count(); i++)
@@ -402,6 +441,8 @@ void MainForm::tryAddPage(const QString &diana_name)
 
     connect(dw, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(dw, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
+    connect(dw, SIGNAL(signalGetBytesLineSize(int&)), this, SLOT(slotSetBytesLineSize(int&)));
+
     connect(dw, SIGNAL(signalMQCreated(const QString&, quint32, const MQ*)), m_generalPage, SLOT(slotAppendMQ(const QString&, quint32, const MQ*)));
     connect(dw, SIGNAL(signalSendMsgOk(const QString&)), m_generalPage, SLOT(slotSendMsgOk(const QString&)));
     connect(dw, SIGNAL(signalReceiveMsgOk(const QString&)), m_generalPage, SLOT(slotReceiveMsgOk(const QString&)));
@@ -420,6 +461,10 @@ void MainForm::restartExchangeTimer()
     m_exchangeTimer->stop();
     m_exchangeTimer->setInterval(mqExchangeInterval());
     m_exchangeTimer->start();
+}
+void MainForm::slotSetBytesLineSize(int &line_size)
+{
+    line_size = byteLineCount();
 }
 
 
@@ -440,6 +485,10 @@ int MainForm::mqStateInterval()
 int MainForm::mqExchangeInterval()
 {
     return lCommonSettings.paramValue("mq_exchange_interval").toInt();
+}
+int MainForm::byteLineCount() const
+{
+    return lCommonSettings.paramValue("pack_line_bytes").toInt();
 }
 int MainForm::byteOrder() const
 {

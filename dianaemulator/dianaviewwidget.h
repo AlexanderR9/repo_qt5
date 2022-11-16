@@ -8,6 +8,7 @@ class QSettings;
 class LXMLPackView;
 class DianaObject;
 class MQ;
+class QCheckBox;
 
 
 // DianaViewWidget
@@ -17,6 +18,11 @@ class DianaViewWidget : public LSimpleWidget
 public:
     DianaViewWidget(const QString&, bool serv_mode, QWidget *parent = 0);
     virtual ~DianaViewWidget() {}
+
+
+    //parent class functions
+    virtual void load(QSettings&);
+    virtual void save(QSettings&);
 
 
     void loadMQPacket(const QString&); //загрузить указанный пакет
@@ -30,8 +36,6 @@ public:
     void sendMsgToQueue();
 
     void readLastMsgMQ(); //считать последний пакет из очереди типа input (функция работает в режиме Server(эмулятора дианы)  по таймеру)
-
-
     void destroyAllQueues();
     void recreatePosixQueues();
 
@@ -45,12 +49,16 @@ protected:
     bool                     m_autoUpdatePackValues; //признак того что значения отправляемого пакета будут автоматом пересчитываться с учетом случайной состовляющей
     bool                     m_autoUpdateReadMsg; //признак того что значения отправляемого пакета будут автоматом пересчитываться с учетом случайной состовляющей
     bool                     is_serv; //признак того что еэмулятор работает в режиме имитатора самой дианы, иначе как клиент для дианы
+    QCheckBox               *m_showInPackCheckBox; //флажок для включения выхопа в протокол пакет типа Input
+    QCheckBox               *m_showOutPackCheckBox; //флажок для включения выхопа в протокол пакет типа Output
 
     void initWidget();
 
     void loadPack(LXMLPackView*, const QString&);
     void readMsgFromQueue(); //проверить наличие сообщений в очереди (output) и считать его
     void sengMsgFromView(LXMLPackView*);
+    void tryDebugSendingPacket(const QByteArray&); //если установлен соотвестсвующий флаг то выдать выхлоп в протокол байты отправляемого пакета
+    void tryDebugReceivingPacket(const QByteArray&); //если установлен соотвестсвующий флаг то выдать выхлоп в протокол байты получаемого пакета
 
 protected slots:
     void slotReadingTimer();
@@ -62,6 +70,7 @@ signals:
     void signalReceiveMsgOk(const QString&);
     void signalSendMsgErr(const QString&);
     void signalReceiveMsgErr(const QString&);
+    void signalGetBytesLineSize(int&);
 
 };
 

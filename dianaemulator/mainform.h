@@ -42,6 +42,7 @@ protected:
     void initActions();
     void initWidgets();
     void initCommonSettings();
+    void initModeLabel();
 
     void initTimers(); //инициализация таймеров
     void loadMQConfig(); //загрузить все конфиги для диан
@@ -70,10 +71,12 @@ protected slots:
     void slotMsg(const QString&);
     void slotUpdateMQStateTimer();
     void slotMQExchangeTimer();
+    void slotSetBytesLineSize(int&);
 
 private:
     QString configDir() const;
     int byteOrder() const;
+    int byteLineCount() const;
     bool autoUpdatePackets() const;
     bool autoReadMsg() const;
     int viewExpandLevel() const;

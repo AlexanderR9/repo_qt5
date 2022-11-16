@@ -11,6 +11,7 @@
 #include <QDebug>
 #include <QTimer>
 #include <QSettings>
+#include <QCheckBox>
 
 #define READING_INTERVAL    233
 
@@ -22,7 +23,9 @@ DianaViewWidget::DianaViewWidget(const QString &diana_name, bool serv_mode, QWid
     m_dianaObj(NULL),
     m_autoUpdatePackValues(false),
     m_autoUpdateReadMsg(false),
-    is_serv(serv_mode)
+    is_serv(serv_mode),
+    m_showInPackCheckBox(NULL),
+    m_showOutPackCheckBox(NULL)
 {
     m_dianaObj = new DianaObject(diana_name, this);
     setObjectName(QString("%1_view_widget").arg(diana_name));
@@ -54,6 +57,12 @@ void DianaViewWidget::initWidget()
     m_inView->setSelectionRowsMode();
     m_outView->setReadOnly(!is_serv);
     m_outView->setSelectionRowsMode();
+
+    m_showInPackCheckBox = new QCheckBox("Debug to protocol this packet bytes", this);
+    m_inView->layout()->addWidget(m_showInPackCheckBox);
+    m_showOutPackCheckBox = new QCheckBox("Debug to protocol this packet bytes", this);
+    m_outView->layout()->addWidget(m_showOutPackCheckBox);
+
 }
 void DianaViewWidget::loadMQPacket(const QString &fname)
 {
@@ -121,7 +130,6 @@ void DianaViewWidget::slotSetPacketSize(const QString &mq_name, quint32 &msg_siz
 void DianaViewWidget::readLastMsgMQ()
 {
     if (m_inView->invalid()) return;
-    //qDebug("DianaViewWidget::readLastMsgMQ()");
 
     QByteArray ba;
     m_dianaObj->tryReadMsgFromQueue(ba, !is_serv);
@@ -139,6 +147,7 @@ void DianaViewWidget::readLastMsgMQ()
             emit signalMsg(QString("%1: received msg from input queue, %2 bytes").arg(m_dianaObj->name()).arg(ba.count()));
             emit signalReceiveMsgOk(m_dianaObj->name().toLower());
         }
+        tryDebugReceivingPacket(ba);
     }
 }
 void DianaViewWidget::sengMsgFromView(LXMLPackView *view)
@@ -149,8 +158,44 @@ void DianaViewWidget::sengMsgFromView(LXMLPackView *view)
 
     QByteArray ba;
     view->fromPacket(ba);
+    tryDebugSendingPacket(ba);
     m_dianaObj->sendMsgToQueue(ba, !is_serv);
-
+}
+void DianaViewWidget::tryDebugSendingPacket(const QByteArray &ba)
+{
+    int line_size = 2;
+    if (is_serv && m_showOutPackCheckBox->isChecked())
+    {
+        emit signalGetBytesLineSize(line_size);
+        emit signalMsg(QString("--------------------------- %1: out packet ----------------------------").arg(m_dianaObj->name().toUpper()));
+        emit signalMsg(LStatic::baToStr(ba, line_size));
+        emit signalMsg(QString("-----------------------------------------------------------------------------"));
+    }
+    if (!is_serv && m_showInPackCheckBox->isChecked())
+    {
+        emit signalGetBytesLineSize(line_size);
+        emit signalMsg(QString("--------------------------- %1: input packet ----------------------------").arg(m_dianaObj->name().toUpper()));
+        emit signalMsg(LStatic::baToStr(ba, line_size));
+        emit signalMsg(QString("-----------------------------------------------------------------------------"));
+    }
+}
+void DianaViewWidget::tryDebugReceivingPacket(const QByteArray &ba)
+{
+    int line_size = 2;
+    if (!is_serv && m_showOutPackCheckBox->isChecked())
+    {
+        emit signalGetBytesLineSize(line_size);
+        emit signalMsg(QString("------------------ %1: out packet (readed msg) ----------------------------").arg(m_dianaObj->name().toUpper()));
+        emit signalMsg(LStatic::baToStr(ba, line_size));
+        emit signalMsg(QString("-----------------------------------------------------------------------------"));
+    }
+    if (is_serv && m_showInPackCheckBox->isChecked())
+    {
+        emit signalGetBytesLineSize(line_size);
+        emit signalMsg(QString("------------------ %1: input packet (readed msg) ------------------------").arg(m_dianaObj->name().toUpper()));
+        emit signalMsg(LStatic::baToStr(ba, line_size));
+        emit signalMsg(QString("-----------------------------------------------------------------------------"));
+    }
 }
 void DianaViewWidget::sendMsgToQueue()
 {
@@ -159,7 +204,6 @@ void DianaViewWidget::sendMsgToQueue()
 }
 void DianaViewWidget::readMsgFromQueue()
 {
-    //qDebug("readMsgFromQueue");
     QByteArray ba;
     m_dianaObj->tryReadMsgFromQueue(ba, !is_serv);
     if (!ba.isEmpty())
@@ -177,8 +221,23 @@ void DianaViewWidget::readMsgFromQueue()
             emit signalMsg(QString("%1: received msg from output queue, %2 bytes").arg(m_dianaObj->name()).arg(ba.count()));
             emit signalReceiveMsgOk(m_dianaObj->name().toLower());
         }
+        tryDebugReceivingPacket(ba);
     }
 }
 
+
+//parent's functions
+void DianaViewWidget::load(QSettings &settings)
+{
+    LSimpleWidget::load(settings);
+    m_showInPackCheckBox->setChecked(settings.value(QString("%1/debug_input").arg(objectName()), false).toBool());
+    m_showOutPackCheckBox->setChecked(settings.value(QString("%1/debug_output").arg(objectName()), false).toBool());
+}
+void DianaViewWidget::save(QSettings &settings)
+{
+    LSimpleWidget::save(settings);
+    settings.setValue(QString("%1/debug_input").arg(objectName()), m_showInPackCheckBox->isChecked());
+    settings.setValue(QString("%1/debug_output").arg(objectName()), m_showOutPackCheckBox->isChecked());
+}
 
 
