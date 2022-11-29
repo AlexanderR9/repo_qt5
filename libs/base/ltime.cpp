@@ -123,8 +123,8 @@ void w32_system_time::toStream(QDataStream &stream)
 }
 void w32_system_time::reset()
 {
-    wYear=2022; wMonth=9; wDayOfWeek=4; wDay=1; //date
-    wHour=15; wMinute=35; wSecond=wMilliseconds=0; //time
+    wYear=2020; wMonth=9; wDay=1; wDayOfWeek=2;  //date
+    wHour=12; wMinute=0; wSecond=wMilliseconds=0; //time
 }
 quint32 w32_system_time::size() const
 {

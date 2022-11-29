@@ -164,7 +164,6 @@ void MainForm::initCommonSettings()
     lCommonSettings.addParam(QString("Quality of signals"), LSimpleDialog::sdtIntLine, key);
     lCommonSettings.setDefValue(key, QString("48"));
 
-
     key = QString("mode");
     lCommonSettings.addParam(QString("Emulator mode"), LSimpleDialog::sdtStringCombo, key);
     combo_list.clear();

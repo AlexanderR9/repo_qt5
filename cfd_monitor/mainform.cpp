@@ -11,6 +11,7 @@
 #include "cfdconfigobj.h"
 #include "tgbot.h"
 #include "cfdcalcobj.h"
+#include "lfile.h"
 
 #include <QDebug>
 #include <QTimer>
@@ -143,6 +144,16 @@ void MainForm::initConfigObj()
 
     m_protocol->addText("Try load CFD configuration .....", LProtocolBox::ttOk);
     m_configObj->tryLoadConfig();
+
+    //save tickers to file (by wish)
+    /*
+    QStringList tickers(m_configObj->getTickers(true));
+    QString fname("log/ista_tickers.txt");
+    QString err = LFile::writeFileSL(fname, tickers);
+    if (!err.isEmpty()) slotError(err);
+    else m_protocol->addText(QString("saved to file insta_tickers, %1 ps.").arg(tickers.count()));
+    */
+
 }
 void MainForm::initCalcObj()
 {

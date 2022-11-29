@@ -99,13 +99,13 @@ void MainForm::initWidgets()
 void MainForm::initModeLabel()
 {
     QStringList family(QFontDatabase().families(QFontDatabase::Latin));
+    QFont fml(family.at(6), 14, -1, true);
+    fml.setBold(true);
     //foreach (QString fname, family)
         //qDebug()<<QString("FONT_NAME: [%1]").arg(fname);
 
 
     QLabel *mode_label = new QLabel(QString("MODE: %1  ").arg(isClient() ? "Client" : "Server"), this);
-    QFont fml(family.at(6), 14, -1, true);
-    fml.setBold(true);
     mode_label->setFont(fml);
     mode_label->setStyleSheet("QLabel { color : #A08080; }");
     mode_label->setAlignment(Qt::AlignRight | Qt::AlignVCenter);

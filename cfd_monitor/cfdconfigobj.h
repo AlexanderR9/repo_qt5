@@ -95,6 +95,7 @@ public:
 
     void tryLoadConfig();
     QStringList getSources() const;
+    QStringList getTickers(bool only_insta = false) const;
     QStringList getCFDObjectData(int) const;
     void getNextTicker(QString&);
 

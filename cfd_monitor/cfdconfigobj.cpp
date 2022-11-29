@@ -28,6 +28,16 @@ void CFDConfigObject::slotSetInstaPtr(const QString &ticker, bool &b)
         }
     }
 }
+QStringList CFDConfigObject::getTickers(bool only_insta) const
+{
+    QStringList list;
+    foreach (const CFDObj &v, m_cfdList)
+    {
+        if (only_insta && !v.is_insta) continue;
+        list.append(v.ticker);
+    }
+    return list;
+}
 QStringList CFDConfigObject::getSources() const
 {
     QStringList list;
