@@ -116,9 +116,9 @@ void LTableWidgetBox::init()
     LTable::fullClearTable(m_table);
     layout()->addWidget(m_table);
 }
-void LTableWidgetBox::setHeaderLabels(const QStringList &list)
+void LTableWidgetBox::setHeaderLabels(const QStringList &list, int orintation)
 {
-    LTable::setTableHeaders(m_table, list);
+    LTable::setTableHeaders(m_table, list, orintation);
 }
 void LTableWidgetBox::vHeaderHide()
 {

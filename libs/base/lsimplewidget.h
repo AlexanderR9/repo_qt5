@@ -75,7 +75,7 @@ public:
     LTableWidgetBox(QWidget *parent = NULL, int type = 1);
     virtual ~LTableWidgetBox() {}
 
-    void setHeaderLabels(const QStringList&);
+    void setHeaderLabels(const QStringList&, int orintation = Qt::Horizontal);
     void vHeaderHide();
 
     QTableWidget* table() const;

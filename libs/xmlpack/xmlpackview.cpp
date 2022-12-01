@@ -38,7 +38,7 @@ void LXMLPackView::initWidget()
     v_lay->addWidget(m_view);
 
     QStringList headers;
-    headers << "Cation" << "Type" << "Size, b" << "Offset" << "Childs" << "Value" << "Deviation, %";
+    headers << "Caption" << "Type" << "Size, b" << "Offset" << "Childs" << "Value" << "Deviation, %";
     m_view->setColumnCount(headers.count());
     m_view->header()->setDefaultAlignment(Qt::AlignCenter);
     m_view->setHeaderLabels(headers);
