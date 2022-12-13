@@ -9,7 +9,8 @@
 // LTcpServerObj constructor
 LTcpServerObj::LTcpServerObj(QObject *parent)
     :LSimpleObject(parent),
-    m_server(NULL)
+    m_server(NULL),
+    m_errCounter(0)
 {
     setObjectName("ltcp_server");
     resetParams();
@@ -34,7 +35,11 @@ void LTcpServerObj::slotServerNewConnection()
     emit signalMsg(QString("%0: was new connection").arg(name()));
 
     QTcpSocket *socket = m_server->nextPendingConnection();
-    if (!socket) emit signalError(QString("%0: connected socket is null").arg(name()));
+    if (!socket)
+    {
+        emit signalError(QString("%0: connected socket is null").arg(name()));
+        m_errCounter++;
+    }
     else
     {
         addConnectedSocket(socket);
@@ -47,6 +52,7 @@ void LTcpServerObj::slotServerError()
     QString s_err = m_server->errorString();
 
     emit signalError(QString("%0: %1  (code=%2)").arg(name()).arg(s_err).arg(err));
+    m_errCounter++;
 }
 void LTcpServerObj::startListening()
 {
@@ -58,6 +64,7 @@ void LTcpServerObj::startListening()
 
     m_server->setMaxPendingConnections(m_maxConnections);
     qDebug()<<QString("LTcpServerObj::startListening()  host=%1  port=%2").arg(m_listenHost).arg(m_listenPort);
+    //emit signalMsg(QString("TcpServer starting listen - host=%1  port=%2").arg(m_listenHost).arg(m_listenPort));
 
     bool result = false;
 
@@ -70,7 +77,10 @@ void LTcpServerObj::startListening()
     emit signalMsg(msg);
 
     if (!result)
+    {
         emit signalError(QString("%0: RESULT=[fault],  err: %1").arg(name()).arg(m_server->errorString()));
+        m_errCounter++;
+    }
 }
 void LTcpServerObj::stopListening()
 {
@@ -159,6 +169,8 @@ void LTcpServerObj::slotSocketError()
     QString err = QString("%1 (code=%2)").arg(socket ? socket->errorString() : "?????").arg(socket ? socket->error() : -99);
     qDebug()<<QString("LTcpServerObj::slotSocketError()  sender=[%1]  ERR: %2").arg(sender()->objectName()).arg(err);
 
+    emit signalError(QString("%0: (SOCKET_ERR)  sender=[%1]  ERR: %2").arg(name()).arg(sender()->objectName()).arg(err));
+    m_errCounter++;
 }
 void LTcpServerObj::slotSocketStateChanged()
 {
@@ -191,8 +203,16 @@ bool LTcpServerObj::hasConnectedClients() const
     }
     return false;
 }
-void LTcpServerObj::trySendPacketToClient(quint8 socket_number, const QByteArray &ba)
+QString LTcpServerObj::connectedHostAt(int i) const
 {
+    if (i < 0 || i >= m_sockets.count()) return "??";
+
+    QHostAddress ip4(m_sockets.at(i)->peerAddress().toIPv4Address());
+    return ip4.toString();
+}
+void LTcpServerObj::trySendPacketToClient(quint8 socket_number, const QByteArray &ba, bool &ok)
+{
+    ok = false;
     if (ba.isEmpty())
     {
         emit signalError(QString("%0: packet size is empty").arg(name()));
@@ -214,8 +234,16 @@ void LTcpServerObj::trySendPacketToClient(quint8 socket_number, const QByteArray
     }
 
     qint64 n_bytes = m_sockets[pos]->write(ba);
-    if (n_bytes == ba.size()) emit signalMsg(QString("%0: success sended packet (%1 bytes) to %2").arg(name()).arg(n_bytes).arg(s_name));
-    else emit signalError(QString("%0: wrong sending packet(%1 bytes) to %2, writed bytes %3").arg(name()).arg(ba.size()).arg(s_name).arg(n_bytes));
+    if (n_bytes == ba.size())
+    {
+        emit signalMsg(QString("%0: success sended packet (%1 bytes) to %2").arg(name()).arg(n_bytes).arg(s_name));
+        ok = true;
+    }
+    else
+    {
+        emit signalError(QString("%0: wrong sending packet(%1 bytes) to %2, writed bytes %3").arg(name()).arg(ba.size()).arg(s_name).arg(n_bytes));
+        m_errCounter++;
+    }
 }
 bool LTcpServerObj::isListening() const
 {

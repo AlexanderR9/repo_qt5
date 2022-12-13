@@ -2,6 +2,8 @@
 #include "xmlpackelement.h"
 #include "xmlpacktype.h"
 #include "lfile.h"
+#include "lstaticxml.h"
+#include "lstatic.h"
 
 #include <QDebug>
 #include <QDomDocument>
@@ -15,7 +17,8 @@ LXMLPackObj::LXMLPackObj(const QString &fname, QObject *parent)
     :LSimpleObject(parent),
     m_rootNode(NULL),
     m_fileName(fname.trimmed()),
-    m_byteOrder(QDataStream::LittleEndian)
+    m_byteOrder(QDataStream::LittleEndian),
+    m_kksUsed(false)
 {
 
 
@@ -83,6 +86,8 @@ void LXMLPackObj::loadDom(const QDomDocument &dom, bool &ok)
         emit signalError(QString("Error load XML from [%1], not found [%2] attribute of root node").arg(m_fileName).arg(XMLPackStatic::cationAttrName()));
         return;
     }
+
+    m_kksUsed = (LStaticXML::getStringAttrValue("use_kks", root_node).trimmed() == QString("true"));
 
     QString err;
     m_rootNode = new LXMLPackElement();
@@ -166,5 +171,44 @@ void LXMLPackObj::fromByteArray(const QByteArray &ba, bool &ok, bool singleFloat
     ok =  true;
 }
 
+
+void LXMLPackObj::setIntValueByPath(QString path, qint64 v, bool &ok)
+{
+    ok = false;
+    if (invalid()) {qWarning()<<QString("LXMLPackObj::setIntValueByPath WARNING packet is invalid"); return;}
+
+    QStringList list = LStatic::trimSplitList(path, "/");
+    if (list.count() < 2) {qWarning()<<QString("LXMLPackObj::setIntValueByPath WARNING invalid path [%1]").arg(path); return;}
+    if (list.first() != "packet")  {qWarning()<<QString("LXMLPackObj::setIntValueByPath WARNING invalid path [%1], first element != packet").arg(path); return;}
+
+    QList<quint8> levels;
+    for (int i=1; i<list.count(); i++)
+    {
+        //qDebug()<<list.at(i);
+        quint8 level = list.at(i).toUInt(&ok);
+        //qDebug()<<QString::number(level)<<"   "<<QString(!ok?"false":"true");
+        if (!ok) {qWarning()<<QString("LXMLPackObj::setIntValueByPath WARNING invalid path [%1], %2 element(%3) not uint").arg(path).arg(i).arg(list.at(i)); return;}
+        levels.append(level);
+    }
+    m_rootNode->setIntValueByPath(levels, v, ok);
+}
+void LXMLPackObj::setDoubleValueByPath(QString path, double v, bool &ok)
+{
+    ok = false;
+    if (invalid()) {qWarning()<<QString("LXMLPackObj::setDoubleValueByPath WARNING packet is invalid"); return;}
+
+    QStringList list = LStatic::trimSplitList(path, "/");
+    if (list.count() < 2) {qWarning()<<QString("LXMLPackObj::setDoubleValueByPath WARNING invalid path [%1]").arg(path); return;}
+    if (list.first() != "packet")  {qWarning()<<QString("LXMLPackObj::setDoubleValueByPath WARNING invalid path [%1], first element != packet").arg(path); return;}
+
+    QList<quint8> levels;
+    for (int i=1; i<list.count(); i++)
+    {
+        quint8 level = list.at(i).toUInt(&ok);
+        if (!ok) {qWarning()<<QString("LXMLPackObj::setDoubleValueByPath WARNING invalid path [%1], %2 element(%3) not uint").arg(path).arg(i).arg(list.at(i)); return;}
+        levels.append(level);
+    }
+    m_rootNode->setDoubleValueByPath(levels, v, ok);
+}
 
 

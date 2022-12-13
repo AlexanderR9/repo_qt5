@@ -19,14 +19,19 @@ public:
     inline void setConnectionParams(QString host, quint16 port = 0) {m_listenHost = host; m_listenPort = port;} //задать параметры для прослушивания сервера
     inline void setMaxServerClients(quint8 n) {m_maxConnections = n;} //задать максимально количество подключенных клиентов
     inline int clientsCount() const {return m_sockets.count();} //количество подключенных сокетов(клиентов)
+    inline quint16 listeningPort() const {return m_listenPort;}
+    inline QString listeningHost() const {return (m_listenHost.trimmed().isEmpty() ? "ANY" : m_listenHost);}
+    inline quint32 errCount() const {return m_errCounter;}
 
     virtual void startListening(); //запустить прослушивание
     virtual void stopListening(); //остановить прослушивание
     virtual bool isListening() const;
-    virtual void trySendPacketToClient(quint8, const QByteArray&); //отправить пакет клиенту с заданным номером
+    virtual void trySendPacketToClient(quint8, const QByteArray&, bool&); //отправить пакет клиенту с заданным номером
     virtual bool hasConnectedClients() const; // признак наличия подключенных клиентов в текущий момент
 
+
     virtual QString name() const {return QString("LTcpServer");}
+    QString connectedHostAt(int) const; //вернет IP указанного подключившегося клиента
 
 protected:
     QTcpServer          *m_server;
@@ -36,6 +41,7 @@ protected:
     QString     m_listenHost;
     quint16     m_listenPort;
     quint8      m_maxConnections;
+    quint32     m_errCounter; //счетчи ошибок
 
     virtual void initServer();  //инициализация сервера
     virtual void resetParams(); //сброс настроек сервера

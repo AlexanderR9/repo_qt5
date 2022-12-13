@@ -15,13 +15,13 @@ class LXMLPackElement;
 class LXMLPackViewItem : public QTreeWidgetItem
 {
 public:
-    LXMLPackViewItem(LXMLPackElement*, QTreeWidgetItem *parent = NULL);
+    LXMLPackViewItem(LXMLPackElement*, QTreeWidgetItem *parent = NULL, bool kks_used = false);
     virtual ~LXMLPackViewItem() {}
 
     void changePackValue(int); //значение или отклонение изменилось, необходимо обновить его в пакете
     void setReadOnly(bool); //установить возможность редактирования значения или отклонения в пакете
     void updateValues(); //обновить значения
-    void  setDoublePrecision(quint8);
+    void setDoublePrecision(quint8);
 
     inline bool isEditable() const {return m_editable;}
 
@@ -29,7 +29,6 @@ public:
 protected:
     LXMLPackElement *m_node;
     bool m_editable;
-
 
     void loadNodeChilds();
     void updateColumnsText();
@@ -57,6 +56,15 @@ public:
     void setExpandLevel(int); //раскрывает элементы дерева до заданной глубины
     void nextRandValues(); //обновить значения всех элементов пакета с учетом rand_deviation, (если rand_deviation == 0, то значение не измениться)
     void setSelectionRowsMode();
+    bool kksUsed() const;
+
+
+    //установить значение 1-й ноды по заданному пути.
+    //путь указывается в виде набора уровней вложенности, начинается всегда с 'packet'
+    //пример: packet/2/0/11
+    //если по заданному пути нет ноды или ее тип не соответствует устанавливаему значению то в параметр bool запишется false
+    void setIntValueByPath(QString, qint64, bool&);
+    void setDoubleValueByPath(QString, double, bool&);
 
 
     // DataStream operation (in/out )
@@ -69,6 +77,7 @@ public:
     inline bool isReadOnly() const {return m_readOnly;}
     inline void  setDoublePrecision(quint8 p) {m_doublePrecision = p;}
     inline bool invalid() const {return (m_rootItem == NULL);}
+
 
 protected:
     QTreeWidget         *m_view;

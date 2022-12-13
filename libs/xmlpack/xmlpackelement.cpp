@@ -57,6 +57,9 @@ void LXMLPackElement::loadNode(const QDomNode &node, QString &err)
     //read caption
     setCation(LStaticXML::getStringAttrValue(XMLPackStatic::cationAttrName(), node));
 
+    //read kks
+    m_kks = LStaticXML::getStringAttrValue("kks", node);
+
     //read datatype
     if (node.attributes().contains(XMLPackStatic::dataTypeAttrName()))
     {
@@ -192,6 +195,44 @@ void LXMLPackElement::calcOffset(LXMLPackElement*, quint32 &cur_offset)
     {
         m_childs[i]->calcOffset(this, cur_offset);
     }
+}
+void LXMLPackElement::setIntValueByPath(const QList<quint8> &levels, qint64 v, bool &ok)
+{
+    ok = false;
+    LXMLPackElement *node = this;
+    foreach (quint8 l, levels)
+    {
+        if (l >= node->m_childs.count()) {qWarning()<<QString("LXMLPackElement::setIntValueByPath WARNING invalid level %1").arg(l); return;}
+        node = node->m_childs.at(l);
+    }
+
+    if (!XMLPackStatic::isIntegerType(node->dataType()))
+    {
+        qWarning()<<QString("LXMLPackElement::setIntValueByPath WARNING node [%1] not integer").arg(node->caption());
+        return;
+    }
+
+    node->setIntValue(v);
+    ok = true;
+}
+void LXMLPackElement::setDoubleValueByPath(const QList<quint8> &levels, double v, bool &ok)
+{
+    ok = false;
+    LXMLPackElement *node = this;
+    foreach (quint8 l, levels)
+    {
+        if (l >= node->m_childs.count()) {qWarning()<<QString("LXMLPackElement::setDoubleValueByPath WARNING invalid level %1").arg(l); return;}
+        node = node->m_childs.at(l);
+    }
+
+    if (!XMLPackStatic::isDoubleType(node->dataType()))
+    {
+        qWarning()<<QString("LXMLPackElement::setDoubleValueByPath WARNING node [%1] not double").arg(node->caption());
+        return;
+    }
+
+    node->m_value.d_value = v;
+    ok = true;
 }
 void LXMLPackElement::nextRandValue()
 {

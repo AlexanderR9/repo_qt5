@@ -24,9 +24,18 @@ public:
     void nextRandValues(); //обновить значения всех элементов пакета с учетом rand_deviation, (если rand_deviation == 0, то значение не измениться)
     QString caption() const; //caption рутовой ноды
 
+    //установить значение 1-й ноды по заданному пути.
+    //путь указывается в виде набора уровней вложенности, начинается всегда с 'packet'
+    //пример: packet/2/0/11
+    //если по заданному пути нет ноды или ее тип не соответствует устанавливаему значению то в параметр bool запишется false
+    void setIntValueByPath(QString, qint64, bool&);
+    void setDoubleValueByPath(QString, double, bool&);
+
+
     inline bool invalid() const {return (m_rootNode == NULL);}
     inline const LXMLPackElement* rootElement() const {return m_rootNode;}
     inline LXMLPackElement* rootElementVar() const {return m_rootNode;}
+    inline bool kksUsed() const {return m_kksUsed;}
 
     //QDataStream operation
     void toByteArray(QByteArray&, bool singleFloatPrecision = false); //запись пакета в массив байт
@@ -36,6 +45,7 @@ protected:
     LXMLPackElement *m_rootNode;
     QString m_fileName; //xml файл с описанием пакета
     int m_byteOrder;
+    bool m_kksUsed; //признак того что в описании пакеты будут использованы ККС, этот признак задается в рутовой ноде атрибутом: use_kks="true"
 
     void loadDom(const QDomDocument&, bool&); //создать структуру пакета из считанного QDomDocument
     void recalcOffset(); //пересчитать параметр m_offset для всех нод, выполняется после загрузки пакета

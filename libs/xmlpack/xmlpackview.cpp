@@ -9,6 +9,7 @@
 #include <QVBoxLayout>
 #include <QHeaderView>
 
+#define KKS_COL         4
 #define VALUE_COL       5
 #define DEVIATION_COL   6
 
@@ -35,6 +36,7 @@ void LXMLPackView::initWidget()
     setLayout(v_lay);
 
     m_view = new QTreeWidget(this);
+    m_view->setObjectName("view_widget");
     v_lay->addWidget(m_view);
 
     QStringList headers;
@@ -46,6 +48,20 @@ void LXMLPackView::initWidget()
     m_view->setSelectionMode(QAbstractItemView::NoSelection);
     m_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
+}
+bool LXMLPackView::kksUsed() const
+{
+    return (m_packet ? m_packet->kksUsed() : false);
+}
+void LXMLPackView::setIntValueByPath(QString path, qint64 v, bool &ok)
+{
+    if (m_packet)
+        m_packet->setIntValueByPath(path, v, ok);
+}
+void LXMLPackView::setDoubleValueByPath(QString path, double v, bool &ok)
+{
+    if (m_packet)
+        m_packet->setDoubleValueByPath(path, v, ok);
 }
 void LXMLPackView::setSelectionRowsMode()
 {
@@ -68,6 +84,8 @@ void LXMLPackView::setPacket(LXMLPackObj *p)
 
     resetView();
     m_packet = p;
+    if (m_packet->kksUsed())
+        m_view->headerItem()->setText(KKS_COL, "KKS");
     reloadView();
 
     if (m_rootItem)
@@ -81,7 +99,7 @@ void LXMLPackView::reloadView()
     if (!m_packet) return;
     if (m_packet->invalid()) return;
 
-    m_rootItem = new LXMLPackViewItem(m_packet->rootElementVar());
+    m_rootItem = new LXMLPackViewItem(m_packet->rootElementVar(), NULL, kksUsed());
     m_view->addTopLevelItem(m_rootItem);
     m_view->expandAll();
     resizeColumns();
@@ -145,7 +163,6 @@ void LXMLPackView::slotItemValueChanged(QTreeWidgetItem *item, int column)
         disconnect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
         pack_item->changePackValue(column);
         connect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
-
     }
 }
 bool LXMLPackView::isEditableCol(int col) const
@@ -168,12 +185,13 @@ void LXMLPackView::setExpandLevel(int level)
 
 
 //LXMLPackViewItem
-LXMLPackViewItem::LXMLPackViewItem(LXMLPackElement *node, QTreeWidgetItem *parent)
+LXMLPackViewItem::LXMLPackViewItem(LXMLPackElement *node, QTreeWidgetItem *parent, bool kks_used)
     :QTreeWidgetItem(parent),
       m_node(node),
       m_editable(false)
 {
     setData(VALUE_COL, Qt::UserRole, 3);
+    setData(KKS_COL, Qt::UserRole, kks_used);
     updateColumnsText();
     updateValue();
     updateColumnsColor();
@@ -190,7 +208,7 @@ void LXMLPackViewItem::loadNodeChilds()
         if (!child_node) continue;
         if (child_node->invalid()) continue;
 
-        LXMLPackViewItem *child_item = new LXMLPackViewItem(child_node, this);
+        LXMLPackViewItem *child_item = new LXMLPackViewItem(child_node, this, data(KKS_COL, Qt::UserRole).toBool());
         Q_UNUSED(child_item);
     }
 }
@@ -200,10 +218,23 @@ void LXMLPackViewItem::updateColumnsText()
     setText(1, XMLPackStatic::xmlAttrName(m_node->dataType()));
     setText(2, QString::number(m_node->size()));
     setText(3, QString::number(m_node->offset()));
-    setText(4, QString::number(m_node->childsCount()));
     setText(5, QString());
     setText(6, QString());
 
+    //update kks
+    //if (!this->parent()) qWarning("WARNING parent == NULL");
+    //else qDebug()<<QString("parent name: %1").arg(parent()->data(0, Qt::UserRole).toString());
+    //const LXMLPackView *parent_view = qobject_cast<const LXMLPackView*>(treeWidget());
+    QString kks_text = QString::number(m_node->childsCount());
+    if (data(KKS_COL, Qt::UserRole).toBool()) kks_text = m_node->kks();
+    setText(KKS_COL, kks_text);
+
+    //if (parent_view)
+    //{
+      //  if (parent_view->kksUsed()) kks_text = m_node->kks();
+    //}
+    //else qWarning("WARNING parent_view == NULL");
+    //setText(KKS_COL, kks_text);
 }
 void LXMLPackViewItem::updateColumnsColor()
 {

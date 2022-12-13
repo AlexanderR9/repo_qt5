@@ -61,6 +61,9 @@ public:
     void setNewValueDeviation(const QString&, bool &ok); // попытка установить новое отклонение значения
     void nextRandValue(); //обновить значение m_value с учетом rand_deviation, (если rand_deviation == 0, то значение не измениться)
 
+    void setIntValueByPath(const QList<quint8>&, qint64, bool&);
+    void setDoubleValueByPath(const QList<quint8>&, double, bool&);
+
 
     bool isNode() const; //элемент является секцией
     bool isTime() const; //элемент является структурой TimeSpec
@@ -76,6 +79,7 @@ public:
     inline quint16 arrSize() const {return m_arrSize;}
     inline void setArrSize(quint16 n) {m_arrSize = n;}
     inline QString caption() const {return m_caption;}
+    inline QString kks() const {return m_kks;}
     inline int dataType() const {return m_dataType;}
     inline void setDataType(int t) {m_dataType = t;}
     inline int childsCount() const {return m_childs.count();}
@@ -93,6 +97,7 @@ protected:
     quint16 m_arrSize; //если > 1, указывает на то что этот елемент/нода является массивом, если m_arrSize == 0, то этот елемент пропускается (как будто его нет в описании)
     quint32 m_offset; //смещение элемента в пакете
     QString m_caption; //название элемента
+    QString m_kks; //KKS параметра или группы (может не использоваться в пакете, зависит от задачи)
     LXMLPackValue m_value; //значение элемента, актуально если елемент isData()
 
     LXMLPackElement *m_parentNode; //указатель на родительскую ноду
