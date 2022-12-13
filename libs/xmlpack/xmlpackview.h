@@ -66,6 +66,10 @@ public:
     void setIntValueByPath(QString, qint64, bool&);
     void setDoubleValueByPath(QString, double, bool&);
 
+    //возвращает значение ноды соответствующего типа
+    qint64 getIntValueByPath(QString, bool&);
+    double getDoubleValueByPath(QString, bool&);
+
 
     // DataStream operation (in/out )
     void setPacketData(const QByteArray&, bool&, bool singleFloatPrecision = false); //записать массив байт в пакет

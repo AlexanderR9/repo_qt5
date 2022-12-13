@@ -63,6 +63,21 @@ void LXMLPackView::setDoubleValueByPath(QString path, double v, bool &ok)
     if (m_packet)
         m_packet->setDoubleValueByPath(path, v, ok);
 }
+qint64 LXMLPackView::getIntValueByPath(QString path, bool &ok)
+{
+    ok = false;
+    if (m_packet)
+        return m_packet->getIntValueByPath(path, ok);
+    return -9;
+}
+double LXMLPackView::getDoubleValueByPath(QString path, bool &ok)
+{
+    ok = false;
+    if (m_packet)
+        return m_packet->getDoubleValueByPath(path, ok);
+    return -9;
+}
+
 void LXMLPackView::setSelectionRowsMode()
 {
     if (m_view)

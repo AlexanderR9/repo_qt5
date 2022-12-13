@@ -63,6 +63,8 @@ public:
 
     void setIntValueByPath(const QList<quint8>&, qint64, bool&);
     void setDoubleValueByPath(const QList<quint8>&, double, bool&);
+    qint64 getIntValueByPath(const QList<quint8>&, bool&);
+    double getDoubleValueByPath(const QList<quint8>&, bool&);
 
 
     bool isNode() const; //элемент является секцией
@@ -109,6 +111,7 @@ protected:
     void retransformArrChild(int); //размножить найденный элемент-массив среди детей
     void transformTimeSpec();//сформировать структуру элементов для типа TimeSpec
     void nextTimeValue(); //обновить значение m_value типа timespec
+    LXMLPackElement* nodeByPath(const QList<quint8>&);
 
 private:
     quint32 sectionSize(const LXMLPackElement*) const; //возвращает размер в байтах секции целиком

@@ -196,15 +196,22 @@ void LXMLPackElement::calcOffset(LXMLPackElement*, quint32 &cur_offset)
         m_childs[i]->calcOffset(this, cur_offset);
     }
 }
-void LXMLPackElement::setIntValueByPath(const QList<quint8> &levels, qint64 v, bool &ok)
+LXMLPackElement* LXMLPackElement::nodeByPath(const QList<quint8> &levels)
 {
-    ok = false;
+    if (levels.isEmpty()) {qWarning()<<QString("LXMLPackElement::nodeByPath WARNING level path is empty"); return NULL;}
     LXMLPackElement *node = this;
     foreach (quint8 l, levels)
     {
-        if (l >= node->m_childs.count()) {qWarning()<<QString("LXMLPackElement::setIntValueByPath WARNING invalid level %1").arg(l); return;}
+        if (l >= node->m_childs.count()) {qWarning()<<QString("LXMLPackElement::nodeByPath WARNING invalid level %1").arg(l); return NULL;}
         node = node->m_childs.at(l);
     }
+    return node;
+}
+void LXMLPackElement::setIntValueByPath(const QList<quint8> &levels, qint64 v, bool &ok)
+{
+    ok = false;
+    LXMLPackElement *node = nodeByPath(levels);
+    if (!node) return;
 
     if (!XMLPackStatic::isIntegerType(node->dataType()))
     {
@@ -218,12 +225,8 @@ void LXMLPackElement::setIntValueByPath(const QList<quint8> &levels, qint64 v, b
 void LXMLPackElement::setDoubleValueByPath(const QList<quint8> &levels, double v, bool &ok)
 {
     ok = false;
-    LXMLPackElement *node = this;
-    foreach (quint8 l, levels)
-    {
-        if (l >= node->m_childs.count()) {qWarning()<<QString("LXMLPackElement::setDoubleValueByPath WARNING invalid level %1").arg(l); return;}
-        node = node->m_childs.at(l);
-    }
+    LXMLPackElement *node = nodeByPath(levels);
+    if (!node) return;
 
     if (!XMLPackStatic::isDoubleType(node->dataType()))
     {
@@ -233,6 +236,36 @@ void LXMLPackElement::setDoubleValueByPath(const QList<quint8> &levels, double v
 
     node->m_value.d_value = v;
     ok = true;
+}
+qint64 LXMLPackElement::getIntValueByPath(const QList<quint8> &levels, bool &ok)
+{
+    ok = false;
+    LXMLPackElement *node = nodeByPath(levels);
+    if (!node) return -1;
+
+    if (!XMLPackStatic::isIntegerType(node->dataType()))
+    {
+        qWarning()<<QString("LXMLPackElement::getIntValueByPath WARNING node [%1] not double").arg(node->caption());
+        return -1;
+    }
+
+    ok = true;
+    return node->getValue().i_value;
+}
+double LXMLPackElement::getDoubleValueByPath(const QList<quint8> &levels, bool &ok)
+{
+    ok = false;
+    LXMLPackElement *node = nodeByPath(levels);
+    if (!node) return -1;
+
+    if (!XMLPackStatic::isDoubleType(node->dataType()))
+    {
+        qWarning()<<QString("LXMLPackElement::getDoubleValueByPath WARNING node [%1] not double").arg(node->caption());
+        return -1;
+    }
+
+    ok = true;
+    return node->getValue().d_value;
 }
 void LXMLPackElement::nextRandValue()
 {

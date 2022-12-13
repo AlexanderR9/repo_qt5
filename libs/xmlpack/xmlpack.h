@@ -31,6 +31,9 @@ public:
     void setIntValueByPath(QString, qint64, bool&);
     void setDoubleValueByPath(QString, double, bool&);
 
+    //возвращает значение ноды соответствующего типа
+    qint64 getIntValueByPath(QString, bool&);
+    double getDoubleValueByPath(QString, bool&);
 
     inline bool invalid() const {return (m_rootNode == NULL);}
     inline const LXMLPackElement* rootElement() const {return m_rootNode;}
@@ -51,6 +54,9 @@ protected:
     void recalcOffset(); //пересчитать параметр m_offset для всех нод, выполняется после загрузки пакета
     void retransformArrNodes(); //размножить все ноды-массивы, выполняется после загрузки пакета
     void destroyObj();
+
+private:
+    QList<quint8> parseXPath(const QString&) const;
 
 };
 

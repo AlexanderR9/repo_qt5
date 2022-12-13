@@ -26,7 +26,7 @@ public:
     virtual void startListening(); //запустить прослушивание
     virtual void stopListening(); //остановить прослушивание
     virtual bool isListening() const;
-    virtual void trySendPacketToClient(quint8, const QByteArray&, bool&); //отправить пакет клиенту с заданным номером
+    virtual void trySendPacketToClient(quint8, const QByteArray&, bool&); //отправить пакет клиенту с заданным номером [1..N]
     virtual bool hasConnectedClients() const; // признак наличия подключенных клиентов в текущий момент
 
 
