@@ -177,7 +177,7 @@ void LXMLPackObj::setIntValueByPath(QString path, qint64 v, bool &ok)
     ok = false;
     if (invalid()) {qWarning()<<QString("LXMLPackObj::setIntValueByPath WARNING packet is invalid"); return;}
 
-    QList<quint8> levels = parseXPath(path);
+    QList<quint16> levels = parseXPath(path);
     if (!levels.isEmpty()) m_rootNode->setIntValueByPath(levels, v, ok);
 }
 void LXMLPackObj::setDoubleValueByPath(QString path, double v, bool &ok)
@@ -185,7 +185,7 @@ void LXMLPackObj::setDoubleValueByPath(QString path, double v, bool &ok)
     ok = false;
     if (invalid()) {qWarning()<<QString("LXMLPackObj::setDoubleValueByPath WARNING packet is invalid"); return;}
 
-    QList<quint8> levels = parseXPath(path);
+    QList<quint16> levels = parseXPath(path);
     if (!levels.isEmpty()) m_rootNode->setDoubleValueByPath(levels, v, ok);
 }
 qint64 LXMLPackObj::getIntValueByPath(QString path, bool &ok)
@@ -193,7 +193,7 @@ qint64 LXMLPackObj::getIntValueByPath(QString path, bool &ok)
     ok = false;
     if (invalid()) {qWarning()<<QString("LXMLPackObj::setIntValueByPath WARNING packet is invalid"); return -1;}
 
-    QList<quint8> levels = parseXPath(path);
+    QList<quint16> levels = parseXPath(path);
     if (!levels.isEmpty()) return m_rootNode->getIntValueByPath(levels, ok);
     return -2;
 }
@@ -202,13 +202,13 @@ double LXMLPackObj::getDoubleValueByPath(QString path, bool &ok)
     ok = false;
     if (invalid()) {qWarning()<<QString("LXMLPackObj::getDoubleValueByPath WARNING packet is invalid"); return -1;}
 
-    QList<quint8> levels = parseXPath(path);
+    QList<quint16> levels = parseXPath(path);
     if (!levels.isEmpty()) return m_rootNode->getDoubleValueByPath(levels, ok);
     return -2;
 }
-QList<quint8> LXMLPackObj::parseXPath(const QString &path) const
+QList<quint16> LXMLPackObj::parseXPath(const QString &path) const
 {
-    QList<quint8> levels;
+    QList<quint16> levels;
     QStringList list = LStatic::trimSplitList(path.trimmed(), "/");
     if (list.count() < 2) qWarning()<<QString("LXMLPackObj::parseXPath WARNING invalid path [%1]").arg(path);
     else if (list.first() != "packet") qWarning()<<QString("LXMLPackObj::parseXPath WARNING invalid path [%1], first element != packet").arg(path);
@@ -217,7 +217,7 @@ QList<quint8> LXMLPackObj::parseXPath(const QString &path) const
         bool ok;
         for (int i=1; i<list.count(); i++)
         {
-            quint8 level = list.at(i).toUInt(&ok);
+            quint16 level = list.at(i).toUInt(&ok);
             if (!ok)
             {
                 qWarning()<<QString("LXMLPackObj::parseXPath WARNING invalid path [%1], %2 element(%3) not uint").arg(path).arg(i).arg(list.at(i));

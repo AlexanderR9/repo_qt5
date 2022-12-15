@@ -90,13 +90,18 @@ void LTcpServerObj::stopListening()
         return;
     }
 
+    qDebug("LTcpServerObj::stopListening() 1");
     closeServer();
     emit signalMsg(QString("%0: stoped listening").arg(name()));
 
-    m_server->deleteLater();
+    //m_server->deleteLater();
+    qDebug("LTcpServerObj::stopListening() 2");
     QTest::qWait(200);
-    m_server = NULL;
-    initServer();
+    qDebug("LTcpServerObj::stopListening() 3");
+    //m_server = NULL;
+    qDebug("LTcpServerObj::stopListening() 4");
+    //initServer();
+    qDebug("LTcpServerObj::stopListening() 5");
 }
 quint8 LTcpServerObj::nextSocketNumber() const
 {
@@ -251,7 +256,9 @@ bool LTcpServerObj::isListening() const
 }
 void LTcpServerObj::closeServer()
 {
+    qDebug("LTcpServerObj::closeServer() 1");
     if (m_server->isListening()) m_server->close();
+    qDebug("LTcpServerObj::closeServer() 2");
     if (m_sockets.isEmpty()) return;
 
     foreach (QTcpSocket *socket, m_sockets)
@@ -259,12 +266,11 @@ void LTcpServerObj::closeServer()
         // Отключите соединение с клиентом
         socket->disconnectFromHost();
         if(socket->state() != QAbstractSocket::UnconnectedState)
-        {
             socket->abort();
-        }
     }
-
+    qDebug("LTcpServerObj::closeServer() 3");
     qDeleteAll(m_sockets);
     m_sockets.clear();
+    qDebug("LTcpServerObj::closeServer() 4");
 }
 

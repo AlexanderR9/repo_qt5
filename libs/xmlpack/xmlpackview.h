@@ -20,7 +20,7 @@ public:
 
     void changePackValue(int); //значение или отклонение изменилось, необходимо обновить его в пакете
     void setReadOnly(bool); //установить возможность редактирования значения или отклонения в пакете
-    void updateValues(); //обновить значения
+    void updateValues(); //обновить значения свое и всех своих детей рекурсивно
     void setDoublePrecision(quint8);
 
     inline bool isEditable() const {return m_editable;}

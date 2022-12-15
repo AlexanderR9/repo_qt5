@@ -26,8 +26,6 @@ LXMLPackView::LXMLPackView(const QString &title, QWidget *parent)
 {
     setObjectName("xml_packet_view");
     initWidget();
-
-
 }
 void LXMLPackView::initWidget()
 {
@@ -47,7 +45,6 @@ void LXMLPackView::initWidget()
     m_view->setSelectionBehavior(QAbstractItemView::SelectItems);
     m_view->setSelectionMode(QAbstractItemView::NoSelection);
     m_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
-
 }
 bool LXMLPackView::kksUsed() const
 {
@@ -77,7 +74,6 @@ double LXMLPackView::getDoubleValueByPath(QString path, bool &ok)
         return m_packet->getDoubleValueByPath(path, ok);
     return -9;
 }
-
 void LXMLPackView::setSelectionRowsMode()
 {
     if (m_view)
@@ -172,12 +168,13 @@ void LXMLPackView::nextRandValues()
 }
 void LXMLPackView::slotItemValueChanged(QTreeWidgetItem *item, int column)
 {
+        //qDebug()<<QString("%1: slotItemValueChanged col=%2").arg(item->text(0)).arg(column);
     LXMLPackViewItem *pack_item = static_cast<LXMLPackViewItem*>(item);
     if (pack_item)
     {
-        disconnect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
+        //disconnect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
         pack_item->changePackValue(column);
-        connect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
+        //connect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
     }
 }
 bool LXMLPackView::isEditableCol(int col) const
@@ -237,19 +234,9 @@ void LXMLPackViewItem::updateColumnsText()
     setText(6, QString());
 
     //update kks
-    //if (!this->parent()) qWarning("WARNING parent == NULL");
-    //else qDebug()<<QString("parent name: %1").arg(parent()->data(0, Qt::UserRole).toString());
-    //const LXMLPackView *parent_view = qobject_cast<const LXMLPackView*>(treeWidget());
     QString kks_text = QString::number(m_node->childsCount());
     if (data(KKS_COL, Qt::UserRole).toBool()) kks_text = m_node->kks();
     setText(KKS_COL, kks_text);
-
-    //if (parent_view)
-    //{
-      //  if (parent_view->kksUsed()) kks_text = m_node->kks();
-    //}
-    //else qWarning("WARNING parent_view == NULL");
-    //setText(KKS_COL, kks_text);
 }
 void LXMLPackViewItem::updateColumnsColor()
 {
@@ -286,6 +273,8 @@ void LXMLPackViewItem::updateValue()
     if (m_node->isData())
     {
         setText(DEVIATION_COL, m_node->strValueDeviation());
+        //QString sv = m_node->strValue(data(VALUE_COL, Qt::UserRole).toInt());
+        //setText(VALUE_COL, sv);
         setText(VALUE_COL, m_node->strValue(data(VALUE_COL, Qt::UserRole).toInt()));
     }
     else if (m_node->isTime())
@@ -307,6 +296,7 @@ void LXMLPackViewItem::changePackValue(int col)
     {
         case VALUE_COL:
         {
+            //qDebug()<<QString("changePackValue for %1").arg(text(0));
             m_node->setNewValue(text(VALUE_COL), ok);
             break;
         }
@@ -321,8 +311,7 @@ void LXMLPackViewItem::changePackValue(int col)
             return;
         }
     }
-
-    updateValue();
+    //updateValue();
 }
 void LXMLPackViewItem::setReadOnly(bool b)
 {
@@ -336,7 +325,6 @@ void LXMLPackViewItem::setReadOnly(bool b)
         LXMLPackViewItem *pack_item = static_cast<LXMLPackViewItem*>(child(i));
         if (pack_item) pack_item->setReadOnly(b);
     }
-
     updateColumnsColor();
 }
 void LXMLPackViewItem::setDoublePrecision(quint8 dp)

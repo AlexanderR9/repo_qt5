@@ -196,18 +196,19 @@ void LXMLPackElement::calcOffset(LXMLPackElement*, quint32 &cur_offset)
         m_childs[i]->calcOffset(this, cur_offset);
     }
 }
-LXMLPackElement* LXMLPackElement::nodeByPath(const QList<quint8> &levels)
+LXMLPackElement* LXMLPackElement::nodeByPath(const QList<quint16> &levels)
 {
     if (levels.isEmpty()) {qWarning()<<QString("LXMLPackElement::nodeByPath WARNING level path is empty"); return NULL;}
     LXMLPackElement *node = this;
-    foreach (quint8 l, levels)
+    foreach (quint16 l, levels)
     {
         if (l >= node->m_childs.count()) {qWarning()<<QString("LXMLPackElement::nodeByPath WARNING invalid level %1").arg(l); return NULL;}
         node = node->m_childs.at(l);
+        //qDebug()<<QString("level %1,  node: %2").arg(l).arg(node->caption());
     }
     return node;
 }
-void LXMLPackElement::setIntValueByPath(const QList<quint8> &levels, qint64 v, bool &ok)
+void LXMLPackElement::setIntValueByPath(const QList<quint16> &levels, qint64 v, bool &ok)
 {
     ok = false;
     LXMLPackElement *node = nodeByPath(levels);
@@ -219,10 +220,11 @@ void LXMLPackElement::setIntValueByPath(const QList<quint8> &levels, qint64 v, b
         return;
     }
 
+    //if (node->caption() == "low") qDebug()<<QString("setIntValueByPath v=%1").arg(v);
     node->setIntValue(v);
     ok = true;
 }
-void LXMLPackElement::setDoubleValueByPath(const QList<quint8> &levels, double v, bool &ok)
+void LXMLPackElement::setDoubleValueByPath(const QList<quint16> &levels, double v, bool &ok)
 {
     ok = false;
     LXMLPackElement *node = nodeByPath(levels);
@@ -237,7 +239,7 @@ void LXMLPackElement::setDoubleValueByPath(const QList<quint8> &levels, double v
     node->m_value.d_value = v;
     ok = true;
 }
-qint64 LXMLPackElement::getIntValueByPath(const QList<quint8> &levels, bool &ok)
+qint64 LXMLPackElement::getIntValueByPath(const QList<quint16> &levels, bool &ok)
 {
     ok = false;
     LXMLPackElement *node = nodeByPath(levels);
@@ -252,7 +254,7 @@ qint64 LXMLPackElement::getIntValueByPath(const QList<quint8> &levels, bool &ok)
     ok = true;
     return node->getValue().i_value;
 }
-double LXMLPackElement::getDoubleValueByPath(const QList<quint8> &levels, bool &ok)
+double LXMLPackElement::getDoubleValueByPath(const QList<quint16> &levels, bool &ok)
 {
     ok = false;
     LXMLPackElement *node = nodeByPath(levels);
@@ -434,24 +436,32 @@ void LXMLPackElement::setNewValue(const QString &s, bool &ok)
         double dv = s.toDouble(&ok);
         if (!ok)
         {
-            qWarning()<<QString("LXMLPackElement::setNewValueDeviation WARNING - node %1,  invalid double value: %2").arg(caption()).arg(s);
+            qWarning()<<QString("LXMLPackElement::setNewValue (double) WARNING - node %1,  invalid double value: %2").arg(caption()).arg(s);
         }
         else m_value.d_value = dv;
     }
     else
     {
-        qint64 iv = s.toInt(&ok);
-        if (!ok)
+        qint64 iv = 0;
+        if (XMLPackStatic::isUnsignedType(dataType()))
         {
-            qWarning()<<QString("LXMLPackElement::setNewValueDeviation WARNING - node %1,  invalid integer value: %2").arg(caption()).arg(s);
-            return;
+            iv = s.toUInt(&ok);
+            if (!ok)
+            {
+                qWarning()<<QString("LXMLPackElement::setNewValue (unit) WARNING - node %1,  invalid unsigned integer value: %2").arg(caption()).arg(s);
+                return;
+            }
         }
-        if (XMLPackStatic::isUnsignedType(dataType()) && iv < 0)
+        else
         {
-            ok = false;
-            qWarning()<<QString("LXMLPackElement::setNewValueDeviation WARNING - node %1,  invalid unsigned integer value: %2").arg(caption()).arg(s);
-            return;
+            iv = s.toInt(&ok);
+            if (!ok)
+            {
+                qWarning()<<QString("LXMLPackElement::setNewValue (int) WARNING - node %1,  invalid integer value: %2").arg(caption()).arg(s);
+                return;
+            }
         }
+
         setIntValue(iv);
     }
 }
@@ -476,14 +486,16 @@ void LXMLPackElement::setIntValue(qint64 iv)
 {
     switch (dataType())
     {
-        case petInt8:       {qint8 v=qint8(iv); m_value.i_value = v; break;}
-        case petInt16:      {qint16 v=qint16(iv); m_value.i_value = v; break;}
-        case petInt32:      {qint32 v=qint32(iv); m_value.i_value = v; break;}
-        case petInt64:      {qint64 v=qint64(iv); m_value.i_value = v; break;}
-        case petUint8:      {qint8 v=qint8(iv); m_value.i_value = v; break;}
-        case petUint16:     {qint16 v=qint16(iv); m_value.i_value = v; break;}
-        case petUint32:     {qint32 v=qint32(iv); m_value.i_value = v; break;}
-        case petUint64:     {qint64 v=qint64(iv); m_value.i_value = v; break;}
+        case petInt8:       {qint8 v = qint8(iv);       m_value.i_value = v; break;}
+        case petInt16:      {qint16 v = qint16(iv);     m_value.i_value = v; break;}
+        case petInt32:      {qint32 v = qint32(iv);     m_value.i_value = v; break;}
+        case petUint8:      {quint8 v = quint8(iv);     m_value.i_value = v; break;}
+        case petUint16:     {quint16 v = quint16(iv);   m_value.i_value = v; break;}
+        case petUint32:     {quint32 v = quint32(iv);   m_value.i_value = v; break;}
+
+        case petUint64:
+        case petInt64:      {m_value.i_value = iv; break;}
+
         default: break;
     }
 }

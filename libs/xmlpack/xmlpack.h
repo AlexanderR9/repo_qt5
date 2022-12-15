@@ -56,7 +56,7 @@ protected:
     void destroyObj();
 
 private:
-    QList<quint8> parseXPath(const QString&) const;
+    QList<quint16> parseXPath(const QString&) const;
 
 };
 
