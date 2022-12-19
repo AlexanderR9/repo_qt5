@@ -11,6 +11,7 @@ QString XMLPackStatic::xmlAttrName(int t)
         case petInt32:      return QString("int32");
         case petInt64:      return QString("int64");
 
+        case petDiscrete:    return QString("discrete");
         case petUint8:       return QString("uint8");
         case petUint16:      return QString("uint16");
         case petUint32:      return QString("uint32");
@@ -43,6 +44,8 @@ bool XMLPackStatic::isIntegerType(int t)
         case petInt16:
         case petInt32:
         case petInt64:
+
+        case petDiscrete:
         case petUint8:
         case petUint16:
         case petUint32:
@@ -56,6 +59,7 @@ quint8 XMLPackStatic::sizeOf(int t)
     switch (t)
     {
         case petInt8:
+        case petDiscrete:
         case petUint8: return 1;
 
         case petInt16:
@@ -78,6 +82,7 @@ bool XMLPackStatic::isUnsignedType(int t)
 {
     switch (t)
     {
+        case petDiscrete:
         case petUint8:
         case petUint16:
         case petUint32:
@@ -88,18 +93,20 @@ bool XMLPackStatic::isUnsignedType(int t)
 }
 int XMLPackStatic::typeByXmlAttr(QString attr)
 {
-    if (attr == "int8")      return petInt8;
-    if (attr == "int16")     return petInt16;
-    if (attr == "int32")     return petInt32;
-    if (attr == "int64")     return petInt64;
-    if (attr == "uint8")     return petUint8;
-    if (attr == "uint16")    return petUint16;
-    if (attr == "uint32")    return petUint32;
-    if (attr == "uint64")    return petUint64;
+    if (attr == "discrete")     return petDiscrete;
 
-    if (attr == "float")     return petFloat;
-    if (attr == "double")    return petDouble;
-    if (attr == "timespec")    return petTimeSpec;
+    if (attr == "int8")         return petInt8;
+    if (attr == "int16")        return petInt16;
+    if (attr == "int32")        return petInt32;
+    if (attr == "int64")        return petInt64;
+    if (attr == "uint8")        return petUint8;
+    if (attr == "uint16")       return petUint16;
+    if (attr == "uint32")       return petUint32;
+    if (attr == "uint64")       return petUint64;
+
+    if (attr == "float")        return petFloat;
+    if (attr == "double")       return petDouble;
+    if (attr == "timespec")     return petTimeSpec;
 
     return petInvalid;
 }

@@ -103,7 +103,12 @@ void LXMLPackElement::loadValueAttrs(const QDomNode &node)
     m_value.reset();
     if (invalid() || isOff() || isNode()) return;
 
-    m_value.isDouble = XMLPackStatic::isDoubleType(m_dataType);
+    if (m_dataType == petDiscrete) m_value.isDiscrete = true;
+    else
+    {
+        m_value.isDouble = XMLPackStatic::isDoubleType(m_dataType);
+        m_value.isUnsigned = XMLPackStatic::isUnsignedType(m_dataType);
+    }
 
     if (node.attributes().contains(XMLPackStatic::defValueAttrName()))
     {
@@ -196,84 +201,13 @@ void LXMLPackElement::calcOffset(LXMLPackElement*, quint32 &cur_offset)
         m_childs[i]->calcOffset(this, cur_offset);
     }
 }
-LXMLPackElement* LXMLPackElement::nodeByPath(const QList<quint16> &levels)
-{
-    if (levels.isEmpty()) {qWarning()<<QString("LXMLPackElement::nodeByPath WARNING level path is empty"); return NULL;}
-    LXMLPackElement *node = this;
-    foreach (quint16 l, levels)
-    {
-        if (l >= node->m_childs.count()) {qWarning()<<QString("LXMLPackElement::nodeByPath WARNING invalid level %1").arg(l); return NULL;}
-        node = node->m_childs.at(l);
-        //qDebug()<<QString("level %1,  node: %2").arg(l).arg(node->caption());
-    }
-    return node;
-}
-void LXMLPackElement::setIntValueByPath(const QList<quint16> &levels, qint64 v, bool &ok)
-{
-    ok = false;
-    LXMLPackElement *node = nodeByPath(levels);
-    if (!node) return;
 
-    if (!XMLPackStatic::isIntegerType(node->dataType()))
-    {
-        qWarning()<<QString("LXMLPackElement::setIntValueByPath WARNING node [%1] not integer").arg(node->caption());
-        return;
-    }
 
-    //if (node->caption() == "low") qDebug()<<QString("setIntValueByPath v=%1").arg(v);
-    node->setIntValue(v);
-    ok = true;
-}
-void LXMLPackElement::setDoubleValueByPath(const QList<quint16> &levels, double v, bool &ok)
-{
-    ok = false;
-    LXMLPackElement *node = nodeByPath(levels);
-    if (!node) return;
-
-    if (!XMLPackStatic::isDoubleType(node->dataType()))
-    {
-        qWarning()<<QString("LXMLPackElement::setDoubleValueByPath WARNING node [%1] not double").arg(node->caption());
-        return;
-    }
-
-    node->m_value.d_value = v;
-    ok = true;
-}
-qint64 LXMLPackElement::getIntValueByPath(const QList<quint16> &levels, bool &ok)
-{
-    ok = false;
-    LXMLPackElement *node = nodeByPath(levels);
-    if (!node) return -1;
-
-    if (!XMLPackStatic::isIntegerType(node->dataType()))
-    {
-        qWarning()<<QString("LXMLPackElement::getIntValueByPath WARNING node [%1] not double").arg(node->caption());
-        return -1;
-    }
-
-    ok = true;
-    return node->getValue().i_value;
-}
-double LXMLPackElement::getDoubleValueByPath(const QList<quint16> &levels, bool &ok)
-{
-    ok = false;
-    LXMLPackElement *node = nodeByPath(levels);
-    if (!node) return -1;
-
-    if (!XMLPackStatic::isDoubleType(node->dataType()))
-    {
-        qWarning()<<QString("LXMLPackElement::getDoubleValueByPath WARNING node [%1] not double").arg(node->caption());
-        return -1;
-    }
-
-    ok = true;
-    return node->getValue().d_value;
-}
 void LXMLPackElement::nextRandValue()
 {
     if (invalid()) return;
 
-    if (isData()) m_value.next();
+    if (isData()) m_value.recalcNext();
     else if (isTime()) nextTimeValue();
     else
     {
@@ -362,13 +296,15 @@ void LXMLPackElement::writeToStream(QDataStream &stream)
 {
     if (invalid()) return;
 
-    if (isData()) writeValueToStream(stream);
+    //if (isData()) writeValueToStream(stream);
+    if (isData()) m_value.writeToStream(dataType(), stream);
     else if (hasChilds())
     {
         for (int i=0; i<childsCount(); i++)
             m_childs[i]->writeToStream(stream);
     }
 }
+/*
 void LXMLPackElement::writeValueToStream(QDataStream &stream) //записать в поток
 {
     switch (dataType())
@@ -377,26 +313,32 @@ void LXMLPackElement::writeValueToStream(QDataStream &stream) //записать
         case petInt16:      {stream << qint16(m_value.i_value); break;}
         case petInt32:      {stream << qint32(m_value.i_value); break;}
         case petInt64:      {stream << qint64(m_value.i_value); break;}
+
+        case petDiscrete:
         case petUint8:      {stream << quint8(m_value.i_value); break;}
         case petUint16:     {stream << quint16(m_value.i_value); break;}
         case petUint32:     {stream << quint32(m_value.i_value); break;}
         case petUint64:     {stream << quint64(m_value.i_value); break;}
+
         case petFloat:      {stream << float(m_value.d_value); break;}
         case petDouble:     {stream << m_value.d_value; break;}
         default: break;
     }
 }
+*/
 void LXMLPackElement::readFromStream(QDataStream &stream)
 {
     if (invalid()) return;
 
-    if (isData()) readValueFromStream(stream);
+    //if (isData()) readValueFromStream(stream);
+    if (isData()) m_value.readFromStream(dataType(), stream);
     else if (hasChilds())
     {
         for (int i=0; i<childsCount(); i++)
             m_childs[i]->readFromStream(stream);
     }
 }
+/*
 void LXMLPackElement::readValueFromStream(QDataStream &stream) //считать из потока
 {
     switch (dataType())
@@ -405,16 +347,27 @@ void LXMLPackElement::readValueFromStream(QDataStream &stream) //считать 
         case petInt16:      {qint16 v=0; stream >> v; m_value.i_value = v; break;}
         case petInt32:      {qint32 v=0; stream >> v; m_value.i_value = v; break;}
         case petInt64:      {stream >> m_value.i_value; break;}
+
         case petUint8:      {quint8 v=0; stream >> v; m_value.i_value = v; break;}
         case petUint16:     {quint16 v=0; stream >> v; m_value.i_value = v; break;}
         case petUint32:     {quint32 v=0; stream >> v; m_value.i_value = v; break;}
         case petUint64:     {quint64 v=0; stream >> v; m_value.i_value = v; break;}
+
+        case petDiscrete:
+        {
+            quint8 v=0;
+            stream >> v;
+            if (v > 1) v = 0;
+            m_value.i_value = v;
+            break;
+        }
 
         case petFloat:      {float v=0; stream >> v; m_value.d_value = v; break;}
         case petDouble:     {stream >> m_value.d_value; break;}
         default: break;
     }
 }
+*/
 QString LXMLPackElement::strValue(quint8 precision) const
 {
     if (invalid()) return ("-9999");
@@ -431,6 +384,12 @@ void LXMLPackElement::setNewValue(const QString &s, bool &ok)
     ok = false;
     if (invalid() || !isData()) return;
 
+    QString err;
+    m_value.setUserValue(s, err);
+    if (!err.isEmpty()) qWarning() << err;
+    else {m_value.conversionIntType(dataType()); ok=true;}
+
+    /*
     if (m_value.isDouble)
     {
         double dv = s.toDouble(&ok);
@@ -464,12 +423,20 @@ void LXMLPackElement::setNewValue(const QString &s, bool &ok)
 
         setIntValue(iv);
     }
+    */
 }
 void LXMLPackElement::setNewValueDeviation(const QString &s, bool &ok)
 {
     ok = false;
     if (invalid() || !isData()) return;
 
+    QString err;
+    m_value.setUserDeviation(s, err);
+    if (!err.isEmpty()) qWarning() << err;
+    else ok=true;
+
+
+    /*
     double v = s.toDouble(&ok);
     if (!ok || v < 0 || v > 90)
     {
@@ -481,7 +448,10 @@ void LXMLPackElement::setNewValueDeviation(const QString &s, bool &ok)
         ok = true;
         m_value.rand_deviation = v;
     }
+    */
 }
+
+/*
 void LXMLPackElement::setIntValue(qint64 iv)
 {
     switch (dataType())
@@ -493,11 +463,96 @@ void LXMLPackElement::setIntValue(qint64 iv)
         case petUint16:     {quint16 v = quint16(iv);   m_value.i_value = v; break;}
         case petUint32:     {quint32 v = quint32(iv);   m_value.i_value = v; break;}
 
+        case petDiscrete:
+        {
+            quint8 v = quint8(iv);
+            if (v > 1) v = 0;
+            m_value.i_value = v;
+            break;
+        }
+
+
         case petUint64:
         case petInt64:      {m_value.i_value = iv; break;}
 
         default: break;
     }
+}
+*/
+
+
+//by path funcs
+LXMLPackElement* LXMLPackElement::nodeByPath(const QList<quint16> &levels)
+{
+    if (levels.isEmpty()) {qWarning()<<QString("LXMLPackElement::nodeByPath WARNING level path is empty"); return NULL;}
+    LXMLPackElement *node = this;
+    foreach (quint16 l, levels)
+    {
+        if (l >= node->m_childs.count()) {qWarning()<<QString("LXMLPackElement::nodeByPath WARNING invalid level %1").arg(l); return NULL;}
+        node = node->m_childs.at(l);
+    }
+    return node;
+}
+void LXMLPackElement::setIntValueByPath(const QList<quint16> &levels, qint64 v, bool &ok)
+{
+    ok = false;
+    LXMLPackElement *node = nodeByPath(levels);
+    if (!node) return;
+
+    if (!XMLPackStatic::isIntegerType(node->dataType()))
+    {
+        qWarning()<<QString("LXMLPackElement::setIntValueByPath WARNING node [%1] not integer").arg(node->caption());
+        return;
+    }
+
+    //node->setIntValue(v);
+    //ok = true;
+    node->setNewValue(QString::number(v), ok);
+}
+void LXMLPackElement::setDoubleValueByPath(const QList<quint16> &levels, double v, bool &ok)
+{
+    ok = false;
+    LXMLPackElement *node = nodeByPath(levels);
+    if (!node) return;
+
+    if (!XMLPackStatic::isDoubleType(node->dataType()))
+    {
+        qWarning()<<QString("LXMLPackElement::setDoubleValueByPath WARNING node [%1] not double").arg(node->caption());
+        return;
+    }
+
+    node->m_value.d_value = v;
+    ok = true;
+}
+qint64 LXMLPackElement::getIntValueByPath(const QList<quint16> &levels, bool &ok)
+{
+    ok = false;
+    LXMLPackElement *node = nodeByPath(levels);
+    if (!node) return -1;
+
+    if (!XMLPackStatic::isIntegerType(node->dataType()))
+    {
+        qWarning()<<QString("LXMLPackElement::getIntValueByPath WARNING node [%1] not double").arg(node->caption());
+        return -1;
+    }
+
+    ok = true;
+    return node->getValue().i_value;
+}
+double LXMLPackElement::getDoubleValueByPath(const QList<quint16> &levels, bool &ok)
+{
+    ok = false;
+    LXMLPackElement *node = nodeByPath(levels);
+    if (!node) return -1;
+
+    if (!XMLPackStatic::isDoubleType(node->dataType()))
+    {
+        qWarning()<<QString("LXMLPackElement::getDoubleValueByPath WARNING node [%1] not double").arg(node->caption());
+        return -1;
+    }
+
+    ok = true;
+    return node->getValue().d_value;
 }
 
 

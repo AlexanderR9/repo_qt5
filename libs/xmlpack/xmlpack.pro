@@ -22,12 +22,14 @@ unix:!macx: LIBS += -L$$PWD/../base/build/ -llbase
 HEADERS += $$PWD/xmlpack.h \
 	$$PWD/xmlpack_global.h \
 	$$PWD/xmlpackelement.h \
+	$$PWD/xmlpackvalue.h \
 	$$PWD/xmlpackview.h \
 	$$PWD/xmlpacktype.h
 
 
 SOURCES += $$PWD/xmlpack.cpp \
 	$$PWD/xmlpackelement.cpp \
+	$$PWD/xmlpackvalue.cpp \
 	$$PWD/xmlpackview.cpp \
 	$$PWD/xmlpacktype.cpp
 
