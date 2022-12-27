@@ -185,6 +185,22 @@ void MQWorker::readMsg(int i, QByteArray &ba)
     	emit signalMsg(QString("readed %1 bytes").arg(ba.count()));
 	}
 }
+void MQWorker::clearMsgs(int i, bool &ok)
+{
+    ok = false;
+    if (i < 0 || i >= count())
+    {
+        emit signalError(QString("MQWorker: invalid queue index %1").arg(i));
+        return;
+    }
+
+    m_queues.at(i)->tryClearAllMsgs(ok);
+    if (ok)
+    {
+        qDebug()<<QString("message readed OK!");
+        emit signalMsg(QString("clearing [%1] done!").arg(m_queues.at(i)->name()));
+    }
+}
 void MQWorker::updateState()
 {
 	foreach (MQ *value, m_queues)

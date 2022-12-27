@@ -48,9 +48,9 @@ public:
     void tryDestroy(bool&); //уничтожить из системы очередь POSIX
     void trySendMsg(const QByteArray&, bool&); //отправить сообщение(массив байт) в очередь POSIX (объект должен быть подключен к очереди)
     void tryReadMsg(QByteArray&); //считать сообщение из очереди, в случае ошибки ba будет пустой
+    void tryClearAllMsgs(bool&); //очистить очередь, т.е. просто считать все сообщения (если они есть) из очереди в никуда.
 
     void resetState();
-
     	
 protected:
     QString  	mq_name;   	

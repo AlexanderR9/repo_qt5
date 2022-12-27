@@ -11,7 +11,7 @@ class QStringList;
 
 //статический класс с набором функций для работы с объектов QTableWidget
 
-///////////LStatic//////////////////////////
+///////////LTable//////////////////////////
 class LTable
 {
 public:
@@ -31,6 +31,19 @@ public:
 
     //перемещает строку row_index на shift позиций, shift может быть меньше нуля
     static void shiftTableRow(QTableWidget*, int row_index, int shift);
+
+    //перемещает указанную строку в начало таблицы
+    static void shiftTableRowToBegin(QTableWidget*, int);
+
+    //перемещает указанную строку в конец таблицы
+    static void shiftTableRowToEnd(QTableWidget*, int);
+
+    //найти минимальное/максимальное числовое значение в заданном столбце.
+    //если row_first > 0 то поиск начинается с этой строки.
+    //значения в столбце должны быть числами, некорректные значения игнорируются.
+    //в 3-й параметр запишется индекс строки с найденным значением.
+    static double minNumericColValue(QTableWidget*, int, int&, int row_first = -1);
+    static double maxNumericColValue(QTableWidget*, int, int&, int row_first = -1);
 
 };
 

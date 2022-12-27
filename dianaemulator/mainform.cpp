@@ -58,6 +58,7 @@ void MainForm::initActions()
     addAction(LMainWidget::atStop);
     addAction(LMainWidget::atChain);
     addAction(LMainWidget::atCancel);
+    addAction(LMainWidget::atClear);
     addAction(LMainWidget::atSendMsg);
     addAction(LMainWidget::atSettings);
     addAction(LMainWidget::atExit);
@@ -65,6 +66,7 @@ void MainForm::initActions()
     setActionTooltip(atChain, "Recreate all queues");
     setActionTooltip(atCancel, "Destroy all queues");
     setActionTooltip(atSendMsg, "Send message to WRITE_MODE queue");
+    setActionTooltip(atClear, "Clear all messages of current tab queues");
 
 }
 void MainForm::slotAction(int type)
@@ -77,6 +79,7 @@ void MainForm::slotAction(int type)
         case LMainWidget::atChain: {recreateAllQueues(); break;}
         case LMainWidget::atCancel: {destroyAllQueues(); break;}
         case LMainWidget::atSendMsg: {sendMsg(); break;}
+        case LMainWidget::atClear: {clearQueueMsgs(); break;}
         default: break;
     }
 }
@@ -167,10 +170,9 @@ void MainForm::initCommonSettings()
     key = QString("mq_exchange_interval");
     lCommonSettings.addParam(QString("Exchange queues timer interval, ms"), LSimpleDialog::sdtIntCombo, key);
     combo_list.clear();
-    combo_list << "500" << "1000" << "2000" << "5000" << "10000";
+    combo_list << "100" << "200" << "300" << "500" << "1000" << "2000" << "5000";
     lCommonSettings.setComboList(key, combo_list);
     lCommonSettings.setDefValue(key, combo_list.at(1));
-
 
     key = QString("auto_update_pack_values");
     lCommonSettings.addParam(QString("Auto update values of sending packets"), LSimpleDialog::sdtBool, key);
@@ -235,6 +237,29 @@ void MainForm::destroyAllQueues()
         slotUpdateMQStateTimer();
     }
     else m_protocol->addText("destroy canceled", LProtocolBox::ttWarning);
+}
+void MainForm::clearQueueMsgs()
+{
+    QString d_name = m_tab->tabText(m_tab->currentIndex());
+    DianaViewWidget *page = qobject_cast<DianaViewWidget*>(m_pages.value(d_name, NULL));
+    if (!page)
+    {
+        m_protocol->addText("this page is not DIANA view", LProtocolBox::ttWarning);
+        return;
+    }
+
+
+    m_protocol->addSpace();
+    m_protocol->addText(QString("Try clear queues DIANA(%1) in/out ........").arg(d_name), LProtocolBox::ttData);
+
+    QString q_text("Next queues will be cleared:");
+    q_text = QString("%1 \n %2_input \n %3_output").arg(q_text).arg(d_name).arg(d_name);
+    int res = QMessageBox::question(this, "Clearing MQ", q_text, QMessageBox::Ok, QMessageBox::Cancel);
+    if (res == QMessageBox::Ok)
+    {
+        page->clearQueues();
+    }
+    else m_protocol->addText("clearing canceled", LProtocolBox::ttWarning);
 }
 void MainForm::sendMsg()
 {

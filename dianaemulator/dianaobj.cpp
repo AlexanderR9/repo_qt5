@@ -48,6 +48,22 @@ int DianaObject::queueOutputIndexOf() const
             return i;
     return -1;
 }
+void DianaObject::clearQueues()
+{
+    if (mq_manager->isEmpty())
+    {
+        emit signalError(QString("%1: MQ list is empty").arg(name()));
+        return;
+    }
+
+    bool ok;
+    int n = mq_manager->count();
+    for (int i=0; i<n; i++)
+    {
+        emit signalMsg(QString("%1: try clear queue - %2").arg(name()).arg(mq_manager->queueAt(i)->name()));
+        mq_manager->clearMsgs(i, ok);
+    }
+}
 void DianaObject::recreatePosixQueues()
 {
     if (mq_manager->isEmpty())

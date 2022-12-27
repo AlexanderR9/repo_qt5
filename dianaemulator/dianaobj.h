@@ -25,6 +25,7 @@ public:
     void tryReadMsgFromQueue(QByteArray&, bool); //попытаться считать сообщение из очереди (output)
     void destroyAllQueues(); //удалить все реальные MQ очереди
     void recreatePosixQueues();
+    void clearQueues();
 
     static QString inputType() {return QString("input");}
     static QString outputType() {return QString("output");}

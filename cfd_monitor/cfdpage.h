@@ -4,6 +4,8 @@
 #include "basepage.h"
 
 class QTableWidget;
+class LSearch;
+class QLineEdit;
 
 //CFDPage
 class CFDPage : public BasePage
@@ -20,15 +22,23 @@ public:
 
 protected:
     QTableWidget    *m_table;
+    QLineEdit       *m_searchEdit;
+    LSearch         *m_search;
 
+    void initSearch();
     QStringList headerLabels() const;
     void init();
-    void removeRowByTicker(const QString&);
+    void removeRowByTicker(const QString&); //удалить строку из таблицы с заданным тикером, если такой строки нет, то ничего не произойдет
     void updateCellColors();
+    void decreaseSortNum(int); //сортировка числового столбца на уменьшение
+    void increaseSortNum(int); //сортировка числового столбца на возрастание
 
 public slots:
-    void slotNewPrice(const QStringList&);
-    void slotSetCurrentPrices(QMap<QString, double>&);
+    void slotNewPrice(const QStringList&); //пришла цена для одного тикера, QStringList - это значения строки таблицы
+    void slotSetCurrentPrices(QMap<QString, double>&); //записать в контейнер все пары тикер-цена, присутствующие в таблице на данный момент
+
+protected slots:
+    void slotSortByColumn(int);
 
 private:
     void getCellValue(const QString&, double&, bool&);
@@ -36,6 +46,7 @@ private:
 
 signals:
     void signalGetInstaPtr(const QString&, bool&);
+
 
 };
 

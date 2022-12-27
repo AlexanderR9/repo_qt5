@@ -121,6 +121,10 @@ void DianaViewWidget::recreatePosixQueues()
 {
     m_dianaObj->recreatePosixQueues();
 }
+void DianaViewWidget::clearQueues()
+{
+    m_dianaObj->clearQueues();
+}
 void DianaViewWidget::slotSetPacketSize(const QString &mq_name, quint32 &msg_size)
 {
     if (mq_name.contains(DianaObject::inputType())) msg_size = m_inView->getPacket()->size();
@@ -144,6 +148,7 @@ void DianaViewWidget::readLastMsgMQ()
         }
         else
         {
+            m_inView->updateValues();
             emit signalMsg(QString("%1: received msg from input queue, %2 bytes").arg(m_dianaObj->name()).arg(ba.count()));
             emit signalReceiveMsgOk(m_dianaObj->name().toLower());
         }

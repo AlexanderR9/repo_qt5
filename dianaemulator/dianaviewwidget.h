@@ -38,6 +38,7 @@ public:
     void readLastMsgMQ(); //считать последний пакет из очереди типа input (функция работает в режиме Server(эмулятора дианы)  по таймеру)
     void destroyAllQueues();
     void recreatePosixQueues();
+    void clearQueues(); //очистить очереди страницы от сообщений
 
     inline void setAutoRecalcPackValues(bool b) {m_autoUpdatePackValues = b;}
     inline void setAutoReadMsg(bool b) {m_autoUpdateReadMsg = b;}

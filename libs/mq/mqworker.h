@@ -30,6 +30,7 @@ public:
     void createPosixFile(int, quint32); // создать только реальную POSIX очередь, соответствующую объекту MQ[i]
     void sendMsg(int, const QByteArray&, bool&); //отправить сообщение в заданную очередь
     void readMsg(int, QByteArray&); //считать сообщение из заданной очереди (в случае ошибки ba будет пустой)
+    void clearMsgs(int, bool&); //очистить очередь от сообщений
     void updateState();
 
 

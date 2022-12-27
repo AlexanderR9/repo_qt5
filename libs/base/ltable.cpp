@@ -171,6 +171,19 @@ void LTable::removeAllRowsTable(QTableWidget *table)
     for (int i=0; i<n; i++)	table->removeRow(0);
     table->setRowCount(0);
 }
+void LTable::shiftTableRowToBegin(QTableWidget *table, int row_index)
+{
+    if (row_index == 0) return;
+    int shift = -1*(row_index+100);
+    shiftTableRow(table, row_index, shift);
+}
+void LTable::shiftTableRowToEnd(QTableWidget *table, int row_index)
+{
+    if (!table) return;
+    if (row_index == (table->rowCount() - 1)) return;
+    int shift = (table->rowCount()+100);
+    shiftTableRow(table, row_index, shift);
+}
 void LTable::shiftTableRow(QTableWidget *table, int row_index, int shift)
 {
     if (!table || shift == 0 || row_index < 0 || row_index >= table->rowCount()) return;
@@ -178,16 +191,15 @@ void LTable::shiftTableRow(QTableWidget *table, int row_index, int shift)
 
     QList<QTableWidgetItem*> save_items;
     for (int j=0; j<table->columnCount(); j++)
-    save_items.append(table->takeItem(row_index, j));
+        save_items.append(table->takeItem(row_index, j));
     table->removeRow(row_index);
-
 
     if (new_index < 0) new_index = 0;
     if (new_index > table->rowCount()) new_index = table->rowCount();
     table->insertRow(new_index);
 
     for (int j=0; j<table->columnCount(); j++)
-    table->setItem(new_index, j, save_items.at(j));
+        table->setItem(new_index, j, save_items.at(j));
 }
 QList<int> LTable::selectedRows(QTableWidget *table)
 {
@@ -218,101 +230,57 @@ QList<int> LTable::selectedCols(QTableWidget *table)
 
     return list;
 }
-
-
-
-/*
-
-LTable::LTable(int cols, bool b, QWidget *parent)
-    :QTableWidget(parent)
+double LTable::minNumericColValue(QTableWidget *table, int col, int &value_row, int row_first)
 {
-    setMaxRowCount();
-    clearTable();
-    if (!b) verticalHeader()->hide();
-    if (cols>0)  setColumnCount(cols);
-    
-
-}
-void LTable::clearTable()
-{
-    int n = rowCount();
-    for (int i=0; i<n; i++)
-	removeRow(0);
-}
-void LTable::setHeaders(const QStringList &list)
-{
-    clearTable();
-    if (list.isEmpty()) return;
-    setColumnCount(list.count());
-    setHorizontalHeaderLabels(list);
-    
-}
-void LTable::addRow(const QStringList &list, int index)
-{
-    if (list.isEmpty() || list.count() != columnCount()) return;
-    
-    if (index < 0 || index > rowCount()) index = rowCount();
-    insertRow(index);
-
-    for (int i=0; i<list.count(); i++)
-    {
-	QTableWidgetItem *it = new QTableWidgetItem(list.at(i));
-	it->setFlags(Qt::ItemIsEnabled);
-	setItem(index, i, it);
-    }
-
-}
-
-
-/////////////////////////////
-void LTableTable::setHeaderLabels(QTableWidget *table, const QStringList &list)
-{
-    if (!table || list.isEmpty()) return;
-    table->setColumnCount(list.count());
-    table->setHorizontalHeaderLabels(list);
-    table->resizeColumnsToContents();
-}
-void LTableTable::removeAllRows(QTableWidget *table)
-{
-    if (!table) return;
+    value_row = -1;
+    double min = -9999;
+    if (!table || col < 0 || col >= table->columnCount()) return min;
     int n = table->rowCount();
-    for (int i=0; i<n; i++)
-	table->removeRow(0);
-    table->resizeColumnsToContents();
+    if (n <= 0 || row_first >= n)  return min;
 
-}
-void LTableTable::addRow(QTableWidget *table, const QStringList &list, int index)
-{
-    if (list.isEmpty() || list.count() != table->columnCount()) return;
-    
-    if (index < 0 || index > table->rowCount()) index = table->rowCount();
-    table->insertRow(index);
+    int start_row = 0;
+    if (row_first > 0) start_row = row_first;
 
-    for (int j=0; j<list.count(); j++)
+
+    bool ok;
+    bool find_first = false;
+    for (int i=start_row; i<n; i++)
     {
-	QTableWidgetItem *it = new QTableWidgetItem(list.at(j));
-	it->setFlags(Qt::ItemIsEnabled);
-	table->setItem(index, j, it);
+        QString s = table->item(i, col)->text().trimmed();
+        s.replace(QString("%"), QString());
+        s.replace(QString("+"), QString());
+        double v = s.toDouble(&ok);
+        if (!ok) qWarning()<<QString("LTable::minNumericColValue WARNING - invalid numeric value %1, row %2").arg(table->item(i, col)->text()).arg(i);
+        else if (!find_first) {min = v; value_row = i; find_first = true;}
+        else if (v < min) {min = v; value_row = i;}
     }
-
-    table->resizeColumnsToContents();
+    return min;
 }
-void LTableTable::fullClear(QTableWidget *table)
+double LTable::maxNumericColValue(QTableWidget *table, int col, int &value_row, int row_first)
 {
-    if (!table) return;
-    table->clear();
-    table->setRowCount(0);
-    table->setColumnCount(0);
-}
-void LTableTable::resizeToContents(QTableWidget *table)
-{
-    if (!table) return;
-    table->resizeColumnsToContents();
-    table->resizeRowsToContents();
-}
-*/
+    value_row = -1;
+    double max = 0;
+    if (!table || col < 0 || col >= table->columnCount()) return max;
+    int n = table->rowCount();
+    if (n <= 0 || row_first >= n)  return max;
 
+    int start_row = 0;
+    if (row_first > 0) start_row = row_first;
 
+    bool ok;
+    bool find_first = false;
+    for (int i=start_row; i<n; i++)
+    {
+        QString s = table->item(i, col)->text().trimmed();
+        s.replace(QString("%"), QString());
+        s.replace(QString("+"), QString());
+        double v = s.toDouble(&ok);
+        if (!ok) qWarning()<<QString("LTable::maxNumericColValue WARNING - invalid numeric value %1, row %2").arg(table->item(i, col)->text()).arg(i);
+        else if (!find_first) {max = v; value_row = i; find_first = true;}
+        else if (v > max) {max = v; value_row = i;}
+    }
+    return max;
+}
 
 
 

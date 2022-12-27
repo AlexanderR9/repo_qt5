@@ -290,7 +290,6 @@ void MQ::tryReadMsg(QByteArray &ba)
     	return;
     }
 
-
     uint prior = 0;
     size_t len = m_attrs->mq_msgsize;
     ba.fill(0, len);
@@ -311,6 +310,40 @@ void MQ::tryReadMsg(QByteArray &ba)
     }
 
     updateAttrs();
+}
+void MQ::tryClearAllMsgs(bool &ok)
+{
+    ok = true;
+    QString msg;
+    if (!isOpened())
+    {
+        msg = QString("MQ[%1]: not was opened").arg(name());
+        emit signalError(msg);
+        ok = false;
+        qWarning()<<QString("MQ::tryClearAllMsgs - WARNING queue [%1] is not opened").arg(name());
+        return;
+    }
+
+    updateAttrs();
+    if (m_attrs->mq_curmsgs == 0)
+    {
+        msg = QString("MQ[%1]: stack of queue is empty, not necessary for clearing").arg(name());
+        emit signalMsg(msg);
+        return;
+    }
+
+    //reading msgs
+    QByteArray ba;
+    int n_msg = m_attrs->mq_curmsgs;
+    for (int i=0; i<n_msg; i++)
+    {
+        tryReadMsg(ba);
+        if (ba.isEmpty())
+        {
+            ok = false;
+            break;
+        }
+    }
 }
 void MQ::updateAttrs()
 {

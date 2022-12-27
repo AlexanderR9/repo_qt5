@@ -1,10 +1,14 @@
 #include "cfdpage.h"
 #include "lstatic.h"
 #include "ltable.h"
+#include "lsearch.h"
 
+#include <QLineEdit>
 #include <QTableWidget>
 #include <QVBoxLayout>
+#include <QLabel>
 #include <QHeaderView>
+#include <QDebug>
 
 
 #define TICKER_COL      2
@@ -17,9 +21,54 @@
 //CFDPage statistic
 CFDPage::CFDPage(QWidget *parent)
     :BasePage(parent),
-      m_table(NULL)
+      m_table(NULL),
+      m_searchEdit(NULL),
+      m_search(NULL)
 {
     init();
+    initSearch();
+
+    QHeaderView *hv = m_table->horizontalHeader();
+    if (hv)
+    {
+        for (int j=0; j<m_table->columnCount(); j++)
+            m_table->horizontalHeaderItem(j)->setData(Qt::UserRole, int(0));
+
+        connect(hv, SIGNAL(sectionClicked(int)), this, SLOT(slotSortByColumn(int)));
+    }
+}
+void CFDPage::slotSortByColumn(int col)
+{
+    qDebug()<<QString("slotSortByColumn  col=%1").arg(col);
+    if (col > 2)
+    {
+        int sort_order = m_table->horizontalHeaderItem(col)->data(Qt::UserRole).toInt();
+        if (sort_order != 0) m_table->horizontalHeaderItem(col)->setData(Qt::UserRole, int(0));
+        else m_table->horizontalHeaderItem(col)->setData(Qt::UserRole, int(1));
+
+        switch (sort_order)
+        {
+            case 0: {decreaseSortNum(col); break;}
+            case 1: {increaseSortNum(col); break;}
+            default:
+            {
+                qWarning()<<QString("CFDPage::slotSortByColumn: WARNING - invalid sort_order %1, col %2").arg(sort_order).arg(col);
+                break;
+            }
+        }
+    }
+    else m_table->sortByColumn(col);
+
+    LTable::resizeTableContents(m_table);
+}
+void CFDPage::initSearch()
+{
+    QLabel *c_label = new QLabel(this);
+    layout()->addWidget(c_label);
+
+    m_search = new LSearch(m_searchEdit, this);
+    m_search->addTable(m_table, c_label);
+    m_search->exec();
 }
 void CFDPage::slotNewPrice(const QStringList &row_data)
 {
@@ -116,6 +165,7 @@ void CFDPage::updatePage()
     LTable::setTableHeaders(m_table, list, Qt::Vertical);
 
     updateCellColors();
+    m_search->exec();
 }
 QStringList CFDPage::headerLabels() const
 {
@@ -129,15 +179,49 @@ void CFDPage::init()
     QVBoxLayout *vlay = new QVBoxLayout(0);
     setLayout(vlay);
 
+    m_searchEdit = new QLineEdit(this);
+    vlay->addWidget(m_searchEdit);
+
     m_table = new QTableWidget(this);
     m_table->verticalHeader()->show();
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     vlay->addWidget(m_table);
 
+
     LTable::fullClearTable(m_table);
     LTable::setTableHeaders(m_table, headerLabels());
     LTable::resizeTableContents(m_table);
+}
+void CFDPage::decreaseSortNum(int col)
+{
+    int n = m_table->rowCount();
+    if (n < 2) return;
+
+    double min = 0;
+    Q_UNUSED(min);
+    int row = -1;
+    for (int i=0; i<n; i++)
+    {
+        min = LTable::minNumericColValue(m_table, col, row, i);
+        if (row > 0) LTable::shiftTableRowToBegin(m_table, row);
+        //qDebug()<<QString("next_min_value=%1  row=%2").arg(min).arg(row);
+    }
+}
+void CFDPage::increaseSortNum(int col)
+{
+    int n = m_table->rowCount();
+    if (n < 2) return;
+
+    double max = 0;
+    Q_UNUSED(max);
+    int row = -1;
+    for (int i=0; i<n; i++)
+    {
+        max = LTable::maxNumericColValue(m_table, col, row, i);
+        if (row > 0) LTable::shiftTableRowToBegin(m_table, row);
+        //qDebug()<<QString("next_min_value=%1  row=%2").arg(max).arg(row);
+    }
 }
 
 
