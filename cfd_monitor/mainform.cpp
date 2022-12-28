@@ -65,7 +65,6 @@ void MainForm::initWidgets()
     LogStruct log(amtMainWindow, 0);
     log.msg = "Application started";
     emit signalSendLog(log);
-
 }
 void MainForm::initPages()
 {
@@ -94,7 +93,6 @@ void MainForm::initPages()
     connect(html_page, SIGNAL(signalDivDataReceived(const QString&)), div_page, SLOT(slotDivDataReceived(const QString&)));
     connect(div_page, SIGNAL(signalGetCurrentPrices(QMap<QString, double>&)), cfd_page, SLOT(slotSetCurrentPrices(QMap<QString, double>&)));
 
-
     foreach (BasePage *page, m_pages)
     {
         connect(page, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
@@ -117,7 +115,6 @@ void MainForm::initTab()
         m_tab->removeTab(0);
         if (w) delete w;
     }
-
     foreach (BasePage *page, m_pages)
     {
         QIcon icon(page->iconPath());
@@ -153,7 +150,6 @@ void MainForm::initConfigObj()
     if (!err.isEmpty()) slotError(err);
     else m_protocol->addText(QString("saved to file insta_tickers, %1 ps.").arg(tickers.count()));
     */
-
 }
 void MainForm::initCalcObj()
 {
@@ -183,7 +179,6 @@ void MainForm::initCalcObj()
     }
     connect(m_calcObj, SIGNAL(signalUpdateCFDTable(const QStringList&)), cfd_page, SLOT(slotNewPrice(const QStringList&)));
     connect(cfd_page, SIGNAL(signalGetInstaPtr(const QString&, bool&)), m_configObj, SLOT(slotSetInstaPtr(const QString&, bool&)));
-
 }
 void MainForm::initBotObj()
 {
@@ -288,21 +283,14 @@ void MainForm::slotAction(int type)
 }
 void MainForm::slotTimer()
 {
-    m_protocol->addSpace();
-
     QString next_ticker;
     m_configObj->getNextTicker(next_ticker);
-    QString msg = QString("next request [%1] .........").arg(next_ticker);
-    m_protocol->addText(msg, LProtocolBox::ttFile);
+    m_protocol->addSpace();
+    m_protocol->addText(QString("next price request for [%1] .........").arg(next_ticker), LProtocolBox::ttFile);
 
     HtmlPage *page = qobject_cast<HtmlPage*>(m_pages.value(BasePage::ptHtml));
-    if (!page)
-    {
-        qWarning()<<QString("MainForm::slotTimer() ERR: invalid convert to HtmlPage from m_pages");
-        return;
-    }
-
-    page->tryRequest(next_ticker);
+    if (page) page->tryRequest(next_ticker);
+    else qWarning()<<QString("MainForm::slotTimer() ERROR: invalid convert to HtmlPage from m_pages");
 }
 void MainForm::updateActionsEnable(bool stoped)
 {
@@ -319,7 +307,6 @@ void MainForm::start()
 
     m_timer->setInterval(reqInterval());
     m_timer->start();
-
     m_bot->startCheckingUpdatesTimer();
 }
 void MainForm::stop()
@@ -336,7 +323,6 @@ void MainForm::save()
     QSettings settings(companyName(), projectName());
     settings.setValue(QString("%1/v_splitter/state").arg(objectName()), v_splitter->saveState());
     settings.setValue(QString("%1/tab/page_index").arg(objectName()), m_tab->currentIndex());
-
 }
 void MainForm::load()
 {
@@ -351,24 +337,20 @@ void MainForm::load()
     initConfigObj();
     initCalcObj();
     initBotObj();
-
     fillPages();
 
     QStringList keys;
     keys.append(QString("log_max_size"));
     slotAppSettingsChanged(keys);
-
 }
 void MainForm::slotAppSettingsChanged(QStringList keys)
 {
-   // qDebug("MainForm::slotAppSettingsChanged");
     LMainWidget::slotAppSettingsChanged(keys);
 
     QString key = QString("log_max_size");
     if (keys.contains(key))
     {
         int n = lCommonSettings.paramValue(key).toInt();
-       // qDebug()<<QString("MainForm::slotAppSettingsChanged  n=%1").arg(n);
         LogPage *page = qobject_cast<LogPage*>(m_pages.value(BasePage::ptLog));
         if (!page)
         {
@@ -379,9 +361,6 @@ void MainForm::slotAppSettingsChanged(QStringList keys)
         page->updatePage();
     }
 }
-
-
-
 int MainForm::reqInterval() const
 {
     return (lCommonSettings.paramValue("req_interval").toInt() * 1000);

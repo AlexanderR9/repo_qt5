@@ -13,14 +13,14 @@ void LTable::insertTableRow(int index, QTableWidget *table, const QStringList &l
     if (index < 0 || index > table->rowCount()) return;
     if (table->columnCount() != list.count())
     {
-    qWarning()<<QString("LTable::addTableRow - ERR: col count(%1) != list count(%2)").arg(table->columnCount()).arg(list.count());
-    return;
+        qWarning()<<QString("LTable::addTableRow - ERR: col count(%1) != list count(%2)").arg(table->columnCount()).arg(list.count());
+        return;
     }
 
     if (table->rowCount() == index)
     {
-    addTableRow(table, list, align, cf, cb);
-    return;
+        addTableRow(table, list, align, cf, cb);
+        return;
     }
 
     table->insertRow(index);
@@ -31,8 +31,8 @@ void LTable::addTableRow(QTableWidget *table, const QStringList &list, int align
     if (!table) return;
     if (table->columnCount() != list.count())
     {
-    qWarning()<<QString("LTable::addTableRow - ERR: col count(%1) != list count(%2)").arg(table->columnCount()).arg(list.count());
-    return;
+        qWarning()<<QString("LTable::addTableRow - ERR: col count(%1) != list count(%2)").arg(table->columnCount()).arg(list.count());
+        return;
     }
 
     table->setRowCount(table->rowCount()+1);
@@ -52,29 +52,28 @@ void LTable::setTableRow(int row, QTableWidget *table, const QStringList &list, 
 
     if (table->columnCount() != list.count())
     {
-    qWarning()<<QString("LTable::setTableRow - ERR: col count(%1) != list count(%2)").arg(table->columnCount()).arg(list.count());
-    return;
+        qWarning()<<QString("LTable::setTableRow - ERR: col count(%1) != list count(%2)").arg(table->columnCount()).arg(list.count());
+        return;
     }
-
     if (row < 0 || row >= table->rowCount())
     {
-    qWarning()<<QString("LTable::setTableRow - ERR: invalid row index: %1").arg(row);
-    return;
+        qWarning()<<QString("LTable::setTableRow - ERR: invalid row index: %1").arg(row);
+        return;
     }
 
     for (int i=0; i<table->columnCount(); i++)
     {
-    QTableWidgetItem *item = table->item(row, i);
-    if (!item)
-    {
-        item = new QTableWidgetItem(list.at(i));
-        item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-        table->setItem(row, i, item);
-    }
+        QTableWidgetItem *item = table->item(row, i);
+        if (!item)
+        {
+            item = new QTableWidgetItem(list.at(i));
+            item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+            table->setItem(row, i, item);
+        }
 
-    item->setText(list.at(i));
-    if (align >= 0) item->setTextAlignment(align);
-    item->setForeground(QBrush(c));
+        item->setText(list.at(i));
+        if (align >= 0) item->setTextAlignment(align);
+        item->setForeground(QBrush(c));
     }
 }
 void LTable::createTableItem(QTableWidget *table, int row, int col, const QString &text, int flags, int align, QColor c)
@@ -83,14 +82,13 @@ void LTable::createTableItem(QTableWidget *table, int row, int col, const QStrin
 
     if (table->columnCount() <= col || col < 0)
     {
-    qWarning()<<QString("LTable::createTableItem - ERR: cols count(%1) , param col (%2)").arg(table->columnCount()).arg(col);
-    return;
+        qWarning()<<QString("LTable::createTableItem - ERR: cols count(%1) , param col (%2)").arg(table->columnCount()).arg(col);
+        return;
     }
-
     if (table->rowCount() <= row || row < 0)
     {
-    qWarning()<<QString("LTable::createTableItem - ERR: rows count(%1) , param row (%2)").arg(table->rowCount()).arg(row);
-    return;
+        qWarning()<<QString("LTable::createTableItem - ERR: rows count(%1) , param row (%2)").arg(table->rowCount()).arg(row);
+        return;
     }
 
     QTableWidgetItem *item = new QTableWidgetItem(text);
@@ -113,18 +111,20 @@ void LTable::setTableRowColor(QTableWidget *table, int row, const QColor &c)
     if (row < 0 || row >= table->rowCount()) return;
     for (int i=0; i<table->columnCount(); i++)
     {
-    QTableWidgetItem *item = table->item(row, i);
-    if (item) item->setBackground(QBrush(c));
+        QTableWidgetItem *item = table->item(row, i);
+        if (item) item->setBackground(QBrush(c));
     }
 }
 void LTable::clearAllItemsText(QTableWidget *table)
 {
     if (!table) return;
     for (int i=0; i<table->rowCount(); i++)
-    for (int j=0; j<table->columnCount(); j++)
     {
-        QTableWidgetItem *item = table->item(i, j);
-        if (item) item->setText(QString());
+        for (int j=0; j<table->columnCount(); j++)
+        {
+            QTableWidgetItem *item = table->item(i, j);
+            if (item) item->setText(QString());
+        }
     }
 }
 void LTable::createAllItems(QTableWidget *table, int align)
@@ -133,27 +133,28 @@ void LTable::createAllItems(QTableWidget *table, int align)
     table->clearContents();
 
     for (int i=0; i<table->rowCount(); i++)
-    for (int j=0; j<table->columnCount(); j++)
     {
-        QTableWidgetItem *item = new QTableWidgetItem(QString());
-        item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-        if (align >= 0) item->setTextAlignment(align);
-        table->setItem(i, j, item);
+        for (int j=0; j<table->columnCount(); j++)
+        {
+            QTableWidgetItem *item = new QTableWidgetItem(QString());
+            item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+            if (align >= 0) item->setTextAlignment(align);
+            table->setItem(i, j, item);
+        }
     }
 }
 void LTable::setTableHeaders(QTableWidget *table, const QStringList &list, int orintation)
 {
     if (!table || list.isEmpty()) return;
 
-
     if (orintation == Qt::Horizontal)
     {
-    table->setColumnCount(list.count());
+        table->setColumnCount(list.count());
         table->setHorizontalHeaderLabels(list);
     }
     else
     {
-    table->setRowCount(list.count());
+        table->setRowCount(list.count());
         table->setVerticalHeaderLabels(list);
     }
 }
@@ -212,7 +213,6 @@ QList<int> LTable::selectedRows(QTableWidget *table)
         if (!list.contains(items.at(i)->row()))
             list.append(items.at(i)->row());
     }
-
     return list;
 }
 QList<int> LTable::selectedCols(QTableWidget *table)
@@ -223,11 +223,9 @@ QList<int> LTable::selectedCols(QTableWidget *table)
     QList<QTableWidgetItem*> items(table->selectedItems());
     for (int i=0; i<items.count(); i++)
     {
-    int col = items.at(i)->column();
-        if (!list.contains(col))
-        list.append(col);
+        int col = items.at(i)->column();
+        if (!list.contains(col)) list.append(col);
     }
-
     return list;
 }
 double LTable::minNumericColValue(QTableWidget *table, int col, int &value_row, int row_first)
@@ -240,7 +238,6 @@ double LTable::minNumericColValue(QTableWidget *table, int col, int &value_row, 
 
     int start_row = 0;
     if (row_first > 0) start_row = row_first;
-
 
     bool ok;
     bool find_first = false;
@@ -281,11 +278,6 @@ double LTable::maxNumericColValue(QTableWidget *table, int col, int &value_row, 
     }
     return max;
 }
-
-
-
-
-
 
 
 

@@ -2,7 +2,6 @@
 #define HTMLPAGE_H
 
 #include "basepage.h"
-
 #include "ui_htmlpage.h"
 
 #include <QWebEnginePage>
@@ -47,7 +46,6 @@ private:
 
 class LHTMLPageRequester;
 class QTimer;
-//struct DivRecord;
 
 //HtmlPage
 class HtmlPage : public BasePage, Ui::HtmlPage
@@ -64,10 +62,10 @@ public:
     void tryRequest(const QString&);
 
 protected:
-    LHTMLPageRequester *m_requester;
-    HtmlWorker          m_priceParser;
+    LHTMLPageRequester  *m_requester;
+    HtmlWorker           m_priceParser;
     QTimer              *m_timer;
-    int                 m_runingTime;
+    int                  m_runingTime;
 
     void resetPage(const QString&);
     void sendLog(const QString&, int);
@@ -86,7 +84,6 @@ signals:
     void signalGetUrlByTicker(const QString&, QString&);
     void signalNewPrice(QString, double);
     void signalDivDataReceived(const QString&);
-
 
 public slots:
     void slotGetDivData(const QString&);

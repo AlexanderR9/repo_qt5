@@ -15,6 +15,7 @@
 #define DAY_COL         3
 #define WEEK_COL        4
 #define MONTH_COL       5
+#define PRICE_COL       6
 
 
 
@@ -39,7 +40,7 @@ CFDPage::CFDPage(QWidget *parent)
 }
 void CFDPage::slotSortByColumn(int col)
 {
-    qDebug()<<QString("slotSortByColumn  col=%1").arg(col);
+    //qDebug()<<QString("slotSortByColumn  col=%1").arg(col);
     if (col > 2)
     {
         int sort_order = m_table->horizontalHeaderItem(col)->data(Qt::UserRole).toInt();
@@ -124,6 +125,11 @@ void CFDPage::updateCellColors()
         emit signalGetInstaPtr(m_table->item(i, TICKER_COL)->text(), ok);
         color = (ok ? QColor(200, 100, 30) : Qt::black);
         m_table->item(i, TICKER_COL)->setTextColor(color);
+
+        //price col
+        color =QColor(160, 40, 40);
+        m_table->item(i, PRICE_COL)->setTextColor(color);
+
     }
 }
 QColor CFDPage::getColorByLimits(const double &value, double limit) const
@@ -183,7 +189,7 @@ void CFDPage::init()
     vlay->addWidget(m_searchEdit);
 
     m_table = new QTableWidget(this);
-    m_table->verticalHeader()->show();
+    m_table->verticalHeader()->hide();
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     vlay->addWidget(m_table);
@@ -205,7 +211,6 @@ void CFDPage::decreaseSortNum(int col)
     {
         min = LTable::minNumericColValue(m_table, col, row, i);
         if (row > 0) LTable::shiftTableRowToBegin(m_table, row);
-        //qDebug()<<QString("next_min_value=%1  row=%2").arg(min).arg(row);
     }
 }
 void CFDPage::increaseSortNum(int col)
@@ -220,7 +225,6 @@ void CFDPage::increaseSortNum(int col)
     {
         max = LTable::maxNumericColValue(m_table, col, row, i);
         if (row > 0) LTable::shiftTableRowToBegin(m_table, row);
-        //qDebug()<<QString("next_min_value=%1  row=%2").arg(max).arg(row);
     }
 }
 
