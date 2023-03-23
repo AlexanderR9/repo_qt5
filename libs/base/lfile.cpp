@@ -83,6 +83,14 @@ QString LFile::shortFileName(QString full_name)
     QFileInfo fi(full_name);
     return fi.fileName();
 }
+QString LFile::rootPath(QString full_name)
+{
+    if (full_name.trimmed().isEmpty()) return QString();
+    QFileInfo fi(full_name);
+    QString s = fi.absolutePath().trimmed();
+    if (s.right(1) == QDir::separator()) s = s.left(s.length()-1);
+    return s;
+}
 QString LFile::shortDirName(QString full_name)
 {
     QDir dir(full_name);

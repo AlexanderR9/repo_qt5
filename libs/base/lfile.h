@@ -34,6 +34,9 @@ public:
     static QString shortFileName(QString);
     //возращает имя папки без полного пути
     static QString shortDirName(QString);
+    //возращает родительский путь папки в которой лежит указанная папка или файл (без / в конце)
+    static QString rootPath(QString);
+
 
 
     //возвращает размер файла, в случае ошибки вернет -1

@@ -16,7 +16,10 @@ public:
     LProcessObj(QObject *parent = NULL);
     virtual ~LProcessObj() {}
 
-    inline void setCommand(QString cmd_name) {m_command = cmd_name.trimmed();}
+    void setCommand(QString cmd_name) {m_command = cmd_name.trimmed();} //задать имя команды
+    void setArgs(const QStringList& args = QStringList()); //задать список аргументов для команды
+
+
     inline void setSudo(bool b) {m_needSudo = b;}
     inline QString err() const {return m_err;}
     inline bool isRunning() const {return is_running;}
@@ -26,7 +29,6 @@ public:
     inline const QStringList& args() const {return m_args;}
     inline bool argsEmpty() const {return m_args.isEmpty();}
 
-    void setArgs(const QStringList& args = QStringList());
     QString strProcessState() const;
     QString fullCommand() const;
     QStringList bufferList() const; // тот же buffer, но разбит на строки если там присутствуют разделители '\n'
@@ -55,10 +57,9 @@ protected slots:
     void slotProcessFinished(int);
     void slotProcessStateChanged();
 
-
 signals:
     void signalFinished();
-    void signalReadyRead();
+    //void signalReadyRead();
 
 
 };
