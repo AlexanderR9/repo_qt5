@@ -101,7 +101,7 @@ protected:
     DivTable    *m_table;
     QCheckBox   *m_onlyInstaCheckBox;
     QDateTime   m_lastDT;
-    QTimer      *m_timer;
+    QTimer      *m_timer; //таймер стартует и работает сразу при запуске
     QString     m_url;
     int         m_interval; //интервал опроса m_url, сек
     quint16     m_shownHistory;
@@ -115,15 +115,15 @@ protected:
     inline bool invalidParams() const {return(m_url.isEmpty() || m_interval < 0);}
     void parseDate(const QString&, QDate&); //если строка является датой, то в QDate запишеться считанная дата, инача QDate будет invalid
     void parseDivSize(const QString&, DivRecord&);
-    void divDataReceived(const QList<DivRecord>&);
-    void updateLastPrices(QList<DivRecord>&);
+    void divDataReceived(const QList<DivRecord>&); //синхронизировать только что полученные данные с текущими хранящамися в файле-divFile()
+    void updateLastPrices(QList<DivRecord>&); //получить текущие цены для только что полученных тикеров из данных с дивами и записать их в соответствующие записи
     void loadDivFile(QList<DivRecord>&); //загрузить данные из файла в контейнер
     void updateFileByReceivedData(const QList<DivRecord>&); //добавить при необходимости новые данные в файл, если таких еще нет
     void addRecToFile(const DivRecord&);
     void reloadTable(const QList<DivRecord>&);
     void updateTable();
     void sortData(QList<DivRecord>&);
-    void replaceRecords(int, int, QList<DivRecord>&); //меняет местами две записи
+    void replaceRecords(int, int, QList<DivRecord>&); //меняет местами две записи на указанных позициях в указанном контейнере
     void updateTableNextPrice(); //обновление цены в строке m_tablePriceIndex
 
 
@@ -132,7 +132,7 @@ protected slots:
     void slotTimer();
 
 public slots:
-    void slotDivDataReceived(const QString&);
+    void slotDivDataReceived(const QString&); //получены текстовые данные со страницы html, который необходимо распарсить и извлель данные по дивам
 
 signals:
     void signalGetSource(QStringList&);

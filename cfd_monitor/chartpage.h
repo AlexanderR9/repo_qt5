@@ -45,6 +45,8 @@ signals:
 protected slots:
     void slotRepaintChart();
 
+public slots:
+    void slotPointsSizeChanged(quint8); //пользователь изменил размер точек графика в настройках приложения
 
 
 };

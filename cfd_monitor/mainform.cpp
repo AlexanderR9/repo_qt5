@@ -85,6 +85,7 @@ void MainForm::initPages()
     ChartPage *chart_page = new  ChartPage(this);
     m_pages.insert(BasePage::ptChart, chart_page);
     connect(chart_page, SIGNAL(signalGetSource(QStringList&)), config_page, SLOT(slotSetChartSource(QStringList&)));
+    connect(this, SIGNAL(signalPointsSizeChanged(quint8)), chart_page, SLOT(slotPointsSizeChanged(quint8)));
 
     DivPage *div_page = new  DivPage(this);
     m_pages.insert(BasePage::ptDiv, div_page);
@@ -269,6 +270,14 @@ void MainForm::initCommonSettings()
     combo_list.clear();
     combo_list << "200" << "500" << "1000" << "2000" << "3000" << "5000";
     lCommonSettings.setComboList(key, combo_list);
+
+    key = QString("chart_points_size");
+    lCommonSettings.addParam(QString("Chart points size"), LSimpleDialog::sdtIntCombo, key);
+    combo_list.clear();
+    combo_list << "0" << "1" << "2" << "3" << "4" << "5";
+    lCommonSettings.setComboList(key, combo_list);
+
+
 }
 void MainForm::slotAction(int type)
 {
@@ -341,6 +350,7 @@ void MainForm::load()
 
     QStringList keys;
     keys.append(QString("log_max_size"));
+    keys.append(QString("chart_points_size"));
     slotAppSettingsChanged(keys);
 }
 void MainForm::slotAppSettingsChanged(QStringList keys)
@@ -360,10 +370,17 @@ void MainForm::slotAppSettingsChanged(QStringList keys)
         page->setMaxSize(n);
         page->updatePage();
     }
+
+    key = QString("chart_points_size");
+    if (keys.contains(key)) emit signalPointsSizeChanged(chartPointsSize());
 }
 int MainForm::reqInterval() const
 {
     return (lCommonSettings.paramValue("req_interval").toInt() * 1000);
+}
+quint8 MainForm::chartPointsSize() const
+{
+    return (lCommonSettings.paramValue("chart_points_size").toUInt());
 }
 void MainForm::slotError(const QString &text)
 {

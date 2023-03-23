@@ -61,6 +61,7 @@ protected:
     void updateActionsEnable(bool);
     void fillPages();
     int reqInterval() const;
+    quint8 chartPointsSize() const;
 
 protected slots:
     void slotAction(int); //virtual slot from parent
@@ -71,6 +72,7 @@ protected slots:
 
 signals:
     void signalSendLog(const LogStruct&);
+    void signalPointsSizeChanged(quint8);
 
 
 };

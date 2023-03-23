@@ -88,7 +88,7 @@ void DivPage::slotTimer()
         return;
     }
     qint64 t = m_lastDT.secsTo(QDateTime::currentDateTime());
-    qDebug()<<QString("cur d_time: %1").arg(t);
+    //qDebug()<<QString("cur d_time: %1").arg(t);
     if (t < m_interval)
     {
         updateTableNextPrice();
@@ -126,7 +126,7 @@ void DivPage::slotDivDataReceived(const QString &plain_data)
             last_div_date = div_date;
             if (cur_date.daysTo(div_date) > m_lookDays)
             {
-                qDebug()<<QString("ex_date is over maxLookDays:  %1").arg(div_date.toString("dd.MM.yyyy"));
+                //qDebug()<<QString("ex_date is over maxLookDays:  %1").arg(div_date.toString("dd.MM.yyyy"));
                 break;
             }
             continue;
@@ -167,10 +167,14 @@ void DivPage::updateFileByReceivedData(const QList<DivRecord> &received_data)
     QList<DivRecord> cur_data;
     loadDivFile(cur_data);
 
+
+    //qDebug()<<QString("///////////received div data, records count %1////////////").arg(received_data.count());
     int n_added = 0;
     for (int i=0; i<received_data.count(); i++)
     {
         const DivRecord &new_rec = received_data.at(i);
+        //qDebug()<<new_rec.toStr();
+
         if (cur_data.isEmpty())
         {
             addRecToFile(new_rec);
@@ -259,7 +263,12 @@ void DivPage::parseDate(const QString &s, QDate &date)
         {
             QString finded_month = LStatic::strTrimLeft(s, pos+1).trimmed().toLower();
             if (finded_month == cur_month) date.setDate(cur_date.year(), cur_date.month(), day);
-            else if (finded_month == next_month) date.setDate(cur_date.year(), nm, day);
+            else if (finded_month == next_month)
+            {
+                int y_offset = 0;
+                if (nm == 1) y_offset = 1;
+                date.setDate(cur_date.year() + y_offset, nm, day);
+            }
         }
     }
 
@@ -277,7 +286,10 @@ void DivPage::setReqParams(const QString &url, int t, quint16 days)
 
     //режим тестирования
     if (TEST_REQ_INTERVAL > 10)
+    {
         m_interval = TEST_REQ_INTERVAL;
+        emit signalMsg(QString("Turn ON testing mode for geting divs, interval %1 secs").arg(m_interval));
+    }
 }
 void DivPage::slotSelectionChanged()
 {
@@ -628,8 +640,8 @@ bool DivTable::isInstaRow(int row_index) const
 
 //DivRecord
 DivRecord::DivRecord(const DivRecord &rec)
-    :ex_date(rec.ex_date),
-    ticker(rec.ticker),
+    :ticker(rec.ticker),
+    ex_date(rec.ex_date),
     size(rec.size),
     size_p(rec.size_p),
     price(rec.price)

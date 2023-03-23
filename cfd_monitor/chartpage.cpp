@@ -23,6 +23,13 @@ ChartPage::ChartPage(QWidget *parent)
     connect(sourcesListWidget, SIGNAL(itemSelectionChanged()), this, SLOT(slotRepaintChart()));
 
 }
+void ChartPage::slotPointsSizeChanged(quint8 p_size)
+{
+    //qDebug()<<QString("ChartPage::slotPointsSizeChanged  p_size=%1").arg(p_size);
+    m_chart->setPointSize(p_size);
+    if (m_chart->chartsCount() > 0)
+        slotRepaintChart();
+}
 void ChartPage::slotRepaintChart()
 {
     QList<QListWidgetItem*> items = sourcesListWidget->selectedItems();

@@ -40,7 +40,8 @@ CFDPage::CFDPage(QWidget *parent)
 }
 void CFDPage::slotSortByColumn(int col)
 {
-    //qDebug()<<QString("slotSortByColumn  col=%1").arg(col);
+    if (m_table->rowCount() < 3) return;
+
     if (col > 2)
     {
         int sort_order = m_table->horizontalHeaderItem(col)->data(Qt::UserRole).toInt();
@@ -61,6 +62,9 @@ void CFDPage::slotSortByColumn(int col)
     else m_table->sortByColumn(col);
 
     LTable::resizeTableContents(m_table);
+    m_table->scrollToTop();
+    m_table->selectRow(0);
+
 }
 void CFDPage::initSearch()
 {
@@ -127,7 +131,7 @@ void CFDPage::updateCellColors()
         m_table->item(i, TICKER_COL)->setTextColor(color);
 
         //price col
-        color =QColor(160, 40, 40);
+        color =QColor(200, 180, 140);
         m_table->item(i, PRICE_COL)->setTextColor(color);
 
     }
