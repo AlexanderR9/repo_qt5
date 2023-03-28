@@ -83,6 +83,13 @@ QString LFile::shortFileName(QString full_name)
     QFileInfo fi(full_name);
     return fi.fileName();
 }
+QString LFile::fileExtension(QString full_name)
+{
+    QString fname = LFile::shortFileName(full_name).trimmed();
+    int pos = fname.lastIndexOf(".");
+    if (pos < 0 || pos == (fname.length()-1)) return QString();
+    return fname.right(fname.length()-pos-1);
+}
 QString LFile::rootPath(QString full_name)
 {
     if (full_name.trimmed().isEmpty()) return QString();

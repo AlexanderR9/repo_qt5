@@ -36,6 +36,9 @@ public:
     static QString shortDirName(QString);
     //возращает родительский путь папки в которой лежит указанная папка или файл (без / в конце)
     static QString rootPath(QString);
+    //возращает рассширение файла без точки, вернет пустую строку если рассширения нет
+    static QString fileExtension(QString);
+
 
 
 

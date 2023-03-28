@@ -58,6 +58,7 @@ protected slots:
 
 signals:
     void signalError(const QString&); //для отправки сообщения в протокол (внешнему объекту)
+    void signalMsg(const QString&);    //для отправки сообщения в протокол (внешнему объекту)
 
 private:
     void initComPort(); //инициализация COM порта
