@@ -185,6 +185,29 @@ void LMBSlaveServerBase::makeResponseByRequest(const QModbusRequest &request, QM
         qWarning() << response;
     }
 }
+int LMBSlaveServerBase::registerTypeByFunc(quint8 f_code)
+{
+    switch (f_code)
+    {
+        //for DiscreteInputs discrete inputs, only read (1 bit)
+        case QModbusPdu::ReadDiscreteInputs: return QModbusDataUnit::DiscreteInputs; //0x02
 
+        //for Coils discrete outputs (1 bit)
+        case QModbusPdu::ReadCoils: //0x01
+        case QModbusPdu::WriteMultipleCoils: //0x0F
+        case QModbusPdu::WriteSingleCoil: return QModbusDataUnit::Coils;    //0x05
+
+        //for InputRegisters, only read (16 bit)
+
+
+        //for Holding Registers (16 bit)
+        case QModbusPdu::WriteSingleRegister:                   //0x06
+        case QModbusPdu::WriteMultipleRegisters:                //0x10
+        case QModbusPdu::ReadHoldingRegisters: return QModbusDataUnit::HoldingRegisters;     //0x03
+
+        default:  break;
+    }
+    return -1;
+}
 
 

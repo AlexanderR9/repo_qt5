@@ -8,6 +8,7 @@
 #include <QTreeWidget>
 #include <QVBoxLayout>
 #include <QHeaderView>
+#include <QDomDocument>
 
 #define KKS_COL         4
 #define VALUE_COL       5
@@ -81,6 +82,32 @@ void LXMLPackView::setSelectionRowsMode()
         m_view->setSelectionBehavior(QAbstractItemView::SelectRows);
         m_view->setSelectionMode(QAbstractItemView::SingleSelection);
     }
+}
+void LXMLPackView::initPacket(const QDomDocument &dom)
+{
+    if (m_packet)
+    {
+        disconnect(m_view, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(slotItemActivate(QTreeWidgetItem*, int)));
+        disconnect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
+        resetView();
+        delete m_packet;
+        m_packet = NULL;
+    }
+
+    bool ok;
+    m_packet = new LXMLPackObj(this);
+    m_packet->tryLoadPacket(dom, ok);
+    if (!ok) return;
+
+    if (m_packet->kksUsed())
+        m_view->headerItem()->setText(KKS_COL, "KKS");
+    reloadView();
+
+    if (m_rootItem)
+        m_rootItem->setReadOnly(m_readOnly);
+
+    connect(m_view, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(slotItemActivate(QTreeWidgetItem*, int)));
+    connect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
 }
 void LXMLPackView::setPacket(LXMLPackObj *p)
 {   
@@ -348,6 +375,11 @@ void LXMLPackViewItem::updateValues()
         if (pack_item) pack_item->updateValues();
         else qWarning("LXMLPackViewItem::updateValues() WARNING child pack_item is NULL");
     }
+}
+QString LXMLPackViewItem::userData() const
+{
+    if (!m_node) return QString();
+    return m_node->userData();
 }
 
 

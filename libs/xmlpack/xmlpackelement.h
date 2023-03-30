@@ -54,6 +54,7 @@ public:
     inline void setArrSize(quint16 n) {m_arrSize = n;}
     inline QString caption() const {return m_caption;}
     inline QString kks() const {return m_kks;}
+    inline QString userData() const {return m_userData;}
     inline int dataType() const {return m_dataType;}
     inline void setDataType(int t) {m_dataType = t;}
     inline int childsCount() const {return m_childs.count();}
@@ -73,6 +74,7 @@ protected:
     QString m_caption; //название элемента
     QString m_kks; //KKS параметра или группы (может не использоваться в пакете, зависит от задачи)
     LXMLPackValue m_value; //значение элемента, актуально если елемент isData()
+    QString m_userData; //вспомогательное значение, может использоватся для доп обработки, зависит от задачи, может отсутствовать
 
     LXMLPackElement *m_parentNode; //указатель на родительскую ноду
     QList<LXMLPackElement*> m_childs; //дети этой ноды, если список пустой, той этот элемент является конечным элементов ветки

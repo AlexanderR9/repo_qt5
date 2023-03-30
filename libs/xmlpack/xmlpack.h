@@ -15,10 +15,12 @@ class LXMLPackObj : public LSimpleObject
 {
     Q_OBJECT
 public:
+    LXMLPackObj(QObject *parent = NULL);
     LXMLPackObj(const QString&, QObject *parent = NULL); //params: xmlfilename of packet, obj_parent
     virtual ~LXMLPackObj() {destroyObj();}
 
     void tryLoadPacket(bool&); //загрузить пакет из файла xml (m_fileName)
+    void tryLoadPacket(const QDomDocument&, bool&); //загрузить пакет из QDomDocument
     quint32 size() const; //возвращает размер пакета в байтах
     void setByteOrder(int); //устанавливает порядок байт для записи пакета в поток данных
     void nextRandValues(); //обновить значения всех элементов пакета с учетом rand_deviation, (если rand_deviation == 0, то значение не измениться)

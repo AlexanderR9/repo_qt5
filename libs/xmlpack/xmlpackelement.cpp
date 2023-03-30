@@ -25,6 +25,7 @@ void LXMLPackElement::reset()
     m_arrSize = 1;
     m_offset = 0;
     m_value.reset();
+    m_userData.clear();
 }
 bool LXMLPackElement::isNode() const
 {
@@ -59,6 +60,9 @@ void LXMLPackElement::loadNode(const QDomNode &node, QString &err)
 
     //read kks
     m_kks = LStaticXML::getStringAttrValue("kks", node);
+
+    //read user-data
+    m_userData = LStaticXML::getStringAttrValue(XMLPackStatic::userDataAttrName(), node);
 
     //read datatype
     if (node.attributes().contains(XMLPackStatic::dataTypeAttrName()))

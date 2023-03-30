@@ -9,7 +9,7 @@
 class LXMLPackObj;
 class QTreeWidget;
 class LXMLPackElement;
-
+class QDomDocument;
 
 // LXMLPackViewItem
 class LXMLPackViewItem : public QTreeWidgetItem
@@ -22,6 +22,7 @@ public:
     void setReadOnly(bool); //установить возможность редактирования значения или отклонения в пакете
     void updateValues(); //обновить значения свое и всех своих детей рекурсивно
     void setDoublePrecision(quint8);
+    QString userData() const;
 
     inline bool isEditable() const {return m_editable;}
 
@@ -49,7 +50,12 @@ public:
     virtual ~LXMLPackView() {resetView();}
 
 
-    void setPacket(LXMLPackObj*); //установить экземпляр пакета для отображения
+
+    //подразумевается что будет выполнена 1 из 2-х функций (setPacket/initPacket)
+    virtual void setPacket(LXMLPackObj*); //установить экземпляр пакета для отображения
+    virtual void initPacket(const QDomDocument&); //инициализировать m_packet
+
+
     void setPacketByteOrder(int); //устанавливает порядок байт для записи пакета в поток данных в m_packet
     void resizeColumns(); //подогнать размеры столбцов под контент
     void updateValues(); //обновить значения итемов
@@ -95,8 +101,8 @@ protected:
     void resetView();
 
 protected slots:
-    void slotItemActivate(QTreeWidgetItem*, int);
-    void slotItemValueChanged(QTreeWidgetItem*, int);
+    virtual void slotItemActivate(QTreeWidgetItem*, int);
+    virtual void slotItemValueChanged(QTreeWidgetItem*, int);
 
 private:
     bool isEditableCol(int) const;

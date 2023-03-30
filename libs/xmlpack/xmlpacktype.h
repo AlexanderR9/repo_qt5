@@ -28,7 +28,7 @@ public:
     static QString arrSizeAttrName() {return QString("arr_size");}
     static QString defValueAttrName() {return QString("def_value");}
     static QString errValueAttrName() {return QString("err_value");}
-
+    static QString userDataAttrName() {return QString("user_data");}
 
 };
 

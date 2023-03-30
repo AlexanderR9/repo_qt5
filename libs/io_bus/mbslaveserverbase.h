@@ -28,6 +28,8 @@ public:
     inline void clearBuffer() {m_buffer.clear();}
     inline int bufferSize() const {return m_buffer.size();}
 
+    static int registerTypeByFunc(quint8); //выдает тип регистров по коду функции или -1
+
 protected:
     QSerialPort *m_port;
     QByteArray m_buffer;

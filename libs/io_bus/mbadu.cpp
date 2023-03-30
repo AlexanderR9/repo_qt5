@@ -121,6 +121,8 @@ bool LMBAdu::reqCodeOk() const
         case QModbusPdu::ReadHoldingRegisters: return true;     //0x03
 
         //for Coils inputs (1 bit)
+        case QModbusPdu::ReadCoils:                             //0x01
+        case QModbusPdu::WriteMultipleCoils:                    //0x0F
         case QModbusPdu::WriteSingleCoil:                       //0x05
             return true;
 

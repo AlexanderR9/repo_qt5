@@ -21,9 +21,18 @@ LXMLPackObj::LXMLPackObj(const QString &fname, QObject *parent)
     m_kksUsed(false)
 {
 
-
+}
+LXMLPackObj::LXMLPackObj(QObject *parent)
+    :LSimpleObject(parent),
+    m_rootNode(NULL),
+    m_fileName(QString()),
+    m_byteOrder(QDataStream::LittleEndian),
+    m_kksUsed(false)
+{
 
 }
+
+
 void LXMLPackObj::setByteOrder(int bo)
 {
     if (bo == QDataStream::LittleEndian) m_byteOrder = bo;
@@ -68,6 +77,15 @@ void LXMLPackObj::tryLoadPacket(bool &ok)
     if (!dom.setContent(&f))
     {
         emit signalError(QString("Error load XML content to DOM from: [%1]'").arg(m_fileName));
+        return;
+    }
+    loadDom(dom, ok);
+}
+void LXMLPackObj::tryLoadPacket(const QDomDocument &dom, bool &ok)
+{
+    if (dom.isNull())
+    {
+        emit signalError(QString("Error load XML content from DOM, it is NULL.").arg(m_fileName));
         return;
     }
     loadDom(dom, ok);
