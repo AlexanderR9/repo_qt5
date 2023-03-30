@@ -8,6 +8,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QTableWidget>
+#include <QTabWidget>
 #include <QListWidget>
 #include <QHeaderView>
 #include <QTreeWidget>
@@ -96,7 +97,6 @@ bool LSimpleWidget::onlyHorizontal() const
 }
 
 
-
 //LTableWidgetBox
 LTableWidgetBox::LTableWidgetBox(QWidget *parent, int t)
     :QGroupBox("Table Box", parent),
@@ -130,9 +130,6 @@ QTableWidget* LTableWidgetBox::table() const
 }
 
 
-
-
-
 //LListWidgetBox
 LListWidgetBox::LListWidgetBox(QWidget *parent, int t)
     :QGroupBox("List Box", parent),
@@ -156,9 +153,6 @@ QListWidget* LListWidgetBox::listWidget() const
 {
     return m_listWidget;
 }
-
-
-
 
 
 //LTreeWidgetBox
@@ -193,4 +187,39 @@ void LTreeWidgetBox::setHeaderLabels(const QStringList &list)
 
 
 
+//LTabWidgetBox
+LTabWidgetBox::LTabWidgetBox(QWidget *parent, int t)
+    :QGroupBox("Tab pages box", parent),
+      m_tab(NULL)
+{
+    setObjectName("ltab_widget_box");
+
+    if(layout()) delete layout();
+    if (t == 2) setLayout(new QHBoxLayout(0));
+    else setLayout(new QVBoxLayout(0));
+
+    init();
+}
+void LTabWidgetBox::init()
+{
+    m_tab = new QTabWidget(this);
+    m_tab->clear();
+    layout()->addWidget(m_tab);
+}
+void LTabWidgetBox::removeAllPages()
+{
+    if (!hasPages()) return;
+    int n = pageCount();
+    for(int i=n-1; i>=0; i--)
+    {
+        QWidget *w = m_tab->widget(i);
+        m_tab->removeTab(i);
+        delete w;
+        w = NULL;
+    }
+}
+int LTabWidgetBox::pageCount() const
+{
+    return m_tab->count();
+}
 

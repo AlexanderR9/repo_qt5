@@ -56,6 +56,8 @@
         <file>images/cd_erase.png</file>
         <file>images/crc.png</file>
         <file>images/folders_struct.png</file>
+        <file>images/modbus.png</file>
+        <file>images/server.png</file>
 
     </qresource>
 </RCC>

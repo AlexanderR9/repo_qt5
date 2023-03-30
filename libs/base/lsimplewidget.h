@@ -10,6 +10,7 @@
 class QSplitter;
 class QSettings;
 class QTableWidget;
+class QTabWidget;
 class QListWidget;
 class QTreeWidget;
 
@@ -26,7 +27,7 @@ class QTreeWidget;
 //если первая цифра указывает на то, что будет создан только один сплитер, то вторая цифра не важна.
 //в случае неверного указания отрабатывает вариант поумолчанию: создаются оба сплитера, основной - вертикальный.
 
-//LSimpleWidget
+//LSimpleWidget (with 2 splitters)
 class  LSimpleWidget : public QWidget
 {
     Q_OBJECT
@@ -67,7 +68,7 @@ private:
 //в конструкторе параметр type указывает тип layout, на котором размещается QTableWdiget (1-QVBoxLayout, 2-QHBoxLayout)
 //при некорректном значении type используется  QVBoxLayout
 
-//LTableWidgetBox
+//LTableWidgetBox (groupbox with table)
 class LTableWidgetBox : public QGroupBox
 {
     Q_OBJECT
@@ -93,7 +94,7 @@ protected:
 //в конструкторе параметр type указывает тип layout, на котором размещается QListWdiget (1-QVBoxLayout, 2-QHBoxLayout)
 //при некорректном значении type используется  QVBoxLayout
 
-//LListWidgetBox
+//LListWidgetBox (groupbox with listwidget)
 class LListWidgetBox : public QGroupBox
 {
     Q_OBJECT
@@ -115,7 +116,7 @@ protected:
 //в конструкторе параметр type указывает тип layout, на котором размещается QListWdiget (1-QVBoxLayout, 2-QHBoxLayout)
 //при некорректном значении type используется  QVBoxLayout
 
-//LTreeWidgetBox
+//LTreeWidgetBox (groupbox with treewidget)
 class LTreeWidgetBox : public QGroupBox
 {
     Q_OBJECT
@@ -134,6 +135,23 @@ protected:
 };
 
 
+//LTabWidgetBox (groupbox with tabwidget)
+class LTabWidgetBox : public QGroupBox
+{
+    Q_OBJECT
+public:
+    LTabWidgetBox(QWidget *parent = NULL, int type = 1);
+    virtual ~LTabWidgetBox() {}
+
+    QTabWidget* tab() const {return m_tab;}
+    void removeAllPages(); //уничтожает объекты-страницы из памяти и очищает сам m_tab
+    int pageCount() const;
+    inline bool hasPages() const {return (pageCount() > 0);}
+
+protected:
+    QTabWidget    *m_tab;
+    void init();
+};
 
 
 #endif // LSIMPLE_WIDGET_H
