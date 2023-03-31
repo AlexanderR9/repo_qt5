@@ -12,6 +12,7 @@ public:
     static QString readFileSL(QString fname, QStringList &list, QString spliter = QString("\n")); 
     static QString writeFileSL(QString fname, QStringList &list); 
     static QString writeFile(QString fname, const QString &data);
+    static QString writeFileBA(QString fname, const QByteArray &ba);
     static QString appendFile(QString fname, const QString &data);
 
     //возвращает список файлов лежащих в dir_path(полные пути), кроме пустых строк или типа (. или ..)

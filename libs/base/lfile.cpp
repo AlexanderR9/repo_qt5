@@ -132,6 +132,19 @@ QString LFile::writeFile(QString fname, const QString &data)
     f.close();
     return QString();
 }
+QString LFile::writeFileBA(QString fname, const QByteArray &ba)
+{
+    if (fname.trimmed().isEmpty()) return QString("filename is empty!");
+    if (!LFile::fileExists(fname))  return QString("filename [%1] not found!").arg(fname);
+
+    QFile f(fname);
+    if (!f.open(QIODevice::WriteOnly))
+        return QString("file [%1] not open for writing!").arg(fname);
+
+    f.write(ba.data(), ba.size());
+    f.close();
+    return QString();
+}
 QString LFile::appendFile(QString fname, const QString &data)
 {
     QFile f(fname);

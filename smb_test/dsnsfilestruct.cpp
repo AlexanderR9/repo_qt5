@@ -249,6 +249,8 @@ void DSNSFileStruct::genFloatFile_VAL()
     stream.setByteOrder(QDataStream::LittleEndian);
     stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
     header.file_size = list.count()*header.elemsize;
+    qDebug()<<header.toStr();
+
     header.toStream(stream);
     for (int i=0; i<list.count(); i++) stream << list.at(i);
 
@@ -424,6 +426,7 @@ void DSNSFileStruct::writeFileIntData(QString f_type, const QList<qint8> &data, 
     QDataStream stream(&ba, QIODevice::WriteOnly);
     stream.setByteOrder(QDataStream::LittleEndian);
     header.file_size = data.count()*header.elemsize;
+    qDebug()<<header.toStr();
     header.toStream(stream);
     for (int i=0; i<data.count(); i++) stream << data.at(i);
 
@@ -439,6 +442,7 @@ void DSNSFileStruct::writeFileStringData(QString f_type, const QStringList &data
     QDataStream stream(&ba, QIODevice::WriteOnly);
     stream.setByteOrder(QDataStream::LittleEndian);
     header.file_size = data.count()*header.elemsize;
+    qDebug()<<header.toStr();
     header.toStream(stream);
     for (int i=0; i<data.count(); i++)
         ba.append(m_codec->fromUnicode(data.at(i)));
@@ -474,6 +478,7 @@ void DSNSFileStruct::tryGenFiles()
     genFloatFile_DESC();
     genFloatFile_VAL();
     genFloatFile_QUAL();
+    return;
 
     //gen int groups files
     genIntFile_PID();
@@ -485,7 +490,7 @@ void DSNSFileStruct::tryGenFiles()
 void DSNSFileStruct::nextEmulValues()
 {
     genFloatFile_VAL();
-    genIntFile_VAL();
+    //genIntFile_VAL();
 }
 void DSNSFileStruct::tryReadComplectFiles()
 {
