@@ -200,6 +200,7 @@ void LSocatObj::finishCurrentProcess()
         }
 
         if (n > 0) emit signalMsg(QString("Find %1 socat process.").arg(n));
+        else emit signalMsg(QString("Not found running socat process.").arg(n));
     }
     m_mode = smNone;
 }

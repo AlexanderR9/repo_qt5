@@ -38,6 +38,8 @@ QString LFile::readFileSL(QString fname, QStringList &list, QString spliter)
 
 QString LFile::writeFileSL(QString fname, QStringList &list)
 {
+    if (fname.trimmed().isEmpty()) return QString("filename is empty!");
+
     if (list.isEmpty()) return QString("list is empty!");
     QFile f(fname);
     if (!f.open(QIODevice::WriteOnly))
@@ -135,7 +137,7 @@ QString LFile::writeFile(QString fname, const QString &data)
 QString LFile::writeFileBA(QString fname, const QByteArray &ba)
 {
     if (fname.trimmed().isEmpty()) return QString("filename is empty!");
-    if (!LFile::fileExists(fname))  return QString("filename [%1] not found!").arg(fname);
+    //if (!LFile::fileExists(fname))  return QString("filename [%1] not found!").arg(fname);
 
     QFile f(fname);
     if (!f.open(QIODevice::WriteOnly))
