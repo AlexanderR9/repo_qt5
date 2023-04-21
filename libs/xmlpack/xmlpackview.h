@@ -23,13 +23,18 @@ public:
     void updateValues(); //обновить значения свое и всех своих детей рекурсивно
     void setDoublePrecision(quint8);
     QString userData() const;
+    void resetEditingMode(); //сброс режима редактирования для всех итемов
 
     inline bool isEditable() const {return m_editable;}
+    inline void setEditing(bool b) {is_editing = b;}
+    inline bool isEditing() const {return is_editing;}
+
 
 
 protected:
     LXMLPackElement *m_node;
     bool m_editable;
+    bool is_editing; //признак того что редактируется в данный момент
 
     void loadNodeChilds();
     void updateColumnsText();
@@ -99,6 +104,7 @@ protected:
     void initWidget();
     void reloadView();
     void resetView();
+    void resetEditingMode(); //сброс режима редактирования для всех итемов
 
 protected slots:
     virtual void slotItemActivate(QTreeWidgetItem*, int);

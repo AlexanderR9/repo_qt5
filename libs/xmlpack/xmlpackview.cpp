@@ -162,11 +162,19 @@ void LXMLPackView::resetView()
         m_packet = NULL;
     }
 }
+void LXMLPackView::resetEditingMode()
+{
+    if (m_rootItem)
+        m_rootItem->resetEditingMode();
+}
 void LXMLPackView::slotItemActivate(QTreeWidgetItem *item, int column)
 {
+    resetEditingMode();
     if (isEditableCol(column) && !isReadOnly())
     {
         m_view->editItem(item, column);
+        LXMLPackViewItem *pack_item = static_cast<LXMLPackViewItem*>(item);
+        if (pack_item) pack_item->setEditing(true);
     }
 }
 void LXMLPackView::setPacketData(const QByteArray &ba, bool &ok, bool singleFloatPrecision)
@@ -227,7 +235,8 @@ void LXMLPackView::setExpandLevel(int level)
 LXMLPackViewItem::LXMLPackViewItem(LXMLPackElement *node, QTreeWidgetItem *parent, bool kks_used)
     :QTreeWidgetItem(parent),
       m_node(node),
-      m_editable(false)
+      m_editable(false),
+      is_editing(false)
 {
     setData(VALUE_COL, Qt::UserRole, 3);
     setData(KKS_COL, Qt::UserRole, kks_used);
@@ -353,6 +362,19 @@ void LXMLPackViewItem::setReadOnly(bool b)
         if (pack_item) pack_item->setReadOnly(b);
     }
     updateColumnsColor();
+}
+void LXMLPackViewItem::resetEditingMode()
+{
+    int n = childCount();
+    for (int i=0; i<n; i++)
+    {
+        LXMLPackViewItem *pack_item = static_cast<LXMLPackViewItem*>(child(i));
+        if (pack_item)
+        {
+            pack_item->setEditing(false);
+            pack_item->resetEditingMode();
+        }
+    }
 }
 void LXMLPackViewItem::setDoublePrecision(quint8 dp)
 {
