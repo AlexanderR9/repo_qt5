@@ -95,7 +95,7 @@ protected slots:
     void slotError(const QString&);
     void slotMessage(const QString&);
     void slotAppSettingsChanged(QStringList);
-    void slotReadyRead();
+    //void slotReadyRead();
     void slotFinished();
     void slotTimer();
 

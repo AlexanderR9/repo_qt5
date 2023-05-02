@@ -48,7 +48,7 @@ MainForm::MainForm(QWidget *parent)
     connect(m_processObj, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_processObj, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMessage(const QString&)));
     connect(m_processObj, SIGNAL(signalFinished()), this, SLOT(slotFinished()));
-    connect(m_processObj, SIGNAL(signalReadyRead()), this, SLOT(slotReadyRead()));
+    //connect(m_processObj, SIGNAL(signalReadyRead()), this, SLOT(slotReadyRead()));
 
 
     m_timer = new QTimer(this);
@@ -349,10 +349,12 @@ void MainForm::showFoldersStructCD()
     FoldersStructDialog d(cd_path, this);
     d.exec();
 }
+/*
 void MainForm::slotReadyRead()
 {
-    //qDebug("MainForm::slotReadyRead()");
+    qDebug("MainForm::slotReadyRead()");
 }
+*/
 void MainForm::slotFinished()
 {
     //qDebug("MainForm::slotFinished()");
