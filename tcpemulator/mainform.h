@@ -56,8 +56,6 @@ protected:
     void updateStatusWidget();
     void updateButtonsState();
 
-    void prepareFloatPacket(QByteArray&);
-    void prepareDiscretePacket(QByteArray&);
 
 protected slots:
     void slotAction(int); //virtual slot from parent
@@ -75,7 +73,6 @@ private:
     int byteOrder() const;
     quint16 qualSig() const;
 
-    void DTSTDataReady(const QByteArray &ba);
 
 };
 

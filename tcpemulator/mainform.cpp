@@ -6,12 +6,10 @@
 #include "lfile.h"
 #include "tcpclientobj.h"
 #include "tcpserverobj.h"
-#include "dtsstructs.h"
+//#include "dtsstructs.h"
 #include "tcpstatuswidget.h"
 
 #include <ctime>
-//#include <stdio.h>
-//#pragma GCC diagnostic ignored "-Wsign-compare"
 
 #include <QDebug>
 #include <QDir>
@@ -45,20 +43,6 @@ MainForm::MainForm(QWidget *parent)
     timer->start(1000);
 
     initTcpObjects();
-
-
-///////////test//////////////////////////
-    QByteArray ba;
-    prepareFloatPacket(ba);
-
-    w32_time f_time;
-    QDateTime cur_dt_utc = QDateTime::currentDateTimeUtc();
-    qDebug()<<QString("cur_dt_utc: %1      time_t=%2").arg(LTime::strDateTime(cur_dt_utc)).arg(cur_dt_utc.toTime_t());
-    f_time.setTime(cur_dt_utc);
-    qDebug()<<f_time.toStr();
-    qDebug()<<QString("converted result: ")<<LTime::strDateTime(f_time.toQDateTime());
-
-
 }
 void MainForm::slotTimer()
 {
@@ -100,7 +84,6 @@ void MainForm::slotClientPackReceived(const QByteArray &ba)
 {
     qDebug("MainForm::slotClientPackReceived");
     slotMsg(LStatic::baToStr(ba, 12));
-    DTSTDataReady(ba);
 }
 void MainForm::initActions()
 {
@@ -123,7 +106,6 @@ void MainForm::slotAction(int type)
 }
 void MainForm::initWidgets()
 {
-
     m_protocol = new LProtocolBox(false, this);
     addWidget(m_protocol, 0, 0, 1, 1);
 
@@ -327,6 +309,7 @@ void MainForm::sendPack()
 {
     if (isServer() && m_server->hasConnectedClients())
     {
+        /*
         QByteArray ba;
         prepareFloatPacket(ba);
         if (!ba.isEmpty())
@@ -335,117 +318,12 @@ void MainForm::sendPack()
         prepareDiscretePacket(ba);
         if (!ba.isEmpty())
             m_server->trySendPacketToClient(1, ba);
+            */
 
     }
     if (isClient() && m_client->isConnected())
     {
         //m_client->trySendPacket(ba_header);
-    }
-}
-void MainForm::prepareFloatPacket(QByteArray &ba)
-{
-    ba.clear();
-    if (QTime::currentTime().second()%2 == 1) return;
-
-    QDataStream stream(&ba, QIODevice::WriteOnly);
-    stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
-
-    int bo = byteOrder();
-    qDebug()<<QString("byteOrder %1").arg(bo);
-    stream.setByteOrder(QDataStream::ByteOrder(bo));
-
-    PortalPackHeader header;
-    header.subSys_id = QChar('I').toLatin1();
-    header.dataType_id = QChar('A').toLatin1();
-    header.counter = m_counter++;
-    header.time.setCurrentTime();
-
-    int n_group = floatRecsCount();
-    header.len = n_group*ARecord::static_size()+header.size();
-    header.toByteArray(stream);
-    qDebug()<<QString("ba_header_size %1,  %2").arg(ba.size()).arg(header.toStr());
-
-    for (int i=0; i<n_group; i++)
-    {
-        ARecord f_rec(12.3+float(i)/10);
-        f_rec.quality = qualSig();
-        f_rec.time.setCurrentTimeUtc();
-        f_rec.toByteArray(stream);
-
-        if (i==0) qDebug()<<QString("a_rec[0]=%1").arg(f_rec.toStr());
-    }
-}
-void MainForm::prepareDiscretePacket(QByteArray &ba)
-{
-    ba.clear();
-    if (QTime::currentTime().second()%2 == 0) return;
-
-    QDataStream stream(&ba, QIODevice::WriteOnly);
-    stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
-
-    int bo = byteOrder();
-    qDebug()<<QString("byteOrder %1").arg(bo);
-    stream.setByteOrder(QDataStream::ByteOrder(bo));
-
-    PortalPackHeader header;
-    header.subSys_id = QChar('I').toLatin1();
-    header.dataType_id = QChar('D').toLatin1();
-    header.counter = m_counter++;
-    header.time.setCurrentTime();
-
-    int n_group = discreteRecsCount();
-    header.len = n_group*DRecord::static_size()+header.size();
-    header.toByteArray(stream);
-    qDebug()<<QString("ba_header_size %1,  %2").arg(ba.size()).arg(header.toStr());
-
-    for (int i=0; i<n_group; i++)
-    {
-        DRecord d_rec(i%2);
-        d_rec.quality = qualSig();
-        d_rec.time.setCurrentTimeUtc();
-        d_rec.toByteArray(stream);
-
-        if (i==0) qDebug()<<QString("d_rec[0]=%1").arg(d_rec.toStr());
-    }
-}
-
-
-/////////////////zhukov code/////////////////////////////
-void MainForm::DTSTDataReady(const QByteArray &ba)
-{
-    //if(socket==0) return;
-    //QMutexLocker lock(&myMutex);
-
-    QByteArray baTmp(ba);
-    qDebug("DTSTCPClientChannel::slotDataReady(): received %i bytes",baTmp.size());
-    /*
-    if(baTmp.size()!=0)
-    {
-        uint oldSize = buffer.size();
-        buffer.resize(oldSize+baTmp.size());
-        memmove(buffer.data()+oldSize,baTmp.data(),baTmp.size());
-    }
-    */
-
-   // for(;;)
-    {
-        //if(baTmp.size()<sizeof(packHeader)) {qWarning("WARNING  baTmp.size()<len"); return;} // No even header was received
-        //unsigned long len = static_cast<packHeader*>(static_cast<void*>(baTmp.data()))->len;
-        //qDebug()<<QString("received client packet len %1").arg(len);
-        //if(baTmp.size()<len) {qWarning("WARNING  baTmp.size()<len"); return;} // No full packet was received
-
-        /*
-        QByteArray baResult(len);
-        memcpy(baResult.data(),buffer.data(),len);
-        if(buffer.size()>len)
-        {
-            memmove(buffer.data(),buffer.data()+len,buffer.size()-len);
-            buffer.resize(buffer.size()-len);
-        }
-        else buffer.resize(0);
-        nextCheck = addMSectToDateTime(QDateTime::currentDateTime(),timesTimeout);
-        emit(signalNewPacketReceived(myIndex,baResult));
-        */
     }
 }
 
