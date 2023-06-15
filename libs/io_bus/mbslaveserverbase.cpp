@@ -185,6 +185,7 @@ void LMBSlaveServerBase::makeResponseByRequest(const QModbusRequest &request, QM
         qWarning() << response;
     }
 }
+/*
 int LMBSlaveServerBase::registerTypeByFunc(quint8 f_code)
 {
     switch (f_code)
@@ -209,5 +210,5 @@ int LMBSlaveServerBase::registerTypeByFunc(quint8 f_code)
     }
     return -1;
 }
-
+*/
 

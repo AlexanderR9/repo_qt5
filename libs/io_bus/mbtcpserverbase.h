@@ -64,16 +64,20 @@ protected:
     //Устанавливает зарегистрированную таблицу типов регистров, значения регистров инициализируются 0.
     //При вызове этой функции любое ранее установленное значение регистра отбрасывается.
     virtual void initRegistersMap() = 0;
+*/
+
 
 protected slots:
-    virtual void slotReadyRead(); //пришли данные в m_port, обработать, возможно запрос от мастера
-    virtual void slotAboutToClose(); //выполняется при закрытии устройства(m_port) по каким-либо причинам
-    virtual void slotError(); //выполняется при возникновении ошибки в работе m_port
-*/
+    //virtual void slotReadyRead(); //пришли данные в m_port, обработать, возможно запрос от мастера
+    //virtual void slotAboutToClose(); //выполняется при закрытии устройства(m_port) по каким-либо причинам
+    virtual void slotError(QModbusDevice::Error); //выполняется при возникновении ошибки в работе device
+    virtual void slotStateChanged(QModbusDevice::State);
+    virtual void slotDataWritten(QModbusDataUnit::RegisterType, int, int);
+
+
 signals:
     void signalError(const QString&); //для отправки сообщения в протокол (внешнему объекту)
     void signalMsg(const QString&);    //для отправки сообщения в протокол (внешнему объекту)
-
 
 };
 

@@ -1,6 +1,7 @@
 #include "mbadu.h"
 #include "mbcrckeytable.h"
 #include <QModbusPdu>
+#include <QModbusDataUnit>
 #include <QDebug>
 
 #define MIN_RAWDATA_SIZE_RTU    4
@@ -73,7 +74,30 @@ QString LMBAduBase::rawDataToStr() const
     else s2 = m_data.toHex(':');
     return QString("%1    [%2]").arg(s1).arg(s2);
 }
+int LMBAduBase::registerTypeByFunc(quint8 f_code)
+{
+    switch (f_code)
+    {
+        //for DiscreteInputs discrete inputs, only read (1 bit)
+        case QModbusPdu::ReadDiscreteInputs: return QModbusDataUnit::DiscreteInputs; //0x02
 
+        //for Coils discrete outputs (1 bit)
+        case QModbusPdu::ReadCoils: //0x01
+        case QModbusPdu::WriteMultipleCoils: //0x0F
+        case QModbusPdu::WriteSingleCoil: return QModbusDataUnit::Coils;    //0x05
+
+        //for InputRegisters, only read (16 bit)
+
+
+        //for Holding Registers (16 bit)
+        case QModbusPdu::WriteSingleRegister:                   //0x06
+        case QModbusPdu::WriteMultipleRegisters:                //0x10
+        case QModbusPdu::ReadHoldingRegisters: return QModbusDataUnit::HoldingRegisters;     //0x03
+
+        default:  break;
+    }
+    return -1;
+}
 
 
 //////////////////// LMBAdu ////////////////////////////
@@ -194,17 +218,17 @@ void LMBTcpAdu::checkData()
 }
 qint8 LMBTcpAdu::serverAddress() const
 {
-    if (m_data.isEmpty() || invalid()) return -1;
+    if (m_data.isEmpty()) return -1;
     return uchar(m_data.at(6));
 }
 qint8 LMBTcpAdu::cmdCode() const
 {
-    if (m_data.isEmpty() || invalid()) return -1;
-    return uchar(m_data.at(7));
+    if (m_data.isEmpty()) return -1;
+    return char(m_data.at(7));
 }
 qint16 LMBTcpAdu::packetLen() const
 {
-    if (m_data.isEmpty() || invalid()) return -1;
+    if (m_data.isEmpty()) return -1;
     return quint16((quint8(m_data.at(4)) << 8) | quint8(m_data.at(5)));
 }
 QString LMBTcpAdu::stringErr() const
@@ -221,5 +245,27 @@ void LMBTcpAdu::getPduData(QModbusPdu &pdu) const
     }
     else LMBAduBase::getPduData(pdu);
 }
-
+bool LMBTcpAdu::isExeptionRequest() const
+{
+    switch (uchar(m_data.at(7)))
+    {
+        case 0x81: return true;
+        case 0x82: return true;
+        case 0x83: return true;
+        case 0x84: return true;
+        case 0x85: return true;
+        case 0x8F: return true;
+        case 0x90: return true;
+        default: break;
+    }
+    return false;
+}
+QString LMBTcpAdu::strExeption() const
+{
+    if (isExeptionRequest())
+    {
+        return QString("0x")+QString::number(quint8(m_data.at(7)), 16);
+    }
+    return "---";
+}
 

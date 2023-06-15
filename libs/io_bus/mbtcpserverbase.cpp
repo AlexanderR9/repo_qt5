@@ -14,6 +14,24 @@ LMBTCPServerBase::LMBTCPServerBase(QObject *parent)
 {
     this->setConnectionParameter(QModbusDevice::NetworkAddressParameter, "127.0.0.1"); //static tcp modbus host
     this->setConnectionParameter(QModbusDevice::NetworkPortParameter, 50502); //default tcp port
+
+
+    connect(this, SIGNAL(errorOccurred(QModbusDevice::Error)), this, SLOT(slotError(QModbusDevice::Error)));
+    connect(this, SIGNAL(stateChanged(QModbusDevice::State)), this, SLOT(slotStateChanged(QModbusDevice::State)));
+    connect(this, SIGNAL(dataWritten(QModbusDataUnit::RegisterType, int, int)), this, SLOT(slotDataWritten(QModbusDataUnit::RegisterType, int, int)));
+
+}
+void LMBTCPServerBase::slotError(QModbusDevice::Error err)
+{
+    qDebug()<<QString("LMBTCPServerBase::slotError  err=%1").arg(err);
+}
+void LMBTCPServerBase::slotStateChanged(QModbusDevice::State state)
+{
+    qDebug()<<QString("LMBTCPServerBase::slotStateChanged  state=%1").arg(state);
+}
+void LMBTCPServerBase::slotDataWritten(QModbusDataUnit::RegisterType reg_type, int address, int size)
+{
+    qDebug()<<QString("LMBTCPServerBase::slotDataWritten  reg_type=%1,  address=%2,  size=%3").arg(reg_type).arg(address).arg(size);
 }
 void LMBTCPServerBase::setDeviceTcpPort(quint32 port)
 {

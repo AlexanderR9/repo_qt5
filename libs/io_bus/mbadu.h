@@ -27,6 +27,7 @@ public:
 
     static bool functionCodeOk(qint8); //проверяет валидность кода функции modbus
     static quint16 convertToLittleEndian(const quint16); //развернуть порядок байт в значении
+    static int registerTypeByFunc(quint8); //выдает тип регистров по коду функции или -1
 
 protected:
     QByteArray m_data;
@@ -81,6 +82,8 @@ public:
     qint16 packetLen() const; //длина пакета, которая лежит в заголовке mbtcp запроса
     QString stringErr() const;
     void getPduData(QModbusPdu &pdu) const;
+    bool isExeptionRequest() const; //признак того что этот ответ является исключением, где cmdCode() содержит код ошибки, который говорит почему сервер не может выполнить текущий запрос
+    QString strExeption() const;
 
 protected:
     void checkData();
