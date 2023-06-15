@@ -16,9 +16,10 @@ struct w32_time //for c++
     quint32 dwLow;
     quint32 dwHigh;
 
-    void reset() {dwLow=100; dwHigh=100;} // сброс значений всех полей структуры в дефолтное состояние
-    quint32 size() const {return (sizeof(dwLow) + sizeof(dwHigh));} //вернет свой размер в байтах
-    void toStream(QDataStream &stream) {stream << dwLow << dwHigh;} //записть струкртуры в поток
+    inline void reset() {dwLow=100; dwHigh=100;} // сброс значений всех полей структуры в дефолтное состояние
+    inline quint32 size() const {return (sizeof(dwLow) + sizeof(dwHigh));} //вернет свой размер в байтах
+
+    void toStream(QDataStream&);//записть струкртуры в поток
     void setTime(const QDateTime&); //конвертирует QDateTime в w32_time
     QString toStr() const; //вернет значения полей структуры в виде строки
     QDateTime toQDateTime(Qt::TimeSpec ts = Qt::UTC); //преобразование структуры в значение QDateTime
@@ -53,6 +54,8 @@ struct w32_system_time
 
 
 struct timespec;
+
+
 //static funcs time
 class LTime
 {

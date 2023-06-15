@@ -22,14 +22,18 @@ INCLUDEPATH += .\
 # Input
 HEADERS += $$PWD/mbadu.h \
 	$$PWD/mbcrckeytable.h \
+#	$$PWD/mbabstractserver.h \
 	$$PWD/mbslaveserverbase.h \
+	$$PWD/mbtcpserverbase.h \
 	$$PWD/comparams.h \
 	$$PWD/comportobject.h \
 	$$PWD/iobus_global.h
 
 
 SOURCES += $$PWD/mbadu.cpp \
+#	$$PWD/mbabstractserver.cpp \
 	$$PWD/mbslaveserverbase.cpp \
+	$$PWD/mbtcpserverbase.cpp \
 	$$PWD/comportobject.cpp
 
 

@@ -83,6 +83,10 @@ QString w32_time::toStr() const
 {
     return QString("W32_TIME: dwLow=%1  dwHigh=%2").arg(dwLow).arg(dwHigh);
 }
+void w32_time::toStream(QDataStream &stream)
+{
+    stream << dwLow << dwHigh;
+}
 QDateTime w32_time::toQDateTime(Qt::TimeSpec ts)
 {
     quint64 tmp = (quint64(dwHigh)*0x100000000ULL + quint64(dwLow))/10000ULL; // конвертация структуры в одно значение quint64, (мсек)
