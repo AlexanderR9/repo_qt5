@@ -1,0 +1,148 @@
+#!/bin/bash
+
+#user vars
+BIN_FILE_PATH=.
+BIN_FILE_NAME=isoworker
+MY_LIBS_PATH=../libs
+MY_LIB_VERSION=1.0.0
+QT_VERSION=5.9.1
+DISTR_NAME=cd_iso_worker
+TEMPORY_DIR=temp
+PLUGIN_IMG_DIR=imageformats
+PLUGIN_PLFR_DIR=platforms
+DELAY=0.2
+
+
+#remove old target tar.gz
+if [ -f $DISTR_NAME.tar.gz ]; then
+    echo "Old target distrib file ($DISTR_NAME.tar.gz) exist."
+    echo "try remove old distrib file...." 
+    sleep 1
+    rm $DISTR_NAME.tar.gz
+    echo "done!"
+    sleep $DELAY
+fi
+
+
+# make folders struct
+echo "make temporary folder[$TEMPORY_DIR] ....."
+mkdir $TEMPORY_DIR
+sleep $DELAY
+echo "make libs folder ....."
+mkdir $TEMPORY_DIR/libs
+sleep $DELAY
+echo "make plugin folders ....."
+mkdir $TEMPORY_DIR/$PLUGIN_IMG_DIR
+mkdir $TEMPORY_DIR/$PLUGIN_PLFR_DIR
+sleep $DELAY
+
+# copy files
+echo "copy bin file [$BIN_FILE_PATH/$BIN_FILE_NAME] ....."
+cp $BIN_FILE_PATH/$BIN_FILE_NAME $TEMPORY_DIR/$BIN_FILE_NAME
+cp start_distr $TEMPORY_DIR/start
+sleep $DELAY
+
+
+# COPY MY LIB FUNCTION
+copy_lib()
+{
+    echo ""
+    LIB_NAME=libl$1.so.$MY_LIB_VERSION
+    DEST_PATH=$TEMPORY_DIR/libs
+    echo "copy mylib [$LIB_NAME] ....."
+    cp $MY_LIBS_PATH/$1/build/$LIB_NAME $DEST_PATH
+    sleep $DELAY
+    echo ""
+    cd $DEST_PATH
+    echo "make links ....."
+    ln -s $LIB_NAME ${LIB_NAME:0:${#LIB_NAME}-2}
+    ln -s $LIB_NAME ${LIB_NAME:0:${#LIB_NAME}-4}
+    cd ../../
+    echo "done!"
+}
+
+copy_lib base
+copy_lib process
+
+# COPY QT LIB FUNCTION
+copy_qt_lib()
+{
+    echo ""
+    LIB_NAME=libQt5$1.so.$QT_VERSION
+    if [ "$2" = "full" ]; then
+	echo "($1) is full name"
+	LIB_NAME=$1
+    fi
+
+
+    DEST_PATH=$TEMPORY_DIR/libs
+    echo "copy Qt($QT_VERSION) lib [$LIB_NAME] ....."
+    cp $LD_LIBRARY_PATH/$LIB_NAME $DEST_PATH
+    sleep $DELAY
+    echo ""
+    cd $DEST_PATH
+    if [ "$2" = "full" ]; then
+	echo "full_lib copyed, done!"    
+    else
+	echo "make links ....."
+	ln -s $LIB_NAME ${LIB_NAME:0:${#LIB_NAME}-2}
+	ln -s $LIB_NAME ${LIB_NAME:0:${#LIB_NAME}-4}
+    fi
+    cd ../../
+    echo "done!"    
+}
+
+copy_qt_lib Core
+copy_qt_lib Gui
+copy_qt_lib Test
+copy_qt_lib Xml
+copy_qt_lib Widgets
+copy_qt_lib XcbQpa
+copy_qt_lib Svg
+copy_qt_lib DBus
+copy_qt_lib libicui18n.so.56 "full"
+copy_qt_lib libicuuc.so.56 "full"
+copy_qt_lib libicudata.so.56 "full"
+
+
+# COPY QT PLUGINS FUNCTION
+copy_qt_plugin()
+{
+    echo ""
+    PLUGIN_DIR=$QT_PLUGIN_PATH/$1
+    PLUGIN_NAME=lib$2.so
+    DEST_PATH=$TEMPORY_DIR/$1
+    echo "copy qt plugin [$PLUGIN_NAME] ....."
+    cp $PLUGIN_DIR/$PLUGIN_NAME $DEST_PATH
+    sleep $DELAY
+    echo "done!"
+}
+
+
+copy_qt_plugin $PLUGIN_IMG_DIR qsvg
+copy_qt_plugin $PLUGIN_PLFR_DIR qxcb
+#copy_qt_plugin $PLUGIN_PLFR_DIR qlinuxfb
+#copy_qt_plugin $PLUGIN_PLFR_DIR qminimal
+#copy_qt_plugin $PLUGIN_PLFR_DIR qvnc
+
+
+
+#make tar file
+echo ""
+echo "make tar distrib file ....."
+sleep 0.5
+mv $TEMPORY_DIR $DISTR_NAME
+tar -czvf $DISTR_NAME.tar.gz $DISTR_NAME
+
+echo ""
+echo "remove temporary folder[$TEMPORY_DIR] ....."
+sleep $DELAY
+rm -r $DISTR_NAME
+sleep $DELAY
+
+
+#finish
+echo "Finished!!!"
+
+exit 0
+
