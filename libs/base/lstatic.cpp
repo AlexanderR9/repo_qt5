@@ -138,11 +138,35 @@ QString LStatic::strTrimLeft(const QString &s, int n)
     if (n >= s.length()) return QString();
     return s.right(s.length()-n);
 }
+QString LStatic::strAddLeft(const QString &s, int n,  QChar c)
+{
+    if (n <= 0) return s;
+    QString cs = QString(n, c);
+    return QString("%1%2").arg(cs).arg(s);
+}
+QString LStatic::strAlignLeft(const QString &s, int n,  QChar c)
+{
+    if (n <= s.length()) return s;
+    int n_left = n - s.length();
+    return strAddLeft(s, n_left, c);
+}
 QString LStatic::strTrimRight(const QString &s, int n)
 {
     if (n <= 0) return s;
     if (n >= s.length()) return QString();
     return s.left(s.length()-n);
+}
+QString LStatic::strAddRight(const QString &s, int n,  QChar c)
+{
+    if (n <= 0) return s;
+    QString cs = QString(n, c);
+    return QString("%1%2").arg(s).arg(cs);
+}
+QString LStatic::strAlignRight(const QString &s, int n,  QChar c)
+{
+    if (n <= s.length()) return s;
+    int n_right = n - s.length();
+    return strAddRight(s, n_right, c);
 }
 QString LStatic::strBetweenStr(const QString &s, QString s1, QString s2)
 {

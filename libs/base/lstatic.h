@@ -16,10 +16,23 @@ public:
     static int subCount(const QString &s, const QString sub_s);
     //ищет позицию вхождения подстроки в строку, начиная С КОНЦА
     static int strIndexOfByEnd(const QString &s, const QString sub_s);
+
+
     //отрезает в строке n символов слева и возвращает новую результирующую строку
     static QString strTrimLeft(const QString &s, int n);
+    //добавляет в строке n символов QChar слева и возвращает новую результирующую строку
+    static QString strAddLeft(const QString &s, int n,  QChar c = QChar(' '));
+    //выравнивает строку s до заданного размера n, добавляя слева необходимое количество символов QChar и возвращает новую результирующую строку
+    static QString strAlignLeft(const QString &s, int n,  QChar c = QChar(' '));
     //отрезает в строке n символов справа и возвращает новую результирующую строку
     static QString strTrimRight(const QString &s, int n);
+    //добавляет в строке n символов QChar справа и возвращает новую результирующую строку
+    static QString strAddRight(const QString &s, int n,  QChar c = QChar(' '));
+    //выравнивает строку s до заданного размера n, добавляя справа необходимое количество символов QChar и возвращает новую результирующую строку
+    static QString strAlignRight(const QString &s, int n,  QChar c = QChar(' '));
+
+
+
     //ищет и возвращает подстроку в строке, которая находится между двумя заданными подстроками (например между "(" и ")")
     static QString strBetweenStr(const QString &s, QString s1, QString s2);
 	//преобразует русский текст в unicode через заданный кодек, после чего его можно вывести на экран или записать в файл

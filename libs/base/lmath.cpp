@@ -1,5 +1,8 @@
- #include "lmath.h"
- #include "qdebug.h"
+#include "lmath.h"
+#include "lstatic.h"
+#include "qdebug.h"
+
+
 
 /////////////////////////////////
 int LMath::rndInt(uint a, uint b)
@@ -98,6 +101,83 @@ QString LMath::toStr(int a)
         s = QString(" %1%2").arg(isBitOn(a,i)?"1":"0").arg(s);
     return s;
 }
+
+
+/////////////BYTE OPERATIONS////////////////
+
+
+//to str BA
+QString LMath::uint8ToBAStr(quint8 a, bool with_x)
+{
+    return alignStrBA(QString::number(a, 16), sizeof(a)*2, with_x);
+}
+QString LMath::uint16ToBAStr(quint16 a, bool with_x)
+{
+    return alignStrBA(QString::number(a, 16), sizeof(a)*2, with_x);
+}
+QString LMath::uint32ToBAStr(quint32 a, bool with_x)
+{
+    return alignStrBA(QString::number(a, 16), sizeof(a)*2, with_x);
+}
+QString LMath::uint64ToBAStr(quint64 a, bool with_x)
+{
+    return alignStrBA(QString::number(a, 16), sizeof(a)*2, with_x);
+}
+QString LMath::floatToBAStr(float a, bool with_x)
+{
+    floatUnion v;
+    v.f = a;
+
+    QString s;
+    for (int i=0; i<4; i++)
+        s += uint8ToBAStr(v.buff[i], false);
+
+    if (with_x) return QString("0x%1").arg(s);
+    return s;
+}
+QString LMath::doubleToBAStr(double a, bool with_x)
+{
+    doubleUnion v;
+    v.f = a;
+
+    QString s;
+    for (int i=0; i<8; i++)
+        s += uint8ToBAStr(v.buff[i], false);
+
+    if (with_x) return QString("0x%1").arg(s);
+    return s;
+}
+
+
+//service func
+QString LMath::alignStrBA(const QString &s, int n, bool with_x)
+{
+    QString s_res = LStatic::strAlignLeft(s, n, QChar('0')).toUpper();
+    if (with_x) return QString("0x%1").arg(s_res);
+    return s_res;
+}
+
+
+/*
+template<typename T>
+QString LMath::intToBAStr(T a, bool with_x)
+{
+    return QString();
+    int n = sizeof(a)*2;
+    QString s = QString::number(a, 16);
+    QString s_res = LStatic::strAlignLeft(s, n, QChar('0')).toUpper();
+    if (with_x) return QString("0x%1").arg(s_res);
+    return s_res;
+}
+*/
+
+
+
+
+
+
+
+
 
 
 
