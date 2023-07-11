@@ -7,11 +7,10 @@
 
 class QDataStream;
 
-//Contains a 64-bit value representing the number of 100-nanosecond intervals since January 1, 1601 (UTC).
-//11644473600 second before unix epoch (so = (unixtime + 11644473600) * 10000
-struct w32_time //for c++
+//базовая структура для хранения времени в 64 битном виде
+struct w32_time_base
 {
-    w32_time() {reset();}
+    w32_time_base() {reset();}
 
     quint32 dwLow;
     quint32 dwHigh;
@@ -19,14 +18,43 @@ struct w32_time //for c++
     inline void reset() {dwLow=100; dwHigh=100;} // сброс значений всех полей структуры в дефолтное состояние
     inline quint32 size() const {return (sizeof(dwLow) + sizeof(dwHigh));} //вернет свой размер в байтах
 
-    void toStream(QDataStream&);//записть струкртуры в поток
+    virtual void toStream(QDataStream&);//записть струкртуры в поток
+
+    virtual void setTime(const QDateTime&) = 0;
+    virtual QString toStr() const = 0; //вернет значения полей структуры в виде строки
+
+    void setCurrentTime() {setTime(QDateTime::currentDateTime());} //устанавливает текущие дату и время
+    void setCurrentTimeUtc() {setTime(QDateTime::currentDateTimeUtc());} //устанавливает текущие дату и время (UTC)
+
+};
+
+
+//Contains a 64-bit value representing the number of 100-nanosecond intervals since January 1, 1601 (UTC).
+//11644473600 second before unix epoch (so = (unixtime + 11644473600) * 10000
+struct w32_time : public w32_time_base
+{
+    w32_time() :w32_time_base() {}
+
     void setTime(const QDateTime&); //конвертирует QDateTime в w32_time
     QString toStr() const; //вернет значения полей структуры в виде строки
     QDateTime toQDateTime(Qt::TimeSpec ts = Qt::UTC); //преобразование структуры в значение QDateTime
-    void setCurrentTime(); //устанавливает текущие дату и время
-    void setCurrentTimeUtc(); //устанавливает текущие дату и время (UTC)
 
 };
+
+
+//содержит 2 значения:
+//в старшем количество секунд с начала эпохи unix (1970-01-01 00:00:00)
+//в младшем количество микросекунд последней(текущей) секунды
+struct w32_time_us : public w32_time_base
+{
+    w32_time_us() :w32_time_base() {}
+
+    void setTime(const QDateTime&); //конвертирует QDateTime в w32_time
+    QString toStr() const; //вернет значения полей структуры в виде строки
+    QDateTime toQDateTime(Qt::TimeSpec ts = Qt::UTC); //преобразование структуры в значение QDateTime
+
+};
+
 
 
 //system datetime c++

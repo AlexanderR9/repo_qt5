@@ -58,6 +58,12 @@ int LTime::utcOffset()
 }
 
 
+//w32_time_base
+void w32_time_base::toStream(QDataStream &stream)
+{
+    stream << dwLow << dwHigh;
+}
+
 
 //w32_time
 void w32_time::setTime(const QDateTime &dt)
@@ -69,23 +75,9 @@ void w32_time::setTime(const QDateTime &dt)
     dwHigh = (tmp >> 32); //извлечение старших 4-х байтов из значения tmp
     dwLow = ((tmp << 32) >> 32); //извлечение младших 4-х байтов из значения tmp
 }
-void w32_time::setCurrentTime()
-{
-    QDateTime dt = QDateTime::currentDateTime();
-    setTime(dt);
-}
-void w32_time::setCurrentTimeUtc()
-{
-    QDateTime dt = QDateTime::currentDateTimeUtc();
-    setTime(dt);
-}
 QString w32_time::toStr() const
 {
     return QString("W32_TIME: dwLow=%1  dwHigh=%2").arg(dwLow).arg(dwHigh);
-}
-void w32_time::toStream(QDataStream &stream)
-{
-    stream << dwLow << dwHigh;
 }
 QDateTime w32_time::toQDateTime(Qt::TimeSpec ts)
 {
@@ -102,6 +94,28 @@ QDateTime w32_time::toQDateTime(Qt::TimeSpec ts)
     result.setTime_t(uint(tmp/1000ULL)); //Устанавливает дату и время, параметр - количество секунд, прошедших с (1970-01-01 00:00:00)
     return result.addMSecs(tmp%1000ULL); //добавляет остаток мсек не кратных одной секунде
 }
+
+
+
+//w32_time_us
+void w32_time_us::setTime(const QDateTime &dt)
+{
+    quint64 msecs = dt.toMSecsSinceEpoch();
+    quint32 msecs_32 = quint32(msecs%1000);
+    dwLow = msecs_32*1000;
+    dwHigh = quint32((msecs - msecs_32)/1000);
+}
+QString w32_time_us::toStr() const
+{
+    return QString("W32_TIME_US: dwLow=%1  dwHigh=%2").arg(dwLow).arg(dwHigh);
+}
+QDateTime w32_time_us::toQDateTime(Qt::TimeSpec ts)
+{
+    quint64 tmp = (quint64(dwHigh)*1000 + quint64(dwLow)/1000); // конвертация структуры в одно значение quint64, (мсек)
+    return QDateTime::fromMSecsSinceEpoch(tmp, ts);
+}
+
+
 
 
 //w32_system_time

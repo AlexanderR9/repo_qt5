@@ -56,9 +56,18 @@ public:
 
     //взять младшие 2 байта у quint32
     static quint16 lowHalfFromUint32(quint32 a) {a = (a << 16);  return (a >> 16);}
-
     //взять старшие 2 байта у quint32
     static quint16 highHalfFromUint32(quint32 a) {return (a >> 16);}
+    //взять младшие 4 байта у quint64
+    static quint32 lowHalfFromUint64(quint64 a) {a = (a << 32);  return (a >> 32);}
+    //взять старшие 4 байта у quint64
+    static quint32 highHalfFromUint64(quint64 a) {return (a >> 32);}
+
+
+    //развернуть порядок байт значения
+    static quint16 rolloverOrderUint16(quint16);
+    static quint32 rolloverOrderUint32(quint32);
+    static quint64 rolloverOrderUint64(quint64);
 
     //try template TO DO
     //template<typename T>

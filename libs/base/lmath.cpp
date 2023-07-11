@@ -147,6 +147,38 @@ QString LMath::doubleToBAStr(double a, bool with_x)
     if (with_x) return QString("0x%1").arg(s);
     return s;
 }
+quint16 LMath::rolloverOrderUint16(quint16 a)
+{
+    return ((a << 8) | (a >> 8));
+}
+quint32 LMath::rolloverOrderUint32(quint32 a)
+{
+    quint32 mid = 0;
+    quint32 b = 0;
+    b = a >> 24;
+    mid = a << 8;
+    mid = mid >> 24;
+    b |= (mid << 8);
+    mid = a << 16;
+    mid = mid >> 24;
+    b |= (mid << 16);
+    b |= a << 24;
+    return b;
+}
+quint64 LMath::rolloverOrderUint64(quint64 a)
+{
+    quint64 mid = 0;
+    quint64 b = 0;
+    b = a >> 56;
+    for (int i=8; i<=56; i+=8)
+    {
+        //qDebug("%i", i);
+        mid = a << i;
+        mid = mid >> 56;
+        b |= (mid << i);
+    }
+    return b;
+}
 
 
 //service func
