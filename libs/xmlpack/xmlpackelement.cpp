@@ -55,6 +55,8 @@ void LXMLPackElement::loadNode(const QDomNode &node, QString &err)
     QString attr;
     err.clear();
 
+    m_nodeName = node.nodeName();
+
     //read caption
     setCation(LStaticXML::getStringAttrValue(XMLPackStatic::cationAttrName(), node));
 

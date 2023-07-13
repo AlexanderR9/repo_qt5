@@ -53,6 +53,7 @@ public:
     inline quint16 arrSize() const {return m_arrSize;}
     inline void setArrSize(quint16 n) {m_arrSize = n;}
     inline QString caption() const {return m_caption;}
+    inline QString xmlNodeName() const {return m_nodeName;}
     inline QString kks() const {return m_kks;}
     inline QString userData() const {return m_userData;}
     inline int dataType() const {return m_dataType;}
@@ -72,6 +73,7 @@ protected:
     quint16 m_arrSize; //если > 1, указывает на то что этот елемент/нода является массивом, если m_arrSize == 0, то этот елемент пропускается (как будто его нет в описании)
     quint32 m_offset; //смещение элемента в пакете
     QString m_caption; //название элемента
+    QString m_nodeName; //название ноды в XML, которая была загружена в этот элемент
     QString m_kks; //KKS параметра или группы (может не использоваться в пакете, зависит от задачи)
     LXMLPackValue m_value; //значение элемента, актуально если елемент isData()
     QString m_userData; //вспомогательное значение, может использоватся для доп обработки, зависит от задачи, может отсутствовать
