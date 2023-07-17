@@ -22,11 +22,13 @@ public:
     inline quint16 listeningPort() const {return m_listenPort;}
     inline QString listeningHost() const {return (m_listenHost.trimmed().isEmpty() ? "ANY" : m_listenHost);}
     inline quint32 errCount() const {return m_errCounter;}
+    inline void resetErrCounter() {m_errCounter = 0;}
 
     virtual void startListening(); //запустить прослушивание
     virtual void stopListening(); //остановить прослушивание
     virtual bool isListening() const;
     virtual void trySendPacketToClient(quint8, const QByteArray&, bool&); //отправить пакет клиенту с заданным номером [1..N]
+    virtual void trySendPacketToClients(const QByteArray&, bool&); //отправить пакет все подключившимся клиента
     virtual bool hasConnectedClients() const; // признак наличия подключенных клиентов в текущий момент
 
 

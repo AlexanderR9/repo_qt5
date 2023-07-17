@@ -68,6 +68,7 @@ public:
     void nextRandValues(); //обновить значения всех элементов пакета с учетом rand_deviation, (если rand_deviation == 0, то значение не измениться)
     void setSelectionRowsMode();
     bool kksUsed() const;
+    int packetSize() const; //вернет размер загруженного пакета в байтах или -1
 
 
     //установить значение 1-й ноды по заданному пути.

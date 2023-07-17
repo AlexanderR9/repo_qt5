@@ -215,6 +215,39 @@ QString LTcpServerObj::connectedHostAt(int i) const
     QHostAddress ip4(m_sockets.at(i)->peerAddress().toIPv4Address());
     return ip4.toString();
 }
+void LTcpServerObj::trySendPacketToClients(const QByteArray &ba, bool &ok)
+{
+    ok = false;
+    if (ba.isEmpty())
+    {
+        emit signalError(QString("%0: packet size is empty").arg(name()));
+        return;
+    }
+    if (clientsCount() == 0)
+    {
+        emit signalError(QString("%0: connected clients is empty").arg(name()));
+        return;
+    }
+
+    //try send packet
+    foreach (QTcpSocket *v, m_sockets)
+    {
+        if (v)
+        {
+            qint64 n_bytes = v->write(ba);
+            if (n_bytes == ba.size())
+            {
+                emit signalMsg(QString("%0: success sended packet (%1 bytes) to %2").arg(name()).arg(n_bytes).arg(v->objectName()));
+                ok = true;
+            }
+            else
+            {
+                emit signalError(QString("%0: wrong sending packet(%1 bytes) to %2, writed bytes %3").arg(name()).arg(ba.size()).arg(v->objectName()).arg(n_bytes));
+                m_errCounter++;
+            }
+        }
+    }
+}
 void LTcpServerObj::trySendPacketToClient(quint8 socket_number, const QByteArray &ba, bool &ok)
 {
     ok = false;

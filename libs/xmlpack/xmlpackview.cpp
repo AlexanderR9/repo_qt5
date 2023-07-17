@@ -51,6 +51,10 @@ bool LXMLPackView::kksUsed() const
 {
     return (m_packet ? m_packet->kksUsed() : false);
 }
+int LXMLPackView::packetSize() const
+{
+    return (invalid() ? -1 : getPacket()->size());
+}
 void LXMLPackView::setIntValueByPath(QString path, qint64 v, bool &ok)
 {
     if (m_packet)
