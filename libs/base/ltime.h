@@ -18,7 +18,8 @@ struct w32_time_base
     inline void reset() {dwLow=100; dwHigh=100;} // сброс значений всех полей структуры в дефолтное состояние
     inline quint32 size() const {return (sizeof(dwLow) + sizeof(dwHigh));} //вернет свой размер в байтах
 
-    virtual void toStream(QDataStream&);//записть струкртуры в поток
+    virtual void toStream(QDataStream&);//записать структуру в поток
+    virtual void fromStream(QDataStream&);//считать структуру из потока
 
     virtual void setTime(const QDateTime&) = 0;
     virtual QString toStr() const = 0; //вернет значения полей структуры в виде строки
@@ -37,7 +38,7 @@ struct w32_time : public w32_time_base
 
     void setTime(const QDateTime&); //конвертирует QDateTime в w32_time
     QString toStr() const; //вернет значения полей структуры в виде строки
-    QDateTime toQDateTime(Qt::TimeSpec ts = Qt::UTC); //преобразование структуры в значение QDateTime
+    QDateTime toQDateTime(Qt::TimeSpec ts = Qt::UTC) const; //преобразование структуры в значение QDateTime
 
 };
 
@@ -51,7 +52,7 @@ struct w32_time_us : public w32_time_base
 
     void setTime(const QDateTime&); //конвертирует QDateTime в w32_time
     QString toStr() const; //вернет значения полей структуры в виде строки
-    QDateTime toQDateTime(Qt::TimeSpec ts = Qt::UTC); //преобразование структуры в значение QDateTime
+    QDateTime toQDateTime(Qt::TimeSpec ts = Qt::UTC) const; //преобразование структуры в значение QDateTime
 
 };
 
@@ -72,11 +73,11 @@ struct w32_system_time
     qint16 wMilliseconds;
 
     void reset();// сброс значений всех полей структуры в дефолтное состояние
-    void toStream(QDataStream&); //записть струкртуры в поток
+    void toStream(QDataStream&); //записать структуру в поток
     void setTime(const QDateTime&); //конвертирует QDateTime в w32_system_time
     void setCurrentTime(); //задает текущие дату и время в w32_system_time
     quint32 size() const; //вернет свой размер в байтах
-    QDateTime toQDateTime(Qt::TimeSpec ts = Qt::UTC); //преобразование структуры в значение QDateTime
+    QDateTime toQDateTime(Qt::TimeSpec ts = Qt::UTC) const; //преобразование структуры в значение QDateTime
 
 };
 

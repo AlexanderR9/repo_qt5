@@ -61,7 +61,11 @@ int LTime::utcOffset()
 //w32_time_base
 void w32_time_base::toStream(QDataStream &stream)
 {
-    stream << dwLow << dwHigh;
+    stream << dwHigh << dwLow;
+}
+void w32_time_base::fromStream(QDataStream &stream)
+{
+    stream >> dwHigh >> dwLow;
 }
 
 
@@ -79,7 +83,7 @@ QString w32_time::toStr() const
 {
     return QString("W32_TIME: dwLow=%1  dwHigh=%2").arg(dwLow).arg(dwHigh);
 }
-QDateTime w32_time::toQDateTime(Qt::TimeSpec ts)
+QDateTime w32_time::toQDateTime(Qt::TimeSpec ts) const
 {
     quint64 tmp = (quint64(dwHigh)*0x100000000ULL + quint64(dwLow))/10000ULL; // конвертация структуры в одно значение quint64, (мсек)
     if (tmp < LTime::beforeUnixMSecs())
@@ -107,9 +111,10 @@ void w32_time_us::setTime(const QDateTime &dt)
 }
 QString w32_time_us::toStr() const
 {
-    return QString("W32_TIME_US: dwLow=%1  dwHigh=%2").arg(dwLow).arg(dwHigh);
+    QString s_time = toQDateTime().toString("dd.MM.yyyy  hh:mm:ss.zzz");
+    return QString("W32_TIME_US: dwLow=%1  dwHigh=%2  (%3)").arg(dwLow).arg(dwHigh).arg(s_time);
 }
-QDateTime w32_time_us::toQDateTime(Qt::TimeSpec ts)
+QDateTime w32_time_us::toQDateTime(Qt::TimeSpec ts) const
 {
     quint64 tmp = (quint64(dwHigh)*1000 + quint64(dwLow)/1000); // конвертация структуры в одно значение quint64, (мсек)
     return QDateTime::fromMSecsSinceEpoch(tmp, ts);
@@ -149,7 +154,7 @@ quint32 w32_system_time::size() const
     return (sizeof(wYear) + sizeof(wMonth) + sizeof(wDayOfWeek) + sizeof(wDay) +
             sizeof(wHour) + sizeof(wMinute) + sizeof(wSecond) + sizeof(wMilliseconds));
 }
-QDateTime w32_system_time::toQDateTime(Qt::TimeSpec ts)
+QDateTime w32_system_time::toQDateTime(Qt::TimeSpec ts) const
 {
     QDate qt_date(wYear, wMonth, wDay);
     QTime qt_time(wHour, wMinute, wSecond, wMilliseconds);
