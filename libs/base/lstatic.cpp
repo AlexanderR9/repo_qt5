@@ -22,6 +22,21 @@ int LStatic::subCount(const QString &s, const QString sub_s)
     }
     return n;
 }
+QList<int> LStatic::subStrIndexes(const QString &s, const QString sub_s)
+{
+    QList<int> list;
+    int start_pos = 0;
+    for (;;)
+    {
+        int pos = s.indexOf(sub_s, start_pos);
+        if (pos < 0) break;
+
+        list.append(pos);
+        start_pos = pos + 1;
+        if (start_pos >= s.length()) break;
+    }
+    return list;
+}
 int LStatic::strIndexOfByEnd(const QString &s, const QString sub_s)
 {
     int last_pos = -1;
@@ -175,6 +190,17 @@ QString LStatic::strBetweenStr(const QString &s, QString s1, QString s2)
     int pos2 = s.indexOf(s2);
     if (pos1 < 0 || pos2 < 0 || pos2 <= pos1) return QString();
     return s.mid(pos1+1, pos2-pos1-1);
+}
+QString LStatic::replaceByRange(const QString &s, const QString sub_s1, const QString sub_s2, quint16 pos1, quint16 pos2)
+{
+    if ((pos1 >= pos2) || (pos1 >= s.length()-1)) return s;
+    if (pos2  > s.length()-1) pos2 = s.length()-1;
+
+    QString left = s.left(pos1+1);
+    QString right = s.right(s.length() - pos2);
+    QString mid = s.mid(pos1+1, s.length() - left.length() - right.length());
+    mid.replace(sub_s1, sub_s2);
+    return (left+mid+right);
 }
 QString LStatic::fromCodec(const QString &s, QString codec_name)
 {

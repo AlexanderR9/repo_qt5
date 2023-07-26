@@ -16,6 +16,12 @@ public:
     static int subCount(const QString &s, const QString sub_s);
     //ищет позицию вхождения подстроки в строку, начиная С КОНЦА
     static int strIndexOfByEnd(const QString &s, const QString sub_s);
+    //выдает список всех позиций в входной строке, на которых стоит указанная подстрока
+    static QList<int> subStrIndexes(const QString&, const QString sub_s);
+    //ищет и возвращает подстроку в строке, которая находится между двумя заданными подстроками (например между "(" и ")")
+    static QString strBetweenStr(const QString &s, QString s1, QString s2);
+    //заменяет все найденные sub_s1 на sub_s2, но только в заданном интервале pos1:pos2, сами позиции не входят в кусок поиска
+    static QString replaceByRange(const QString&, const QString sub_s1, const QString sub_s2, quint16 pos1, quint16 pos2);
 
 
     //отрезает в строке n символов слева и возвращает новую результирующую строку
@@ -33,14 +39,12 @@ public:
 
 
 
-    //ищет и возвращает подстроку в строке, которая находится между двумя заданными подстроками (например между "(" и ")")
-    static QString strBetweenStr(const QString &s, QString s1, QString s2);
-	//преобразует русский текст в unicode через заданный кодек, после чего его можно вывести на экран или записать в файл
-	static QString fromCodec(const QString&, QString codec = "utf8");
-	//преобразует QColor в строку типа (r; g; b)
-	static QString fromColor(const QColor&, QString split_symbol = ";");
-	//преобразует строку в QColor, если строка не корректна, то вернет QColor(0, 0, 0)
-	static QColor strToColor(const QString&, QString split_symbol = ";");
+    //преобразует русский текст в unicode через заданный кодек, после чего его можно вывести на экран или записать в файл
+    static QString fromCodec(const QString&, QString codec = "utf8");
+    //преобразует QColor в строку типа (r; g; b)
+    static QString fromColor(const QColor&, QString split_symbol = ";");
+    //преобразует строку в QColor, если строка не корректна, то вернет QColor(0, 0, 0)
+    static QColor strToColor(const QString&, QString split_symbol = ";");
     //преобразует QByteArray в строку типа: AA BB 12 FD ....., line_size задает через сколько байт вставлять '\n'
     //если with_int_values то выводится каждый байт с расшифровкой в десятичном виде  : AA(170) BB(187) ...
     static QString baToStr(const QByteArray&, int line_size = 8, bool with_int_values = false);
