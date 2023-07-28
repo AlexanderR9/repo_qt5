@@ -39,6 +39,8 @@ public:
     static QString rootPath(QString);
     //возращает рассширение файла без точки, вернет пустую строку если рассширения нет
     static QString fileExtension(QString);
+    //возращает путь к файлу или пустую строку если файл указан некорректно
+    static QString filePath(QString);
 
 
 

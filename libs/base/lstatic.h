@@ -61,6 +61,20 @@ public:
 
     //возвращает строку в виде одиночного пробела
     static QString spaceSymbol() {return QString(" ");}
+    //возвращает символ пробел, unicode - 32
+    static QChar spaceSymbolChar() {return QChar(32);}
+    //возвращает управляющй символ перехода на другую строку (\n), unicode - 10
+    static QChar nextLineSymbol() {return QChar(10);}
+    //возвращает управляющй символ возврата каретки в начало строки (\r), unicode - 13
+    static QChar carriageReturnSymbol() {return QChar(13);}
+    //возвращает управляющй символ табуляции (\t), unicode - 9
+    static QChar tabulationSymbol() {return QChar(9);}
+    //количество вхождений символа в строку
+    static int subCharCount(const QString&, const QChar);
+    //преобразует строку в посимвольное представление с кодами каждого символа
+    //show_nums - дает отображение индексов символов, show_char - дает отображение самих символов
+    static QString strToCharUnicodes(const QString&, bool show_nums = true, bool show_char = false, QString separator = "|");
+
 
     //возвращает информацию о текущей ОС
     static QString systemInfo();

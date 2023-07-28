@@ -22,6 +22,19 @@ int LStatic::subCount(const QString &s, const QString sub_s)
     }
     return n;
 }
+int LStatic::subCharCount(const QString &s, const QChar c)
+{
+    if (s.isEmpty()) return 0;
+
+    int n = 0;
+    const QChar *c_pos = s.data();
+    while (!c_pos->isNull())
+    {
+        if (*c_pos == c) n++;
+        c_pos++;
+    }
+    return n;
+}
 QList<int> LStatic::subStrIndexes(const QString &s, const QString sub_s)
 {
     QList<int> list;
@@ -85,6 +98,20 @@ QString LStatic::removeLongSpaces(const QString &s, bool remove_tabs)
     while (result.contains(space2))
         result.replace(space2, space);
 
+    return result;
+}
+QString LStatic::strToCharUnicodes(const QString &s, bool show_nums, bool show_char, QString separator)
+{
+    QString result;
+    if (s.isEmpty()) return result;
+    for (int i=0; i<s.length(); i++)
+    {
+        QChar c = s.at(i);
+        if (show_nums) result = QString("%1 N%2(").arg(result).arg(i);
+        if (show_char) result = QString("%1%2%3").arg(result).arg(!show_nums?"(":QString()).arg(c);
+        result = QString("%1%2%3)").arg(result).arg(show_char?"/":QString()).arg(c.unicode());
+        if (i < (s.length()-1)) result = QString("%1 %2").arg(result).arg(separator);
+    }
     return result;
 }
 QString LStatic::baToStr(const QByteArray &ba, int line_size, bool with_int_values)
