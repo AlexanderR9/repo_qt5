@@ -31,7 +31,10 @@ void LMBTCPServerBase::slotStateChanged(QModbusDevice::State state)
 }
 void LMBTCPServerBase::slotDataWritten(QModbusDataUnit::RegisterType reg_type, int address, int size)
 {
-    qDebug()<<QString("LMBTCPServerBase::slotDataWritten  reg_type=%1,  address=%2,  size=%3").arg(reg_type).arg(address).arg(size);
+    Q_UNUSED(reg_type);
+    Q_UNUSED(address);
+    Q_UNUSED(size);
+    //qDebug()<<QString("LMBTCPServerBase::slotDataWritten  reg_type=%1,  address=%2,  size=%3").arg(reg_type).arg(address).arg(size);
 }
 void LMBTCPServerBase::setDeviceTcpPort(quint32 port)
 {

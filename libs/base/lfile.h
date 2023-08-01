@@ -42,6 +42,8 @@ public:
     //возращает путь к файлу или пустую строку если файл указан некорректно
     static QString filePath(QString);
 
+    //возвращает путь запуска своего приложения
+    static QString appPath();
 
 
 

@@ -62,6 +62,10 @@ QString LFile::filePath(QString fname)
     if (!fileExists(fname)) return QString();
     return rootPath(fname);
 }
+QString LFile::appPath()
+{
+    return QDir::currentPath();
+}
 bool LFile::dirExists(QString dir_path)
 {
     if (dir_path.trimmed().isEmpty()) return false;
