@@ -34,7 +34,7 @@ void LXMLPackView::initWidget()
     QVBoxLayout *v_lay = new QVBoxLayout(0);
     setLayout(v_lay);
 
-    m_view = new QTreeWidget(this);
+    m_view = new LXMLPackTreeWidget(this);
     m_view->setObjectName("view_widget");
     v_lay->addWidget(m_view);
 
@@ -89,14 +89,7 @@ void LXMLPackView::setSelectionRowsMode()
 }
 void LXMLPackView::initPacket(const QDomDocument &dom)
 {
-    if (m_packet)
-    {
-        disconnect(m_view, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(slotItemActivate(QTreeWidgetItem*, int)));
-        disconnect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
-        resetView();
-        delete m_packet;
-        m_packet = NULL;
-    }
+    if (m_packet) resetView();
 
     bool ok;
     m_packet = new LXMLPackObj(this);
@@ -107,11 +100,7 @@ void LXMLPackView::initPacket(const QDomDocument &dom)
         m_view->headerItem()->setText(KKS_COL, "KKS");
     reloadView();
 
-    if (m_rootItem)
-        m_rootItem->setReadOnly(m_readOnly);
-
-    connect(m_view, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(slotItemActivate(QTreeWidgetItem*, int)));
-    connect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
+    prepareView();
 }
 void LXMLPackView::setPacket(LXMLPackObj *p)
 {   
@@ -121,20 +110,23 @@ void LXMLPackView::setPacket(LXMLPackObj *p)
         return;
     }
 
-    disconnect(m_view, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(slotItemActivate(QTreeWidgetItem*, int)));
-    disconnect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
-
     resetView();
     m_packet = p;
     if (m_packet->kksUsed())
         m_view->headerItem()->setText(KKS_COL, "KKS");
     reloadView();
 
+    prepareView();
+
+}
+void LXMLPackView::prepareView()
+{
     if (m_rootItem)
         m_rootItem->setReadOnly(m_readOnly);
 
     connect(m_view, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(slotItemActivate(QTreeWidgetItem*, int)));
     connect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
+    connect(m_view, SIGNAL(signalCloseEditor()), this, SLOT(slotCloseEditor()));
 }
 void LXMLPackView::reloadView()
 {
@@ -157,6 +149,10 @@ void LXMLPackView::resizeColumns()
 }
 void LXMLPackView::resetView()
 {
+    disconnect(m_view, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(slotItemActivate(QTreeWidgetItem*, int)));
+    disconnect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
+    disconnect(m_view, SIGNAL(signalCloseEditor()), this, SLOT(slotCloseEditor()));
+
     m_view->clear();
     m_rootItem = NULL;
 
@@ -168,12 +164,13 @@ void LXMLPackView::resetView()
 }
 void LXMLPackView::resetEditingMode()
 {
+    //qDebug("LXMLPackView::resetEditingMode()");
     if (m_rootItem)
         m_rootItem->resetEditingMode();
 }
 void LXMLPackView::slotItemActivate(QTreeWidgetItem *item, int column)
 {
-    resetEditingMode();
+    resetEditingMode(); //предварительный сброс признака режима редактирования у всех итемов
     if (isEditableCol(column) && !isReadOnly())
     {
         m_view->editItem(item, column);
@@ -197,23 +194,23 @@ void LXMLPackView::setPacketByteOrder(int bo)
     if (m_packet)
         m_packet->setByteOrder(bo);
 }
-void LXMLPackView::nextRandValues()
+void LXMLPackView::nextRandValues(bool update_items)
 {
     if (m_packet)
     {
         m_packet->nextRandValues();
-        updateValues();
+        if (update_items) updateValues();
     }
 }
-void LXMLPackView::slotItemValueChanged(QTreeWidgetItem *item, int column)
+void LXMLPackView::slotItemValueChanged(QTreeWidgetItem *item, int col)
 {
-        //qDebug()<<QString("%1: slotItemValueChanged col=%2").arg(item->text(0)).arg(column);
     LXMLPackViewItem *pack_item = static_cast<LXMLPackViewItem*>(item);
-    if (pack_item)
+    if (!pack_item) return;
+
+    if (pack_item->isEditing())
     {
-        //disconnect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
-        pack_item->changePackValue(column);
-        //connect(m_view, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(slotItemValueChanged(QTreeWidgetItem*, int)));
+        pack_item->changePackValue(col);
+        qDebug()<<QString("MBTCPPackView::slotItemValueChanged item(%1)  col=%2").arg(item->text(0)).arg(col);
     }
 }
 bool LXMLPackView::isEditableCol(int col) const
@@ -233,7 +230,11 @@ void LXMLPackView::setExpandLevel(int level)
     if (!m_rootItem) return;
     if (m_view) m_view->expandToDepth(level-1);
 }
-
+void LXMLPackView::slotCloseEditor()
+{
+    resetEditingMode();
+    qDebug("editing finished!");
+}
 
 //LXMLPackViewItem
 LXMLPackViewItem::LXMLPackViewItem(LXMLPackElement *node, QTreeWidgetItem *parent, bool kks_used)
@@ -310,27 +311,27 @@ void LXMLPackViewItem::updateColumnsColor()
 }
 void LXMLPackViewItem::updateValue()
 {
+    if (isEditing()) return; //итем в текущий момент находится в режиме редактирования пользователем
+
     if (m_node->isData())
     {
-        setText(DEVIATION_COL, m_node->strValueDeviation());
-        //QString sv = m_node->strValue(data(VALUE_COL, Qt::UserRole).toInt());
-        //setText(VALUE_COL, sv);
-        setText(VALUE_COL, m_node->strValue(data(VALUE_COL, Qt::UserRole).toInt()));
+        QString s = m_node->strValueDeviation(); //get current deviation from packet
+        if (text(DEVIATION_COL) != s) setText(DEVIATION_COL, s);
+        s = m_node->strValue(data(VALUE_COL, Qt::UserRole).toInt()); //get current value from packet
+        if (text(VALUE_COL) != s) setText(VALUE_COL, s);
+        return;
     }
-    else if (m_node->isTime())
+
+    if (m_node->isTime() && m_node->hasChilds())
     {
-        if (m_node->hasChilds())
-        {
-            timespec tm;
-            tm.tv_sec = m_node->childAt(0)->getValue().i_value;
-            tm.tv_nsec = m_node->childAt(1)->getValue().i_value;
-            setText(VALUE_COL, LTime::strTimeSpec(tm));
-        }
+        timespec tm;
+        tm.tv_sec = m_node->childAt(0)->getValue().i_value;
+        tm.tv_nsec = m_node->childAt(1)->getValue().i_value;
+        setText(VALUE_COL, LTime::strTimeSpec(tm));
     }
 }
 void LXMLPackViewItem::changePackValue(int col)
 {
-    //qDebug()<<QString("%1: changePackValue col=%2").arg(text(0)).arg(col);
     bool ok;
     switch (col)
     {
@@ -351,7 +352,6 @@ void LXMLPackViewItem::changePackValue(int col)
             return;
         }
     }
-    //updateValue();
 }
 void LXMLPackViewItem::setReadOnly(bool b)
 {
@@ -407,5 +407,16 @@ QString LXMLPackViewItem::userData() const
     if (!m_node) return QString();
     return m_node->userData();
 }
+
+
+//LXMLPackTreeWidget
+void LXMLPackTreeWidget::closeEditor(QWidget *editor, QAbstractItemDelegate::EndEditHint hint)
+{
+    //qDebug()<<QString("LXMLPackTreeWidget::closeEditor editor[%1],  hint=%2").arg(editor->objectName()).arg(hint);
+    QTreeWidget::closeEditor(editor, hint);
+    emit signalCloseEditor();
+}
+
+
 
 

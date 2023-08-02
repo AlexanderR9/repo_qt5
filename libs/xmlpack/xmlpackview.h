@@ -18,7 +18,7 @@ public:
     LXMLPackViewItem(LXMLPackElement*, QTreeWidgetItem *parent = NULL, bool kks_used = false);
     virtual ~LXMLPackViewItem() {}
 
-    void changePackValue(int); //значение или отклонение изменилось, необходимо обновить его в пакете
+    void changePackValue(int); //значение или отклонение изменилось пользователем, необходимо обновить его в пакете (т.е. item_text => m_node)
     void setReadOnly(bool); //установить возможность редактирования значения или отклонения в пакете
     void updateValues(); //обновить значения свое и всех своих детей рекурсивно
     void setDoublePrecision(quint8);
@@ -39,7 +39,28 @@ protected:
     void loadNodeChilds();
     void updateColumnsText();
     void updateColumnsColor();
+
+    //обновить значение и отколоние этого итема, которые берутся из m_node.
+    //итем обновляется только если он является типом isData или isTime.
     void updateValue();
+
+};
+
+//LXMLPackTreeWidget
+class LXMLPackTreeWidget : public QTreeWidget
+{
+    Q_OBJECT
+public:
+    LXMLPackTreeWidget(QWidget *parent) :QTreeWidget(parent) {setObjectName("lxmlpack_treewidget");}
+
+
+protected slots:
+    //выполняется в момент завершения редактирования пользователем итема
+    virtual void closeEditor(QWidget *editor, QAbstractItemDelegate::EndEditHint hint);
+
+signals:
+    void signalCloseEditor(); //эмитится в момент завершения редактирования пользователем итема
+
 
 };
 
@@ -61,17 +82,23 @@ public:
     virtual void initPacket(const QDomDocument&); //инициализировать m_packet
 
 
-    void setPacketByteOrder(int); //устанавливает порядок байт для записи пакета в поток данных в m_packet
-    void resizeColumns(); //подогнать размеры столбцов под контент
-    void updateValues(); //обновить значения итемов
-    void setExpandLevel(int); //раскрывает элементы дерева до заданной глубины
-    void nextRandValues(); //обновить значения всех элементов пакета с учетом rand_deviation, (если rand_deviation == 0, то значение не измениться)
-    void setSelectionRowsMode();
-    bool kksUsed() const;
-    int packetSize() const; //вернет размер загруженного пакета в байтах или -1
+    virtual void setPacketByteOrder(int); //устанавливает порядок байт для записи пакета в поток данных в m_packet
+    virtual void resizeColumns(); //подогнать размеры столбцов под контент
+
+    //обновить значения итемов (ВСЕХ), т.е. вытащить их из m_packet заполнить итемы дерева соответствующими значениями нод
+    virtual void updateValues();
+
+    //обновить значения всех элементов пакета m_packet с учетом rand_deviation, (если rand_deviation == 0, то значение не измениться)
+    //если update_items == true то сразу же  и выполнится updateValues()
+    virtual void nextRandValues(bool update_items = true);
+
+    virtual void setSelectionRowsMode();
+    virtual bool kksUsed() const;
+    virtual int packetSize() const; //вернет размер загруженного пакета в байтах или -1
+    virtual void setExpandLevel(int); //раскрывает элементы дерева до заданной глубины
 
 
-    //установить значение 1-й ноды по заданному пути.
+    //установить значение 1-й ноды в пакете по заданному пути.
     //путь указывается в виде набора уровней вложенности, начинается всегда с 'packet'
     //пример: packet/2/0/11
     //если по заданному пути нет ноды или ее тип не соответствует устанавливаему значению то в параметр bool запишется false
@@ -96,20 +123,32 @@ public:
 
 
 protected:
-    QTreeWidget         *m_view;
+    LXMLPackTreeWidget  *m_view;
     LXMLPackViewItem    *m_rootItem;
     LXMLPackObj         *m_packet;
     bool                 m_readOnly;
     quint8               m_doublePrecision;
 
-    void initWidget();
-    void reloadView();
-    void resetView();
-    void resetEditingMode(); //сброс режима редактирования для всех итемов
+    virtual void initWidget();
+    virtual void reloadView();
+    virtual void resetView();
+    virtual void resetEditingMode(); //сброс режима редактирования для всех итемов
+    virtual void prepareView(); //выполняется при инициализации пакета, подключение сигналов m_view и уставнока режима чтения/записи
 
 protected slots:
+
+    //выполняется когда пользователь двойным щелчком по итему ввел его в режим редактирования,
+    //и в этот момент у этого итема взводится флаг is_editing.
     virtual void slotItemActivate(QTreeWidgetItem*, int);
+
+    //выполняется когда значение(текст) итема измелось.
+    //не важно каким способом, пользователем вручную или программно автоматом,
+    //но проверяется признак режима редактирования пользователе в текущий момент и по факту
+    //если редактировал пользователь, то произойдет установка значения в соответствующей ноде m_packet
     virtual void slotItemValueChanged(QTreeWidgetItem*, int);
+
+    //выполняется после завершения редактирования(или выход из режима редактирования) пользователем любого итема (редактируемого)
+    virtual void slotCloseEditor();
 
 private:
     bool isEditableCol(int) const;
