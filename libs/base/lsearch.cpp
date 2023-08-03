@@ -1,4 +1,5 @@
 #include "lsearch.h"
+#include "lstatic.h"
 
 #include <QLineEdit>
 #include <QLabel>
@@ -59,38 +60,53 @@ void LSearch::slotSearch(const QString &s)
     //// try search
     for (int i=0; i<m_structs.count(); i++)
     {
-        int rows = rowCount(i);
-        if (m_structs.at(i).table)
-        {
-            int cols = m_structs.at(i).table->columnCount();
-            for (int row=0; row<rows; row++)
-            {
-                m_structs.at(i).table->hideRow(row);
-                for (int col=0; col<cols; col++)
-                {
-                    if (m_structs.at(i).table->item(row, col)->text().contains(s))
-                    {
-                        m_structs.at(i).table->showRow(row);
-                        break;
-                    }
-                }
-            }
-            m_structs.at(i).table->resizeColumnsToContents();
-        }
-        else if (m_structs.at(i).list)
-        {
-            for (int row=0; row<rows; row++)
-            {
-                if (m_structs.at(i).list->item(row)->text().contains(s))
-                    m_structs.at(i).list->item(row)->setHidden(false);
-                else m_structs.at(i).list->item(row)->setHidden(true);
-            }
-        }
-
+        search(s, m_structs[i]);
         setText(i);
     }
+}
+void LSearch::search(const QString &s, LStructSearch &obj)
+{
+    QStringList list;
+    if (s.contains(";;")) list.append(LStatic::trimSplitList(s, ";;"));
+    else list << s;
 
-//	qDebug("LSearch end");
+    if (obj.table)
+    {
+        serchOnTable(list, obj.table);
+        obj.table->resizeColumnsToContents();
+    }
+    else if (obj.list) serchOnList(list, obj.list);
+}
+void LSearch::serchOnTable(const QStringList &list, QTableWidget *tw)
+{
+    if (!tw) return;
+
+    int rows = tw->rowCount();
+    int cols = tw->columnCount();
+    for (int i=0; i<rows; i++)
+    {
+        tw->hideRow(i);
+        for (int j=0; j<cols; j++)
+        {
+            bool find_ok = true;
+            foreach (const QString v, list)
+                if (!tw->item(i, j)->text().contains(v)) {find_ok = false; break;}
+            if (find_ok) {tw->showRow(i); break;}
+        }
+    }
+}
+void LSearch::serchOnList(const QStringList &list, QListWidget *lw)
+{
+    if (!lw) return;
+
+    int rows = lw->count();
+    for (int i=0; i<rows; i++)
+    {
+        bool find_ok = true;
+        foreach (const QString v, list)
+            if (!lw->item(i)->text().contains(v)) {find_ok = false; break;}
+        lw->item(i)->setHidden(!find_ok);
+    }
 }
 void LSearch::exec()
 {

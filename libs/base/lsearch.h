@@ -49,6 +49,9 @@ protected:
     int visibleRows(int) const;
     int rowCount(int) const;
     void setText(int);
+    void search(const QString&, LStructSearch&);
+    void serchOnTable(const QStringList&, QTableWidget *tw);
+    void serchOnList(const QStringList&, QListWidget *tw);
 
 protected slots:
     void slotSearch(const QString&);
