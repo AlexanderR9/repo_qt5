@@ -85,6 +85,7 @@ void LXMLPackView::setSelectionRowsMode()
     {
         m_view->setSelectionBehavior(QAbstractItemView::SelectRows);
         m_view->setSelectionMode(QAbstractItemView::SingleSelection);
+        m_view->setAllColumnsShowFocus(true);
     }
 }
 void LXMLPackView::initPacket(const QDomDocument &dom)

@@ -42,12 +42,11 @@ void LMBTCPServerBase::setDeviceTcpPort(quint32 port)
 }
 void LMBTCPServerBase::openConnection()
 {
-    qDebug()<<QString("LMBTCPServerBase::openConnection()   address=%1    host=%2").arg(this->serverAddress()).
-              arg(connectionParameter(QModbusDevice::NetworkAddressParameter).toString()).arg(connectionParameter(QModbusDevice::NetworkPortParameter).toInt());
-    if (!isConnected())
-    {
-        this->open();
-    }
+    qDebug()<<QString("LMBTCPServerBase::openConnection()   address=%1/%2    host=%3").arg(this->serverAddress()).
+              arg(connectionParameter(QModbusDevice::NetworkAddressParameter).toString()).
+              arg(connectionParameter(QModbusDevice::NetworkPortParameter).toInt());
+
+    if (!isConnected()) this->open();
 }
 void LMBTCPServerBase::closeConnection()
 {
