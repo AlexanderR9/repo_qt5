@@ -202,6 +202,18 @@ void LXMLPackView::nextRandValues(bool update_items)
         if (update_items) updateValues();
     }
 }
+void LXMLPackView::resetPacketBuffer(bool update_items, bool singleFloatPrecision)
+{
+    if (m_packet)
+    {
+        bool ok;
+        QByteArray ba(packetSize(), char(0));
+        m_packet->fromByteArray(ba, ok, singleFloatPrecision);
+        if (!ok) qWarning("LXMLPackView::resetPacketBuffer() WARNING reseting result not Ok ");
+
+        if (update_items) updateValues();
+    }
+}
 void LXMLPackView::slotItemValueChanged(QTreeWidgetItem *item, int col)
 {
     LXMLPackViewItem *pack_item = static_cast<LXMLPackViewItem*>(item);

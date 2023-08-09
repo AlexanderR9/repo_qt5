@@ -75,15 +75,13 @@ public:
     LXMLPackView(const QString&, QWidget *parent = NULL); //params: title and parent
     virtual ~LXMLPackView() {resetView();}
 
-
-
     //подразумевается что будет выполнена 1 из 2-х функций (setPacket/initPacket)
     virtual void setPacket(LXMLPackObj*); //установить экземпляр пакета для отображения
     virtual void initPacket(const QDomDocument&); //инициализировать m_packet
 
 
     virtual void setPacketByteOrder(int); //устанавливает порядок байт для записи пакета в поток данных в m_packet
-    virtual void resizeColumns(); //подогнать размеры столбцов под контент
+    virtual void resizeColumns(); //подогнать размеры столбцов под контент    
 
     //обновить значения итемов (ВСЕХ), т.е. вытащить их из m_packet заполнить итемы дерева соответствующими значениями нод
     virtual void updateValues();
@@ -91,6 +89,10 @@ public:
     //обновить значения всех элементов пакета m_packet с учетом rand_deviation, (если rand_deviation == 0, то значение не измениться)
     //если update_items == true то сразу же  и выполнится updateValues()
     virtual void nextRandValues(bool update_items = true);
+
+    //все значения пакета обнулить.
+    //если update_items == true то сразу же  и выполнится updateValues()
+    virtual void resetPacketBuffer(bool update_items = true, bool singleFloatPrecision = true);
 
     virtual void setSelectionRowsMode();
     virtual bool kksUsed() const;
@@ -152,6 +154,11 @@ protected slots:
 
 private:
     bool isEditableCol(int) const;
+
+
+signals:
+    void signalError(const QString&);
+    void signalMsg(const QString&);
 
 };
 
