@@ -69,12 +69,23 @@ public:
     static quint32 rolloverOrderUint32(quint32);
     static quint64 rolloverOrderUint64(quint64);
 
-    //try template TO DO
-    //template<typename T>
-    //static QString intToBAStr(T a, bool with_x = false);// {return QString();}
+
+    //взять n байт в заданном QByteArray, начиная с указанной позиции и преобразовать в числою
+    //если позиция указана неверно или байт не хватает, то вернет 0.
+    static quint16 uint16FromBA(const QByteArray&, quint16);
+    static quint32 uint32FromBA(const QByteArray&, quint16);
+    static quint64 uint64FromBA(const QByteArray&, quint16);
+    static int intFromBA(const QByteArray&, quint16);
+    static float floatFromBA(const QByteArray&, quint16);
+    static double doubleFromBA(const QByteArray&, quint16);
+
 
 private:
     static QString alignStrBA(const QString&, int, bool);
+
+
+    template<typename T>
+    static void getValueFromBA(T&, const QByteArray&, quint16 pos);
 
 };
 

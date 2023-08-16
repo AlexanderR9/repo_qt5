@@ -181,6 +181,44 @@ quint64 LMath::rolloverOrderUint64(quint64 a)
 }
 
 
+quint16 LMath::uint16FromBA(const QByteArray &ba, quint16 pos)
+{
+    quint16 v = 0;
+    getValueFromBA(v, ba, pos);
+    return v;
+}
+quint32 LMath::uint32FromBA(const QByteArray &ba, quint16 pos)
+{
+    quint32 v = 0;
+    getValueFromBA(v, ba, pos);
+    return v;
+}
+quint64 LMath::uint64FromBA(const QByteArray &ba, quint16 pos)
+{
+    quint64 v = 0;
+    getValueFromBA(v, ba, pos);
+    return v;
+}
+int LMath::intFromBA(const QByteArray &ba, quint16 pos)
+{
+    int v = 0;
+    getValueFromBA(v, ba, pos);
+    return v;
+}
+float LMath::floatFromBA(const QByteArray &ba, quint16 pos)
+{
+    float v = 0;
+    getValueFromBA(v, ba, pos);
+    return v;
+}
+double LMath::doubleFromBA(const QByteArray &ba, quint16 pos)
+{
+    double v = 0;
+    getValueFromBA(v, ba, pos);
+    return v;
+}
+
+
 //service func
 QString LMath::alignStrBA(const QString &s, int n, bool with_x)
 {
@@ -190,18 +228,18 @@ QString LMath::alignStrBA(const QString &s, int n, bool with_x)
 }
 
 
-/*
+//static template metod
 template<typename T>
-QString LMath::intToBAStr(T a, bool with_x)
+void LMath::getValueFromBA(T &v, const QByteArray &ba, quint16 pos)
 {
-    return QString();
-    int n = sizeof(a)*2;
-    QString s = QString::number(a, 16);
-    QString s_res = LStatic::strAlignLeft(s, n, QChar('0')).toUpper();
-    if (with_x) return QString("0x%1").arg(s_res);
-    return s_res;
+    v = 0;
+    int sf = sizeof(T);
+    if ((pos+sf) > ba.size()) return;
+
+    QByteArray ba_mid(ba.mid(pos, sf));
+    LStatic::reverseBA(ba_mid);
+    memcpy(&v, ba_mid.data(), sf);
 }
-*/
 
 
 

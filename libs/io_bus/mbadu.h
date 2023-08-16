@@ -28,6 +28,7 @@ public:
     static bool functionCodeOk(qint8); //проверяет валидность кода функции modbus
     static quint16 convertToLittleEndian(const quint16); //развернуть порядок байт в значении
     static int registerTypeByFunc(quint8); //выдает тип регистров по коду функции или -1
+    static QString functionType(quint8); //выдает тип команды (write/read) и вид регистров
 
 protected:
     QByteArray m_data;
@@ -77,13 +78,15 @@ class LMBTcpAdu : public LMBAduBase
 public:
     LMBTcpAdu(const QByteArray &input_data);
 
-    qint8 serverAddress() const;
-    qint8 cmdCode() const;
-    qint16 packetLen() const; //длина пакета, которая лежит в заголовке mbtcp запроса
+    qint8 serverAddress() const; //адрес устройсва
+    qint8 cmdCode() const; //код команды (MODBUS)
+    qint16 packetLen() const; //длина пакета, которая лежит в заголовке mbtcp запроса (sizeof PDU + 1)
     QString stringErr() const;
     void getPduData(QModbusPdu &pdu) const;
     bool isExeptionRequest() const; //признак того что этот ответ является исключением, где cmdCode() содержит код ошибки, который говорит почему сервер не может выполнить текущий запрос
     QString strExeption() const;
+
+    QString toStr() const; //выдает в строковом виде основные параметры сообщения (для отладки)
 
 protected:
     void checkData();

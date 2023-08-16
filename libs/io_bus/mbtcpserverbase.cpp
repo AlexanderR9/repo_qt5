@@ -5,6 +5,7 @@
 #include <QSerialPort>
 #include <QModbusResponse>
 #include <QModbusRequest>
+#include <QModbusDataUnit>
 #include <QDebug>
 
 
@@ -39,6 +40,27 @@ void LMBTCPServerBase::slotDataWritten(QModbusDataUnit::RegisterType reg_type, i
 void LMBTCPServerBase::setDeviceTcpPort(quint32 port)
 {
     this->setConnectionParameter(QModbusDevice::NetworkPortParameter, port);
+}
+QByteArray LMBTCPServerBase::getRegistersData(int reg_type, quint16 start_pos, quint16 reg_count) const
+{
+    QByteArray ba;
+    QModbusDataUnit *mbdu = new QModbusDataUnit(QModbusDataUnit::RegisterType(reg_type));
+    mbdu->setStartAddress(start_pos);
+    mbdu->setValueCount(reg_count);
+    if (this->readData(mbdu))
+    {
+        if (mbdu) //was readed data Ok!
+        {
+            QDataStream stream(&ba, QIODevice::WriteOnly);
+            stream.setByteOrder(QDataStream::BigEndian);
+            for (int i=0; i<mbdu->valueCount(); i++)
+                stream << mbdu->value(i);
+        }
+    }
+    else qWarning()<<QString("LMBTCPServerBase: WARNING - error reading registers data, start=%1, n_regs=%2").arg(start_pos).arg(reg_count);
+
+    if (mbdu) {delete mbdu; mbdu = NULL;}
+    return ba;
 }
 void LMBTCPServerBase::openConnection()
 {

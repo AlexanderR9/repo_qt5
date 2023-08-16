@@ -98,6 +98,27 @@ int LMBAduBase::registerTypeByFunc(quint8 f_code)
     }
     return -1;
 }
+QString LMBAduBase::functionType(quint8 f_code)
+{
+    switch (f_code)
+    {
+        //for DiscreteInputs discrete inputs, only read (1 bit)
+        case QModbusPdu::ReadDiscreteInputs: return QString("read/discrete");
+
+        //for Coils discrete outputs (1 bit)
+        case QModbusPdu::ReadCoils: return QString("read/coils");
+        case QModbusPdu::WriteMultipleCoils: return QString("write_multi/coils");
+        case QModbusPdu::WriteSingleCoil: return QString("write_single/coils");
+
+        //for Holding Registers (16 bit)
+        case QModbusPdu::WriteSingleRegister: return QString("write_single/holding");
+        case QModbusPdu::WriteMultipleRegisters: return QString("write_multi/holding");
+        case QModbusPdu::ReadHoldingRegisters: return QString("read/holding");
+
+        default:  break;
+    }
+    return "??";
+}
 
 
 //////////////////// LMBAdu ////////////////////////////
@@ -268,4 +289,11 @@ QString LMBTcpAdu::strExeption() const
     }
     return "---";
 }
-
+QString LMBTcpAdu::toStr() const
+{
+    QString s("LMBTcpAdu: ");
+    if (invalid()) return (s + "invalid");
+    s = QString("%1 len=%2 device=%3 cmd=%4").arg(s).arg(packetLen()).arg(serverAddress()).arg(cmdCode());
+    s = QString("%1   cmd_kind(%2)").arg(s).arg(functionType(cmdCode()));
+    return s;
+}

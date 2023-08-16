@@ -48,6 +48,8 @@ public:
     //преобразует QByteArray в строку типа: AA BB 12 FD ....., line_size задает через сколько байт вставлять '\n'
     //если with_int_values то выводится каждый байт с расшифровкой в десятичном виде  : AA(170) BB(187) ...
     static QString baToStr(const QByteArray&, int line_size = 8, bool with_int_values = false);
+    //развернуть порядок байт в заданном QByteArray
+    static void reverseBA(QByteArray&);
 
     //преобразует строку в список строк по заданному разделителю
     //если remove_empty_line = true то все пустые строки удаляются и все крайние пробелы у всех строк отсекаются

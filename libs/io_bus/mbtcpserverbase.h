@@ -24,6 +24,9 @@ public:
 
     void setDeviceTcpPort(quint32);
 
+    //получить данные регистров указанного типа, на заданных позициях
+    virtual QByteArray getRegistersData(int, quint16 start_pos, quint16 reg_count) const;
+
 
 protected slots:
     //virtual void slotReadyRead(); //пришли данные в m_port, обработать, возможно запрос от мастера

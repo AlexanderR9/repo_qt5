@@ -1,5 +1,5 @@
 #include "lstatic.h"
-
+#include <stdint.h>
 #include <QList>
 #include <QTextCodec>
 #include <QDebug>
@@ -113,6 +113,11 @@ QString LStatic::strToCharUnicodes(const QString &s, bool show_nums, bool show_c
         if (i < (s.length()-1)) result = QString("%1 %2").arg(result).arg(separator);
     }
     return result;
+}
+void LStatic::reverseBA(QByteArray &ba)
+{
+    if (ba.size() < 2) return;
+    std::reverse(ba.begin(), ba.end());
 }
 QString LStatic::baToStr(const QByteArray &ba, int line_size, bool with_int_values)
 {
