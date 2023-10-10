@@ -12,6 +12,10 @@
 #include <QListWidget>
 #include <QHeaderView>
 #include <QTreeWidget>
+#include <QTreeWidgetItem>
+#include <QJsonObject>
+#include <QJsonValue>
+#include <QJsonArray>
 
 
 //LSimpleWidget
@@ -183,7 +187,170 @@ void LTreeWidgetBox::setHeaderLabels(const QStringList &list)
     m_view->setSelectionMode(QAbstractItemView::NoSelection);
 
 }
+QTreeWidgetItem* LTreeWidgetBox::rootItem() const
+{
+    if (!m_view) return NULL;
+    if (m_view->topLevelItemCount() > 0) return m_view->topLevelItem(0);
+    return NULL;
+}
+void LTreeWidgetBox::resizeByContents()
+{
+    if (!m_view) return;
+    int n = m_view->columnCount();
+    if (n <= 0) return;
+    for (int i=0; i<n; i++)
+    {
+        m_view->resizeColumnToContents(n-i-1);
+    }
+}
+void LTreeWidgetBox::expandAll()
+{
+    if (m_view) m_view->expandAll();
+}
+void LTreeWidgetBox::expandLevel(int level)
+{
+    if (m_view)
+    {
+        if (level < 0) expandAll();
+        else m_view->expandToDepth(level);
+    }
+}
+void LTreeWidgetBox::clearView()
+{
+    if (m_view) m_view->clear();
+}
+void LTreeWidgetBox::loadJSON(const QJsonObject &json, QString root_title)
+{
+    clearView();
+    QStringList headers;
+    headers << "Key" << "Value" << "Data type" << "Size";
+    setHeaderLabels(headers);
 
+    if (root_title.isEmpty()) headers.replace(0, "JSON");
+    else headers.replace(0, root_title);
+    for (int i=1; i<headers.count(); i++) headers[i] = QString();
+    this->addRootItem(headers);
+    setRootItemAttrs(Qt::gray, 0, true);
+
+    QStringList keys(json.keys());
+    foreach (const QString &v, keys)
+        loadJSONValue(v, json.value(v), rootItem());
+}
+void LTreeWidgetBox::loadJSONValue(const QString &key, const QJsonValue &j_value, QTreeWidgetItem *parent_item)
+{
+    if (!parent_item) return;
+
+    QStringList data;
+    data.append(key);
+    getJSONValueType(data, j_value);
+    QTreeWidgetItem *item = new QTreeWidgetItem(parent_item, data);
+    if (j_value.isArray()) loadJSONValueArray(j_value.toArray(), item);
+    else if (j_value.isObject()) loadJSONValueObj(j_value.toObject(), item);
+}
+void LTreeWidgetBox::loadJSONValueArray(const QJsonArray &j_arr, QTreeWidgetItem *parent_item)
+{
+    if (!parent_item) return;
+
+    int n = j_arr.count();
+    parent_item->setText(parent_item->columnCount()-1, QString::number(n));
+    LTreeWidgetBox::setAttrsItem(parent_item, QColor(250, 130, 0), -1, false, true);
+
+    if (j_arr.isEmpty())
+    {
+        QStringList data = (QStringList() << "empty" << QString() << QString() << QString());
+        new QTreeWidgetItem(parent_item, data);
+        setRootItemAttrs(Qt::gray, -1, false, true, 8);
+        return;
+    }
+    for (int i=0; i<n; i++)
+    {
+        const QJsonValue& element = j_arr.at(i);
+        QStringList data;
+        data.append(QString("[%1]").arg(i));
+        getJSONValueType(data, element);
+
+        QTreeWidgetItem *item = new QTreeWidgetItem(parent_item, data);
+        if (element.isArray()) loadJSONValueArray(element.toArray(), item);
+        else if (element.isObject()) loadJSONValueObj(element.toObject(), item);
+    }
+}
+void LTreeWidgetBox::loadJSONValueObj(const QJsonObject &j_obj, QTreeWidgetItem *parent_item)
+{
+    if (!parent_item) return;
+
+    QStringList keys(j_obj.keys());
+    parent_item->setText(parent_item->columnCount()-1, QString::number(keys.count()));
+    LTreeWidgetBox::setAttrsItem(parent_item, QColor(30, 130, 230), -1, false, true);
+    foreach (const QString &v, keys)
+        loadJSONValue(v, j_obj.value(v), parent_item);
+}
+void LTreeWidgetBox::getJSONValueType(QStringList &data, const QJsonValue &j_value)
+{
+    switch (j_value.type())
+    {
+        case QJsonValue::Null:      {data << QString("err") << "NULL"; break;}
+        case QJsonValue::Bool:      {data << QString(j_value.toBool()?"true":"false") << "BOOL"; break;}
+        case QJsonValue::Double:    {data << QString::number(j_value.toDouble(-1), 'f' ,2) << "DOUBLE"; break;}
+        case QJsonValue::String:    {data << j_value.toString() << "STRING"; break;}
+        case QJsonValue::Array:     {data << QString("-") << "ARRAY"; break;}
+        case QJsonValue::Object:    {data << QString("-") << "OBJECT"; break;}
+        default:                    {data << QString("?") << "UNDEFINED"; break;}
+    }
+    data << QString();
+}
+void LTreeWidgetBox::clearRoot()
+{
+    QTreeWidgetItem *r_item = rootItem();
+    if (r_item)
+    {
+        int n = r_item->childCount();
+        if (n <= 0) return;
+
+        for (int i=n-1; i>=0; i--)
+        {
+            QTreeWidgetItem *item = r_item->child(i);
+            r_item->removeChild(item);
+        }
+    }
+}
+void LTreeWidgetBox::addRootItem(const QStringList &list)
+{
+    if (rootItem()) return;
+
+    QTreeWidgetItem *r_item = new QTreeWidgetItem(list);
+    m_view->addTopLevelItem(r_item);
+}
+void LTreeWidgetBox::setAttrsItem(QTreeWidgetItem *item, QColor tc, int col, bool bold, bool italic, int size)
+{
+    if (!item || col >= item->columnCount()) return;
+
+    if (col < 0)
+    {
+        QFont font(item->font(0));
+        for (int j=0; j<item->columnCount(); j++)
+        {
+            font.setBold(bold);
+            font.setItalic(italic);
+            if (size > 0) font.setPointSize(size);
+            item->setFont(j, font);
+            item->setTextColor(j, tc);
+        }
+    }
+    else
+    {
+        QFont font(item->font(col));
+        font.setBold(bold);
+        font.setItalic(italic);
+        if (size > 0) font.setPointSize(size);
+        item->setFont(col, font);
+        item->setTextColor(col, tc);
+    }
+}
+void LTreeWidgetBox::setRootItemAttrs(QColor tc, int col, bool bold, bool italic, int size)
+{
+    QTreeWidgetItem *r_item = rootItem();
+    LTreeWidgetBox::setAttrsItem(r_item, tc, col, bold, italic, size);
+}
 
 
 

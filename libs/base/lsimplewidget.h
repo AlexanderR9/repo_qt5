@@ -13,6 +13,12 @@ class QTableWidget;
 class QTabWidget;
 class QListWidget;
 class QTreeWidget;
+class QTreeWidgetItem;
+class QJsonObject;
+class QJsonValue;
+class QJsonArray;
+
+
 
 
 //простой виджет-заготовка с двумя сплитерами.
@@ -126,12 +132,32 @@ public:
 
     QTreeWidget* view() const {return m_view;}
     void setHeaderLabels(const QStringList&);
+    QTreeWidgetItem* rootItem() const; //возвращает рутовый итем или null
+    void clearView(); //удаляются все итемы, заголовок остается
+    void clearRoot(); //удаляются все итемы, кроме рутового
+    void addRootItem(const QStringList&); //добавить рутовый элемент, (при условии что на текущий момент его нет)
+    void setRootItemAttrs(QColor, int col = -1, bool bold = false, bool italic = false, int size = -1);
+    void loadJSON(const QJsonObject&, QString root_title = QString()); //загрузка QJsonObject во вьюху, предварительно вьюха будет полностью очищена
+    void resizeByContents();
+    void expandAll();
+    void expandLevel(int);
 
+    //установить свойства текста итема.
+    //если col=-1 то для всех кололнок
+    //если size=-1 то размер шрифта не менять
+    static void setAttrsItem(QTreeWidgetItem*, QColor, int col = -1, bool bold = false, bool italic = false, int size = -1);
 
 protected:
     QTreeWidget    *m_view;
 
     void init();
+    void loadJSONValue(const QString&, const QJsonValue&, QTreeWidgetItem*); //загрузка элемента QJsonObject во вьюху, (функция для реализации рекурсии)
+    void loadJSONValueArray(const QJsonArray&, QTreeWidgetItem*); //загрузка элемента QJsonObject который является QJsonArray во вьюху, (функция для реализации рекурсии)
+    void loadJSONValueObj(const QJsonObject&, QTreeWidgetItem*); //загрузка элемента QJsonObject который является объектом во вьюху, (функция для реализации рекурсии)
+
+private:
+    void getJSONValueType(QStringList&, const QJsonValue&); //добавить в контейнер значение и тип QJsonValue
+
 };
 
 

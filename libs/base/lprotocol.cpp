@@ -45,6 +45,12 @@ void LProtocolBox::addText(QString text, int type)
             color = Qt::darkGreen;
             break;
         }
+        case ttNote:
+        {
+            color = Qt::lightGray;
+            m_protocol->setFontItalic(true);
+            break;
+        }
         case ttData:
         {
             color = Qt::darkYellow;
@@ -71,8 +77,10 @@ void LProtocolBox::addText(QString text, int type)
 
         default: break;
     }
+
     m_protocol->setTextColor(color);
     m_protocol->append(s);
+    m_protocol->setFontItalic(false);
 
 }
 

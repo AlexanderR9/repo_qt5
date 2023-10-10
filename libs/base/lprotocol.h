@@ -11,7 +11,7 @@ class LProtocolBox : public QGroupBox
 {
     Q_OBJECT
 public:
-    enum TextType {ttText = 0, ttErr, ttWarning, ttOk, ttFile, ttData, ttUnknow = -1};
+    enum TextType {ttText = 0, ttErr, ttWarning, ttOk, ttFile, ttData, ttNote, ttUnknow = -1};
 
     LProtocolBox(bool nt, QWidget *parent = 0);
     virtual ~LProtocolBox() {}
