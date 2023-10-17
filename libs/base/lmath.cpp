@@ -1,4 +1,5 @@
 #include "lmath.h"
+#include "lstring.h"
 #include "lstatic.h"
 #include "qdebug.h"
 
@@ -222,7 +223,7 @@ double LMath::doubleFromBA(const QByteArray &ba, quint16 pos)
 //service func
 QString LMath::alignStrBA(const QString &s, int n, bool with_x)
 {
-    QString s_res = LStatic::strAlignLeft(s, n, QChar('0')).toUpper();
+    QString s_res = LString::strAlignLeft(s, n, QChar('0')).toUpper();
     if (with_x) return QString("0x%1").arg(s_res);
     return s_res;
 }

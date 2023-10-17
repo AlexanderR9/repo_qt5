@@ -7,6 +7,8 @@
 #include <QDateTime>
 
 //////////////// LStatic /////////////////////////
+
+/*
 int LStatic::subCount(const QString &s, const QString sub_s)
 {
     int n = 0;
@@ -22,6 +24,9 @@ int LStatic::subCount(const QString &s, const QString sub_s)
     }
     return n;
 }
+*/
+
+
 int LStatic::subCharCount(const QString &s, const QChar c)
 {
     if (s.isEmpty()) return 0;
@@ -35,6 +40,8 @@ int LStatic::subCharCount(const QString &s, const QChar c)
     }
     return n;
 }
+
+/*
 QList<int> LStatic::subStrIndexes(const QString &s, const QString sub_s)
 {
     QList<int> list;
@@ -50,6 +57,7 @@ QList<int> LStatic::subStrIndexes(const QString &s, const QString sub_s)
     }
     return list;
 }
+
 int LStatic::strIndexOfByEnd(const QString &s, const QString sub_s)
 {
     int last_pos = -1;
@@ -65,10 +73,12 @@ int LStatic::strIndexOfByEnd(const QString &s, const QString sub_s)
     }
     return last_pos;
 }
+*/
 QString LStatic::fromColor(const QColor &color, QString split_symbol)
 {
     return QString("(%1%2 %3%4 %5)").arg(color.red()).arg(split_symbol).arg(color.green()).arg(split_symbol).arg(color.blue());
 }
+/*
 QStringList LStatic::trimSplitList(const QString &data, QString split_symbol, bool remove_empty_line)
 {
     QStringList list = data.split(split_symbol);
@@ -83,6 +93,8 @@ QStringList LStatic::trimSplitList(const QString &data, QString split_symbol, bo
     }
     return list;
 }
+
+
 QString LStatic::removeLongSpaces(const QString &s, bool remove_tabs)
 {
     QString space(" ");
@@ -100,6 +112,8 @@ QString LStatic::removeLongSpaces(const QString &s, bool remove_tabs)
 
     return result;
 }
+*/
+
 QString LStatic::strToCharUnicodes(const QString &s, bool show_nums, bool show_char, QString separator)
 {
     QString result;
@@ -179,6 +193,7 @@ QColor LStatic::strToColor(const QString &str, QString split_symbol)
 
     return QColor(r, g, b);
 }
+/*
 QString LStatic::strTrimLeft(const QString &s, int n)
 {
     if (n <= 0) return s;
@@ -215,6 +230,8 @@ QString LStatic::strAlignRight(const QString &s, int n,  QChar c)
     int n_right = n - s.length();
     return strAddRight(s, n_right, c);
 }
+*/
+/*
 QString LStatic::strBetweenStr(const QString &s, QString s1, QString s2)
 {
     if (s.isEmpty() || s1.isEmpty() || s2.isEmpty()) return QString();
@@ -223,6 +240,8 @@ QString LStatic::strBetweenStr(const QString &s, QString s1, QString s2)
     if (pos1 < 0 || pos2 < 0 || pos2 <= pos1) return QString();
     return s.mid(pos1+1, pos2-pos1-1);
 }
+
+
 QString LStatic::replaceByRange(const QString &s, const QString sub_s1, const QString sub_s2, quint16 pos1, quint16 pos2)
 {
     if ((pos1 >= pos2) || (pos1 >= s.length()-1)) return s;
@@ -234,6 +253,9 @@ QString LStatic::replaceByRange(const QString &s, const QString sub_s1, const QS
     mid.replace(sub_s1, sub_s2);
     return (left+mid+right);
 }
+*/
+
+
 QString LStatic::fromCodec(const QString &s, QString codec_name)
 {
     if (!codec_name.isEmpty())
@@ -272,4 +294,9 @@ QString LStatic::systemInfo()
     s += QString("-------------------------------------------------------\n");
     return s;
 }
-
+QString LStatic::systemUserName()
+{
+    QString u_name = qgetenv("USER");
+    if (u_name.isEmpty()) u_name = qgetenv("USERNAME");
+    return u_name;
+}

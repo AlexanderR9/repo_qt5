@@ -1,0 +1,14 @@
+proc_cleaner.pro.user
+proc_cleaner.debug
+.qmake.stash
+moc
+obj
+Makefile
+proc_cleaner
+full_clear
+ui_paramspage.h
+ui_foldersstructdialog.h
+cd_iso_worker.tar.gz
+*.tar.gz
+log.txt
+

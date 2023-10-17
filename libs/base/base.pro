@@ -33,7 +33,8 @@ HEADERS += \
     lcommonsettings.h \
     lmainwidget.h \
     lsimpleobj.h \
-    lsimplewidget.h
+    lsimplewidget.h \
+    lstring.h
 
 SOURCES += \
     lmath.cpp \
@@ -50,7 +51,8 @@ SOURCES += \
     lcommonsettings.cpp \
     lmainwidget.cpp \
     lsimpleobj.cpp \
-    lsimplewidget.cpp
+    lsimplewidget.cpp \
+    lstring.cpp
 
 FORMS += lsimpledialog.ui
 

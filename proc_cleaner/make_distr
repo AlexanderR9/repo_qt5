@@ -1,0 +1,78 @@
+#!/bin/bash
+
+BIN_FILE_PATH=.
+BIN_FILE_NAME=proc_cleaner
+#CONFIG_FILE_NAME=config.xml
+MY_LIBS_PATH=../libs
+MY_LIB_VERSION=1.0.0
+DISTR_NAME=pcleaner
+TEMPORY_DIR=temp
+DELAY=0.3
+
+
+# make folders struct
+echo "make temporary folder[$TEMPORY_DIR] ....."
+mkdir $TEMPORY_DIR
+sleep $DELAY
+echo "make libs folder ....."
+mkdir $TEMPORY_DIR/libs
+sleep $DELAY
+#echo "make service folders  ....."
+#mkdir $TEMPORY_DIR/config
+#mkdir $TEMPORY_DIR/data
+#mkdir $TEMPORY_DIR/log
+#sleep $DELAY
+
+# copy files
+echo "copy bin file [$BIN_FILE_PATH/$BIN_FILE_NAME] ....."
+cp $BIN_FILE_PATH/$BIN_FILE_NAME $TEMPORY_DIR/$BIN_FILE_NAME
+cp start_distr $TEMPORY_DIR/start
+sleep $DELAY
+
+#echo "copy config file [$CONFIG_FILE_NAME] ....."
+#cp config/$CONFIG_FILE_NAME $TEMPORY_DIR/config/$CONFIG_FILE_NAME
+#sleep $DELAY
+
+
+copy_lib()
+{
+    echo ""
+    LIB_NAME=libl$1.so.$MY_LIB_VERSION
+    DEST_PATH=$TEMPORY_DIR/libs
+
+    echo "copy mylib [$LIB_NAME] ....."
+    sleep 1
+    cp $MY_LIBS_PATH/$1/build/$LIB_NAME $DEST_PATH
+    
+    sleep $DELAY
+    echo ""
+    cd $DEST_PATH
+    echo "make links ....."
+    ln -s $LIB_NAME ${LIB_NAME:0:${#LIB_NAME}-2}
+    ln -s $LIB_NAME ${LIB_NAME:0:${#LIB_NAME}-4}
+    cd ../../
+    echo "done!"    
+}
+
+copy_lib base
+copy_lib process
+
+#make tar file
+echo ""
+echo "make tar distrib file ....."
+sleep 1
+mv $TEMPORY_DIR $DISTR_NAME
+tar -czvf $DISTR_NAME.tar.gz $DISTR_NAME
+
+echo ""
+echo "remove temporary folder[$TEMPORY_DIR] ....."
+sleep $DELAY
+rm -r $DISTR_NAME
+sleep $DELAY
+
+
+#finish
+echo "Finished!!!"
+
+exit 0
+

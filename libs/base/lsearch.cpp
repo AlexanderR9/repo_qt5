@@ -1,5 +1,5 @@
 #include "lsearch.h"
-#include "lstatic.h"
+#include "lstring.h"
 
 #include <QLineEdit>
 #include <QLabel>
@@ -67,7 +67,7 @@ void LSearch::slotSearch(const QString &s)
 void LSearch::search(const QString &s, LStructSearch &obj)
 {
     QStringList list;
-    if (s.contains(";;")) list.append(LStatic::trimSplitList(s, ";;"));
+    if (s.contains(";;")) list.append(LString::trimSplitList(s, ";;"));
     else list << s;
 
     if (obj.table)
