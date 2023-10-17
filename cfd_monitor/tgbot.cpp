@@ -1,7 +1,7 @@
 #include "tgbot.h"
 #include "logpage.h"
 #include "tgjsonworker.h"
-#include "lstatic.h"
+#include "lstring.h"
 #include "lstaticxml.h"
 #include "cfdconfigobj.h"
 #include "tgconfigloaderbase.h"
@@ -58,6 +58,7 @@ bool TGBot::timeoffNow() const
 }
 void TGBot::slotJsonReceived(QJsonObject jobj)
 {
+    Q_UNUSED(jobj);
     qDebug("TGBot::slotJsonReceived");
 }
 void TGBot::slotTimer()
@@ -91,7 +92,7 @@ void TGBot::parseUpdate(const LTGUpdate &update)
     }
 
     QString req = update.text.trimmed();
-    QStringList list = LStatic::trimSplitList(req, LStatic::spaceSymbol());
+    QStringList list = LString::trimSplitList(req, LString::spaceSymbol());
     if (list.count() == 2 && list.first().toLower() == "get") //пришел запрос типа: Get TICKER_NAME
     {
         replyLastPrice(list.last()); //выдать последнюю цену по TICKER_NAME

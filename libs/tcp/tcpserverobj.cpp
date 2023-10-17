@@ -1,5 +1,5 @@
 #include "tcpserverobj.h"
-#include "lstatic.h"
+#include "lstring.h"
 
 #include <QTcpServer>
 #include <QTcpSocket>
@@ -113,7 +113,7 @@ quint8 LTcpServerObj::nextSocketNumber() const
     if (pos < 0) return 1;
 
     bool ok;
-    quint8 n = LStatic::strTrimLeft(s_name, pos+1).trimmed().toUInt(&ok);
+    quint8 n = LString::strTrimLeft(s_name, pos+1).trimmed().toUInt(&ok);
     if (!ok || n < 1) return 1;
     return (n + 1);
 }

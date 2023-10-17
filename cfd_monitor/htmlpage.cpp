@@ -1,7 +1,7 @@
 #include "htmlpage.h"
 #include "lhtmlpagerequester.h"
 #include "lhtmlrequester.h"
-#include "lstatic.h"
+#include "lstring.h"
 #include "logpage.h"
 
 #include <QTimer>
@@ -215,8 +215,8 @@ void HtmlWorker::execMetod1(const QString &data) //smart-lab
         QString s = list.at(i).trimmed();
         if (s.left(1) == "$" && s.right(1) == "%")
         {
-            s = LStatic::strTrimLeft(s, 1).trimmed();
-            int pos = s.indexOf(LStatic::spaceSymbol());
+            s = LString::strTrimLeft(s, 1).trimmed();
+            int pos = s.indexOf(LString::spaceSymbol());
             if (pos > 0) m_price = s.left(pos).trimmed().toDouble(&ok);
             break;
         }
@@ -244,8 +244,8 @@ void HtmlWorker::execMetod2(const QString &data) //finviz
         QString s2 = s.left(pos).trimmed();
         if (s2.right(6) == "target") {qDebug("has target"); continue;}
 
-        s = LStatic::strTrimLeft(s, pos + 5).trimmed();
-        pos = s.indexOf(LStatic::spaceSymbol());
+        s = LString::strTrimLeft(s, pos + 5).trimmed();
+        pos = s.indexOf(LString::spaceSymbol());
         if (pos > 0 || s.length() < 7)
         {
             m_price = s.left(pos).trimmed().toDouble(&ok);
@@ -295,10 +295,10 @@ void HtmlWorker::execInvalidMetod()
 void HtmlWorker::trimData(const QString &data, QStringList &list)
 {
     list.clear();
-    list = LStatic::trimSplitList(data);
+    list = LString::trimSplitList(data);
     for (int i=0; i<list.count(); i++)
     {
-        QString s = LStatic::removeLongSpaces(list.at(i));
+        QString s = LString::removeLongSpaces(list.at(i));
         list[i] = s;
     }
 }

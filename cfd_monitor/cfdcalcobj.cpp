@@ -1,5 +1,5 @@
 #include "cfdcalcobj.h"
-#include "lstatic.h"
+#include "lstring.h"
 #include "lfile.h"
 #include "cfdconfigobj.h"
 
@@ -103,8 +103,8 @@ void CFDCalcObj::slotNewPrice(QString ticker, double price)
 double CFDCalcObj::toBotValue(const QString &s_value) const
 {
     QString s = s_value.trimmed();
-    if (s.left(1) == "+") s = LStatic::strTrimLeft(s, 1);
-    if (s.right(1) == "%") s = LStatic::strTrimRight(s, 1);
+    if (s.left(1) == "+") s = LString::strTrimLeft(s, 1);
+    if (s.right(1) == "%") s = LString::strTrimRight(s, 1);
 
     bool ok;
     double v = s.toDouble(&ok);
@@ -210,14 +210,14 @@ QString CFDCalcObj::filePathByTicker(const QString &ticker) const
 void CFDFileRecord::parseFileLine(const QString &s)
 {
     reset();
-    QString s1 = LStatic::strBetweenStr(s, "(", ")").trimmed();
+    QString s1 = LString::strBetweenStr(s, "(", ")").trimmed();
     if (s1.isEmpty()) return;
 
-    int pos = s1.indexOf(LStatic::spaceSymbol());
+    int pos = s1.indexOf(LString::spaceSymbol());
     if (pos < 5) return;
 
     date = QDate::fromString(s1.left(pos), CFD_DATA_DATEFORMAT);
-    s1 = LStatic::strTrimLeft(s1, pos);
+    s1 = LString::strTrimLeft(s1, pos);
     time = QTime::fromString(s1.trimmed(), CFD_DATA_TIMEFORMAT);
 
     bool ok;

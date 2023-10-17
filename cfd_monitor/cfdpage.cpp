@@ -1,5 +1,5 @@
 #include "cfdpage.h"
-#include "lstatic.h"
+#include "lstring.h"
 #include "ltable.h"
 #include "lsearch.h"
 
@@ -148,8 +148,8 @@ void CFDPage::getCellValue(const QString &cell_text, double &value, bool &ok)
     ok = false;
     if (cell_text.right(1) != "%") return;
 
-    QString s = LStatic::strTrimRight(cell_text, 1).trimmed();
-    if (s.left(1) == "+") s = LStatic::strTrimLeft(s, 1).trimmed();
+    QString s = LString::strTrimRight(cell_text, 1).trimmed();
+    if (s.left(1) == "+") s = LString::strTrimLeft(s, 1).trimmed();
     value = s.toDouble(&ok);
 }
 void CFDPage::removeRowByTicker(const QString &ticker)

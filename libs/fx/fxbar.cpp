@@ -1,5 +1,5 @@
 #include "fxbar.h"
-#include "lstatic.h"
+#include "lstring.h"
 
 #include <QDebug>
 
@@ -30,7 +30,7 @@ void FXBar::fromFileLine(const QString &fline, QString sep_values)
     QString s = fline.trimmed();
     if (s.isEmpty()) return;
 
-    QStringList list = LStatic::trimSplitList(s, sep_values);
+    QStringList list = LString::trimSplitList(s, sep_values);
     if (list.count() != 7)
     {
         qWarning()<<QString("FXBar::fromFileLine  WARNING: invalid list values count(%1) != 7,   fline=[%1]").arg(list.count()).arg(fline);

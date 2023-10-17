@@ -5,7 +5,7 @@
 #include "paramspage.h"
 #include "lfile.h"
 #include "ltime.h"
-#include "lstatic.h"
+#include "lstring.h"
 #include "foldersstructdialog.h"
 
 
@@ -222,7 +222,7 @@ void MainForm::startBurning(const QString &iso_file)
     QStringList args;
     args << "-v" << "-eject" << "-dao";
     bool ok;
-    quint8 speed = LStatic::strTrimRight(burnSpeed(), 1).trimmed().toUInt(&ok);
+    quint8 speed = LString::strTrimRight(burnSpeed(), 1).trimmed().toUInt(&ok);
     if (speed > 2 && ok && speed < 100) args.append(QString("speed=%1").arg(speed));
     args.append(QString("dev=%1").arg(cdDevice()));
     args.append(iso_file);
@@ -333,9 +333,9 @@ void MainForm::showFoldersStructCD()
         QString s = list.at(i).trimmed();
         if (s.indexOf(find_text) != 0) continue;
         s.remove(QString("[process_out]"));
-        s = LStatic::strTrimLeft(s, find_text.length()).trimmed();
+        s = LString::strTrimLeft(s, find_text.length()).trimmed();
         int pos = s.indexOf(QDir::separator());
-        if (pos > 0) cd_path = LStatic::strTrimLeft(s, pos).trimmed();
+        if (pos > 0) cd_path = LString::strTrimLeft(s, pos).trimmed();
         break;
     }
 
@@ -429,7 +429,7 @@ void MainForm::checkMD5CDProcessFinishedResult()
             if (s.contains("volume size is:"))
             {
                 bool ok;
-                m_cdBlockSize = LStatic::strTrimLeft(s, QString("volume size is:").length()).trimmed().toInt(&ok);
+                m_cdBlockSize = LString::strTrimLeft(s, QString("volume size is:").length()).trimmed().toInt(&ok);
                 if (!ok || m_cdBlockSize <= 0)
                 {
                     m_protocol->addText(QString("volume size not found"), LProtocolBox::ttWarning);
@@ -470,7 +470,7 @@ void MainForm::checkMD5CDProcessFinishedResult()
         }
         else
         {
-            int pos = s_crc.indexOf(LStatic::spaceSymbol());
+            int pos = s_crc.indexOf(LString::spaceSymbol());
             if (pos < 0) pos = s_crc.indexOf("*");
             if (pos > 0) s_crc = s_crc.left(pos).trimmed();
             m_protocol->addText(QString("MD5 sum of CD:  %1").arg(s_crc), LProtocolBox::ttOk);
@@ -931,8 +931,8 @@ void MainForm::load()
 QString MainForm::isoFileNameBySourceName(const QString &dir_source) const
 {
     QString iso_file = dir_source.trimmed().toLower();
-    iso_file = LStatic::removeLongSpaces(iso_file);
-    iso_file.replace(LStatic::spaceSymbol(), "_");
+    iso_file = LString::removeLongSpaces(iso_file);
+    iso_file.replace(LString::spaceSymbol(), "_");
     iso_file.replace("-", "_");
     iso_file.replace(".", "_");
     iso_file.replace(";", "_");

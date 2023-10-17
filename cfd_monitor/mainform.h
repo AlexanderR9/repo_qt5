@@ -33,8 +33,8 @@ public:
     
 protected:
     LProtocolBox            *m_protocol;
-    QTabWidget              *m_tab;
     QSplitter               *v_splitter;
+    QTabWidget              *m_tab;
     QMap<int, BasePage*>     m_pages;
     CFDConfigObject         *m_configObj;
     TGBot                   *m_bot;

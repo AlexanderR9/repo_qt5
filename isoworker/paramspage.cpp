@@ -1,5 +1,5 @@
 #include "paramspage.h"
-#include "lstatic.h"
+#include "lstring.h"
 #include "ltable.h"
 #include "lfile.h"
 #include "ltime.h"
@@ -97,7 +97,7 @@ void ParamsPage::updateMD5Column(const QString &path)
             QString s = list.at(j).trimmed();
             if (s.contains(iso_file))
             {
-                s = LStatic::strTrimLeft(s, iso_file.length()).trimmed();
+                s = LString::strTrimLeft(s, iso_file.length()).trimmed();
                 isoTable->item(i, MD5_COL)->setText(s);
                 break;
             }

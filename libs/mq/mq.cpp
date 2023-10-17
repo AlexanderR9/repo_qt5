@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <cerrno>
 #include <cstring>
+#include "lstring.h"
 #include "lstatic.h"
 #include "lfile.h"
 #include "mqworker.h"
@@ -412,7 +413,7 @@ int MQ::mqModeByMode() const
 }
 bool MQ::existPosixFile() const
 {
-    QString fname = LStatic::strTrimLeft(name(), 1);
+    QString fname = LString::strTrimLeft(name(), 1);
     fname = QString("%1%2%3").arg(MQWorker::mqLinuxDir()).arg(QDir::separator()).arg(fname);
     return LFile::fileExists(fname);
 }

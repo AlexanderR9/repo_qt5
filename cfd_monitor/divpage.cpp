@@ -2,7 +2,8 @@
 #include "ltable.h"
 #include "lsearch.h"
 #include "logpage.h"
-#include "lstatic.h"
+//#include "lstatic.h"
+#include "lstring.h"
 #include "lfile.h"
 #include "cfdcalcobj.h"
 
@@ -103,7 +104,7 @@ void DivPage::slotTimer()
 void DivPage::slotDivDataReceived(const QString &plain_data)
 {
     m_lastDT = QDateTime::currentDateTime();
-    QStringList list = LStatic::trimSplitList(plain_data);
+    QStringList list = LString::trimSplitList(plain_data);
     if (list.count() < 10)
     {
         sendLog("Plain data too small", 2);
@@ -116,7 +117,7 @@ void DivPage::slotDivDataReceived(const QString &plain_data)
     for (int i=0; i<list.count(); i++)
     {
         QString s = list.at(i).trimmed();
-        s = LStatic::removeLongSpaces(s, true);
+        s = LString::removeLongSpaces(s, true);
 
         QDate div_date;
         parseDate(s, div_date); //попытка в этой строке найти очередную дату
@@ -213,7 +214,7 @@ void DivPage::updateLastPrices(QList<DivRecord> &data)
 void DivPage::parseDivSize(const QString &s, DivRecord &rec)
 {
     if (s.right(3) != "USD") return;
-    QString res = LStatic::strTrimRight(s, 3).trimmed();
+    QString res = LString::strTrimRight(s, 3).trimmed();
 
     bool ok;
     int n = sourcesListWidget->count();
@@ -231,7 +232,7 @@ void DivPage::parseDivSize(const QString &s, DivRecord &rec)
         s_size.replace(",", ".");
         res = res.left(pos).trimmed();
 
-        pos = res.lastIndexOf(LStatic::spaceSymbol());
+        pos = res.lastIndexOf(LString::spaceSymbol());
         if (pos < 0) continue;
 
         QString s_size_p = res.right(res.length()-pos).trimmed();
@@ -261,7 +262,7 @@ void DivPage::parseDate(const QString &s, QDate &date)
         int day = s.left(pos).trimmed().toInt(&ok);
         if (ok && day > 0 && day < 32)
         {
-            QString finded_month = LStatic::strTrimLeft(s, pos+1).trimmed().toLower();
+            QString finded_month = LString::strTrimLeft(s, pos+1).trimmed().toLower();
             if (finded_month == cur_month) date.setDate(cur_date.year(), cur_date.month(), day);
             else if (finded_month == next_month)
             {
@@ -659,7 +660,7 @@ void DivRecord::fromFileLine(const QString &f_line)
     reset();
     if (f_line.trimmed().isEmpty()) return;
 
-    QStringList list = LStatic::trimSplitList(f_line, QString("/"));
+    QStringList list = LString::trimSplitList(f_line, QString("/"));
     if (list.count() != DivRecord::fieldsCount())
     {
         qWarning()<<QString("DivRecord::fromFileLine WARNING: list.count(%1)=fieldsCount(%2)  f_line: %3").arg(list.count()).arg(DivRecord::fieldsCount()).arg(f_line);

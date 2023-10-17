@@ -3,7 +3,7 @@
 #include "xmlpacktype.h"
 #include "lfile.h"
 #include "lstaticxml.h"
-#include "lstatic.h"
+#include "lstring.h"
 
 #include <QDebug>
 #include <QDomDocument>
@@ -227,7 +227,7 @@ double LXMLPackObj::getDoubleValueByPath(QString path, bool &ok)
 QList<quint16> LXMLPackObj::parseXPath(const QString &path) const
 {
     QList<quint16> levels;
-    QStringList list = LStatic::trimSplitList(path.trimmed(), "/");
+    QStringList list = LString::trimSplitList(path.trimmed(), "/");
     if (list.count() < 2) qWarning()<<QString("LXMLPackObj::parseXPath WARNING invalid path [%1]").arg(path);
     else if (list.first() != "packet") qWarning()<<QString("LXMLPackObj::parseXPath WARNING invalid path [%1], first element != packet").arg(path);
     else

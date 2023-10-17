@@ -1,5 +1,5 @@
 #include "fxbarcontainer.h"
-#include "lstatic.h"
+#include "lstring.h"
 #include "lfile.h"
 #include "fxenums.h"
 
@@ -96,8 +96,8 @@ void FXBarContainer::checkFileName()
         return;
     }
 
-    QString s = LStatic::strTrimRight(short_name, ftype.length());
-    QStringList list = LStatic::trimSplitList(s, QString("_"));
+    QString s = LString::strTrimRight(short_name, ftype.length());
+    QStringList list = LString::trimSplitList(s, QString("_"));
     if (list.count() != 2)
     {
         emit signalError(QString("FXBarContainer: datafile(%1) invalid format, must be: couplename_timeframe.%2").arg(short_name).arg(FXBarContainer::dataFileFormat()));
