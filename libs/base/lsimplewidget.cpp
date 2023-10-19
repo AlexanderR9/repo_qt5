@@ -1,6 +1,6 @@
 #include "lsimplewidget.h"
 #include "ltable.h"
-
+#include "lsearch.h"
 
 #include <QDebug>
 #include <QSettings>
@@ -16,6 +16,10 @@
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QJsonArray>
+#include <QClipboard>
+#include <QLabel>
+#include <QLineEdit>
+#include <QGuiApplication>
 
 
 //LSimpleWidget
@@ -105,6 +109,7 @@ bool LSimpleWidget::onlyHorizontal() const
 LTableWidgetBox::LTableWidgetBox(QWidget *parent, int t)
     :QGroupBox("Table Box", parent),
       m_table(NULL)
+      //m_lastSortOrder(0)
 {
     setObjectName("ltable_widget_box");
 
@@ -119,6 +124,13 @@ void LTableWidgetBox::init()
     m_table = new QTableWidget(this);
     LTable::fullClearTable(m_table);
     layout()->addWidget(m_table);
+
+    connect(m_table, SIGNAL(itemDoubleClicked(QTableWidgetItem*)), this, SLOT(slotItemDoubleClicked(QTableWidgetItem*)));
+}
+void LTableWidgetBox::slotItemDoubleClicked(QTableWidgetItem *item)
+{
+    if (!item) return;
+    QGuiApplication::clipboard()->setText(item->text());
 }
 void LTableWidgetBox::setHeaderLabels(const QStringList &list, int orintation)
 {
@@ -131,6 +143,110 @@ void LTableWidgetBox::vHeaderHide()
 QTableWidget* LTableWidgetBox::table() const
 {
     return m_table;
+}
+void LTableWidgetBox::resizeByContents()
+{
+    LTable::resizeTableContents(m_table);
+}
+void LTableWidgetBox::setSelectionMode(int behavior, int mode)
+{
+    if (m_table)
+    {
+        m_table->setSelectionBehavior(QAbstractItemView::SelectionBehavior(behavior));
+        m_table->setSelectionMode(QAbstractItemView::SelectionMode(mode));
+        m_table->update();
+    }
+}
+void LTableWidgetBox::setSelectionColor(QString bg_color, QString text_color)
+{
+    if (m_table)
+    {
+        QString style_value = QString("selection-color: %1; selection-background-color: %2;").arg(text_color).arg(bg_color);
+        m_table->setStyleSheet(style_value);
+    }
+}
+void LTableWidgetBox::sortingOn()
+{
+    if (m_table && m_table->columnCount() > 0)
+    {
+        QHeaderView *hv = m_table->horizontalHeader();
+        if (hv && !hv->isHidden())
+        {
+            for (int j=0; j<m_table->columnCount(); j++)
+                m_table->horizontalHeaderItem(j)->setData(Qt::UserRole, int(0));
+
+            connect(hv, SIGNAL(sectionClicked(int)), this, SLOT(slotSortByColumn(int)));
+        }
+    }
+}
+void LTableWidgetBox::slotSortByColumn(int col)
+{
+    qDebug()<<QString("slotSortByColumn %1").arg(col);
+
+    if (m_table->rowCount() < 3) return;
+    if (col < 0 || col >= m_table->columnCount()) return;
+
+    m_table->clearSelection();
+    int sort_order = m_table->horizontalHeaderItem(col)->data(Qt::UserRole).toInt();
+    if (sort_order != 0) m_table->horizontalHeaderItem(col)->setData(Qt::UserRole, int(0));
+    else m_table->horizontalHeaderItem(col)->setData(Qt::UserRole, int(1));
+
+    m_table->sortByColumn(col);
+/*
+    if (col > 2)
+    {
+
+        switch (sort_order)
+        {
+            case 0: {decreaseSortNum(col); break;}
+            case 1: {increaseSortNum(col); break;}
+            default:
+            {
+                qWarning()<<QString("LTableWidgetBox::slotSortByColumn: WARNING - invalid sort_order %1, col %2").arg(sort_order).arg(col);
+                break;
+            }
+        }
+    }
+    else m_table->sortByColumn(col);
+    */
+
+    resizeByContents();
+    m_table->scrollToTop();
+    //m_table->selectRow(0);
+
+}
+
+
+//LSearchTableWidgetBox
+LSearchTableWidgetBox::LSearchTableWidgetBox(QWidget *parent)
+    :LTableWidgetBox(parent, 1),
+      m_searchObj(NULL),
+      m_searchEdit(NULL),
+      m_searchLabel(NULL)
+{
+    setObjectName("lsearchtable_widget_box");
+
+    m_searchEdit = new QLineEdit(this);
+    m_searchLabel = new QLabel("Count: ", this);
+    layout()->removeWidget(m_table);
+    layout()->addWidget(m_searchEdit);
+    layout()->addWidget(m_table);
+    layout()->addWidget(m_searchLabel);
+
+    m_searchObj = new LSearch(m_searchEdit, this);
+    m_searchObj->addTable(m_table, m_searchLabel);
+    m_searchObj->exec();
+}
+void LSearchTableWidgetBox::searchExec()
+{
+    m_table->clearSelection();
+    m_searchObj->exec();
+    resizeByContents();
+}
+void LSearchTableWidgetBox::searchReset()
+{
+    m_searchEdit->clear();
+    searchExec();
 }
 
 
@@ -162,7 +278,8 @@ QListWidget* LListWidgetBox::listWidget() const
 //LTreeWidgetBox
 LTreeWidgetBox::LTreeWidgetBox(QWidget *parent, int t)
     :QGroupBox("Tree view Box", parent),
-      m_view(NULL)
+      m_view(NULL),
+      m_expandLevel(-1)
 {
     setObjectName("ltreeview_widget_box");
 
@@ -177,15 +294,19 @@ void LTreeWidgetBox::init()
     m_view = new QTreeWidget(this);
     m_view->clear();
     layout()->addWidget(m_view);
+
+    connect(m_view, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(slotItemDoubleClicked(QTreeWidgetItem*, int)));
+}
+void LTreeWidgetBox::slotItemDoubleClicked(QTreeWidgetItem *item, int col)
+{
+    if (!item || col < 0) return;
+    QGuiApplication::clipboard()->setText(item->text(col));
 }
 void LTreeWidgetBox::setHeaderLabels(const QStringList &list)
 {
     m_view->setColumnCount(list.count());
     m_view->header()->setDefaultAlignment(Qt::AlignCenter);
     m_view->setHeaderLabels(list);
-    m_view->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_view->setSelectionMode(QAbstractItemView::NoSelection);
-
 }
 QTreeWidgetItem* LTreeWidgetBox::rootItem() const
 {
@@ -207,12 +328,21 @@ void LTreeWidgetBox::expandAll()
 {
     if (m_view) m_view->expandAll();
 }
-void LTreeWidgetBox::expandLevel(int level)
+void LTreeWidgetBox::expandLevel()
 {
     if (m_view)
     {
-        if (level < 0) expandAll();
-        else m_view->expandToDepth(level);
+        if (m_expandLevel < 0) expandAll();
+        else m_view->expandToDepth(m_expandLevel);
+    }
+}
+void LTreeWidgetBox::setSelectionMode(int behavior, int mode)
+{
+    if (m_view)
+    {
+        m_view->setSelectionBehavior(QAbstractItemView::SelectionBehavior(behavior));
+        m_view->setSelectionMode(QAbstractItemView::SelectionMode(mode));
+        m_view->update();
     }
 }
 void LTreeWidgetBox::clearView()

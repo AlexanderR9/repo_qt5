@@ -17,8 +17,12 @@ class QTreeWidgetItem;
 class QJsonObject;
 class QJsonValue;
 class QJsonArray;
+class QTreeWidgetItem;
+class QTableWidgetItem;
 
-
+class LSearch;
+class QLabel;
+class QLineEdit;
 
 
 //простой виджет-заготовка с двумя сплитерами.
@@ -47,6 +51,7 @@ public:
 
     virtual QString caption() const {return QString("Simple page!!!");} //некая надпись соответствующая этому виджету
     virtual QString iconPath() const {return QString();} //некая иконка соответствующая этому виджету
+    virtual void resetPage() {} //некая очистка страницы или сброс в начальное состояние
 
     void setSpacing(int); //задать отступы для внутренних виджетов (друг от друга)
 
@@ -84,15 +89,40 @@ public:
 
     void setHeaderLabels(const QStringList&, int orintation = Qt::Horizontal);
     void vHeaderHide();
+    void resizeByContents();
+    void setSelectionMode(int, int); //params: SelectionBehavior, SelectionMode
+    void setSelectionColor(QString background_color, QString text_color = "#000000");
+    void sortingOn(); //активировать возможность сортировки столбцов по клику на соответствующем заголовке
 
     QTableWidget* table() const;
 
 protected:
     QTableWidget    *m_table;
+    //quint8  m_lastSortOrder;
 
     void init();
-};
 
+protected slots:
+    virtual void slotItemDoubleClicked(QTableWidgetItem*); //в базовом класе копируется содержимое итема в буфер обмена
+    virtual void slotSortByColumn(int); //сортировка столбца
+
+};
+class LSearchTableWidgetBox : public LTableWidgetBox
+{
+    Q_OBJECT
+public:
+    LSearchTableWidgetBox(QWidget *parent = NULL);
+    virtual ~LSearchTableWidgetBox() {}
+
+    void searchExec();
+    void searchReset();
+
+protected:
+    LSearch     *m_searchObj;
+    QLineEdit   *m_searchEdit;
+    QLabel      *m_searchLabel;
+
+};
 
 
 
@@ -140,7 +170,10 @@ public:
     void loadJSON(const QJsonObject&, QString root_title = QString()); //загрузка QJsonObject во вьюху, предварительно вьюха будет полностью очищена
     void resizeByContents();
     void expandAll();
-    void expandLevel(int);
+    void expandLevel(); //expand by m_expandLevel
+    void setSelectionMode(int, int); //params: SelectionBehavior, SelectionMode
+
+    inline void setExpandLevel(int a) {m_expandLevel = a;}
 
     //установить свойства текста итема.
     //если col=-1 то для всех кололнок
@@ -149,6 +182,7 @@ public:
 
 protected:
     QTreeWidget    *m_view;
+    int m_expandLevel;
 
     void init();
     void loadJSONValue(const QString&, const QJsonValue&, QTreeWidgetItem*); //загрузка элемента QJsonObject во вьюху, (функция для реализации рекурсии)
@@ -157,6 +191,9 @@ protected:
 
 private:
     void getJSONValueType(QStringList&, const QJsonValue&); //добавить в контейнер значение и тип QJsonValue
+
+protected slots:
+    virtual void slotItemDoubleClicked(QTreeWidgetItem*, int); //в базовом класе копируется содержимое итема в буфер обмена
 
 };
 
