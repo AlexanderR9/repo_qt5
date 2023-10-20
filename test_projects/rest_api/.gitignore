@@ -1,0 +1,11 @@
+rest_api.pro.user
+rest_api.debug
+.qmake.stash
+moc
+obj
+Makefile
+rest_api_test
+full_clear
+data
+
+
