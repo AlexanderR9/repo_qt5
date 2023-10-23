@@ -9,9 +9,9 @@ class LListWidgetBox;
 class LTreeWidgetBox;
 class LHttpApiRequester;
 class QComboBox;
+class BagState;
 
-
-enum APIPageType {aptReq = 181, aptBond, aptStock};
+enum APIPageType {aptReq = 181, aptBond, aptStock, aptBag};
 
 //APIReqPage
 class APIReqPage : public LSimpleWidget
@@ -25,11 +25,13 @@ public:
     QString caption() const {return QString("API request");}
     virtual void resetPage();
     void trySendReq();
+    void autoStartReq(QString);
     void setServerAPI(int, const QString&);
     void checkReply();
     bool replyOk() const;
     void setExpandLevel(int);
     inline void setPrintHeaders(bool b) {m_printHeaders = b;}
+    bool requesterBuzy() const;
 
 protected:
     LListWidgetBox      *m_sourceBox;
@@ -43,6 +45,7 @@ protected:
     void handleReplyData();
     void saveBondsFile();
     void saveStocksFile();
+    void parseUserID();
 
 signals:
     void signalFinished(int);
@@ -50,6 +53,8 @@ signals:
     void signalGetSelectedBondUID(QString&);
     void signalGetPricesDepth(quint16&);
     void signalGetCandleSize(QString&);
+    void signalLoadPositions(const QJsonObject&);
+    void signalLoadPortfolio(const QJsonObject&);
 
 };
 
@@ -97,7 +102,6 @@ protected:
 
     void initFilterBox();
     void reloadTableByData();
-    //void countryFilter(const QString&);
     void riskFilter(const QString&);
     void dateFilter(const QString&);
     void sortByDate();
@@ -133,12 +137,42 @@ protected:
     QComboBox               *m_currencyFilterControl;
 
     void initFilterBox();
-    //void countryFilter(const QString&);
     void currencyFilter(const QString&);
     void reloadTableByData();
 
 protected slots:
     void slotFilter(QString);
+
+};
+
+
+//APIBagPage
+class APIBagPage : public APITablePageBase
+{
+    Q_OBJECT
+public:
+    APIBagPage(QWidget*);
+    virtual ~APIBagPage() {}
+
+    QString iconPath() const {return QString(":/icons/images/bag.svg");}
+    QString caption() const {return QString("Bag");}
+
+    //inline const BagState* bagObj() const {return m_bag;}
+    //virtual void resetPage();
+protected:
+    BagState    *m_bag;
+
+    void initFilterBox();
+
+private:
+    void addGeneralEdit(QString, int);
+
+signals:
+    void signalLoadPositions(const QJsonObject&);
+    void signalLoadPortfolio(const QJsonObject&);
+
+protected slots:
+    void slotBagUpdate();
 
 };
 

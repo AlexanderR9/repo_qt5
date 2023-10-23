@@ -13,6 +13,7 @@ enum HttpReplyError {hreOk = 0,
                      hreReplyNull,
                      hreServerErr,
                      hreInvalidMetod,
+                     hreBuzy,
                      hreUnknown = -1};
 
 

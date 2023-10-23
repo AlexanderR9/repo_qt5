@@ -64,6 +64,7 @@ public:
     inline QString apiServer() const {return m_apiServer;}
     inline void setHttpProtocolType(int t) {m_protocolType = t;} //установить тип протогола http
     inline void setUri(QString s) {m_uri = s.trimmed();} //установить адрес(путь) получаемого ресурса на сервере
+    inline bool isBuzy() const {return m_buzy;}
 
     static QString httpType(int t); //return 'http://' or 'https://' or '???'
 
@@ -75,6 +76,7 @@ protected:
     int                      m_protocolType; //тип протокола http, елемент множества HttpProtocolType
     QString                  m_apiServer; //доменное имя сервера или его IP (то что идет от http до .ru, включая .ru)
     QString                  m_uri; //адрес(путь) ресурса на сервере (то что идет после .ru без слешей в начале и конце), может быть пустым
+    bool                     m_buzy; //признак того что запрос еще выполняется
 
     virtual void destroyObj();
     virtual void initNetObjects(); //инициализация объектов QNetworkAccessManager, QNetworkRequest

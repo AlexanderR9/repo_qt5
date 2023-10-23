@@ -5,6 +5,8 @@
 #include "ltable.h"
 #include "instrument.h"
 #include "apicommonsettings.h"
+#include "bagstate.h"
+
 
 #include <QSplitter>
 #include <QListWidget>
@@ -16,6 +18,7 @@
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QGridLayout>
+#include <QLineEdit>
 #include <QSpacerItem>
 #include <QTableWidget>
 #include <QDir>
@@ -84,6 +87,12 @@ void APIReqPage::trySendReq()
         emit signalFinished(hreWrongReqParams);
         return;
     }
+    if (requesterBuzy())
+    {
+        emit signalError("Requester object is buzy.");
+        emit signalFinished(hreBuzy);
+        return;
+    }
 
     prepareReq(row);
     emit signalMsg(QString("URL:   %1 \n").arg(m_reqObj->fullUrl()));
@@ -100,6 +109,27 @@ void APIReqPage::trySendReq()
     }
 
     m_reqObj->start(hrmPost);
+}
+void APIReqPage::autoStartReq(QString src)
+{
+    int n = m_sourceBox->listWidget()->count();
+    if (n <= 0) {emit signalError("Sources list is empty"); return;}
+
+    bool find_ok = false;
+    for (int i=0; i<n; i++)
+    {
+        QString s = m_sourceBox->listWidget()->item(i)->text();
+        if (s.contains(src))
+        {
+            m_sourceBox->listWidget()->setCurrentRow(i);
+            //m_sourceBox->listWidget()->item(i)->setSelected(true);
+            find_ok = true;
+            break;
+        }
+    }
+
+    if (find_ok) trySendReq();
+    else emit signalError("SRC not fond among config sources list");
 }
 void APIReqPage::setServerAPI(int p_type, const QString &serv_url)
 {
@@ -123,6 +153,8 @@ void APIReqPage::prepareReq(int source_row)
     if (src.contains("OperationsService"))
     {
         m_reqObj->addMetaData("currency", "RUB");
+        m_reqObj->addMetaData("accountId", QString::number(api_commonSettings.user_id));
+
     }
     else if (src.contains("BondBy"))
     {
@@ -156,6 +188,11 @@ void APIReqPage::prepareReq(int source_row)
             m_reqObj->addMetaData("to", "2023-10-19T18:00:00Z");
         }
     }
+}
+bool APIReqPage::requesterBuzy() const
+{
+    if (m_reqObj) return m_reqObj->isBuzy();
+    return false;
 }
 void APIReqPage::checkReply()
 {
@@ -191,6 +228,7 @@ void APIReqPage::setExpandLevel(int a)
 void APIReqPage::handleReplyData()
 {
     QString src = m_reqObj->fullUrl().toLower();
+    qDebug()<<QString("APIReqPage::handleReplyData() SRC [%1]").arg(src);
     if (src.right(5) == "bonds")
     {
         saveBondsFile();
@@ -198,6 +236,36 @@ void APIReqPage::handleReplyData()
     else if (src.right(6) == "shares")
     {
         saveStocksFile();
+    }
+    else if (src.right(11) == "getaccounts")
+    {
+        parseUserID();
+    }
+    else if (src.right(12) == "getpositions")
+    {
+        qDebug("emit getpositions");
+        emit signalLoadPositions(m_reqObj->lastReply().data);
+    }
+    else if (src.right(12) == "getportfolio")
+    {
+        qDebug("emit signalLoadPortfolio");
+        emit signalLoadPortfolio(m_reqObj->lastReply().data);
+    }
+}
+void APIReqPage::parseUserID()
+{
+    const LHttpApiReplyData& r = m_reqObj->lastReply();
+    const QJsonArray &j_arr = r.data.constBegin().value().toArray();
+    if (j_arr.isEmpty()) return;
+
+    if (j_arr.first().isObject())
+    {
+        const QJsonObject &j_obj = j_arr.first().toObject();
+        QString s_id = j_obj.value("id").toString();
+        bool ok;
+        api_commonSettings.user_id = s_id.toInt(&ok);
+        if (!ok) emit signalError(QString("invalid user ID: %1").arg(s_id));
+        else emit signalMsg(QString("was got user ID: %1").arg(api_commonSettings.user_id));
     }
 }
 void APIReqPage::saveBondsFile()
@@ -272,6 +340,8 @@ void APIBondsPage::initFilterBox()
     m_countryFilterControl->addItem("All");
     m_countryFilterControl->addItem("Only Rus");
     m_countryFilterControl->addItem("Exept Rus");
+    m_countryFilterControl->addItem("Only USA");
+    m_countryFilterControl->addItem("Exept USA");
     g_lay->addWidget(m_countryFilterControl, 0, 1);
 
     m_riskFilterControl = new QComboBox(this);
@@ -478,6 +548,8 @@ void APIStoksPage::initFilterBox()
     m_countryFilterControl->addItem("All");
     m_countryFilterControl->addItem("Only Rus");
     m_countryFilterControl->addItem("Exept Rus");
+    m_countryFilterControl->addItem("Only USA");
+    m_countryFilterControl->addItem("Exept USA");
     g_lay->addWidget(m_countryFilterControl, 0, 1);
 
     m_currencyFilterControl = new QComboBox(this);
@@ -576,6 +648,77 @@ void APIStoksPage::reloadTableByData()
 }
 
 
+//APIBagPage
+APIBagPage::APIBagPage(QWidget *parent)
+    :APITablePageBase(parent),
+      m_bag(NULL)
+{
+    setObjectName("api_bag_page");
+
+    m_bag = new BagState(this);
+    m_tableBox->setHeaderLabels(m_bag->tableHeaders());
+    m_tableBox->setTitle("Positions");
+    initFilterBox();
+
+    connect(this, SIGNAL(signalLoadPortfolio(const QJsonObject&)), m_bag, SLOT(slotLoadPortfolio(const QJsonObject&)));
+    connect(this, SIGNAL(signalLoadPositions(const QJsonObject&)), m_bag, SLOT(slotLoadPositions(const QJsonObject&)));
+    connect(m_bag, SIGNAL(signalBagUpdate()), this, SLOT(slotBagUpdate()));
+
+}
+void APIBagPage::initFilterBox()
+{
+    m_filterBox->setTitle("General state");
+    if (m_filterBox->layout()) {delete m_filterBox->layout();}
+    QGridLayout *g_lay = new QGridLayout(m_filterBox);
+    //setLayout(g_lay);
+
+    g_lay->addWidget(new QLabel("Blocked"), 0, 0);
+    g_lay->addWidget(new QLabel("Free"), 1, 0);
+    g_lay->addWidget(new QLabel("Total"), 2, 0);
+    addGeneralEdit("blocked", 0);
+    addGeneralEdit("free", 1);
+    addGeneralEdit("total", 2);
+
+    QSpacerItem *spcr = new QSpacerItem(10, 10, QSizePolicy::Maximum);
+    g_lay->addItem(spcr, 3, 0, 2, 2);
+}
+void APIBagPage::addGeneralEdit(QString name, int row)
+{
+    QGridLayout *g_lay = qobject_cast<QGridLayout*>(m_filterBox->layout());
+    if (g_lay)
+    {
+        QLineEdit *edit = new QLineEdit(this);
+        edit->setReadOnly(true);
+        edit->setObjectName(QString("%1_edit").arg(name));
+        g_lay->addWidget(edit, row, 1);
+    }
+    else qWarning(" APIBagPage::addGeneralEdit WARNING - grid layout is NULL");
+}
+void APIBagPage::slotBagUpdate()
+{
+    const QObjectList children(m_filterBox->children());
+    foreach (QObject *child, children)
+    {
+        if (!child) continue;
+        if (child->objectName().contains("blocked"))
+        {
+            QLineEdit *edit = qobject_cast<QLineEdit*>(child);
+            if (edit) edit->setText(m_bag->strBlocked());
+        }
+        else if (child->objectName().contains("free"))
+        {
+            QLineEdit *edit = qobject_cast<QLineEdit*>(child);
+            if (edit) edit->setText(m_bag->strFree());
+        }
+        else if (child->objectName().contains("total"))
+        {
+            QLineEdit *edit = qobject_cast<QLineEdit*>(child);
+            if (edit) edit->setText(m_bag->strTotal());
+        }
+    }
+}
+
+
 //APITablePageBase
 APITablePageBase::APITablePageBase(QWidget *parent)
     :LSimpleWidget(parent, 20),
@@ -610,11 +753,15 @@ void APITablePageBase::countryFilter(const QString &f_value)
     int n = t->rowCount();
     if (n == 0) return;
 
-    QString f_key("Российская Федерация");
+    QString f_key_ru("Российская Федерация");
+    QString f_key_us("Соединенные Штаты");
+
     for (int i=n-1; i>=0; i--)
     {
         QString tv = t->item(i, COUNTRY_COL)->text().trimmed();
-        if (f_value.contains("only") && tv != f_key) t->removeRow(i);
-        else if (f_value.contains("exept") && tv == f_key) t->removeRow(i);
+        if (f_value.contains("only rus") && tv != f_key_ru) t->removeRow(i);
+        else if (f_value.contains("exept rus") && tv == f_key_ru) t->removeRow(i);
+        else if (f_value.contains("only usa") && !tv.contains(f_key_us)) t->removeRow(i);
+        else if (f_value.contains("exept usa") && tv.contains(f_key_us)) t->removeRow(i);
     }
 }

@@ -53,7 +53,11 @@ void MainForm::initPages()
 
     APIStoksPage *stock_page = new  APIStoksPage(this);
     m_pages.insert(aptStock, stock_page);
-    //connect(req_page, SIGNAL(signalGetSelectedBondUID(QString&)), bond_page, SLOT(slotSetSelectedBondUID(QString&)));
+
+    APIBagPage *bag_page = new  APIBagPage(this);
+    m_pages.insert(aptBag, bag_page);
+    connect(req_page, SIGNAL(signalLoadPortfolio(const QJsonObject&)), bag_page, SIGNAL(signalLoadPortfolio(const QJsonObject&)));
+    connect(req_page, SIGNAL(signalLoadPositions(const QJsonObject&)), bag_page, SIGNAL(signalLoadPositions(const QJsonObject&)));
 
     m_tab->clear();
     foreach (LSimpleWidget *page, m_pages)
@@ -118,6 +122,11 @@ void MainForm::initCommonSettings()
 
     key = QString("print_headers");
     lCommonSettings.addParam(QString("Out headers to protocol"), LSimpleDialog::sdtBool, key);
+    lCommonSettings.setDefValue(key, false);
+
+    key = QString("auto_start");
+    lCommonSettings.addParam(QString("Run AUTO_START requests"), LSimpleDialog::sdtBool, key);
+    lCommonSettings.setDefValue(key, false);
 
 }
 void MainForm::initActions()
@@ -191,7 +200,6 @@ void MainForm::save()
 }
 void MainForm::load()
 {
-
     QString err;
     api_commonSettings.loadConfig(err);
     if (!err.isEmpty())
@@ -230,6 +238,8 @@ void MainForm::load()
 
     int tab_index = settings.value(QString("%1/tab_index").arg(objectName()), 0).toInt();
     if (m_tab) m_tab->setCurrentIndex(tab_index);
+
+    runAutoStart();
 }
 void MainForm::slotError(const QString &text)
 {
@@ -253,7 +263,7 @@ void MainForm::slotReqFinished(int result)
     }
 
     m_protocol->addText(" ---------------- Request finished -------------------", LProtocolBox::ttData);
-    enableActions(true);
+    if (!autoStartModeNow()) enableActions(true);
 }
 void MainForm::slotAppSettingsChanged(QStringList list)
 {
@@ -274,6 +284,54 @@ void MainForm::slotAppSettingsChanged(QStringList list)
         if (req_page) req_page->setExpandLevel(expandLevel());
         else slotError("req_page is NULL");
     }
+}
+void MainForm::slotAutoStart()
+{
+    QTimer *ast = qobject_cast<QTimer*>(sender());
+    if (!ast) {slotError("Auto start timer is NULL"); return;}
+
+    APIReqPage *req_page = qobject_cast<APIReqPage*>(m_pages.value(aptReq));
+    if (req_page && req_page->requesterBuzy())
+    {
+        slotError("Requester object is buzy.");
+        return;
+    }
+
+    if (api_commonSettings.start_reqs.invalid())
+    {
+        ast->stop();
+        enableActions(true);
+        getAction(LMainWidget::atLoadData)->setEnabled(true);
+        slotMsg("Auto start finished!");
+        return;
+    }
+
+    QString next_src(api_commonSettings.start_reqs.src.first());
+    slotMsg(QString("next src: %1").arg(next_src));
+    api_commonSettings.start_reqs.src.removeFirst();
+    req_page->autoStartReq(next_src);
+}
+void MainForm::runAutoStart()
+{
+    if (!autoStart()) return;
+    if (api_commonSettings.start_reqs.invalid())
+    {
+        slotError("Auto start node is invalid or is absent");
+        return;
+    }
+
+    QString s = QString("RUN AUTO_START MODE: timeout=%1, req count %2").arg(api_commonSettings.start_reqs.timeout).arg(api_commonSettings.start_reqs.src.count());
+    m_protocol->addText(s, LProtocolBox::ttFile);
+    enableActions(false);
+    getAction(LMainWidget::atLoadData)->setEnabled(false);
+
+    QTimer *ast = new QTimer(this);
+    connect(ast, SIGNAL(timeout()), this, SLOT(slotAutoStart()));
+    ast->start(api_commonSettings.start_reqs.timeout);
+}
+bool MainForm::autoStartModeNow() const
+{
+    return !getAction(LMainWidget::atLoadData)->isEnabled();
 }
 
 
@@ -299,12 +357,10 @@ bool MainForm::printHeaders() const
 {
     return lCommonSettings.paramValue("print_headers").toBool();
 }
-/*
-QString MainForm::uid() const
+bool MainForm::autoStart() const
 {
-    return lCommonSettings.paramValue("uid").toString();
+    return lCommonSettings.paramValue("auto_start").toBool();
 }
-*/
 int MainForm::expandLevel() const
 {
     return lCommonSettings.paramValue("expand_level").toInt();

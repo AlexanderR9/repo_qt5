@@ -24,11 +24,27 @@ float InstrumentBase::floatFromJVBlock(const QJsonValue &jv_block)
         const QJsonObject &f_obj = jv_block.toObject();
         float f_units = f_obj.value("units").toString().toDouble();
         double f_nano = f_obj.value("nano").toDouble();
-        //qDebug()<<QString("f_units=%1    f_nano=%2").arg(f_units).arg(f_nano);
         while (f_nano > 1) f_nano /= double(10);
         f = f_units + f_nano;
     }
     return f;
+}
+void InstrumentBase::fromFileLine(const QString &line)
+{
+    reset();
+    int pos = line.indexOf(".");
+    if (pos <= 0 || pos > 5) return;
+    bool ok;
+    number = line.left(pos).trimmed().toUInt(&ok);
+    if (!ok) return;
+
+    QString s = LString::strTrimLeft(line, pos+1).trimmed();
+    QStringList list(LString::trimSplitList(s, " / "));
+
+    parseFields(list);
+
+    if (country.toLower().contains("великобрита"))
+        country = QString("Великобритания");
 }
 
 
@@ -63,17 +79,8 @@ void BondDesc::fromJson(const QJsonValue &jv)
     }
     else qWarning("BondDesc::fromJson WARNING - input jv is not convert to QJsonObject");
 }
-void BondDesc::fromFileLine(const QString &line)
+void BondDesc::parseFields(const QStringList &list)
 {
-    reset();
-    int pos = line.indexOf(".");
-    if (pos <= 0 || pos > 5) return;
-    bool ok;
-    number = line.left(pos).trimmed().toUInt(&ok);
-    if (!ok) return;
-
-    QString s = LString::strTrimLeft(line, pos+1).trimmed();
-    QStringList list(LString::trimSplitList(s, "/"));
     if (list.count() != filedsCount()) return;
 
     name = list.at(0);
@@ -141,19 +148,13 @@ void StockDesc::fromJson(const QJsonValue &jv)
         ticker = j_obj.value("ticker").toString();
         sector = j_obj.value("sector").toString();
         api_trade =  j_obj.value("apiTradeAvailableFlag").toBool();
+
+        if (country.trimmed().isEmpty()) country = "?";
+        if (sector.trimmed().isEmpty()) sector = "---";
     }
 }
-void StockDesc::fromFileLine(const QString &line)
+void StockDesc::parseFields(const QStringList &list)
 {
-    reset();
-    int pos = line.indexOf(".");
-    if (pos <= 0 || pos > 5) return;
-    bool ok;
-    number = line.left(pos).trimmed().toUInt(&ok);
-    if (!ok) return;
-
-    QString s = LString::strTrimLeft(line, pos+1).trimmed();
-    QStringList list(LString::trimSplitList(s, "/"));
     if (list.count() != filedsCount()) return;
 
     name = list.at(0);

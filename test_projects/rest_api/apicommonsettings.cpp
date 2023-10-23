@@ -25,6 +25,7 @@ void API_CommonSettings::reset()
     service_colors.clear();
     candle_sizes.clear();
     token.clear();
+    start_reqs.reset();
 }
 void API_CommonSettings::loadConfig(QString &err)
 {
@@ -58,6 +59,8 @@ void API_CommonSettings::loadConfig(QString &err)
     QDomNode candles_node = root_node.namedItem("candles");
     if (!candles_node.isNull()) parseCandlesNode(candles_node);
 
+    QDomNode auto_start_node = root_node.namedItem("auto_start");
+    if (!auto_start_node.isNull()) parseAutoStartNode(auto_start_node);
 }
 void API_CommonSettings::parseServicesNode(const QDomNode &node)
 {
@@ -101,6 +104,41 @@ void API_CommonSettings::parseCandlesNode(const QDomNode &node)
             if (!key.isEmpty() && !value.isEmpty()) candle_sizes.insert(key, value);
         }
         child_node = child_node.nextSibling();
+    }
+}
+void API_CommonSettings::parseAutoStartNode(const QDomNode &node)
+{
+    start_reqs.reset();
+    start_reqs.timeout = LStaticXML::getIntAttrValue("timeout", node, 3000);
+
+    QMap<quint8, QString> map;
+    QDomNode child_node = node.firstChild();
+    while (!child_node.isNull())
+    {
+        if (child_node.nodeName() == "metod")
+        {
+            QString metod = LStaticXML::getStringAttrValue("name", child_node).trimmed();
+            int step = LStaticXML::getIntAttrValue("i", child_node, -1);
+            if (step > 0 && !metod.isEmpty()) map.insert(step, metod);
+        }
+        child_node = child_node.nextSibling();
+    }
+
+    //check sequence
+    QList<quint8> keys(map.keys());
+    for (int i=0; i<keys.count(); i++)
+    {
+        if (i+1 == keys.at(i))
+        {
+            start_reqs.src.append(map.value(i+1));
+            qDebug()<<QString("step=%1  src=%2").arg(i+1).arg(start_reqs.src.last());
+        }
+        else
+        {
+            qWarning()<<QString("API_CommonSettings::parseAutoStartNode WARNING invalid sequence, %1 != %2").arg(i+1).arg(keys.at(i));
+            start_reqs.reset();
+            break;
+        }
     }
 }
 void API_CommonSettings::parseToken(QString commonSettingsToken)

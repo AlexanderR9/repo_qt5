@@ -35,9 +35,11 @@ protected:
     void initPages();
     void sendAPIRequest();
     void loadData();
+    void runAutoStart();
     void clear();
     LSimpleWidget* activePage() const;
     void enableActions(bool);
+    bool autoStartModeNow() const;
 
 protected slots:
     void slotAction(int); //virtual slot from parent
@@ -48,17 +50,18 @@ protected slots:
     void slotGetReqParams(QString &s1, QString &s2) {s1 = token(); s2 = baseURI();}
     void slotGetPricesDepth(quint16 &dp) {dp = quint16(depth());}
     void slotGetCandleSize(QString &cp) {cp = candleSize();}
+    void slotAutoStart();
 
 
 private:
     QString serverAPI() const;
     QString baseURI() const;
-    //QString uid() const;
     QString token() const;
     int expandLevel() const;
     int depth() const;
     QString candleSize() const;
     bool printHeaders() const;
+    bool autoStart() const;
 
 };
 

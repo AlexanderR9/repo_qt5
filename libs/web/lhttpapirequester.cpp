@@ -17,8 +17,8 @@ LHttpApiRequester::LHttpApiRequester(QObject *parent)
       m_request(NULL),
       m_protocolType(hptHttp),
       m_apiServer(QString()),
-      m_uri(QString())
-
+      m_uri(QString()),
+      m_buzy(false)
 {
     setObjectName("lhttpapirequester");
     initNetObjects();
@@ -40,6 +40,7 @@ void LHttpApiRequester::reinitReq()
 }
 void LHttpApiRequester::slotFinished(QNetworkReply *reply)
 {
+    m_buzy = false;
     int code = hreUnknown;
     if (reply)
     {
@@ -75,11 +76,13 @@ void LHttpApiRequester::start(int metod)
     {
         case hrmGet:
         {
+            m_buzy = true;
             m_manager->get(*m_request);
             break;
         }
         case hrmPost:
         {
+            m_buzy = true;
             m_manager->post(*m_request, QJsonDocument(m_metadata).toJson());
             break;
         }

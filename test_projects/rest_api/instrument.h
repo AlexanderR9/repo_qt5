@@ -28,11 +28,12 @@ struct InstrumentBase
 
     virtual void reset() {number = 0; name = "?"; country = currency = uid = QString(); api_trade = false;}
     virtual bool invalid() const {return (name.isEmpty() || uid.isEmpty());}
+    virtual void fromFileLine(const QString&);
 
     virtual QString toStr() const = 0;
     virtual void fromJson(const QJsonValue&) = 0;
-    virtual void fromFileLine(const QString&) = 0;
     virtual QStringList toTableRowData() const = 0;
+    virtual void parseFields(const QStringList&) = 0;
 
 };
 
@@ -57,8 +58,9 @@ struct BondDesc : public InstrumentBase
     void reset();
     QString toStr() const;
     void fromJson(const QJsonValue&);
-    void fromFileLine(const QString&);
+    //void fromFileLine(const QString&);
     QStringList toTableRowData() const;
+    void parseFields(const QStringList&);
 
 };
 
@@ -76,10 +78,13 @@ struct StockDesc : public InstrumentBase
     void reset();
     QString toStr() const;
     void fromJson(const QJsonValue&);
-    void fromFileLine(const QString&);
+    //void fromFileLine(const QString&);
     QStringList toTableRowData() const;
+    void parseFields(const QStringList&);
 
 };
+
+
 
 
 #endif
