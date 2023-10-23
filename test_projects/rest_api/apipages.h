@@ -29,17 +29,20 @@ public:
     void checkReply();
     bool replyOk() const;
     void setExpandLevel(int);
+    inline void setPrintHeaders(bool b) {m_printHeaders = b;}
 
 protected:
     LListWidgetBox      *m_sourceBox;
     LTreeWidgetBox      *m_replyBox;
     LHttpApiRequester   *m_reqObj;
+    bool                 m_printHeaders;
 
     void initWidgets();
     void initSources();
     void prepareReq(int);
     void handleReplyData();
     void saveBondsFile();
+    void saveStocksFile();
 
 signals:
     void signalFinished(int);
@@ -66,6 +69,7 @@ protected:
     QGroupBox               *m_filterBox;
 
     void initWidgets();
+    virtual void countryFilter(const QString&);
 
 };
 
@@ -83,17 +87,19 @@ public:
     virtual void resetPage();
     void loadData();
 
-    static QString dataFile();// {return QString("bonds.txt");}
+    static QString dataFile();
 
 protected:
     QList<BondDesc>         m_data;
     QComboBox               *m_countryFilterControl;
     QComboBox               *m_riskFilterControl;
+    QComboBox               *m_finishDateControl;
 
     void initFilterBox();
     void reloadTableByData();
-    void countryFilter(const QString&);
+    //void countryFilter(const QString&);
     void riskFilter(const QString&);
+    void dateFilter(const QString&);
     void sortByDate();
 
 protected slots:
@@ -101,7 +107,6 @@ protected slots:
 
 public slots:
     void slotSetSelectedBondUID(QString&);
-
 
 };
 
@@ -117,7 +122,23 @@ public:
     QString iconPath() const {return QString(":/icons/images/stock.png");}
     QString caption() const {return QString("Stocks list");}
 
-    static QString dataFile() {return QString("stocks.txt");}
+    virtual void resetPage();
+    void loadData();
+
+    static QString dataFile();
+
+protected:
+    QList<StockDesc>         m_data;
+    QComboBox               *m_countryFilterControl;
+    QComboBox               *m_currencyFilterControl;
+
+    void initFilterBox();
+    //void countryFilter(const QString&);
+    void currencyFilter(const QString&);
+    void reloadTableByData();
+
+protected slots:
+    void slotFilter(QString);
 
 };
 

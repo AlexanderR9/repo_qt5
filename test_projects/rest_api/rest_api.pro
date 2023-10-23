@@ -33,5 +33,6 @@ HEADERS += $$PWD/mainform.h \
 SOURCES += $$PWD/main.cpp \
 	$$PWD/apipages.cpp \
 	$$PWD/mainform.cpp \
-        $$PWD/apicommonsettings.cpp
+        $$PWD/apicommonsettings.cpp \
+    instrument.cpp
 

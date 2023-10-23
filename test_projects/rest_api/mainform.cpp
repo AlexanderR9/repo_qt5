@@ -62,7 +62,6 @@ void MainForm::initPages()
         m_tab->addTab(page, icon, page->caption());
         connect(page, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
         connect(page, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
-        //connect(page, SIGNAL(signalSendLog(const LogStruct&)), this, SIGNAL(signalSendLog(const LogStruct&)));
     }
 }
 void MainForm::loadData()
@@ -70,15 +69,22 @@ void MainForm::loadData()
     m_protocol->addSpace();
     m_protocol->addText("Loading data .....", LProtocolBox::ttData);
     LSimpleWidget *page = activePage();
-    if (page && page->caption().toLower().contains("bond"))
+    if (!page) {slotError("PAGE IS NULL!!!!"); return;}
+
+    if (page->caption().toLower().contains("bond"))
     {
         APIBondsPage *bond_page = qobject_cast<APIBondsPage*>(m_pages.value(aptBond));
         if (bond_page) bond_page->loadData();
         else slotError("bond_page is NULL");
     }
+    else if (page->caption().toLower().contains("stock"))
+    {
+        APIStoksPage *stock_page = qobject_cast<APIStoksPage*>(m_pages.value(aptStock));
+        if (stock_page) stock_page->loadData();
+        else slotError("stock_page is NULL");
+    }
     else m_protocol->addText("active page belong not for loading", LProtocolBox::ttWarning);
 }
-
 void MainForm::initCommonSettings()
 {
     QStringList combo_list;
@@ -109,6 +115,9 @@ void MainForm::initCommonSettings()
 
     key = QString("candle_size");
     lCommonSettings.addParam(QString("Candle size (one interval)"), LSimpleDialog::sdtStringCombo, key);
+
+    key = QString("print_headers");
+    lCommonSettings.addParam(QString("Out headers to protocol"), LSimpleDialog::sdtBool, key);
 
 }
 void MainForm::initActions()
@@ -215,6 +224,7 @@ void MainForm::load()
     {
         req_page->setServerAPI(hptHttps, serverAPI());
         req_page->setExpandLevel(expandLevel());
+        req_page->setPrintHeaders(printHeaders());
     }
     else slotError("req_page is NULL");
 
@@ -248,10 +258,14 @@ void MainForm::slotReqFinished(int result)
 void MainForm::slotAppSettingsChanged(QStringList list)
 {
     LMainWidget::slotAppSettingsChanged(list);
-    if (list.contains("server_api"))
+    if (list.contains("server_api") || list.contains("print_headers"))
     {
         APIReqPage *req_page = qobject_cast<APIReqPage*>(m_pages.value(aptReq));
-        if (req_page) req_page->setServerAPI(hptHttps, serverAPI());
+        if (req_page)
+        {
+            req_page->setServerAPI(hptHttps, serverAPI());
+            req_page->setPrintHeaders(printHeaders());
+        }
         else slotError("req_page is NULL");
     }
     else if (list.contains("expand_level"))
@@ -280,6 +294,10 @@ QString MainForm::token() const
 QString MainForm::candleSize() const
 {
     return lCommonSettings.paramValue("candle_size").toString();
+}
+bool MainForm::printHeaders() const
+{
+    return lCommonSettings.paramValue("print_headers").toBool();
 }
 /*
 QString MainForm::uid() const

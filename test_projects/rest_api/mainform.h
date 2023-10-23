@@ -58,6 +58,7 @@ private:
     int expandLevel() const;
     int depth() const;
     QString candleSize() const;
+    bool printHeaders() const;
 
 };
 
