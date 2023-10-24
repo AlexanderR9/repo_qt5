@@ -5,58 +5,13 @@
 #include "instrument.h"
 
 class QSettings;
-class LListWidgetBox;
-class LTreeWidgetBox;
-class LHttpApiRequester;
+//class LListWidgetBox;
+//class LTreeWidgetBox;
+//class LHttpApiRequester;
 class QComboBox;
 class BagState;
 
 enum APIPageType {aptReq = 181, aptBond, aptStock, aptBag};
-
-//APIReqPage
-class APIReqPage : public LSimpleWidget
-{
-    Q_OBJECT
-public:
-    APIReqPage(QWidget*);
-    virtual ~APIReqPage() {}
-
-    QString iconPath() const {return QString(":/icons/images/b_scale.svg");}
-    QString caption() const {return QString("API request");}
-    virtual void resetPage();
-    void trySendReq();
-    void autoStartReq(QString);
-    void setServerAPI(int, const QString&);
-    void checkReply();
-    bool replyOk() const;
-    void setExpandLevel(int);
-    inline void setPrintHeaders(bool b) {m_printHeaders = b;}
-    bool requesterBuzy() const;
-
-protected:
-    LListWidgetBox      *m_sourceBox;
-    LTreeWidgetBox      *m_replyBox;
-    LHttpApiRequester   *m_reqObj;
-    bool                 m_printHeaders;
-
-    void initWidgets();
-    void initSources();
-    void prepareReq(int);
-    void handleReplyData();
-    void saveBondsFile();
-    void saveStocksFile();
-    void parseUserID();
-
-signals:
-    void signalFinished(int);
-    void signalGetReqParams(QString&, QString&); //try get tocken and base_uri
-    void signalGetSelectedBondUID(QString&);
-    void signalGetPricesDepth(quint16&);
-    void signalGetCandleSize(QString&);
-    void signalLoadPositions(const QJsonObject&);
-    void signalLoadPortfolio(const QJsonObject&);
-
-};
 
 
 //APITablePageBase
@@ -75,6 +30,12 @@ protected:
 
     void initWidgets();
     virtual void countryFilter(const QString&);
+    virtual void setSelectedUID(QString&, quint16) {}
+
+public slots:
+    virtual void slotGetPaperInfo(QStringList&) {}
+    virtual void slotSetSelectedUID(QString&);
+    virtual void slotSetSelectedUIDList(QStringList&);
 
 };
 
@@ -95,7 +56,7 @@ public:
     static QString dataFile();
 
 protected:
-    QList<BondDesc>         m_data;
+    QList<BondDesc>          m_data;
     QComboBox               *m_countryFilterControl;
     QComboBox               *m_riskFilterControl;
     QComboBox               *m_finishDateControl;
@@ -105,23 +66,24 @@ protected:
     void riskFilter(const QString&);
     void dateFilter(const QString&);
     void sortByDate();
+    void setSelectedUID(QString&, quint16);
 
 protected slots:
     void slotFilter(QString);
 
 public slots:
-    void slotSetSelectedBondUID(QString&);
+    void slotGetPaperInfo(QStringList&);
 
 };
 
 
-//APIStoksPage
-class APIStoksPage : public APITablePageBase
+//APIStocksPage
+class APIStocksPage : public APITablePageBase
 {
     Q_OBJECT
 public:
-    APIStoksPage(QWidget*);
-    virtual ~APIStoksPage() {}
+    APIStocksPage(QWidget*);
+    virtual ~APIStocksPage() {}
 
     QString iconPath() const {return QString(":/icons/images/stock.png");}
     QString caption() const {return QString("Stocks list");}
@@ -139,9 +101,13 @@ protected:
     void initFilterBox();
     void currencyFilter(const QString&);
     void reloadTableByData();
+    void setSelectedUID(QString&, quint16);
 
 protected slots:
     void slotFilter(QString);
+
+public slots:
+    void slotGetPaperInfo(QStringList&);
 
 };
 
@@ -157,19 +123,19 @@ public:
     QString iconPath() const {return QString(":/icons/images/bag.svg");}
     QString caption() const {return QString("Bag");}
 
-    //inline const BagState* bagObj() const {return m_bag;}
-    //virtual void resetPage();
 protected:
     BagState    *m_bag;
 
     void initFilterBox();
+    void reloadPosTable();
 
 private:
-    void addGeneralEdit(QString, int);
+    void addGeneralEdit(QString, int&);
 
 signals:
     void signalLoadPositions(const QJsonObject&);
     void signalLoadPortfolio(const QJsonObject&);
+    void signalGetPaperInfo(QStringList&);
 
 protected slots:
     void slotBagUpdate();

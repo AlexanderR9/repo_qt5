@@ -18,12 +18,13 @@ void BagState::reset()
 QStringList BagState::tableHeaders() const
 {
     QStringList headers;
-    headers << "N pos" << "Name" << "Ticker" << "Count" << "Price" << "Profit";
+    headers << "N pos" << "Name" << "Ticker" << "Count" << "Price (buy/cur)" << "Profit" << "Type" << "To complete";
     return headers;
 }
 void BagState::slotLoadPositions(const QJsonObject &j_obj)
 {
     qDebug("BagState::slotLoadPositions");
+    m_positions.clear();
     if (j_obj.isEmpty()) return;
     QStringList keys(j_obj.keys());
     foreach (const QString &v, keys)
@@ -31,19 +32,16 @@ void BagState::slotLoadPositions(const QJsonObject &j_obj)
         qDebug()<<QString("next key: %1").arg(v);
         if (v == "blocked" || v == "money")
         {
-            //qDebug("find blocked");
             const QJsonValue &jv = j_obj.value(v);
             if (jv.isArray())
             {
                 const QJsonArray &j_arr = jv.toArray();
                 if (!j_arr.isEmpty())
                 {
-                    qDebug("    is array");
                     if (v == "blocked") m_blocked = InstrumentBase::floatFromJVBlock(j_arr.first());
                     else m_free = InstrumentBase::floatFromJVBlock(j_arr.first());
                 }
             }
-            //break;
         }
     }
 
@@ -51,8 +49,53 @@ void BagState::slotLoadPositions(const QJsonObject &j_obj)
 }
 void BagState::slotLoadPortfolio(const QJsonObject &j_obj)
 {
-    emit signalBagUpdate();
+    qDebug("BagState::slotLoadPortfolio");
+    m_positions.clear();
+    if (j_obj.isEmpty()) return;
 
+    QStringList keys(j_obj.keys());
+    foreach (const QString &v, keys)
+    {
+        if (v == "totalAmountPortfolio")
+        {
+            m_total = InstrumentBase::floatFromJVBlock(j_obj.value(v));
+        }
+        else if (v == "positions")
+        {
+            if (j_obj.value(v).isArray())
+            {
+                parsePositions(j_obj.value(v).toArray());
+            }
+        }
+    }
+
+    emit signalBagUpdate();
+}
+void BagState::parsePositions(const QJsonArray &j_arr)
+{
+    if (j_arr.isEmpty()) return;
+
+    int i = 0;
+    foreach (const QJsonValue &jv, j_arr)
+    {
+        i++;
+        if (jv.isObject())
+        {
+            const QJsonObject &j_obj = jv.toObject();
+            BagPosition pos;
+            pos.average_price = InstrumentBase::floatFromJVBlock(j_obj.value("averagePositionPrice"));
+            pos.current_price = InstrumentBase::floatFromJVBlock(j_obj.value("currentPrice"));
+            pos.count = InstrumentBase::floatFromJVBlock(j_obj.value("quantity"));
+            pos.uid = j_obj.value("instrumentUid").toString();
+            pos.paper_type = j_obj.value("instrumentType").toString();
+
+            if (pos.invalid()) emit signalError(QString("invalid loading position %1").arg(i));
+            else if (pos.paper_type != "currency") m_positions.append(pos);
+        }
+    }
+
+    if (!m_positions.isEmpty())
+        emit signalMsg(QString("Was parsed %1 positions!").arg(m_positions.count()));
 }
 
 

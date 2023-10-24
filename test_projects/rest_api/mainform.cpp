@@ -8,6 +8,7 @@
 #include "lfile.h"
 #include "lhttp_types.h"
 #include "apipages.h"
+#include "apireqpage.h"
 #include "apicommonsettings.h"
 
 #include <QDebug>
@@ -46,18 +47,22 @@ void MainForm::initPages()
     connect(req_page, SIGNAL(signalGetPricesDepth(quint16&)), this, SLOT(slotGetPricesDepth(quint16&)));
     connect(req_page, SIGNAL(signalGetCandleSize(QString&)), this, SLOT(slotGetCandleSize(QString&)));
 
-
     APIBondsPage *bond_page = new  APIBondsPage(this);
     m_pages.insert(aptBond, bond_page);
-    connect(req_page, SIGNAL(signalGetSelectedBondUID(QString&)), bond_page, SLOT(slotSetSelectedBondUID(QString&)));
+    connect(req_page, SIGNAL(signalGetSelectedBondUID(QString&)), bond_page, SLOT(slotSetSelectedUID(QString&)));
+    connect(req_page, SIGNAL(signalGetSelectedBondUIDList(QStringList&)), bond_page, SLOT(slotSetSelectedUIDList(QStringList&)));
 
-    APIStoksPage *stock_page = new  APIStoksPage(this);
+    APIStocksPage *stock_page = new  APIStocksPage(this);
     m_pages.insert(aptStock, stock_page);
+    connect(req_page, SIGNAL(signalGetSelectedStockUID(QString&)), stock_page, SLOT(slotSetSelectedUID(QString&)));
+    connect(req_page, SIGNAL(signalGetSelectedStockUIDList(QStringList&)), stock_page, SLOT(slotSetSelectedUIDList(QStringList&)));
 
     APIBagPage *bag_page = new  APIBagPage(this);
     m_pages.insert(aptBag, bag_page);
     connect(req_page, SIGNAL(signalLoadPortfolio(const QJsonObject&)), bag_page, SIGNAL(signalLoadPortfolio(const QJsonObject&)));
     connect(req_page, SIGNAL(signalLoadPositions(const QJsonObject&)), bag_page, SIGNAL(signalLoadPositions(const QJsonObject&)));
+    connect(bag_page, SIGNAL(signalGetPaperInfo(QStringList&)), bond_page, SLOT(slotGetPaperInfo(QStringList&)));
+    connect(bag_page, SIGNAL(signalGetPaperInfo(QStringList&)), stock_page, SLOT(slotGetPaperInfo(QStringList&)));
 
     m_tab->clear();
     foreach (LSimpleWidget *page, m_pages)
@@ -83,7 +88,7 @@ void MainForm::loadData()
     }
     else if (page->caption().toLower().contains("stock"))
     {
-        APIStoksPage *stock_page = qobject_cast<APIStoksPage*>(m_pages.value(aptStock));
+        APIStocksPage *stock_page = qobject_cast<APIStocksPage*>(m_pages.value(aptStock));
         if (stock_page) stock_page->loadData();
         else slotError("stock_page is NULL");
     }
@@ -98,11 +103,11 @@ void MainForm::initCommonSettings()
 
     QString key = QString("server_api");
     lCommonSettings.addParam(QString("Server API"), LSimpleDialog::sdtString, key);
-    lCommonSettings.setDefValue(key, QString("https://invest-public-api.tinkoff.ru/rest"));
+    lCommonSettings.setDefValue(key, QString("invest-public-api.tinkoff.ru"));
 
     key = QString("base_api_uri");
     lCommonSettings.addParam(QString("Base API URI"), LSimpleDialog::sdtString, key);
-    lCommonSettings.setDefValue(key, QString("tinkoff.public.invest.api.contract.v1"));
+    lCommonSettings.setDefValue(key, QString("rest/tinkoff.public.invest.api.contract.v1"));
 
     key = QString("token");
     lCommonSettings.addParam(QString("API token"), LSimpleDialog::sdtString, key);
@@ -256,13 +261,11 @@ void MainForm::slotReqFinished(int result)
         APIReqPage *req_page = qobject_cast<APIReqPage*>(m_pages.value(aptReq));
         req_page->checkReply();
         if (req_page->replyOk())
-        {
             m_protocol->addText("REPLY CODE OK:", LProtocolBox::ttOk);
-            m_protocol->addSpace();
-        }
     }
 
     m_protocol->addText(" ---------------- Request finished -------------------", LProtocolBox::ttData);
+    m_protocol->addSpace();
     if (!autoStartModeNow()) enableActions(true);
 }
 void MainForm::slotAppSettingsChanged(QStringList list)
@@ -325,6 +328,8 @@ void MainForm::runAutoStart()
     enableActions(false);
     getAction(LMainWidget::atLoadData)->setEnabled(false);
 
+    autoLoadDataFiles();
+
     QTimer *ast = new QTimer(this);
     connect(ast, SIGNAL(timeout()), this, SLOT(slotAutoStart()));
     ast->start(api_commonSettings.start_reqs.timeout);
@@ -332,6 +337,17 @@ void MainForm::runAutoStart()
 bool MainForm::autoStartModeNow() const
 {
     return !getAction(LMainWidget::atLoadData)->isEnabled();
+}
+void MainForm::autoLoadDataFiles()
+{
+    m_protocol->addSpace();
+    m_protocol->addText("Loading data .....", LProtocolBox::ttData);
+    APIBondsPage *bond_page = qobject_cast<APIBondsPage*>(m_pages.value(aptBond));
+    if (bond_page) bond_page->loadData();
+    else slotError("bond_page is NULL");
+    APIStocksPage *stock_page = qobject_cast<APIStocksPage*>(m_pages.value(aptStock));
+    if (stock_page) stock_page->loadData();
+    else slotError("stock_page is NULL");
 }
 
 

@@ -36,6 +36,7 @@ protected:
     void sendAPIRequest();
     void loadData();
     void runAutoStart();
+    void autoLoadDataFiles();
     void clear();
     LSimpleWidget* activePage() const;
     void enableActions(bool);

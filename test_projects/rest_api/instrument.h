@@ -58,13 +58,12 @@ struct BondDesc : public InstrumentBase
     void reset();
     QString toStr() const;
     void fromJson(const QJsonValue&);
-    //void fromFileLine(const QString&);
     QStringList toTableRowData() const;
     void parseFields(const QStringList&);
 
 };
 
-// stick params description
+// stock params description
 struct StockDesc : public InstrumentBase
 {
     StockDesc() {reset();}
@@ -78,7 +77,6 @@ struct StockDesc : public InstrumentBase
     void reset();
     QString toStr() const;
     void fromJson(const QJsonValue&);
-    //void fromFileLine(const QString&);
     QStringList toTableRowData() const;
     void parseFields(const QStringList&);
 

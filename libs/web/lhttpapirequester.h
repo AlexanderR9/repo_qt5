@@ -60,11 +60,14 @@ public:
     inline const LHttpApiReplyData& lastReply() const {return m_lastReply;} //получить данные последнего полученного ответа
     inline void clearMetaData() {m_metadata = QJsonObject();} //очистить m_metadata
     inline void addMetaData(QString key, QString value) {m_metadata[key] = value;} //добавить пару(ключ, значение) в m_metadata
+    inline void addMetaData_arr(QString key, QJsonArray &j_arr) {m_metadata[key] = j_arr;} //добавить пару(ключ, QJsonArray) в m_metadata
     inline void setApiServer(QString s) {m_apiServer = s.trimmed();} //установить доменное имя АПИ сервера
     inline QString apiServer() const {return m_apiServer;}
     inline void setHttpProtocolType(int t) {m_protocolType = t;} //установить тип протогола http
     inline void setUri(QString s) {m_uri = s.trimmed();} //установить адрес(путь) получаемого ресурса на сервере
     inline bool isBuzy() const {return m_buzy;}
+    inline const QJsonObject& metadata() const {return m_metadata;}
+
 
     static QString httpType(int t); //return 'http://' or 'https://' or '???'
 

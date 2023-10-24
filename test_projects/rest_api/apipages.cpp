@@ -1,6 +1,6 @@
 #include "apipages.h"
-#include "lhttpapirequester.h"
-#include "lhttp_types.h"
+//#include "lhttpapirequester.h"
+//#include "lhttp_types.h"
 #include "lfile.h"
 #include "ltable.h"
 #include "instrument.h"
@@ -9,9 +9,9 @@
 
 
 #include <QSplitter>
-#include <QListWidget>
-#include <QTreeWidget>
-#include <QColor>
+//#include <QListWidget>
+//#include <QTreeWidget>
+//#include <QColor>
 #include <QLabel>
 #include <QComboBox>
 #include <QJsonArray>
@@ -28,280 +28,7 @@
 #define RISK_COL            6
 #define COUP_YEAR_COL       5
 #define FINISH_DATE_COL     4
-
-//APIReqPage
-APIReqPage::APIReqPage(QWidget *parent)
-    :LSimpleWidget(parent, 20),
-      m_sourceBox(NULL),
-      m_replyBox(NULL),
-      m_reqObj(NULL),
-      m_printHeaders(true)
-{
-    setObjectName("api_req_page");
-    initWidgets();
-    initSources();
-
-    m_reqObj = new LHttpApiRequester(this);
-    connect(m_reqObj, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
-    connect(m_reqObj, SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
-    connect(m_reqObj, SIGNAL(signalFinished(int)), this, SIGNAL(signalFinished(int)));
-}
-void APIReqPage::resetPage()
-{
-    m_replyBox->clearView();
-}
-void APIReqPage::initWidgets()
-{
-    m_sourceBox = new LListWidgetBox(this);
-    m_sourceBox->setTitle("API sources");
-    m_replyBox = new LTreeWidgetBox(this);
-    m_replyBox->setTitle("Reply data");
-
-    QStringList headers;
-    headers << "Key" << "Value" << "Data type";
-    m_replyBox->setHeaderLabels(headers);
-    headers.clear();
-    headers << "JSON struct" << QString() << QString();
-    m_replyBox->addRootItem(headers);
-    m_replyBox->setRootItemAttrs(Qt::darkCyan, 0, false, true);
-    m_replyBox->resizeByContents();
-    m_replyBox->view()->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_replyBox->view()->setSelectionBehavior(QAbstractItemView::SelectRows);
-
-    h_splitter->addWidget(m_sourceBox);
-    h_splitter->addWidget(m_replyBox);
-}
-void APIReqPage::initSources()
-{
-    foreach(const QString &v, api_commonSettings.services)
-    {
-        m_sourceBox->listWidget()->addItem(v);
-    }
-}
-void APIReqPage::trySendReq()
-{
-    int row = m_sourceBox->listWidget()->currentRow();
-    if (row < 0)
-    {
-        emit signalError("You must select API source.");
-        emit signalFinished(hreWrongReqParams);
-        return;
-    }
-    if (requesterBuzy())
-    {
-        emit signalError("Requester object is buzy.");
-        emit signalFinished(hreBuzy);
-        return;
-    }
-
-    prepareReq(row);
-    emit signalMsg(QString("URL:   %1 \n").arg(m_reqObj->fullUrl()));
-
-    if (m_printHeaders)
-    {
-        //request headers to protocol
-        QStringList req_headers;
-        m_reqObj->getReqHeaders(req_headers);
-        emit signalMsg("REQUEST HEADERS:");
-        foreach (const QString &v, req_headers)
-            emit signalMsg(v);
-        emit signalMsg("-------------------------------------------");
-    }
-
-    m_reqObj->start(hrmPost);
-}
-void APIReqPage::autoStartReq(QString src)
-{
-    int n = m_sourceBox->listWidget()->count();
-    if (n <= 0) {emit signalError("Sources list is empty"); return;}
-
-    bool find_ok = false;
-    for (int i=0; i<n; i++)
-    {
-        QString s = m_sourceBox->listWidget()->item(i)->text();
-        if (s.contains(src))
-        {
-            m_sourceBox->listWidget()->setCurrentRow(i);
-            //m_sourceBox->listWidget()->item(i)->setSelected(true);
-            find_ok = true;
-            break;
-        }
-    }
-
-    if (find_ok) trySendReq();
-    else emit signalError("SRC not fond among config sources list");
-}
-void APIReqPage::setServerAPI(int p_type, const QString &serv_url)
-{
-    m_reqObj->setHttpProtocolType(p_type);
-    m_reqObj->setApiServer(serv_url);
-}
-void APIReqPage::prepareReq(int source_row)
-{
-    m_reqObj->clearMetaData();
-
-    QString token, baseURI;
-    emit signalGetReqParams(token, baseURI);
-
-    QString uid;
-    QString src = m_sourceBox->listWidget()->item(source_row)->text();
-    m_reqObj->addReqHeader(QString("Authorization"), QString("Bearer %1").arg(api_commonSettings.token));
-    m_reqObj->addReqHeader(QString("accept"), QString("application/json"));
-    m_reqObj->addReqHeader(QString("Content-Type"), QString("application/json"));
-    m_reqObj->setUri(QString("%1.%2").arg(baseURI).arg(src));
-
-    if (src.contains("OperationsService"))
-    {
-        m_reqObj->addMetaData("currency", "RUB");
-        m_reqObj->addMetaData("accountId", QString::number(api_commonSettings.user_id));
-
-    }
-    else if (src.contains("BondBy"))
-    {
-        emit signalGetSelectedBondUID(uid);
-        if (uid.isEmpty()) emit signalError("you must select some bond in the table");
-        else emit signalMsg(QString("SELECTED UID: %1").arg(uid));
-
-        m_reqObj->addMetaData("idType", "INSTRUMENT_ID_TYPE_UID");
-        m_reqObj->addMetaData("id", uid);
-    }
-    else if (src.contains("MarketDataService"))
-    {
-        emit signalGetSelectedBondUID(uid);
-        if (uid.isEmpty()) emit signalError("you must select some bond in the table");
-        else emit signalMsg(QString("SELECTED UID: %1").arg(uid));
-        m_reqObj->addMetaData("instrumentId", uid);
-
-        if (src.contains("Book"))
-        {
-            quint16 dp = 0;
-            emit signalGetPricesDepth(dp);
-            m_reqObj->addMetaData("depth", QString::number(dp));
-        }
-        else if (src.contains("Candles"))
-        {
-            QString candle_size;
-            emit signalGetCandleSize(candle_size);
-
-            m_reqObj->addMetaData("interval", api_commonSettings.candle_sizes.value(candle_size));
-            m_reqObj->addMetaData("from", "2023-10-16T07:00:00Z");
-            m_reqObj->addMetaData("to", "2023-10-19T18:00:00Z");
-        }
-    }
-}
-bool APIReqPage::requesterBuzy() const
-{
-    if (m_reqObj) return m_reqObj->isBuzy();
-    return false;
-}
-void APIReqPage::checkReply()
-{
-    const LHttpApiReplyData& r = m_reqObj->lastReply();
-
-    if (m_printHeaders)
-    {
-        //reply headers to protocol
-        emit signalMsg("REPLY HEADERS:");
-        foreach (const QString &v, r.headers)
-            emit signalMsg(v);
-        emit signalMsg(QString());
-    }
-
-    if (r.isOk())
-    {
-        m_replyBox->loadJSON(r.data, "JSON struct");
-        m_replyBox->expandLevel();
-        m_replyBox->resizeByContents();
-        m_replyBox->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::SingleSelection);
-
-        handleReplyData();
-    }
-}
-bool APIReqPage::replyOk() const
-{
-    return m_reqObj->lastReply().isOk();
-}
-void APIReqPage::setExpandLevel(int a)
-{
-    m_replyBox->setExpandLevel(a);
-}
-void APIReqPage::handleReplyData()
-{
-    QString src = m_reqObj->fullUrl().toLower();
-    qDebug()<<QString("APIReqPage::handleReplyData() SRC [%1]").arg(src);
-    if (src.right(5) == "bonds")
-    {
-        saveBondsFile();
-    }
-    else if (src.right(6) == "shares")
-    {
-        saveStocksFile();
-    }
-    else if (src.right(11) == "getaccounts")
-    {
-        parseUserID();
-    }
-    else if (src.right(12) == "getpositions")
-    {
-        qDebug("emit getpositions");
-        emit signalLoadPositions(m_reqObj->lastReply().data);
-    }
-    else if (src.right(12) == "getportfolio")
-    {
-        qDebug("emit signalLoadPortfolio");
-        emit signalLoadPortfolio(m_reqObj->lastReply().data);
-    }
-}
-void APIReqPage::parseUserID()
-{
-    const LHttpApiReplyData& r = m_reqObj->lastReply();
-    const QJsonArray &j_arr = r.data.constBegin().value().toArray();
-    if (j_arr.isEmpty()) return;
-
-    if (j_arr.first().isObject())
-    {
-        const QJsonObject &j_obj = j_arr.first().toObject();
-        QString s_id = j_obj.value("id").toString();
-        bool ok;
-        api_commonSettings.user_id = s_id.toInt(&ok);
-        if (!ok) emit signalError(QString("invalid user ID: %1").arg(s_id));
-        else emit signalMsg(QString("was got user ID: %1").arg(api_commonSettings.user_id));
-    }
-}
-void APIReqPage::saveBondsFile()
-{
-    //qDebug("APIReqPage::saveBondsFile()");
-    LFile::writeFile(APIBondsPage::dataFile(), "BOND INFO: \n");
-    const LHttpApiReplyData& r = m_reqObj->lastReply();
-    const QJsonArray &j_arr = r.data.constBegin().value().toArray();
-    if (j_arr.isEmpty()) return;
-
-    int n = j_arr.count();
-    for (int i=0; i<n; i++)
-    {
-        BondDesc bond(j_arr.at(i));
-        LFile::appendFile(APIBondsPage::dataFile(), QString("%1.  %2 \n").arg(i+1).arg(bond.toStr()));
-    }
-    emit signalMsg(QString("saved file of bonds list (size %1)").arg(n));
-}
-void APIReqPage::saveStocksFile()
-{
-    qDebug("APIReqPage::saveStocksFile()");
-    LFile::writeFile(APIStoksPage::dataFile(), "STOCK INFO: \n");
-    const LHttpApiReplyData& r = m_reqObj->lastReply();
-    const QJsonArray &j_arr = r.data.constBegin().value().toArray();
-    if (j_arr.isEmpty()) return;
-
-    int n = j_arr.count();
-    for (int i=0; i<n; i++)
-    {
-        StockDesc stock(j_arr.at(i));
-        LFile::appendFile(APIStoksPage::dataFile(), QString("%1.  %2 \n").arg(i+1).arg(stock.toStr()));
-    }
-    emit signalMsg(QString("saved file of stocks list (size %1)").arg(n));
-}
-
-
+#define PROFIT_COL          5
 
 
 //APIBondsPage
@@ -465,25 +192,13 @@ void APIBondsPage::reloadTableByData()
         if (!rec.api_trade) LTable::setTableRowColor(m_tableBox->table(), l_row, Qt::lightGray);
         if (rec.coupons_year > 4) m_tableBox->table()->item(l_row, COUP_YEAR_COL)->setTextColor(Qt::blue);
         if (rec.risk.toLower().contains("high")) m_tableBox->table()->item(l_row, RISK_COL)->setTextColor(Qt::red);
+        if (QDate::currentDate() >= rec.finish_date) LTable::setTableRowColor(m_tableBox->table(), l_row, "#FFF8DC");
     }
 
     m_tableBox->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
     m_tableBox->setSelectionColor("#E6E6FA", "#800000");
     emit signalMsg(QString("loaded validity records: %1 \n").arg(m_data.count()));
     m_tableBox->searchExec();
-}
-void APIBondsPage::slotSetSelectedBondUID(QString &uid)
-{
-    uid.clear();
-    QList<int> sel_rows = LTable::selectedRows(m_tableBox->table());
-    if (sel_rows.isEmpty()) return;
-
-    bool ok;
-    quint16 rec_number = m_tableBox->table()->item(sel_rows.first(), 0)->data(Qt::UserRole).toUInt(&ok);
-    if (!ok) return;
-
-    foreach (const BondDesc &rec, m_data)
-        if (rec.number == rec_number) {uid = rec.uid; break;}
 }
 void APIBondsPage::sortByDate()
 {
@@ -521,10 +236,30 @@ QString APIBondsPage::dataFile()
 {
     return QString("%1%2%3").arg(API_CommonSettings::appDataPath()).arg(QDir::separator()).arg(QString("bonds.txt"));
 }
+void APIBondsPage::slotGetPaperInfo(QStringList &info)
+{
+    if (info.isEmpty() || m_data.isEmpty()) return;
+    if (info.count() < 2 || info.first() != "bond") return;
+
+    QString p_uid = info.at(1).trimmed();
+    foreach (const BondDesc &rec, m_data)
+    {
+        if (rec.uid == p_uid)
+        {
+            info << rec.name << rec.isin << rec.finish_date.toString(InstrumentBase::userDateMask());
+            break;
+        }
+    }
+}
+void APIBondsPage::setSelectedUID(QString &uid, quint16 rec_number)
+{
+    foreach (const BondDesc &rec, m_data)
+        if (rec.number == rec_number) {uid = rec.uid; break;}
+}
 
 
-//APIStoksPage
-APIStoksPage::APIStoksPage(QWidget *parent)
+//APIStocksPage
+APIStocksPage::APIStocksPage(QWidget *parent)
     :APITablePageBase(parent)
 {
     setObjectName("api_stocks_page");
@@ -536,7 +271,7 @@ APIStoksPage::APIStoksPage(QWidget *parent)
 
     initFilterBox();
 }
-void APIStoksPage::initFilterBox()
+void APIStocksPage::initFilterBox()
 {
     if (m_filterBox->layout()) {delete m_filterBox->layout();}
     QGridLayout *g_lay = new QGridLayout(m_filterBox);
@@ -565,7 +300,7 @@ void APIStoksPage::initFilterBox()
     connect(m_countryFilterControl, SIGNAL(currentIndexChanged(QString)), this, SLOT(slotFilter(QString)));
     connect(m_currencyFilterControl, SIGNAL(currentIndexChanged(QString)), this, SLOT(slotFilter(QString)));
 }
-void APIStoksPage::slotFilter(QString f_value)
+void APIStocksPage::slotFilter(QString f_value)
 {
     if (!sender()) return;
     f_value = f_value.trimmed().toLower();
@@ -577,7 +312,7 @@ void APIStoksPage::slotFilter(QString f_value)
 
     m_tableBox->searchExec();
 }
-void APIStoksPage::currencyFilter(const QString &f_value)
+void APIStocksPage::currencyFilter(const QString &f_value)
 {
     if (f_value.contains("all")) return;
 
@@ -591,23 +326,23 @@ void APIStoksPage::currencyFilter(const QString &f_value)
         if (f_value != tv) t->removeRow(i);
     }
 }
-QString APIStoksPage::dataFile()
+QString APIStocksPage::dataFile()
 {
     return QString("%1%2%3").arg(API_CommonSettings::appDataPath()).arg(QDir::separator()).arg(QString("stocks.txt"));
 }
-void APIStoksPage::resetPage()
+void APIStocksPage::resetPage()
 {
     APITablePageBase::resetPage();
     m_countryFilterControl->setCurrentIndex(0);
     m_currencyFilterControl->setCurrentIndex(0);
 }
-void APIStoksPage::loadData()
+void APIStocksPage::loadData()
 {
     m_data.clear();
 
-    emit signalMsg(QString("OPEN FILE: %1").arg(APIStoksPage::dataFile()));
+    emit signalMsg(QString("OPEN FILE: %1").arg(APIStocksPage::dataFile()));
     QStringList list;
-    QString err = LFile::readFileSL(APIStoksPage::dataFile(), list);
+    QString err = LFile::readFileSL(APIStocksPage::dataFile(), list);
     if (!err.isEmpty()) {emit signalError(err); return;}
 
     int n_invalid = 0;
@@ -624,7 +359,7 @@ void APIStoksPage::loadData()
     emit signalMsg(QString("found invalid lines: %1/%2").arg(n_invalid).arg(list.count()));
     reloadTableByData();
 }
-void APIStoksPage::reloadTableByData()
+void APIStocksPage::reloadTableByData()
 {
     resetPage();
     if (m_data.isEmpty())
@@ -646,6 +381,26 @@ void APIStoksPage::reloadTableByData()
     emit signalMsg(QString("loaded validity records: %1 \n").arg(m_data.count()));
     m_tableBox->searchExec();
 }
+void APIStocksPage::slotGetPaperInfo(QStringList &info)
+{
+    if (info.isEmpty() || m_data.isEmpty()) return;
+    if (info.count() < 2 || info.first() != "share") return;
+
+    QString p_uid = info.at(1).trimmed();
+    foreach (const StockDesc &rec, m_data)
+    {
+        if (rec.uid == p_uid)
+        {
+            info << rec.name << rec.ticker << "---";
+            break;
+        }
+    }
+}
+void APIStocksPage::setSelectedUID(QString &uid, quint16 rec_number)
+{
+    foreach (const StockDesc &rec, m_data)
+        if (rec.number == rec_number) {uid = rec.uid; break;}
+}
 
 
 //APIBagPage
@@ -658,6 +413,7 @@ APIBagPage::APIBagPage(QWidget *parent)
     m_bag = new BagState(this);
     m_tableBox->setHeaderLabels(m_bag->tableHeaders());
     m_tableBox->setTitle("Positions");
+    m_tableBox->vHeaderHide();
     initFilterBox();
 
     connect(this, SIGNAL(signalLoadPortfolio(const QJsonObject&)), m_bag, SLOT(slotLoadPortfolio(const QJsonObject&)));
@@ -670,27 +426,28 @@ void APIBagPage::initFilterBox()
     m_filterBox->setTitle("General state");
     if (m_filterBox->layout()) {delete m_filterBox->layout();}
     QGridLayout *g_lay = new QGridLayout(m_filterBox);
-    //setLayout(g_lay);
 
-    g_lay->addWidget(new QLabel("Blocked"), 0, 0);
-    g_lay->addWidget(new QLabel("Free"), 1, 0);
-    g_lay->addWidget(new QLabel("Total"), 2, 0);
-    addGeneralEdit("blocked", 0);
-    addGeneralEdit("free", 1);
-    addGeneralEdit("total", 2);
-
+    int l_row = 0;
+    addGeneralEdit(QString("User ID"), l_row);
+    addGeneralEdit(QString("Blocked"), l_row);
+    addGeneralEdit(QString("Free"), l_row);
+    addGeneralEdit(QString("Total"), l_row);
     QSpacerItem *spcr = new QSpacerItem(10, 10, QSizePolicy::Maximum);
-    g_lay->addItem(spcr, 3, 0, 2, 2);
+    g_lay->addItem(spcr, l_row, 0, 2, 2);
 }
-void APIBagPage::addGeneralEdit(QString name, int row)
+void APIBagPage::addGeneralEdit(QString caption, int& row)
 {
     QGridLayout *g_lay = qobject_cast<QGridLayout*>(m_filterBox->layout());
     if (g_lay)
     {
+        g_lay->addWidget(new QLabel(caption), row, 0);
+        caption = caption.toLower().remove(LString::spaceSymbol());
         QLineEdit *edit = new QLineEdit(this);
         edit->setReadOnly(true);
-        edit->setObjectName(QString("%1_edit").arg(name));
+        edit->setObjectName(QString("%1_edit").arg(caption));
         g_lay->addWidget(edit, row, 1);
+        row++;
+        qDebug()<<edit->objectName();
     }
     else qWarning(" APIBagPage::addGeneralEdit WARNING - grid layout is NULL");
 }
@@ -715,7 +472,53 @@ void APIBagPage::slotBagUpdate()
             QLineEdit *edit = qobject_cast<QLineEdit*>(child);
             if (edit) edit->setText(m_bag->strTotal());
         }
+        else if (child->objectName().contains("userid"))
+        {
+            QLineEdit *edit = qobject_cast<QLineEdit*>(child);
+            if (edit) edit->setText(QString::number(api_commonSettings.user_id));
+        }
     }
+    reloadPosTable();
+}
+void APIBagPage::reloadPosTable()
+{
+    resetPage();
+    if (!m_bag->hasPositions())
+    {
+        emit signalMsg(QString("Bag positions list is empty!"));
+        return;
+    }
+
+    for (quint16 i=0; i<m_bag->posCount(); i++)
+    {
+        const BagPosition &pos = m_bag->posAt(i);
+        QStringList p_info;
+        p_info << pos.paper_type << pos.uid;
+        emit signalGetPaperInfo(p_info);
+
+        QStringList row_data;
+        row_data << QString::number(i+1);
+        if (p_info.count() != 5) row_data << QString("?") << QString("?");
+        else row_data << p_info.at(2) << p_info.at(3);
+        row_data << QString::number(pos.count) << pos.strPrice() << pos.strProfit() << pos.paper_type;
+
+        if (pos.paper_type == "bond")
+        {
+            QDate fd = QDate::fromString(p_info.at(4), InstrumentBase::userDateMask());
+            if (fd.isValid()) row_data << QString::number(QDate::currentDate().daysTo(fd));
+            else row_data << "???";
+        }
+        else row_data << p_info.at(4);
+
+        LTable::addTableRow(m_tableBox->table(), row_data);
+        int l_row = m_tableBox->table()->rowCount() - 1;
+        if (pos.curProfit() > 0) m_tableBox->table()->item(l_row, PROFIT_COL)->setTextColor("#006400");
+        else if (pos.curProfit() < 0) m_tableBox->table()->item(l_row, PROFIT_COL)->setTextColor("#A52A2A");
+    }
+
+    m_tableBox->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
+    m_tableBox->setSelectionColor("#DEFFBF", "#6B8E23");
+    m_tableBox->searchExec();
 }
 
 
@@ -763,5 +566,35 @@ void APITablePageBase::countryFilter(const QString &f_value)
         else if (f_value.contains("exept rus") && tv == f_key_ru) t->removeRow(i);
         else if (f_value.contains("only usa") && !tv.contains(f_key_us)) t->removeRow(i);
         else if (f_value.contains("exept usa") && tv.contains(f_key_us)) t->removeRow(i);
+    }
+}
+void APITablePageBase::slotSetSelectedUID(QString &uid)
+{
+    uid.clear();
+    QList<int> sel_rows = LTable::selectedRows(m_tableBox->table());
+    if (sel_rows.isEmpty()) return;
+
+    bool ok;
+    quint16 rec_number = m_tableBox->table()->item(sel_rows.first(), 0)->data(Qt::UserRole).toUInt(&ok);
+    if (!ok) return;
+
+    setSelectedUID(uid, rec_number);
+}
+void APITablePageBase::slotSetSelectedUIDList(QStringList &uid_list)
+{
+    uid_list.clear();
+    QList<int> sel_rows = LTable::selectedRows(m_tableBox->table());
+    if (sel_rows.isEmpty()) return;
+
+    bool ok;
+    foreach (int row, sel_rows)
+    {
+        quint16 rec_number = m_tableBox->table()->item(row, 0)->data(Qt::UserRole).toUInt(&ok);
+        if (ok)
+        {
+            QString uid;
+            setSelectedUID(uid, rec_number);
+            uid_list.append(uid);
+        }
     }
 }

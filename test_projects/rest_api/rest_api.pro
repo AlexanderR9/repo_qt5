@@ -29,12 +29,14 @@ HEADERS += $$PWD/mainform.h \
 	$$PWD/apipages.h \
 	$$PWD/instrument.h \
         $$PWD/apicommonsettings.h \
-        $$PWD/bagstate.h
+        $$PWD/bagstate.h \
+        $$PWD/apireqpage.h
 
 SOURCES += $$PWD/main.cpp \
 	$$PWD/apipages.cpp \
 	$$PWD/mainform.cpp \
         $$PWD/apicommonsettings.cpp \
         $$PWD/instrument.cpp \
-        $$PWD/bagstate.cpp
+        $$PWD/bagstate.cpp \
+        $$PWD/apireqpage.cpp
 

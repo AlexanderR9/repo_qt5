@@ -61,6 +61,23 @@ void API_CommonSettings::loadConfig(QString &err)
 
     QDomNode auto_start_node = root_node.namedItem("auto_start");
     if (!auto_start_node.isNull()) parseAutoStartNode(auto_start_node);
+
+    QDomNode history_node = root_node.namedItem("history");
+    if (!history_node.isNull()) parseHistoryNode(history_node);
+
+}
+void API_CommonSettings::parseHistoryNode(const QDomNode &node)
+{
+    QDomNode child_node = node.firstChild();
+    while (!child_node.isNull())
+    {
+        if (child_node.nodeName() == "period")
+        {
+            i_history.begin_date = LStaticXML::getStringAttrValue("begin", child_node).trimmed();
+            i_history.end_date = LStaticXML::getStringAttrValue("end", child_node).trimmed();
+        }
+        child_node = child_node.nextSibling();
+    }
 }
 void API_CommonSettings::parseServicesNode(const QDomNode &node)
 {
@@ -154,4 +171,7 @@ void API_CommonSettings::parseToken(QString commonSettingsToken)
     commonSettingsToken = LString::strTrimRight(commonSettingsToken, a);
     token = QString("%1%2%3%4").arg("t.").arg(s2).arg(commonSettingsToken).arg(s1);
 }
+
+
+
 
