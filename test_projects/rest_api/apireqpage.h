@@ -4,7 +4,7 @@
 #include "lsimplewidget.h"
 
 class LHttpApiRequester;
-
+class ApiReqPreparer;
 
 //APIReqPage
 class APIReqPage : public LSimpleWidget
@@ -12,7 +12,7 @@ class APIReqPage : public LSimpleWidget
     Q_OBJECT
 public:
     APIReqPage(QWidget*);
-    virtual ~APIReqPage() {}
+    virtual ~APIReqPage();
 
     QString iconPath() const {return QString(":/icons/images/b_scale.svg");}
     QString caption() const {return QString("API request");}
@@ -30,11 +30,14 @@ protected:
     LListWidgetBox      *m_sourceBox;
     LTreeWidgetBox      *m_replyBox;
     LHttpApiRequester   *m_reqObj;
+    ApiReqPreparer      *m_reqPreparer;
     bool                 m_printHeaders;
 
     void initWidgets();
     void initSources();
-    void prepareReq(int);
+    void initReqObject();
+    void initReqPreparer();
+    //void prepareReq(int);
     void handleReplyData();
     void saveBondsFile();
     void saveStocksFile();
@@ -53,12 +56,16 @@ signals:
     void signalLoadPositions(const QJsonObject&);
     void signalLoadPortfolio(const QJsonObject&);
 
+    /*
 private:
     void prepareReqOperations();
     void prepareReqBondBy();
     void prepareReqShareBy();
     void prepareReqMarket(const QString&);
     void prepareReqLastPrices();
+    void prepareReqCoupons();
+    void prepareReqDivs();
+    */
 
 };
 

@@ -8,6 +8,7 @@
 
 #define APP_DATA_FOLDER     QString("data")
 #define APP_CONFIG_FILE     QString("config.xml")
+#define INVALID_DATE        QString("2000-01-01T01:01:01Z")
 
 //global var
 API_CommonSettings api_commonSettings;
@@ -17,6 +18,22 @@ API_CommonSettings api_commonSettings;
 QString API_CommonSettings::appDataPath()
 {
     return QString("%1%2%3").arg(LFile::appPath()).arg(QDir::separator()).arg(APP_DATA_FOLDER);
+}
+QString API_CommonSettings::beginPoint(const InstrumentHistory::HItem &h_item, quint8 hour)
+{
+    if (h_item.begin_date.isEmpty()) return INVALID_DATE;
+    if (hour > 23) hour = 0;
+    QString s_hour = QString("%1:00:00").arg(hour);
+    if (hour < 10) s_hour.prepend('0');
+    return QString("%1T%2Z").arg(h_item.begin_date).arg(s_hour);
+}
+QString API_CommonSettings::endPoint(const InstrumentHistory::HItem &h_item, quint8 hour)
+{
+    if (h_item.end_date.isEmpty()) return INVALID_DATE;
+    if (hour > 23) hour = 0;
+    QString s_hour = QString("%1:00:00").arg(hour);
+    if (hour < 10) s_hour.prepend('0');
+    return QString("%1T%2Z").arg(h_item.end_date).arg(s_hour);
 }
 void API_CommonSettings::reset()
 {
@@ -71,11 +88,10 @@ void API_CommonSettings::parseHistoryNode(const QDomNode &node)
     QDomNode child_node = node.firstChild();
     while (!child_node.isNull())
     {
-        if (child_node.nodeName() == "period")
-        {
-            i_history.begin_date = LStaticXML::getStringAttrValue("begin", child_node).trimmed();
-            i_history.end_date = LStaticXML::getStringAttrValue("end", child_node).trimmed();
-        }
+        if (child_node.nodeName() == "prices") i_history.prices.parseConfigNode(child_node);
+        else if (child_node.nodeName() == "coupons") i_history.coupons.parseConfigNode(child_node);
+        else if (child_node.nodeName() == "divs") i_history.divs.parseConfigNode(child_node);
+
         child_node = child_node.nextSibling();
     }
 }
@@ -173,5 +189,15 @@ void API_CommonSettings::parseToken(QString commonSettingsToken)
 }
 
 
+/////////////////////////////
+void API_CommonSettings::InstrumentHistory::HItem::parseConfigNode(const QDomNode &node)
+{
+    reset();
+    if (node.isNull()) return;
+
+    begin_date = LStaticXML::getStringAttrValue("begin", node).trimmed();
+    end_date = LStaticXML::getStringAttrValue("end", node).trimmed();
+    qDebug()<<QString("LOADED PERIOD: %1").arg(toStr());
+}
 
 

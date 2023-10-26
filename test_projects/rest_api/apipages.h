@@ -5,9 +5,6 @@
 #include "instrument.h"
 
 class QSettings;
-//class LListWidgetBox;
-//class LTreeWidgetBox;
-//class LHttpApiRequester;
 class QComboBox;
 class BagState;
 

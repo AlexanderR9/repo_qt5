@@ -106,7 +106,6 @@ void LTable::resizeTableContents(QTableWidget *table)
 }
 void LTable::setTableRowColor(QTableWidget *table, int row, const QColor &c)
 {
-//    qDebug()<<QString("LTable::setTableRowColor  row=%0/%1, color=%2").arg(table->rowCount()).arg(row).arg(c.red());
     if (!table) return;
     if (row < 0 || row >= table->rowCount()) return;
     for (int i=0; i<table->columnCount(); i++)
@@ -114,6 +113,13 @@ void LTable::setTableRowColor(QTableWidget *table, int row, const QColor &c)
         QTableWidgetItem *item = table->item(row, i);
         if (item) item->setBackground(QBrush(c));
     }
+}
+void LTable::setTableTextRowColor(QTableWidget *table, int row, const QColor &c)
+{
+    if (!table) return;
+    if (row < 0 || row >= table->rowCount()) return;
+    for (int i=0; i<table->columnCount(); i++)
+        if (table->item(row, i)) table->item(row, i)->setTextColor(c);
 }
 void LTable::clearAllItemsText(QTableWidget *table)
 {

@@ -26,7 +26,8 @@ public:
     static QList<int> selectedCols(QTableWidget*);
     static void createAllItems(QTableWidget*, int align = Qt::AlignCenter);
     static void clearAllItemsText(QTableWidget*);
-    static void setTableRowColor(QTableWidget*, int, const QColor &c);
+    static void setTableRowColor(QTableWidget*, int, const QColor &c); //установить цвет фона строки
+    static void setTableTextRowColor(QTableWidget*, int, const QColor &c); //установить цвет текста строки
     static void resizeTableContents(QTableWidget*);
 
     //перемещает строку row_index на shift позиций, shift может быть меньше нуля

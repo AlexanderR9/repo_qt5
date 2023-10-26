@@ -4,6 +4,7 @@
 #include "apipages.h"
 #include "apicommonsettings.h"
 #include "lhttp_types.h"
+#include "reqpreparer.h"
 
 #include <QListWidget>
 #include <QTreeWidget>
@@ -15,18 +16,42 @@
 APIReqPage::APIReqPage(QWidget *parent)
     :LSimpleWidget(parent, 20),
       m_sourceBox(NULL),
-      m_replyBox(NULL),
+      m_replyBox(NULL),      
       m_reqObj(NULL),
+      m_reqPreparer(NULL),
       m_printHeaders(true)
 {
     setObjectName("api_req_page");
+
     initWidgets();
     initSources();
-
+    initReqObject();
+    initReqPreparer();
+}
+APIReqPage::~APIReqPage()
+{
+    if (m_reqPreparer) {delete m_reqPreparer; m_reqPreparer = NULL;}
+    if (m_reqObj) {delete m_reqObj; m_reqObj = NULL;}
+}
+void APIReqPage::initReqObject()
+{
     m_reqObj = new LHttpApiRequester(this);
     connect(m_reqObj, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
     connect(m_reqObj, SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
     connect(m_reqObj, SIGNAL(signalFinished(int)), this, SIGNAL(signalFinished(int)));
+}
+void APIReqPage::initReqPreparer()
+{
+    m_reqPreparer = new ApiReqPreparer(m_reqObj, this);
+    connect(m_reqPreparer, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
+    connect(m_reqPreparer, SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
+    connect(m_reqPreparer, SIGNAL(signalGetReqParams(QString&, QString&)), this, SIGNAL(signalGetReqParams(QString&, QString&)));
+    connect(m_reqPreparer, SIGNAL(signalGetSelectedBondUID(QString&)), this, SIGNAL(signalGetSelectedBondUID(QString&)));
+    connect(m_reqPreparer, SIGNAL(signalGetSelectedStockUID(QString&)), this, SIGNAL(signalGetSelectedStockUID(QString&)));
+    connect(m_reqPreparer, SIGNAL(signalGetSelectedBondUIDList(QStringList&)), this, SIGNAL(signalGetSelectedBondUIDList(QStringList&)));
+    connect(m_reqPreparer, SIGNAL(signalGetSelectedStockUIDList(QStringList&)), this, SIGNAL(signalGetSelectedStockUIDList(QStringList&)));
+    connect(m_reqPreparer, SIGNAL(signalGetPricesDepth(quint16&)), this, SIGNAL(signalGetPricesDepth(quint16&)));
+    connect(m_reqPreparer, SIGNAL(signalGetCandleSize(QString&)), this, SIGNAL(signalGetCandleSize(QString&)));
 }
 void APIReqPage::resetPage()
 {
@@ -76,21 +101,22 @@ void APIReqPage::trySendReq()
         return;
     }
 
-    prepareReq(row);
-    emit signalMsg(QString("URL:   %1 \n").arg(m_reqObj->fullUrl()));
-
-    if (m_reqObj->metadata().keys().contains("err"))
+    //prepareReq(row);
+    QString src = m_sourceBox->listWidget()->item(row)->text();
+    m_reqPreparer->prepare(src);
+    if (m_reqPreparer->invalidReq())
     {
         int e_code = hreUnknown;
         if (m_reqObj->metadata().value("err").isString()) e_code = m_reqObj->metadata().value("err").toString().toInt();
         else emit signalError(QString("invalid metadata err_value type"));
         emit signalError(QString("request did't start (code=%1)").arg(e_code));
         emit signalFinished(e_code);
-        return;
     }
-
-    printHeaders();
-    m_reqObj->start(hrmPost);
+    else
+    {
+        printHeaders();
+        m_reqObj->start(hrmPost);
+    }
 }
 void APIReqPage::autoStartReq(QString src)
 {
@@ -118,14 +144,19 @@ void APIReqPage::setServerAPI(int p_type, const QString &serv_url)
     m_reqObj->setHttpProtocolType(p_type);
     m_reqObj->setApiServer(serv_url);
 }
+
+
+/*
 void APIReqPage::prepareReq(int source_row)
 {
+
+
     m_reqObj->clearMetaData();
 
     QString token, baseURI;
     emit signalGetReqParams(token, baseURI);
 
-    QString uid;
+    //QString uid;
     QString src = m_sourceBox->listWidget()->item(source_row)->text();
     m_reqObj->addReqHeader(QString("Authorization"), QString("Bearer %1").arg(api_commonSettings.token));
     m_reqObj->addReqHeader(QString("accept"), QString("application/json"));
@@ -135,8 +166,20 @@ void APIReqPage::prepareReq(int source_row)
     if (src.contains("OperationsService")) prepareReqOperations();
     else if (src.contains("BondBy")) prepareReqBondBy();
     else if (src.contains("ShareBy")) prepareReqShareBy();
+    else if (src.contains("GetBondCoupons")) prepareReqCoupons();
+    else if (src.contains("GetDividends")) prepareReqDivs();
     else if (src.contains("GetLastPrices")) prepareReqLastPrices();
     else if (src.contains("MarketDataService")) prepareReqMarket(src);
+
+}
+
+void APIReqPage::prepareReqDivs()
+{
+
+}
+void APIReqPage::prepareReqCoupons()
+{
+
 }
 void APIReqPage::prepareReqLastPrices()
 {
@@ -164,9 +207,15 @@ void APIReqPage::prepareReqMarket(const QString &src)
     if (uid.isEmpty())
     {
         emit signalGetSelectedStockUID(uid);
-        if (uid.isEmpty()) emit signalError("you must select some bond or share in the table");
+        if (uid.isEmpty())
+        {
+            emit signalError("you must select some bond or share in the table");
+            m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
+            return;
+        }
     }
-    if (!uid.isEmpty()) emit signalMsg(QString("SELECTED UID: %1").arg(uid));
+
+    emit signalMsg(QString("SELECTED UID: %1").arg(uid));
     m_reqObj->addMetaData("instrumentId", uid);
 
     if (src.contains("Book"))
@@ -180,17 +229,23 @@ void APIReqPage::prepareReqMarket(const QString &src)
         QString candle_size;
         emit signalGetCandleSize(candle_size);
         m_reqObj->addMetaData("interval", api_commonSettings.candle_sizes.value(candle_size));
-        m_reqObj->addMetaData("from", api_commonSettings.i_history.beginPoint());
-        m_reqObj->addMetaData("to", api_commonSettings.i_history.endPoint());
-        emit signalMsg(QString("HISTORY_PERIOD: %1 - %2").arg(api_commonSettings.i_history.begin_date).arg(api_commonSettings.i_history.end_date));
+        m_reqObj->addMetaData("from", api_commonSettings.beginPoint(api_commonSettings.i_history.prices));
+        m_reqObj->addMetaData("to", api_commonSettings.endPoint(api_commonSettings.i_history.prices));
+        emit signalMsg(QString("HISTORY_PERIOD: %1 - %2").arg(api_commonSettings.i_history.prices.begin_date).arg(api_commonSettings.i_history.prices.end_date));
     }
 }
 void APIReqPage::prepareReqShareBy()
 {
     QString uid;
     emit signalGetSelectedStockUID(uid);
-    if (uid.isEmpty()) emit signalError("you must select some stock in the table");
-    else emit signalMsg(QString("SELECTED UID: %1").arg(uid));
+    if (uid.isEmpty())
+    {
+        emit signalError("you must select some stock in the table");
+        m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
+        return;
+    }
+
+    emit signalMsg(QString("SELECTED UID: %1").arg(uid));
     m_reqObj->addMetaData("idType", "INSTRUMENT_ID_TYPE_UID");
     m_reqObj->addMetaData("id", uid);
 }
@@ -198,8 +253,14 @@ void APIReqPage::prepareReqBondBy()
 {
     QString uid;
     emit signalGetSelectedBondUID(uid);
-    if (uid.isEmpty()) emit signalError("you must select some bond in the table");
-    else emit signalMsg(QString("SELECTED UID: %1").arg(uid));
+    if (uid.isEmpty())
+    {
+        emit signalError("you must select some bond in the table");
+        m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
+        return;
+    }
+
+    emit signalMsg(QString("SELECTED UID: %1").arg(uid));
     m_reqObj->addMetaData("idType", "INSTRUMENT_ID_TYPE_UID");
     m_reqObj->addMetaData("id", uid);
 }
@@ -208,6 +269,10 @@ void APIReqPage::prepareReqOperations()
     m_reqObj->addMetaData("currency", "RUB");
     m_reqObj->addMetaData("accountId", QString::number(api_commonSettings.user_id));
 }
+*/
+
+
+
 bool APIReqPage::requesterBuzy() const
 {
     if (m_reqObj) return m_reqObj->isBuzy();

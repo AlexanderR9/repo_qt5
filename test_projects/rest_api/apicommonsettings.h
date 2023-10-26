@@ -22,10 +22,19 @@ struct API_CommonSettings
     };
     struct InstrumentHistory
     {
-        QString begin_date;
-        QString end_date;
-        QString beginPoint() const {return QString("%1T%2Z").arg(begin_date).arg(QString("07:00:00"));}
-        QString endPoint() const {return QString("%1T%2Z").arg(end_date).arg(QString("19:00:00"));}
+        struct HItem
+        {
+            HItem() {reset();}
+            QString begin_date; //must be google format: example 2023-09-15
+            QString end_date;
+            void reset() {begin_date = end_date = QString();}
+            void parseConfigNode(const QDomNode&);
+            QString toStr() const {return QString("[%1 : %2]").arg(begin_date).arg(end_date);}
+        };
+
+        HItem prices;
+        HItem coupons;
+        HItem divs;
     };
 
     QString token;
@@ -37,6 +46,8 @@ struct API_CommonSettings
     InstrumentHistory i_history;
 
     static QString appDataPath();
+    static QString beginPoint(const InstrumentHistory::HItem&, quint8 hour = 7);
+    static QString endPoint(const InstrumentHistory::HItem&, quint8 hour = 19);
 
     void reset();
     void loadConfig(QString&);

@@ -1,6 +1,4 @@
 #include "apipages.h"
-//#include "lhttpapirequester.h"
-//#include "lhttp_types.h"
 #include "lfile.h"
 #include "ltable.h"
 #include "instrument.h"
@@ -9,9 +7,6 @@
 
 
 #include <QSplitter>
-//#include <QListWidget>
-//#include <QTreeWidget>
-//#include <QColor>
 #include <QLabel>
 #include <QComboBox>
 #include <QJsonArray>
@@ -29,6 +24,7 @@
 #define COUP_YEAR_COL       5
 #define FINISH_DATE_COL     4
 #define PROFIT_COL          5
+#define TO_COMPLETE_COL     7
 
 
 //APIBondsPage
@@ -253,8 +249,10 @@ void APIBondsPage::slotGetPaperInfo(QStringList &info)
 }
 void APIBondsPage::setSelectedUID(QString &uid, quint16 rec_number)
 {
+    bool need_figi = (uid == "figi");
+    uid.clear();
     foreach (const BondDesc &rec, m_data)
-        if (rec.number == rec_number) {uid = rec.uid; break;}
+        if (rec.number == rec_number) {uid = (need_figi ? rec.figi : rec.uid); break;}
 }
 
 
@@ -505,7 +503,12 @@ void APIBagPage::reloadPosTable()
         if (pos.paper_type == "bond")
         {
             QDate fd = QDate::fromString(p_info.at(4), InstrumentBase::userDateMask());
-            if (fd.isValid()) row_data << QString::number(QDate::currentDate().daysTo(fd));
+            if (fd.isValid())
+            {
+                int dn = QDate::currentDate().daysTo(fd);
+                if (dn < 0) dn = -1;
+                row_data << QString::number(dn);
+            }
             else row_data << "???";
         }
         else row_data << p_info.at(4);
@@ -514,6 +517,9 @@ void APIBagPage::reloadPosTable()
         int l_row = m_tableBox->table()->rowCount() - 1;
         if (pos.curProfit() > 0) m_tableBox->table()->item(l_row, PROFIT_COL)->setTextColor("#006400");
         else if (pos.curProfit() < 0) m_tableBox->table()->item(l_row, PROFIT_COL)->setTextColor("#A52A2A");
+
+        if (m_tableBox->table()->item(l_row, TO_COMPLETE_COL)->text() == "-1")
+            LTable::setTableTextRowColor(m_tableBox->table(), l_row, QColor("#F4A460"));
     }
 
     m_tableBox->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
@@ -570,13 +576,12 @@ void APITablePageBase::countryFilter(const QString &f_value)
 }
 void APITablePageBase::slotSetSelectedUID(QString &uid)
 {
-    uid.clear();
     QList<int> sel_rows = LTable::selectedRows(m_tableBox->table());
-    if (sel_rows.isEmpty()) return;
+    if (sel_rows.isEmpty()) {uid.clear(); return;}
 
     bool ok;
     quint16 rec_number = m_tableBox->table()->item(sel_rows.first(), 0)->data(Qt::UserRole).toUInt(&ok);
-    if (!ok) return;
+    if (!ok) {uid.clear(); return;}
 
     setSelectedUID(uid, rec_number);
 }
