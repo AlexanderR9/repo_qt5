@@ -5,6 +5,9 @@
 
 class LHttpApiRequester;
 class ApiReqPreparer;
+class CycleWorker;
+
+
 
 //APIReqPage
 class APIReqPage : public LSimpleWidget
@@ -17,14 +20,17 @@ public:
     QString iconPath() const {return QString(":/icons/images/b_scale.svg");}
     QString caption() const {return QString("API request");}
     virtual void resetPage();
+
     void trySendReq();
     void autoStartReq(QString);
     void setServerAPI(int, const QString&);
     void checkReply();
     bool replyOk() const;
     void setExpandLevel(int);
-    inline void setPrintHeaders(bool b) {m_printHeaders = b;}
     bool requesterBuzy() const;
+
+    inline void setPrintHeaders(bool b) {m_printHeaders = b;}
+
 
 protected:
     LListWidgetBox      *m_sourceBox;
@@ -32,17 +38,26 @@ protected:
     LHttpApiRequester   *m_reqObj;
     ApiReqPreparer      *m_reqPreparer;
     bool                 m_printHeaders;
+    CycleWorker         *m_cycleWroker;
 
     void initWidgets();
     void initSources();
     void initReqObject();
     void initReqPreparer();
-    //void prepareReq(int);
+    void initCycleWorker();
     void handleReplyData();
     void saveBondsFile();
     void saveStocksFile();
     void parseUserID();
     void printHeaders(QString s = "req"); //param - req or resp
+    //void checkCycleMode(const QString&);
+    void prepareCycleData();
+
+protected slots:
+    //void slotPrepareCycleData(QStringList&);
+    void slotCycleWorkerFinished();
+    void slotCycleWorkerNextReq();
+    void slotReqFinished(int);
 
 signals:
     void signalFinished(int);
@@ -55,17 +70,9 @@ signals:
     void signalGetCandleSize(QString&);
     void signalLoadPositions(const QJsonObject&);
     void signalLoadPortfolio(const QJsonObject&);
-
-    /*
-private:
-    void prepareReqOperations();
-    void prepareReqBondBy();
-    void prepareReqShareBy();
-    void prepareReqMarket(const QString&);
-    void prepareReqLastPrices();
-    void prepareReqCoupons();
-    void prepareReqDivs();
-    */
+    void signalGetCycleData(QStringList&);
+    void signalGetBondCycleData(QStringList&);
+    void signalGetStockCycleData(QStringList&);
 
 };
 

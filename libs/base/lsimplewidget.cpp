@@ -273,6 +273,16 @@ QListWidget* LListWidgetBox::listWidget() const
 {
     return m_listWidget;
 }
+void LListWidgetBox::setRowColor(quint16 i, QString s_color)
+{
+    if (!m_listWidget || !s_color.contains('#')) return;
+    if (i < m_listWidget->count()) m_listWidget->item(i)->setBackgroundColor(s_color);
+}
+void LListWidgetBox::setRowTextColor(quint16 i, QString s_color)
+{
+    if (!m_listWidget || !s_color.contains('#')) return;
+    if (i < m_listWidget->count()) m_listWidget->item(i)->setTextColor(s_color);
+}
 
 
 //LTreeWidgetBox

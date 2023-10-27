@@ -18,6 +18,7 @@ struct InstrumentBase
     quint16 number; //порядковый номер
     QString name;
     QString uid;
+    QString figi;
     QString country;
     QString currency;
     bool api_trade;
@@ -26,7 +27,7 @@ struct InstrumentBase
     static QDate dateFromGoogleDT(const QJsonValue&);
     static float floatFromJVBlock(const QJsonValue&);
 
-    virtual void reset() {number = 0; name = "?"; country = currency = uid = QString(); api_trade = false;}
+    virtual void reset() {number = 0; name = "?"; country = currency = uid = figi = QString(); api_trade = false;}
     virtual bool invalid() const {return (name.isEmpty() || uid.isEmpty());}
     virtual void fromFileLine(const QString&);
 
@@ -44,7 +45,6 @@ struct BondDesc : public InstrumentBase
     BondDesc(const QJsonValue &jv) {fromJson(jv);}
 
     QString isin; //kks
-    QString figi;
     QString risk;
     int coupons_year; // coupon_quantity_per_year
     float cur_coupon_size; //aci_value
@@ -72,7 +72,7 @@ struct StockDesc : public InstrumentBase
     QString ticker;
     QString sector;
 
-    static quint8 filedsCount() {return 7;}
+    static quint8 filedsCount() {return 8;}
 
     void reset();
     QString toStr() const;

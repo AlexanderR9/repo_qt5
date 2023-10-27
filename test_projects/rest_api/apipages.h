@@ -28,11 +28,16 @@ protected:
     void initWidgets();
     virtual void countryFilter(const QString&);
     virtual void setSelectedUID(QString&, quint16) {}
+    virtual void setCycleItem(QString&, quint16) {}
+    virtual int priceCol() const;
+
 
 public slots:
     virtual void slotGetPaperInfo(QStringList&) {}
     virtual void slotSetSelectedUID(QString&);
     virtual void slotSetSelectedUIDList(QStringList&);
+    virtual void slotSetCycleData(QStringList&);
+
 
 };
 
@@ -64,6 +69,7 @@ protected:
     void dateFilter(const QString&);
     void sortByDate();
     void setSelectedUID(QString&, quint16);
+    void setCycleItem(QString&, quint16);
 
 protected slots:
     void slotFilter(QString);
@@ -99,6 +105,7 @@ protected:
     void currencyFilter(const QString&);
     void reloadTableByData();
     void setSelectedUID(QString&, quint16);
+    void setCycleItem(QString&, quint16);
 
 protected slots:
     void slotFilter(QString);

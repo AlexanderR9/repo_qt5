@@ -37,7 +37,7 @@ APIBondsPage::APIBondsPage(QWidget *parent)
     setObjectName("api_bonds_page");
 
     QStringList headers;
-    headers << "Company" << "Tiker" << "Country" << "Currency" << "Finish date" << "Coupons" << "Risk";
+    headers << "Company" << "Tiker" << "Country" << "Currency" << "Finish date" << "Coupons" << "Risk" << "Price";
     m_tableBox->setHeaderLabels(headers);
     m_tableBox->setTitle("Bonds list");
 
@@ -254,6 +254,17 @@ void APIBondsPage::setSelectedUID(QString &uid, quint16 rec_number)
     foreach (const BondDesc &rec, m_data)
         if (rec.number == rec_number) {uid = (need_figi ? rec.figi : rec.uid); break;}
 }
+void APIBondsPage::setCycleItem(QString &cycle_item, quint16 rec_number)
+{
+    foreach (const BondDesc &rec, m_data)
+    {
+        if (rec.number == rec_number)
+        {
+            cycle_item = QString("bond : %1 : %2").arg(rec.figi).arg(rec.uid);
+            break;
+        }
+    }
+}
 
 
 //APIStocksPage
@@ -263,7 +274,7 @@ APIStocksPage::APIStocksPage(QWidget *parent)
     setObjectName("api_stocks_page");
 
     QStringList headers;
-    headers << "Company" << "Tiker" << "Country" << "Currency" << "Sector";
+    headers << "Company" << "Tiker" << "Country" << "Currency" << "Sector" << "Price";
     m_tableBox->setHeaderLabels(headers);
     m_tableBox->setTitle("Stocks list");
 
@@ -396,8 +407,21 @@ void APIStocksPage::slotGetPaperInfo(QStringList &info)
 }
 void APIStocksPage::setSelectedUID(QString &uid, quint16 rec_number)
 {
+    bool need_figi = (uid == "figi");
+    uid.clear();
     foreach (const StockDesc &rec, m_data)
-        if (rec.number == rec_number) {uid = rec.uid; break;}
+        if (rec.number == rec_number) {uid = (need_figi ? rec.figi : rec.uid); break;}
+}
+void APIStocksPage::setCycleItem(QString &cycle_item, quint16 rec_number)
+{
+    foreach (const StockDesc &rec, m_data)
+    {
+        if (rec.number == rec_number)
+        {
+            cycle_item = QString("stock : %1 : %2").arg(rec.figi).arg(rec.uid);
+            break;
+        }
+    }
 }
 
 
@@ -487,6 +511,7 @@ void APIBagPage::reloadPosTable()
         return;
     }
 
+    bool ok;
     for (quint16 i=0; i<m_bag->posCount(); i++)
     {
         const BagPosition &pos = m_bag->posAt(i);
@@ -518,8 +543,13 @@ void APIBagPage::reloadPosTable()
         if (pos.curProfit() > 0) m_tableBox->table()->item(l_row, PROFIT_COL)->setTextColor("#006400");
         else if (pos.curProfit() < 0) m_tableBox->table()->item(l_row, PROFIT_COL)->setTextColor("#A52A2A");
 
-        if (m_tableBox->table()->item(l_row, TO_COMPLETE_COL)->text() == "-1")
-            LTable::setTableTextRowColor(m_tableBox->table(), l_row, QColor("#F4A460"));
+        int to_complete = m_tableBox->table()->item(l_row, TO_COMPLETE_COL)->text().toInt(&ok);
+        if (!ok) continue;
+
+        if (to_complete <= 0) LTable::setTableTextRowColor(m_tableBox->table(), l_row, QColor("#F4A460"));
+        else if (to_complete < 30) m_tableBox->table()->item(l_row, TO_COMPLETE_COL)->setTextColor(QColor("#00CED1"));
+        else if (to_complete > 180) m_tableBox->table()->item(l_row, TO_COMPLETE_COL)->setTextColor(QColor("#D2691E"));
+
     }
 
     m_tableBox->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
@@ -548,6 +578,12 @@ void APITablePageBase::initWidgets()
     m_tableBox->sortingOn();
     h_splitter->addWidget(m_tableBox);
     h_splitter->addWidget(m_filterBox);
+}
+int APITablePageBase::priceCol() const
+{
+    if (m_tableBox->table() && m_tableBox->table()->columnCount() > 0)
+        return (m_tableBox->table()->columnCount() - 1);
+    return -1;
 }
 void APITablePageBase::resetPage()
 {
@@ -603,3 +639,23 @@ void APITablePageBase::slotSetSelectedUIDList(QStringList &uid_list)
         }
     }
 }
+void APITablePageBase::slotSetCycleData(QStringList &list)
+{
+    int n = m_tableBox->table()->rowCount();
+    if (n <= 0) return;
+
+    bool ok;
+    for (int i=0; i<n; i++)
+    {
+        if (m_tableBox->table()->isRowHidden(i)) continue;
+        quint16 rec_number = m_tableBox->table()->item(i, 0)->data(Qt::UserRole).toUInt(&ok);
+        if (ok)
+        {
+            QString cycle_item;
+            setCycleItem(cycle_item, rec_number);
+            if (!cycle_item.trimmed().isEmpty()) list.append(cycle_item);
+        }
+    }
+}
+
+

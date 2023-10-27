@@ -98,7 +98,6 @@ public:
 
 protected:
     QTableWidget    *m_table;
-    //quint8  m_lastSortOrder;
 
     void init();
 
@@ -139,6 +138,8 @@ public:
     virtual ~LListWidgetBox() {}
 
     QListWidget* listWidget() const;
+    void setRowColor(quint16, QString);
+    void setRowTextColor(quint16, QString);
 
 
 protected:

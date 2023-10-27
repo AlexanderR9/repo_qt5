@@ -5,6 +5,7 @@
 #include "apicommonsettings.h"
 #include "lhttp_types.h"
 #include "reqpreparer.h"
+#include "cycleworker.h"
 
 #include <QListWidget>
 #include <QTreeWidget>
@@ -19,7 +20,8 @@ APIReqPage::APIReqPage(QWidget *parent)
       m_replyBox(NULL),      
       m_reqObj(NULL),
       m_reqPreparer(NULL),
-      m_printHeaders(true)
+      m_printHeaders(true),
+      m_cycleWroker(NULL)
 {
     setObjectName("api_req_page");
 
@@ -27,18 +29,33 @@ APIReqPage::APIReqPage(QWidget *parent)
     initSources();
     initReqObject();
     initReqPreparer();
+    initCycleWorker();
 }
 APIReqPage::~APIReqPage()
 {
     if (m_reqPreparer) {delete m_reqPreparer; m_reqPreparer = NULL;}
     if (m_reqObj) {delete m_reqObj; m_reqObj = NULL;}
 }
+void APIReqPage::slotReqFinished(int result)
+{
+    if (m_cycleWroker->cycleModeOn())
+    {
+        if (result == hreOk || result == hreServerErr)
+        {
+            checkReply();
+            if (replyOk()) emit signalMsg("REPLY CODE OK:");
+        }
+        emit signalMsg("next cycle request finished \n");
+    }
+    else emit signalFinished(result);
+}
 void APIReqPage::initReqObject()
 {
     m_reqObj = new LHttpApiRequester(this);
     connect(m_reqObj, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
     connect(m_reqObj, SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
-    connect(m_reqObj, SIGNAL(signalFinished(int)), this, SIGNAL(signalFinished(int)));
+    //connect(m_reqObj, SIGNAL(signalFinished(int)), this, SIGNAL(signalFinished(int)));
+    connect(m_reqObj, SIGNAL(signalFinished(int)), this, SLOT(slotReqFinished(int)));
 }
 void APIReqPage::initReqPreparer()
 {
@@ -52,6 +69,17 @@ void APIReqPage::initReqPreparer()
     connect(m_reqPreparer, SIGNAL(signalGetSelectedStockUIDList(QStringList&)), this, SIGNAL(signalGetSelectedStockUIDList(QStringList&)));
     connect(m_reqPreparer, SIGNAL(signalGetPricesDepth(quint16&)), this, SIGNAL(signalGetPricesDepth(quint16&)));
     connect(m_reqPreparer, SIGNAL(signalGetCandleSize(QString&)), this, SIGNAL(signalGetCandleSize(QString&)));
+}
+void APIReqPage::initCycleWorker()
+{
+    m_cycleWroker = new CycleWorker(this);
+    connect(m_cycleWroker, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
+    connect(m_cycleWroker, SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
+    //connect(m_cycleWroker, SIGNAL(signalGetCycleData(QStringList&)), this, SLOT(slotPrepareCycleData(QStringList&)));
+    connect(m_cycleWroker, SIGNAL(signalFinished()), this, SLOT(slotCycleWorkerFinished()));
+    connect(m_cycleWroker, SIGNAL(signalNextReq()), this, SLOT(slotCycleWorkerNextReq()));
+
+
 }
 void APIReqPage::resetPage()
 {
@@ -80,9 +108,18 @@ void APIReqPage::initWidgets()
 }
 void APIReqPage::initSources()
 {
+    quint16 row = 0;
     foreach(const QString &v, api_commonSettings.services)
     {
         m_sourceBox->listWidget()->addItem(v);
+        int pos = v.indexOf('/');
+        if (pos > 0)
+        {
+            QString s_color = api_commonSettings.service_colors.value(v.left(pos));
+            qDebug()<<QString("pos=%1,  v=%2, color=%3").arg(pos).arg(v.left(pos)).arg(s_color);
+            m_sourceBox->setRowTextColor(row, s_color);
+        }
+        row++;
     }
 }
 void APIReqPage::trySendReq()
@@ -101,8 +138,20 @@ void APIReqPage::trySendReq()
         return;
     }
 
-    //prepareReq(row);
+    //check cycle mode
     QString src = m_sourceBox->listWidget()->item(row)->text();
+    m_cycleWroker->checkCycleMode(src);
+    if (m_cycleWroker->cycleModeOn())
+    {
+        //turn on mode cycle
+        prepareCycleData();
+        if (!m_cycleWroker->cycleModeOn()) emit signalFinished(hreUnknown);
+        else m_sourceBox->setEnabled(false);
+        return;
+    }
+
+    /////////////////STANDARD REQ////////////////////////////////
+
     m_reqPreparer->prepare(src);
     if (m_reqPreparer->invalidReq())
     {
@@ -118,6 +167,62 @@ void APIReqPage::trySendReq()
         m_reqObj->start(hrmPost);
     }
 }
+void APIReqPage::slotCycleWorkerNextReq()
+{
+    if (requesterBuzy())
+    {
+        emit signalError("Requester object is buzy.");
+        emit signalFinished(hreBuzy);
+        return;
+    }
+
+    QString src;
+    foreach(const QString &v, api_commonSettings.services)
+        if (v.contains(m_cycleWroker->apiMetod())) {src = v; break;}
+
+    if (src.isEmpty())
+    {
+        emit signalError(QString("cycle breaked, invalid api_metod: %1").arg(m_cycleWroker->apiMetod()));
+        m_cycleWroker->breakCycle();
+        emit signalFinished(hreWrongReqParams);
+        return;
+    }
+
+    emit signalMsg("next cycle request");
+    QStringList next_data;
+    m_cycleWroker->getNextCycleData(next_data);
+    m_reqPreparer->setCycleData(next_data);
+    m_reqPreparer->prepare(src);
+    printHeaders();
+    m_reqObj->start(hrmPost);
+
+}
+void APIReqPage::slotCycleWorkerFinished()
+{
+    emit signalMsg(QString("-------------------CYCLE WORKER FINISHED---------------------"));
+    emit signalFinished(hreUnknown);
+    m_sourceBox->setEnabled(true);
+}
+void APIReqPage::prepareCycleData()
+{
+    QStringList data;
+    emit signalGetBondCycleData(data);
+    emit signalGetStockCycleData(data);
+    m_cycleWroker->prepareCycleData(data);
+}
+/*
+void APIReqPage::checkCycleMode(const QString &src)
+{
+    m_mode = cmNone;
+    if (src.contains("CycleMode"))
+    {
+        if (src.toLower().contains("coupon")) m_mode = cmCoupons;
+        else if (src.toLower().contains("div")) m_mode = cmDivs;
+        else if (src.toLower().contains("history")) m_mode = cmHistory;
+        else if (src.toLower().contains("price")) m_mode = cmPrices;
+    }
+}
+*/
 void APIReqPage::autoStartReq(QString src)
 {
     int n = m_sourceBox->listWidget()->count();
@@ -137,142 +242,13 @@ void APIReqPage::autoStartReq(QString src)
     }
 
     if (find_ok) trySendReq();
-    else emit signalError("SRC not fond among config sources list");
+    else emit signalError("SRC not found among config sources list");
 }
 void APIReqPage::setServerAPI(int p_type, const QString &serv_url)
 {
     m_reqObj->setHttpProtocolType(p_type);
     m_reqObj->setApiServer(serv_url);
 }
-
-
-/*
-void APIReqPage::prepareReq(int source_row)
-{
-
-
-    m_reqObj->clearMetaData();
-
-    QString token, baseURI;
-    emit signalGetReqParams(token, baseURI);
-
-    //QString uid;
-    QString src = m_sourceBox->listWidget()->item(source_row)->text();
-    m_reqObj->addReqHeader(QString("Authorization"), QString("Bearer %1").arg(api_commonSettings.token));
-    m_reqObj->addReqHeader(QString("accept"), QString("application/json"));
-    m_reqObj->addReqHeader(QString("Content-Type"), QString("application/json"));
-    m_reqObj->setUri(QString("%1.%2").arg(baseURI).arg(src));
-
-    if (src.contains("OperationsService")) prepareReqOperations();
-    else if (src.contains("BondBy")) prepareReqBondBy();
-    else if (src.contains("ShareBy")) prepareReqShareBy();
-    else if (src.contains("GetBondCoupons")) prepareReqCoupons();
-    else if (src.contains("GetDividends")) prepareReqDivs();
-    else if (src.contains("GetLastPrices")) prepareReqLastPrices();
-    else if (src.contains("MarketDataService")) prepareReqMarket(src);
-
-}
-
-void APIReqPage::prepareReqDivs()
-{
-
-}
-void APIReqPage::prepareReqCoupons()
-{
-
-}
-void APIReqPage::prepareReqLastPrices()
-{
-    QStringList uid_list;
-    emit signalGetSelectedBondUIDList(uid_list);
-    if (uid_list.isEmpty())
-    {
-        emit signalGetSelectedStockUIDList(uid_list);
-        if (uid_list.isEmpty())
-        {
-            emit signalError("you must select some bond or share in the table");
-            m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
-            return;
-        }
-    }
-
-    emit signalMsg(QString("SELECTED UIDs: %1").arg(uid_list.count()));
-    QJsonArray j_arr = QJsonArray::fromStringList(uid_list);
-    m_reqObj->addMetaData_arr("instrumentId", j_arr);
-}
-void APIReqPage::prepareReqMarket(const QString &src)
-{
-    QString uid;
-    emit signalGetSelectedBondUID(uid);
-    if (uid.isEmpty())
-    {
-        emit signalGetSelectedStockUID(uid);
-        if (uid.isEmpty())
-        {
-            emit signalError("you must select some bond or share in the table");
-            m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
-            return;
-        }
-    }
-
-    emit signalMsg(QString("SELECTED UID: %1").arg(uid));
-    m_reqObj->addMetaData("instrumentId", uid);
-
-    if (src.contains("Book"))
-    {
-        quint16 dp = 0;
-        emit signalGetPricesDepth(dp);
-        m_reqObj->addMetaData("depth", QString::number(dp));
-    }
-    else if (src.contains("Candles"))
-    {
-        QString candle_size;
-        emit signalGetCandleSize(candle_size);
-        m_reqObj->addMetaData("interval", api_commonSettings.candle_sizes.value(candle_size));
-        m_reqObj->addMetaData("from", api_commonSettings.beginPoint(api_commonSettings.i_history.prices));
-        m_reqObj->addMetaData("to", api_commonSettings.endPoint(api_commonSettings.i_history.prices));
-        emit signalMsg(QString("HISTORY_PERIOD: %1 - %2").arg(api_commonSettings.i_history.prices.begin_date).arg(api_commonSettings.i_history.prices.end_date));
-    }
-}
-void APIReqPage::prepareReqShareBy()
-{
-    QString uid;
-    emit signalGetSelectedStockUID(uid);
-    if (uid.isEmpty())
-    {
-        emit signalError("you must select some stock in the table");
-        m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
-        return;
-    }
-
-    emit signalMsg(QString("SELECTED UID: %1").arg(uid));
-    m_reqObj->addMetaData("idType", "INSTRUMENT_ID_TYPE_UID");
-    m_reqObj->addMetaData("id", uid);
-}
-void APIReqPage::prepareReqBondBy()
-{
-    QString uid;
-    emit signalGetSelectedBondUID(uid);
-    if (uid.isEmpty())
-    {
-        emit signalError("you must select some bond in the table");
-        m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
-        return;
-    }
-
-    emit signalMsg(QString("SELECTED UID: %1").arg(uid));
-    m_reqObj->addMetaData("idType", "INSTRUMENT_ID_TYPE_UID");
-    m_reqObj->addMetaData("id", uid);
-}
-void APIReqPage::prepareReqOperations()
-{
-    m_reqObj->addMetaData("currency", "RUB");
-    m_reqObj->addMetaData("accountId", QString::number(api_commonSettings.user_id));
-}
-*/
-
-
-
 bool APIReqPage::requesterBuzy() const
 {
     if (m_reqObj) return m_reqObj->isBuzy();
@@ -318,12 +294,10 @@ void APIReqPage::handleReplyData()
     }
     else if (src.right(12) == "getpositions")
     {
-        qDebug("emit getpositions");
         emit signalLoadPositions(m_reqObj->lastReply().data);
     }
     else if (src.right(12) == "getportfolio")
     {
-        qDebug("emit signalLoadPortfolio");
         emit signalLoadPortfolio(m_reqObj->lastReply().data);
     }
 }

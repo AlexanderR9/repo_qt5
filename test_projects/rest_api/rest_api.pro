@@ -31,7 +31,8 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/apicommonsettings.h \
         $$PWD/bagstate.h \
         $$PWD/apireqpage.h \
-        $$PWD/reqpreparer.h
+        $$PWD/reqpreparer.h \
+    cycleworker.h
 
 SOURCES += $$PWD/main.cpp \
 	$$PWD/apipages.cpp \
@@ -40,5 +41,6 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/instrument.cpp \
         $$PWD/bagstate.cpp \
         $$PWD/apireqpage.cpp \
-        $$PWD/reqpreparer.cpp
+        $$PWD/reqpreparer.cpp \
+    cycleworker.cpp
 

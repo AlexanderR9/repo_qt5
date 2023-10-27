@@ -101,7 +101,7 @@ void BondDesc::parseFields(const QStringList &list)
 void BondDesc::reset()
 {
     InstrumentBase::reset();
-    isin = figi = risk = QString();
+    isin = risk = QString();
     coupons_year = -1;
     cur_coupon_size = 0;
     start_date = finish_date = QDate();
@@ -122,8 +122,9 @@ QStringList BondDesc::toTableRowData() const
     QStringList row_data;
     if (invalid()) return row_data;
 
-    row_data << name << isin << /*uid <<*/ country << currency;
+    row_data << name << isin << country << currency;
     row_data << finish_date.toString(userDateMask()) << QString::number(coupons_year) << risk;
+    row_data << QString::number(-1);
     return row_data;
 }
 
@@ -144,6 +145,7 @@ void StockDesc::fromJson(const QJsonValue &jv)
         name = j_obj.value("name").toString();
         country = j_obj.value("countryOfRiskName").toString();
         currency = j_obj.value("currency").toString();
+        figi = j_obj.value("figi").toString();
         uid = j_obj.value("uid").toString();
         ticker = j_obj.value("ticker").toString();
         sector = j_obj.value("sector").toString();
@@ -162,15 +164,16 @@ void StockDesc::parseFields(const QStringList &list)
     currency = list.at(2);
     ticker = list.at(3);
     sector = list.at(4);
-    uid = list.at(5);
-    api_trade = (list.at(6) == "true");
+    figi = list.at(5);
+    uid = list.at(6);
+    api_trade = (list.at(7) == "true");
 }
 QString StockDesc::toStr() const
 {
     QString s(name);
     s = QString("%1 / %2 / %3 / %4").arg(s).arg(country).arg(currency).arg(ticker);
-    s = QString("%1 / %2 / %3").arg(s).arg(sector).arg(uid);
-    s = QString("%1 / %2").arg(s).arg(api_trade?"true":"false");
+    s = QString("%1 / %2 / %3 / %4").arg(s).arg(sector).arg(figi).arg(uid);
+    s = QString("%1 / %2").arg(s).arg(api_trade? "true" : "false");
     return s;
 }
 QStringList StockDesc::toTableRowData() const
@@ -179,6 +182,7 @@ QStringList StockDesc::toTableRowData() const
     if (invalid()) return row_data;
 
     row_data << name << ticker << country << currency << sector;
+    row_data << QString::number(-1);
     return row_data;
 }
 

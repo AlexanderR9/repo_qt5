@@ -86,6 +86,8 @@ void API_CommonSettings::loadConfig(QString &err)
 void API_CommonSettings::parseHistoryNode(const QDomNode &node)
 {
     QDomNode child_node = node.firstChild();
+    i_history.timeout = LStaticXML::getIntAttrValue("timeout", node, 2000);
+
     while (!child_node.isNull())
     {
         if (child_node.nodeName() == "prices") i_history.prices.parseConfigNode(child_node);
@@ -116,7 +118,12 @@ void API_CommonSettings::parseServicesNode(const QDomNode &node)
                     if (metod_node.nodeName() == "metod")
                     {
                         QString cur_metod = LStaticXML::getStringAttrValue("name", metod_node).trimmed();
-                        if (!cur_metod.isEmpty()) services << QString("%1/%2").arg(cur_service).arg(cur_metod);
+                        if (!cur_metod.isEmpty())
+                        {
+                            services << QString("%1/%2").arg(cur_service).arg(cur_metod);
+                            QString api_metod = LStaticXML::getStringAttrValue("api_metod", metod_node).trimmed();
+                            if (!api_metod.isEmpty()) cycle_metods.insert(cur_metod, api_metod);
+                        }
                     }
                     metod_node = metod_node.nextSibling();
                 }

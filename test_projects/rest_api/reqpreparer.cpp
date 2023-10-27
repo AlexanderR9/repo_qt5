@@ -6,6 +6,7 @@
 
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QDebug>
 
 
 // ApiReqPreparer
@@ -43,51 +44,66 @@ void ApiReqPreparer::prepare(QString src)
 void ApiReqPreparer::prepareReqDivs()
 {
     QString figi("figi");
-    emit signalGetSelectedStockUID(figi);
-    if (figi.isEmpty())
+    if (m_cycleData.isEmpty())
     {
-        emit signalError("you must select some stock in the table");
-        m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
-        return;
-    }
-
-    emit signalMsg(QString("SELECTED UID: %1").arg(figi));
-    m_reqObj->addMetaData("figi", figi);
-    m_reqObj->addMetaData("from", api_commonSettings.beginPoint(api_commonSettings.i_history.divs));
-    m_reqObj->addMetaData("to", api_commonSettings.endPoint(api_commonSettings.i_history.divs));
-    emit signalMsg(QString("PERIOD: %1").arg(api_commonSettings.i_history.divs.toStr()));
-}
-void ApiReqPreparer::prepareReqCoupons()
-{
-    QString figi("figi");
-    emit signalGetSelectedBondUID(figi);
-    if (figi.isEmpty())
-    {
-        emit signalError("you must select some bond in the table");
-        m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
-        return;
-    }
-
-    emit signalMsg(QString("SELECTED UID: %1").arg(figi));
-    m_reqObj->addMetaData("figi", figi);
-    m_reqObj->addMetaData("from", api_commonSettings.beginPoint(api_commonSettings.i_history.coupons));
-    m_reqObj->addMetaData("to", api_commonSettings.endPoint(api_commonSettings.i_history.coupons));
-    emit signalMsg(QString("PERIOD: %1").arg(api_commonSettings.i_history.coupons.toStr()));
-}
-void ApiReqPreparer::prepareReqLastPrices()
-{
-    QStringList uid_list;
-    emit signalGetSelectedBondUIDList(uid_list);
-    if (uid_list.isEmpty())
-    {
-        emit signalGetSelectedStockUIDList(uid_list);
-        if (uid_list.isEmpty())
+        emit signalGetSelectedStockUID(figi);
+        if (figi.isEmpty())
         {
-            emit signalError("you must select some bond or share in the table");
+            emit signalError("you must select some stock in the table");
             m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
             return;
         }
     }
+    else figi = m_cycleData.first();
+
+    emit signalMsg(QString("SELECTED UID: %1").arg(figi));
+    m_reqObj->addMetaData("figi", figi);
+    setMetaPeriod("divs");
+
+    //m_reqObj->addMetaData("from", api_commonSettings.beginPoint(api_commonSettings.i_history.divs));
+   // m_reqObj->addMetaData("to", api_commonSettings.endPoint(api_commonSettings.i_history.divs));
+   // emit signalMsg(QString("PERIOD: %1").arg(api_commonSettings.i_history.divs.toStr()));
+}
+void ApiReqPreparer::prepareReqCoupons()
+{
+    QString figi("figi");
+    if (m_cycleData.isEmpty())
+    {
+        emit signalGetSelectedBondUID(figi);
+        if (figi.isEmpty())
+        {
+            emit signalError("you must select some bond in the table");
+            m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
+            return;
+        }
+    }
+    else figi = m_cycleData.first();
+
+    emit signalMsg(QString("SELECTED UID: %1").arg(figi));
+    m_reqObj->addMetaData("figi", figi);
+    setMetaPeriod("coupons");
+    //m_reqObj->addMetaData("from", api_commonSettings.beginPoint(api_commonSettings.i_history.coupons));
+    //m_reqObj->addMetaData("to", api_commonSettings.endPoint(api_commonSettings.i_history.coupons));
+    //emit signalMsg(QString("PERIOD: %1").arg(api_commonSettings.i_history.coupons.toStr()));
+}
+void ApiReqPreparer::prepareReqLastPrices()
+{
+    QStringList uid_list;
+    if (m_cycleData.isEmpty())
+    {
+        emit signalGetSelectedBondUIDList(uid_list);
+        if (uid_list.isEmpty())
+        {
+            emit signalGetSelectedStockUIDList(uid_list);
+            if (uid_list.isEmpty())
+            {
+                emit signalError("you must select some bond or share in the table");
+                m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
+                return;
+            }
+        }
+    }
+    else uid_list.append(m_cycleData);
 
     emit signalMsg(QString("SELECTED UIDs: %1").arg(uid_list.count()));
     QJsonArray j_arr = QJsonArray::fromStringList(uid_list);
@@ -96,17 +112,21 @@ void ApiReqPreparer::prepareReqLastPrices()
 void ApiReqPreparer::prepareReqMarket(const QString &src)
 {
     QString uid;
-    emit signalGetSelectedBondUID(uid);
-    if (uid.isEmpty())
+    if (m_cycleData.isEmpty())
     {
-        emit signalGetSelectedStockUID(uid);
+        emit signalGetSelectedBondUID(uid);
         if (uid.isEmpty())
         {
-            emit signalError("you must select some bond or share in the table");
-            m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
-            return;
+            emit signalGetSelectedStockUID(uid);
+            if (uid.isEmpty())
+            {
+                emit signalError("you must select some bond or share in the table");
+                m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
+                return;
+            }
         }
     }
+    else uid = m_cycleData.first();
 
     emit signalMsg(QString("SELECTED UID: %1").arg(uid));
     m_reqObj->addMetaData("instrumentId", uid);
@@ -122,9 +142,10 @@ void ApiReqPreparer::prepareReqMarket(const QString &src)
         QString candle_size;
         emit signalGetCandleSize(candle_size);
         m_reqObj->addMetaData("interval", api_commonSettings.candle_sizes.value(candle_size));
-        m_reqObj->addMetaData("from", api_commonSettings.beginPoint(api_commonSettings.i_history.prices));
-        m_reqObj->addMetaData("to", api_commonSettings.endPoint(api_commonSettings.i_history.prices));
-        emit signalMsg(QString("HISTORY_PERIOD: %1").arg(api_commonSettings.i_history.prices.toStr()));
+        setMetaPeriod("prices");
+        //m_reqObj->addMetaData("from", api_commonSettings.beginPoint(api_commonSettings.i_history.prices));
+        //m_reqObj->addMetaData("to", api_commonSettings.endPoint(api_commonSettings.i_history.prices));
+        //emit signalMsg(QString("HISTORY_PERIOD: %1").arg(api_commonSettings.i_history.prices.toStr()));
     }
 }
 void ApiReqPreparer::prepareReqShareBy()
@@ -161,5 +182,20 @@ void ApiReqPreparer::prepareReqOperations()
 {
     m_reqObj->addMetaData("currency", "RUB");
     m_reqObj->addMetaData("accountId", QString::number(api_commonSettings.user_id));
+}
+void ApiReqPreparer::setMetaPeriod(QString type)
+{
+    const API_CommonSettings::InstrumentHistory::HItem *h_item = NULL;
+    if (type == "prices") h_item = &api_commonSettings.i_history.prices;
+    else if (type == "divs") h_item = &api_commonSettings.i_history.divs;
+    else if (type == "coupons") h_item = &api_commonSettings.i_history.coupons;
+
+    if (h_item)
+    {
+        m_reqObj->addMetaData("from", api_commonSettings.beginPoint(*h_item));
+        m_reqObj->addMetaData("to", api_commonSettings.endPoint(*h_item));
+        emit signalMsg(QString("PERIOD: %1").arg(h_item->toStr()));
+    }
+    else qWarning()<<QString("ApiReqPreparer::setMetaPeriod WARNING invalid period type - %1").arg(type);
 }
 

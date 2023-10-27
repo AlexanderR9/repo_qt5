@@ -22,6 +22,7 @@ struct API_CommonSettings
     };
     struct InstrumentHistory
     {
+        InstrumentHistory() :timeout(1000) {}
         struct HItem
         {
             HItem() {reset();}
@@ -32,6 +33,8 @@ struct API_CommonSettings
             QString toStr() const {return QString("[%1 : %2]").arg(begin_date).arg(end_date);}
         };
 
+
+        int timeout;
         HItem prices;
         HItem coupons;
         HItem divs;
@@ -42,6 +45,7 @@ struct API_CommonSettings
     QStringList services;
     QMap<QString, QString> service_colors;
     QMap<QString, QString> candle_sizes;
+    QMap<QString, QString> cycle_metods;
     AutoStartReq start_reqs;
     InstrumentHistory i_history;
 

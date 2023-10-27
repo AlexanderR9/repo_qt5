@@ -53,7 +53,6 @@ protected slots:
     void slotGetCandleSize(QString &cp) {cp = candleSize();}
     void slotAutoStart();
 
-
 private:
     QString serverAPI() const;
     QString baseURI() const;
@@ -65,8 +64,6 @@ private:
     bool autoStart() const;
 
 };
-
-
 
 
 #endif
