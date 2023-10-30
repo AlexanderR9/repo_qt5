@@ -1,4 +1,13 @@
 #include "instrument.h"
+#include "lstaticxml.h"
+
+#include <QDomNode>
+#include <QDomElement>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QJsonValue>
+
+
 
 //InstrumentBase
 QDate InstrumentBase::dateFromGoogleDT(const QJsonValue &jv_dt)
@@ -185,4 +194,56 @@ QStringList StockDesc::toTableRowData() const
     row_data << QString::number(-1);
     return row_data;
 }
+
+//BCoupon
+void BCoupon::syncData(QDomNode &node, QDomDocument &dom)
+{
+    if (node.isNull() || invalid()) return;
+
+    QDomNode figi_node = node.namedItem(figi);
+    if (figi_node.isNull())
+    {
+        qDebug("create figi_node");
+        figi_node = dom.createElement(figi);
+        node.appendChild(figi_node);
+    }
+    toNode(figi_node, dom);
+}
+void BCoupon::toNode(QDomNode &parent_node, QDomDocument &dom)
+{
+    qDebug("BCoupon::toNode");
+
+    int pr = -1;
+    QDomNode c_node = parent_node.firstChild();
+    while (!c_node.isNull())
+    {
+        if (c_node.nodeName() == "pay")
+        {
+            BCoupon bc(figi);
+            bc.fromNode(c_node);
+            if (bc.invalid()) qWarning("BCoupon::toNode invalid from node");
+            else
+            {
+                if (bc.number < number) pr = 1;
+                else if (bc.number == number) {qDebug("record already exist"); return;}
+                else {pr = 2; break;}
+            }
+        }
+        c_node = c_node.nextSibling();
+    }
+
+    qDebug("create pay node");
+    QDomElement next_c_node = dom.createElement("pay");
+    LStaticXML::setAttrNode(next_c_node, "number", QString::number(number), "date", pay_date.toString(InstrumentBase::userDateMask()), "size", QString::number(pay_size, 'f', 2));
+    if (pr == 2) parent_node.insertBefore(next_c_node, c_node);
+    else parent_node.appendChild(next_c_node);
+}
+void BCoupon::fromNode(QDomNode &c_node)
+{
+    pay_date = QDate::fromString(LStaticXML::getStringAttrValue("date", c_node), InstrumentBase::userDateMask());
+    pay_size = LStaticXML::getDoubleAttrValue("size", c_node, -1);
+    number = LStaticXML::getIntAttrValue("number", c_node, 9999);
+}
+
+
 

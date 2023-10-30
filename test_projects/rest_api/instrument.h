@@ -5,12 +5,15 @@
 
 #include <QString>
 #include <QDate>
-#include <QJsonArray>
-#include <QJsonObject>
-#include <QJsonValue>
 #include <QDebug>
 
+class QDomNode;
+class QDomDocument;
+class QJsonArray;
+class QJsonObject;
+class QJsonValue;
 
+//InstrumentBase
 struct InstrumentBase
 {
     InstrumentBase() {reset();}
@@ -82,7 +85,26 @@ struct StockDesc : public InstrumentBase
 
 };
 
+//struct calendar bond coupon pays info
+struct BCoupon
+{
+    BCoupon() {reset();}
+    BCoupon(const QString &id) {reset(); figi=id;}
 
+    quint16 number;
+    QString figi;
+    QDate pay_date;
+    float pay_size;
+
+    void reset() {figi.clear(); number = 9999; pay_date = QDate(); pay_size = -1;}
+    bool invalid() const {return (!pay_date.isValid() || number > 1000 || pay_size <= 0 || figi.isEmpty());}
+    void syncData(QDomNode&, QDomDocument&);
+    void toNode(QDomNode&, QDomDocument&);
+    void fromNode(QDomNode&);
+    QString toString() const {return QString("BCoupon: %1 - N=%2  date[%3] size=%4").arg(figi).arg(number).arg(pay_date.toString(InstrumentBase::userDateMask())).arg(pay_size);}
+
+
+};
 
 
 #endif

@@ -10,6 +10,9 @@
 #include <QListWidget>
 #include <QTreeWidget>
 #include <QSplitter>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QJsonValue>
 
 
 

@@ -2,6 +2,8 @@
 #include "lstring.h"
 #include "apicommonsettings.h"
 #include "instrument.h"
+#include "lstaticxml.h"
+#include "lfile.h"
 
 #include <QTimer>
 #include <QDebug>
@@ -9,9 +11,7 @@
 #include <QJsonArray>
 #include <QJsonValue>
 #include <QDir>
-
-
-//#define PRICE_BLOCK_SIZE    200
+#include <QDomDocument>
 
 
 // CycleWorker
@@ -186,7 +186,54 @@ QString CycleWorker::divsFile()
 //private funcs
 void CycleWorker::parseCoupons(const QJsonArray &j_arr)
 {
+    qDebug()<<QString("CycleWorker::parseCoupons:  j_arr size %1").arg(j_arr.count());
+    QDomDocument dom;
+    if (LFile::fileExists(CycleWorker::couponsFile()))
+    {
+        QFile f(CycleWorker::couponsFile());
+        if (!dom.setContent(&f))
+            emit signalError(QString("CycleWorker - [%1] can't load to DomDocument").arg(CycleWorker::couponsFile()));
+        if (f.isOpen()) f.close();
+    }
+    QDomNode root_node;
+    if (dom.isNull())
+    {
+        LStaticXML::createDomHeader(dom);
+        root_node = dom.createElement("calendar");
+        dom.appendChild(root_node);
+    }
+    else
+    {
+        root_node = dom.namedItem("calendar");
+        if (root_node.isNull())
+        {
+            emit signalError(QString("CycleWorker::invalid struct XML document [%1], node <calendar> not found.").arg(CycleWorker::couponsFile()));
+            return;
+        }
+    }
 
+
+    bool ok;
+    BCoupon bc;
+    for (int i=0; i<j_arr.count(); i++)
+    {
+        if (!j_arr.at(i).isObject()) continue;
+        const QJsonObject &j_obj = j_arr.at(i).toObject();
+
+        bc.pay_date = InstrumentBase::dateFromGoogleDT(j_obj.value("couponDate"));
+        bc.pay_size = InstrumentBase::floatFromJVBlock(j_obj.value("payOneBond"));
+        bc.number = j_obj.value("couponNumber").toString().toUInt(&ok);
+        bc.figi = j_obj.value("figi").toString();
+        qDebug()<<bc.toString();
+
+        if (bc.invalid() || !ok) {qWarning("CycleWorker::parseCoupons WARNING - BCoupon INVALID"); continue;}
+
+        bc.syncData(root_node, dom);
+    }
+
+    qDebug("write dom to file");
+    QString err = LFile::writeFile(CycleWorker::couponsFile(), dom.toString());
+    if (!err.isEmpty()) emit signalError(err);
 }
 void CycleWorker::parseDivs(const QJsonArray &j_arr)
 {
