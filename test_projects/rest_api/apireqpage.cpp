@@ -54,7 +54,6 @@ void APIReqPage::initReqObject()
     m_reqObj = new LHttpApiRequester(this);
     connect(m_reqObj, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
     connect(m_reqObj, SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
-    //connect(m_reqObj, SIGNAL(signalFinished(int)), this, SIGNAL(signalFinished(int)));
     connect(m_reqObj, SIGNAL(signalFinished(int)), this, SLOT(slotReqFinished(int)));
 }
 void APIReqPage::initReqPreparer()
@@ -75,10 +74,9 @@ void APIReqPage::initCycleWorker()
     m_cycleWroker = new CycleWorker(this);
     connect(m_cycleWroker, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
     connect(m_cycleWroker, SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
-    //connect(m_cycleWroker, SIGNAL(signalGetCycleData(QStringList&)), this, SLOT(slotPrepareCycleData(QStringList&)));
     connect(m_cycleWroker, SIGNAL(signalFinished()), this, SLOT(slotCycleWorkerFinished()));
     connect(m_cycleWroker, SIGNAL(signalNextReq()), this, SLOT(slotCycleWorkerNextReq()));
-
+    connect(m_cycleWroker, SIGNAL(signalCyclePrice(const QString&, float)), this, SIGNAL(signalCyclePrice(const QString&, float)));
 
 }
 void APIReqPage::resetPage()
@@ -116,7 +114,7 @@ void APIReqPage::initSources()
         if (pos > 0)
         {
             QString s_color = api_commonSettings.service_colors.value(v.left(pos));
-            qDebug()<<QString("pos=%1,  v=%2, color=%3").arg(pos).arg(v.left(pos)).arg(s_color);
+            //qDebug()<<QString("pos=%1,  v=%2, color=%3").arg(pos).arg(v.left(pos)).arg(s_color);
             m_sourceBox->setRowTextColor(row, s_color);
         }
         row++;
@@ -210,19 +208,6 @@ void APIReqPage::prepareCycleData()
     emit signalGetStockCycleData(data);
     m_cycleWroker->prepareCycleData(data);
 }
-/*
-void APIReqPage::checkCycleMode(const QString &src)
-{
-    m_mode = cmNone;
-    if (src.contains("CycleMode"))
-    {
-        if (src.toLower().contains("coupon")) m_mode = cmCoupons;
-        else if (src.toLower().contains("div")) m_mode = cmDivs;
-        else if (src.toLower().contains("history")) m_mode = cmHistory;
-        else if (src.toLower().contains("price")) m_mode = cmPrices;
-    }
-}
-*/
 void APIReqPage::autoStartReq(QString src)
 {
     int n = m_sourceBox->listWidget()->count();
@@ -265,7 +250,12 @@ void APIReqPage::checkReply()
         m_replyBox->expandLevel();
         m_replyBox->resizeByContents();
         m_replyBox->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::SingleSelection);
-        handleReplyData();
+
+        if (m_cycleWroker->cycleModeOn())
+        {
+            m_cycleWroker->handleReplyData(r.data);
+        }
+        else  handleReplyData();
     }
 }
 bool APIReqPage::replyOk() const
@@ -279,7 +269,8 @@ void APIReqPage::setExpandLevel(int a)
 void APIReqPage::handleReplyData()
 {
     QString src = m_reqObj->fullUrl().toLower();
-    qDebug()<<QString("APIReqPage::handleReplyData() SRC [%1]").arg(src);
+   // qDebug()<<QString("APIReqPage::handleReplyData() SRC [%1]").arg(src);
+
     if (src.right(5) == "bonds")
     {
         saveBondsFile();
@@ -299,6 +290,11 @@ void APIReqPage::handleReplyData()
     else if (src.right(12) == "getportfolio")
     {
         emit signalLoadPortfolio(m_reqObj->lastReply().data);
+    }
+    else if (src.right(10) == "lastprices")
+    {
+        const LHttpApiReplyData& r = m_reqObj->lastReply();
+        m_cycleWroker->parseLastPrices(r.data);
     }
 }
 void APIReqPage::parseUserID()
@@ -335,7 +331,7 @@ void APIReqPage::saveBondsFile()
 }
 void APIReqPage::saveStocksFile()
 {
-    qDebug("APIReqPage::saveStocksFile()");
+    //qDebug("APIReqPage::saveStocksFile()");
     LFile::writeFile(APIStocksPage::dataFile(), "STOCK INFO: \n");
     const LHttpApiReplyData& r = m_reqObj->lastReply();
     const QJsonArray &j_arr = r.data.constBegin().value().toArray();

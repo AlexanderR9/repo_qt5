@@ -97,7 +97,7 @@ void APIBondsPage::initFilterBox()
 }
 void APIBondsPage::slotFilter(QString f_value)
 {
-    qDebug()<<QString("slotFilter,  f_value=%1").arg(f_value);
+    //qDebug()<<QString("slotFilter,  f_value=%1").arg(f_value);
     if (!sender()) return;
     f_value = f_value.trimmed().toLower();
 
@@ -265,6 +265,12 @@ void APIBondsPage::setCycleItem(QString &cycle_item, quint16 rec_number)
         }
     }
 }
+QString APIBondsPage::figiByRecNumber(quint16 rec_number) const
+{
+    foreach (const BondDesc &rec, m_data)
+        if (rec.number == rec_number) return rec.figi;
+    return QString();
+}
 
 
 //APIStocksPage
@@ -423,6 +429,12 @@ void APIStocksPage::setCycleItem(QString &cycle_item, quint16 rec_number)
         }
     }
 }
+QString APIStocksPage::figiByRecNumber(quint16 rec_number) const
+{
+    foreach (const StockDesc &rec, m_data)
+        if (rec.number == rec_number) return rec.figi;
+    return QString();
+}
 
 
 //APIBagPage
@@ -469,7 +481,7 @@ void APIBagPage::addGeneralEdit(QString caption, int& row)
         edit->setObjectName(QString("%1_edit").arg(caption));
         g_lay->addWidget(edit, row, 1);
         row++;
-        qDebug()<<edit->objectName();
+        //qDebug()<<edit->objectName();
     }
     else qWarning(" APIBagPage::addGeneralEdit WARNING - grid layout is NULL");
 }
@@ -654,6 +666,27 @@ void APITablePageBase::slotSetCycleData(QStringList &list)
             QString cycle_item;
             setCycleItem(cycle_item, rec_number);
             if (!cycle_item.trimmed().isEmpty()) list.append(cycle_item);
+        }
+    }
+}
+void APITablePageBase::slotCyclePrice(const QString &figi, float p)
+{
+    //qDebug()<<QString("APITablePageBase::slotCyclePrice figi=%1   p=%2").arg(figi).arg(p);
+    int n = m_tableBox->table()->rowCount();
+    if (n <= 0) return;
+
+    if (objectName().contains("bond")) p *= float(10);
+    int precision = ((p < 10) ? 2 : 1);
+    QString s_price = QString::number(p, 'f', precision);
+
+    bool ok;
+    for (int i=0; i<n; i++)
+    {
+        quint16 rec_number = m_tableBox->table()->item(i, 0)->data(Qt::UserRole).toUInt(&ok);
+        if (ok && figi == figiByRecNumber(rec_number))
+        {
+            m_tableBox->table()->item(i, priceCol())->setText(s_price);
+            break;
         }
     }
 }

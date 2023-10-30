@@ -50,11 +50,9 @@ protected:
     void saveStocksFile();
     void parseUserID();
     void printHeaders(QString s = "req"); //param - req or resp
-    //void checkCycleMode(const QString&);
     void prepareCycleData();
 
 protected slots:
-    //void slotPrepareCycleData(QStringList&);
     void slotCycleWorkerFinished();
     void slotCycleWorkerNextReq();
     void slotReqFinished(int);
@@ -73,6 +71,7 @@ signals:
     void signalGetCycleData(QStringList&);
     void signalGetBondCycleData(QStringList&);
     void signalGetStockCycleData(QStringList&);
+    void signalCyclePrice(const QString&, float);
 
 };
 

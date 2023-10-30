@@ -87,6 +87,7 @@ void API_CommonSettings::parseHistoryNode(const QDomNode &node)
 {
     QDomNode child_node = node.firstChild();
     i_history.timeout = LStaticXML::getIntAttrValue("timeout", node, 2000);
+    i_history.block_size = LStaticXML::getIntAttrValue("block_size", node, 100);
 
     while (!child_node.isNull())
     {

@@ -30,6 +30,7 @@ protected:
     virtual void setSelectedUID(QString&, quint16) {}
     virtual void setCycleItem(QString&, quint16) {}
     virtual int priceCol() const;
+    virtual QString figiByRecNumber(quint16) const {return QString();}
 
 
 public slots:
@@ -37,6 +38,7 @@ public slots:
     virtual void slotSetSelectedUID(QString&);
     virtual void slotSetSelectedUIDList(QStringList&);
     virtual void slotSetCycleData(QStringList&);
+    virtual void slotCyclePrice(const QString&, float);
 
 
 };
@@ -70,6 +72,7 @@ protected:
     void sortByDate();
     void setSelectedUID(QString&, quint16);
     void setCycleItem(QString&, quint16);
+    QString figiByRecNumber(quint16) const;
 
 protected slots:
     void slotFilter(QString);
@@ -106,6 +109,7 @@ protected:
     void reloadTableByData();
     void setSelectedUID(QString&, quint16);
     void setCycleItem(QString&, quint16);
+    QString figiByRecNumber(quint16) const;
 
 protected slots:
     void slotFilter(QString);

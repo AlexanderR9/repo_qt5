@@ -59,10 +59,6 @@ void ApiReqPreparer::prepareReqDivs()
     emit signalMsg(QString("SELECTED UID: %1").arg(figi));
     m_reqObj->addMetaData("figi", figi);
     setMetaPeriod("divs");
-
-    //m_reqObj->addMetaData("from", api_commonSettings.beginPoint(api_commonSettings.i_history.divs));
-   // m_reqObj->addMetaData("to", api_commonSettings.endPoint(api_commonSettings.i_history.divs));
-   // emit signalMsg(QString("PERIOD: %1").arg(api_commonSettings.i_history.divs.toStr()));
 }
 void ApiReqPreparer::prepareReqCoupons()
 {
@@ -82,9 +78,6 @@ void ApiReqPreparer::prepareReqCoupons()
     emit signalMsg(QString("SELECTED UID: %1").arg(figi));
     m_reqObj->addMetaData("figi", figi);
     setMetaPeriod("coupons");
-    //m_reqObj->addMetaData("from", api_commonSettings.beginPoint(api_commonSettings.i_history.coupons));
-    //m_reqObj->addMetaData("to", api_commonSettings.endPoint(api_commonSettings.i_history.coupons));
-    //emit signalMsg(QString("PERIOD: %1").arg(api_commonSettings.i_history.coupons.toStr()));
 }
 void ApiReqPreparer::prepareReqLastPrices()
 {
@@ -143,9 +136,6 @@ void ApiReqPreparer::prepareReqMarket(const QString &src)
         emit signalGetCandleSize(candle_size);
         m_reqObj->addMetaData("interval", api_commonSettings.candle_sizes.value(candle_size));
         setMetaPeriod("prices");
-        //m_reqObj->addMetaData("from", api_commonSettings.beginPoint(api_commonSettings.i_history.prices));
-        //m_reqObj->addMetaData("to", api_commonSettings.endPoint(api_commonSettings.i_history.prices));
-        //emit signalMsg(QString("HISTORY_PERIOD: %1").arg(api_commonSettings.i_history.prices.toStr()));
     }
 }
 void ApiReqPreparer::prepareReqShareBy()

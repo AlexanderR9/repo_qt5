@@ -1,12 +1,17 @@
 #include "cycleworker.h"
 #include "lstring.h"
 #include "apicommonsettings.h"
+#include "instrument.h"
 
 #include <QTimer>
 #include <QDebug>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QJsonValue>
+#include <QDir>
 
 
-#define PRICE_BLOCK_SIZE    20
+//#define PRICE_BLOCK_SIZE    200
 
 
 // CycleWorker
@@ -136,7 +141,7 @@ void CycleWorker::getNextCycleData(QStringList &list)
         }
         case cmPrices:
         {
-            for (int i=0; i<PRICE_BLOCK_SIZE; i++)
+            for (int i=0; i<api_commonSettings.i_history.block_size; i++)
             {
                 list << m_cycleData.first().uid;
                 m_cycleData.removeFirst();
@@ -145,6 +150,63 @@ void CycleWorker::getNextCycleData(QStringList &list)
             break;
         }
         default: break;
+    }
+}
+void CycleWorker::handleReplyData(const QJsonObject &j_obj)
+{
+    if (j_obj.isEmpty()) return;
+    const QJsonArray &j_arr = j_obj.constBegin().value().toArray();
+    if (j_arr.isEmpty()) return;
+
+    switch (m_mode)
+    {
+        case cmCoupons:     {parseCoupons(j_arr); break;}
+        case cmDivs:        {parseDivs(j_arr); break;}
+        case cmHistory:     {parseCandles(j_arr); break;}
+        case cmPrices:      {parsePrices(j_arr); break;}
+        default: break;
+    }
+}
+void CycleWorker::parseLastPrices(const QJsonObject &j_obj)
+{
+    if (j_obj.isEmpty()) return;
+    const QJsonArray &j_arr = j_obj.constBegin().value().toArray();
+    if (!j_arr.isEmpty()) parsePrices(j_arr);
+}
+QString CycleWorker::couponsFile()
+{
+    return QString("%1%2%3").arg(API_CommonSettings::appDataPath()).arg(QDir::separator()).arg(QString("coupons.xml"));
+}
+QString CycleWorker::divsFile()
+{
+    return QString("%1%2%3").arg(API_CommonSettings::appDataPath()).arg(QDir::separator()).arg(QString("divs.xml"));
+}
+
+
+//private funcs
+void CycleWorker::parseCoupons(const QJsonArray &j_arr)
+{
+
+}
+void CycleWorker::parseDivs(const QJsonArray &j_arr)
+{
+
+}
+void CycleWorker::parseCandles(const QJsonArray &j_arr)
+{
+
+}
+void CycleWorker::parsePrices(const QJsonArray &j_arr)
+{
+    for (int i=0; i<j_arr.count(); i++)
+    {
+        if (!j_arr.at(i).isObject()) continue;
+        const QJsonObject &j_obj = j_arr.at(i).toObject();
+
+        QString figi = j_obj.value("figi").toString();
+        float price = InstrumentBase::floatFromJVBlock(j_obj.value("price"));
+        if (price > 0 && !figi.isEmpty())
+            emit signalCyclePrice(figi, price);
     }
 }
 

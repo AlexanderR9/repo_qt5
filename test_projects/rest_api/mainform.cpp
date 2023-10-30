@@ -52,12 +52,14 @@ void MainForm::initPages()
     connect(req_page, SIGNAL(signalGetSelectedBondUID(QString&)), bond_page, SLOT(slotSetSelectedUID(QString&)));
     connect(req_page, SIGNAL(signalGetSelectedBondUIDList(QStringList&)), bond_page, SLOT(slotSetSelectedUIDList(QStringList&)));
     connect(req_page, SIGNAL(signalGetBondCycleData(QStringList&)), bond_page, SLOT(slotSetCycleData(QStringList&)));
+    connect(req_page, SIGNAL(signalCyclePrice(const QString&, float)), bond_page, SLOT(slotCyclePrice(const QString&, float)));
 
     APIStocksPage *stock_page = new  APIStocksPage(this);
     m_pages.insert(aptStock, stock_page);
     connect(req_page, SIGNAL(signalGetSelectedStockUID(QString&)), stock_page, SLOT(slotSetSelectedUID(QString&)));
     connect(req_page, SIGNAL(signalGetSelectedStockUIDList(QStringList&)), stock_page, SLOT(slotSetSelectedUIDList(QStringList&)));
     connect(req_page, SIGNAL(signalGetStockCycleData(QStringList&)), stock_page, SLOT(slotSetCycleData(QStringList&)));
+    connect(req_page, SIGNAL(signalCyclePrice(const QString&, float)), stock_page, SLOT(slotCyclePrice(const QString&, float)));
 
     APIBagPage *bag_page = new  APIBagPage(this);
     m_pages.insert(aptBag, bag_page);

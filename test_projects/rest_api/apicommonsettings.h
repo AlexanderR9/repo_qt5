@@ -22,7 +22,7 @@ struct API_CommonSettings
     };
     struct InstrumentHistory
     {
-        InstrumentHistory() :timeout(1000) {}
+        InstrumentHistory() :timeout(1000), block_size(50) {}
         struct HItem
         {
             HItem() {reset();}
@@ -38,6 +38,7 @@ struct API_CommonSettings
         HItem prices;
         HItem coupons;
         HItem divs;
+        quint16 block_size; //data block size (prices)
     };
 
     QString token;
