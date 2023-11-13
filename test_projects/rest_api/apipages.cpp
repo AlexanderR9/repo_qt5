@@ -20,9 +20,11 @@
 
 #define COUNTRY_COL         2
 #define CURRENCY_COL        3
-#define RISK_COL            6
-#define COUP_YEAR_COL       5
-#define FINISH_DATE_COL     4
+#define NOMINAL_COL         4
+#define FINISH_DATE_COL     5
+#define COUP_YEAR_COL       6
+#define RISK_COL            7
+
 #define PROFIT_COL          5
 #define TO_COMPLETE_COL     7
 
@@ -35,9 +37,10 @@ APIBondsPage::APIBondsPage(QWidget *parent)
 
 {
     setObjectName("api_bonds_page");
+    m_userSign = aptBond;
 
     QStringList headers;
-    headers << "Company" << "Tiker" << "Country" << "Currency" << "Finish date" << "Coupons" << "Risk" << "Price";
+    headers << "Company" << "Tiker" << "Country" << "Currency" << "Nominal" << "Finish date" << "Coupons" << "Risk" << "Price";
     m_tableBox->setHeaderLabels(headers);
     m_tableBox->setTitle("Bonds list");
 
@@ -143,7 +146,7 @@ void APIBondsPage::riskFilter(const QString &f_value)
     {
         QString tv = t->item(i, RISK_COL)->text().trimmed().toLower();
         if (f_value.contains("high") && !tv.contains("high")) t->removeRow(i);
-        else if (f_value.contains("medium") && !tv.contains("moderate")) t->removeRow(i);
+        else if (f_value.contains("medium") && !tv.contains("mid")) t->removeRow(i);
         else if (f_value.contains("low") && !tv.contains("low")) t->removeRow(i);
     }
 }
@@ -189,6 +192,7 @@ void APIBondsPage::reloadTableByData()
         if (rec.coupons_year > 4) m_tableBox->table()->item(l_row, COUP_YEAR_COL)->setTextColor(Qt::blue);
         if (rec.risk.toLower().contains("high")) m_tableBox->table()->item(l_row, RISK_COL)->setTextColor(Qt::red);
         if (QDate::currentDate() >= rec.finish_date) LTable::setTableRowColor(m_tableBox->table(), l_row, "#FFF8DC");
+        if (rec.currency.toLower() != "rub") m_tableBox->table()->item(l_row, CURRENCY_COL)->setTextColor("#BC8F8F");
     }
 
     m_tableBox->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
@@ -247,6 +251,18 @@ void APIBondsPage::slotGetPaperInfo(QStringList &info)
         }
     }
 }
+void APIBondsPage::slotGetPaperInfoByFigi(const QString &figi, QPair<QString, QString> &pair)
+{
+    foreach (const BondDesc &rec, m_data)
+    {
+        if (rec.figi == figi)
+        {
+            pair.first = rec.name;
+            pair.second = rec.currency;
+            break;
+        }
+    }
+}
 void APIBondsPage::setSelectedUID(QString &uid, quint16 rec_number)
 {
     bool need_figi = (uid == "figi");
@@ -260,7 +276,8 @@ void APIBondsPage::setCycleItem(QString &cycle_item, quint16 rec_number)
     {
         if (rec.number == rec_number)
         {
-            cycle_item = QString("bond : %1 : %2").arg(rec.figi).arg(rec.uid);
+            if (rec.finish_date > QDate::currentDate())
+                cycle_item = QString("bond : %1 : %2").arg(rec.figi).arg(rec.uid);
             break;
         }
     }
@@ -278,6 +295,8 @@ APIStocksPage::APIStocksPage(QWidget *parent)
     :APITablePageBase(parent)
 {
     setObjectName("api_stocks_page");
+    m_userSign = aptStock;
+
 
     QStringList headers;
     headers << "Company" << "Tiker" << "Country" << "Currency" << "Sector" << "Price";
@@ -443,6 +462,8 @@ APIBagPage::APIBagPage(QWidget *parent)
       m_bag(NULL)
 {
     setObjectName("api_bag_page");
+    m_userSign = aptBag;
+
 
     m_bag = new BagState(this);
     m_tableBox->setHeaderLabels(m_bag->tableHeaders());
@@ -516,6 +537,7 @@ void APIBagPage::slotBagUpdate()
 }
 void APIBagPage::reloadPosTable()
 {
+    qDebug("APIBagPage::reloadPosTable()");
     resetPage();
     if (!m_bag->hasPositions())
     {
@@ -523,10 +545,13 @@ void APIBagPage::reloadPosTable()
         return;
     }
 
+
+    qDebug()<<QString("m_bag->posCount() %2").arg(m_bag->posCount());
     bool ok;
     for (quint16 i=0; i<m_bag->posCount(); i++)
     {
         const BagPosition &pos = m_bag->posAt(i);
+        qDebug()<< pos.uid;
         QStringList p_info;
         p_info << pos.paper_type << pos.uid;
         emit signalGetPaperInfo(p_info);
@@ -537,33 +562,47 @@ void APIBagPage::reloadPosTable()
         else row_data << p_info.at(2) << p_info.at(3);
         row_data << QString::number(pos.count) << pos.strPrice() << pos.strProfit() << pos.paper_type;
 
+        qDebug()<<QString("paper_type %1, ").arg(pos.paper_type);
         if (pos.paper_type == "bond")
         {
-            QDate fd = QDate::fromString(p_info.at(4), InstrumentBase::userDateMask());
-            if (fd.isValid())
+            if (p_info.count() >= 5)
             {
-                int dn = QDate::currentDate().daysTo(fd);
-                if (dn < 0) dn = -1;
-                row_data << QString::number(dn);
+                QDate fd = QDate::fromString(p_info.at(4), InstrumentBase::userDateMask());
+                if (fd.isValid())
+                {
+                    int dn = QDate::currentDate().daysTo(fd);
+                    if (dn < 0) dn = -1;
+                    row_data << QString::number(dn);
+                }
+                else row_data << "???";
             }
-            else row_data << "???";
+            else row_data << "????";
         }
-        else row_data << p_info.at(4);
+        else
+        {
+            if (p_info.count() >= 5) row_data << p_info.at(4);
+            else row_data << "?????";
+        }
 
+        qDebug("1");
         LTable::addTableRow(m_tableBox->table(), row_data);
         int l_row = m_tableBox->table()->rowCount() - 1;
         if (pos.curProfit() > 0) m_tableBox->table()->item(l_row, PROFIT_COL)->setTextColor("#006400");
         else if (pos.curProfit() < 0) m_tableBox->table()->item(l_row, PROFIT_COL)->setTextColor("#A52A2A");
 
+        qDebug("2");
         int to_complete = m_tableBox->table()->item(l_row, TO_COMPLETE_COL)->text().toInt(&ok);
         if (!ok) continue;
 
+        qDebug("3");
         if (to_complete <= 0) LTable::setTableTextRowColor(m_tableBox->table(), l_row, QColor("#F4A460"));
         else if (to_complete < 30) m_tableBox->table()->item(l_row, TO_COMPLETE_COL)->setTextColor(QColor("#00CED1"));
         else if (to_complete > 180) m_tableBox->table()->item(l_row, TO_COMPLETE_COL)->setTextColor(QColor("#D2691E"));
 
+        qDebug("4");
     }
 
+    qDebug("APIBagPage::reloadPosTable() 3");
     m_tableBox->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
     m_tableBox->setSelectionColor("#DEFFBF", "#6B8E23");
     m_tableBox->searchExec();
@@ -675,17 +714,17 @@ void APITablePageBase::slotCyclePrice(const QString &figi, float p)
     int n = m_tableBox->table()->rowCount();
     if (n <= 0) return;
 
-    if (objectName().contains("bond")) p *= float(10);
-    int precision = ((p < 10) ? 2 : 1);
-    QString s_price = QString::number(p, 'f', precision);
-
     bool ok;
+    int precision = ((p < 10) ? 2 : 1);
     for (int i=0; i<n; i++)
     {
         quint16 rec_number = m_tableBox->table()->item(i, 0)->data(Qt::UserRole).toUInt(&ok);
         if (ok && figi == figiByRecNumber(rec_number))
         {
-            m_tableBox->table()->item(i, priceCol())->setText(s_price);
+            if (objectName().contains("bond"))
+                p *= (m_tableBox->table()->item(i, NOMINAL_COL)->text().toFloat()/float(100));
+
+            m_tableBox->table()->item(i, priceCol())->setText(QString::number(p, 'f', precision));
             break;
         }
     }

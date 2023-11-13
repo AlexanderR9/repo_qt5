@@ -66,13 +66,11 @@ void BondDesc::fromJson(const QJsonValue &jv)
         const QJsonObject &j_obj = jv.toObject();
         name = j_obj.value("name").toString();
         country = j_obj.value("countryOfRiskName").toString();
-        currency = j_obj.value("currency").toString();
+        currency = getCurrency(j_obj);
         isin = j_obj.value("isin").toString();
         uid = j_obj.value("uid").toString();
         figi = j_obj.value("figi").toString();
-
-        if (j_obj.value("riskLevel").isDouble()) risk = QString::number(j_obj.value("riskLevel").toDouble());
-        else risk = j_obj.value("riskLevel").toString();
+        risk = getRisk(j_obj);
 
         coupons_year = j_obj.value("couponQuantityPerYear").toInt();
         api_trade =  j_obj.value("apiTradeAvailableFlag").toBool();
@@ -81,12 +79,38 @@ void BondDesc::fromJson(const QJsonValue &jv)
         start_date = BondDesc::dateFromGoogleDT(j_obj.value("placementDate"));
         finish_date = BondDesc::dateFromGoogleDT(j_obj.value("maturityDate"));
         cur_coupon_size = BondDesc::floatFromJVBlock(j_obj.value("aciValue"));
+        nominal = BondDesc::floatFromJVBlock(j_obj.value("nominal"));
 
         if (country.trimmed().isEmpty()) country = "?";
         if (currency.trimmed().isEmpty()) currency = "?";
         if (risk.trimmed().isEmpty()) risk = "?";
     }
     else qWarning("BondDesc::fromJson WARNING - input jv is not convert to QJsonObject");
+}
+QString BondDesc::getRisk(const QJsonObject &j_obj) const
+{
+    QString s = "?";
+    const QJsonValue &jv = j_obj.value("riskLevel");
+    if (jv.isDouble()) s = QString::number(jv.toDouble());
+    else if (jv.isString())
+    {
+        s = jv.toString().toLower();
+        if (s.contains("high")) s = "HIGH";
+        else if (s.contains("low")) s = "LOW";
+        else s = "MID";
+    }
+    return s;
+}
+QString BondDesc::getCurrency(const QJsonObject &j_obj) const
+{
+    const QJsonValue &jv = j_obj.value("nominal");
+    if (jv.isObject())
+    {
+        const QJsonValue &jv_cur = jv.toObject().value("currency");
+        if (jv_cur.isString()) return jv_cur.toString().toUpper();
+        else return "ERROR";
+    }
+    return "?";
 }
 void BondDesc::parseFields(const QStringList &list)
 {
@@ -96,16 +120,17 @@ void BondDesc::parseFields(const QStringList &list)
     country = list.at(1);
     currency = list.at(2);
     risk = list.at(3);
-    isin = list.at(4);
-    figi = list.at(5);
-    uid = list.at(6);
-    coupons_year = list.at(7).toInt();
-    cur_coupon_size = list.at(8).toFloat();
-    start_date = QDate::fromString(list.at(9), userDateMask());
-    finish_date = QDate::fromString(list.at(10), userDateMask());
-    api_trade = (list.at(11) == "true");
-    amortization = (list.at(12) == "true");
-    floating_coupon = (list.at(13) == "true");
+    nominal = list.at(4).toFloat();
+    isin = list.at(5);
+    figi = list.at(6);
+    uid = list.at(7);
+    coupons_year = list.at(8).toInt();
+    cur_coupon_size = list.at(9).toFloat();
+    start_date = QDate::fromString(list.at(10), userDateMask());
+    finish_date = QDate::fromString(list.at(11), userDateMask());
+    api_trade = (list.at(12) == "true");
+    amortization = (list.at(13) == "true");
+    floating_coupon = (list.at(14) == "true");
 }
 void BondDesc::reset()
 {
@@ -119,7 +144,7 @@ void BondDesc::reset()
 QString BondDesc::toStr() const
 {
     QString s(name);
-    s = QString("%1 / %2 / %3 / %4").arg(s).arg(country).arg(currency).arg(risk);
+    s = QString("%1 / %2 / %3 / %4 / %5").arg(s).arg(country).arg(currency).arg(risk).arg(nominal);
     s = QString("%1 / %2 / %3 / %4").arg(s).arg(isin).arg(figi).arg(uid);
     s = QString("%1 / %2 / %3").arg(s).arg(coupons_year).arg(QString::number(cur_coupon_size, 'f', 1));
     s = QString("%1 / %2 / %3").arg(s).arg(start_date.toString(userDateMask())).arg(finish_date.toString(userDateMask()));
@@ -131,7 +156,7 @@ QStringList BondDesc::toTableRowData() const
     QStringList row_data;
     if (invalid()) return row_data;
 
-    row_data << name << isin << country << currency;
+    row_data << name << isin << country << currency << QString::number(nominal, 'f', 1);
     row_data << finish_date.toString(userDateMask()) << QString::number(coupons_year) << risk;
     row_data << QString::number(-1);
     return row_data;
@@ -211,7 +236,7 @@ void BCoupon::syncData(QDomNode &node, QDomDocument &dom)
 }
 void BCoupon::toNode(QDomNode &parent_node, QDomDocument &dom)
 {
-    qDebug("BCoupon::toNode");
+   // qDebug("BCoupon::toNode");
 
     int pr = -1;
     QDomNode c_node = parent_node.firstChild();
@@ -232,9 +257,10 @@ void BCoupon::toNode(QDomNode &parent_node, QDomDocument &dom)
         c_node = c_node.nextSibling();
     }
 
-    qDebug("create pay node");
+    //qDebug("create pay node");
     QDomElement next_c_node = dom.createElement("pay");
-    LStaticXML::setAttrNode(next_c_node, "number", QString::number(number), "date", pay_date.toString(InstrumentBase::userDateMask()), "size", QString::number(pay_size, 'f', 2));
+    LStaticXML::setAttrNode(next_c_node, "number", QString::number(number), "date", pay_date.toString(InstrumentBase::userDateMask()),
+                            "size", QString::number(pay_size, 'f', 2), "period", QString::number(period));
     if (pr == 2) parent_node.insertBefore(next_c_node, c_node);
     else parent_node.appendChild(next_c_node);
 }
@@ -243,7 +269,26 @@ void BCoupon::fromNode(QDomNode &c_node)
     pay_date = QDate::fromString(LStaticXML::getStringAttrValue("date", c_node), InstrumentBase::userDateMask());
     pay_size = LStaticXML::getDoubleAttrValue("size", c_node, -1);
     number = LStaticXML::getIntAttrValue("number", c_node, 9999);
+    period = LStaticXML::getIntAttrValue("period", c_node, 0);
 }
+float BCoupon::daySize() const
+{
+    if (period > 0) return (pay_size/float(period));
+    return -1;
+}
+int BCoupon::daysTo() const
+{
+    if (QDate::currentDate() > pay_date) return -1;
+    return QDate::currentDate().daysTo(pay_date);
+}
+void BCoupon::fromJson(const QJsonObject &j_obj)
+{
+    if (j_obj.isEmpty()) return;
 
-
+    pay_date = InstrumentBase::dateFromGoogleDT(j_obj.value("couponDate"));
+    pay_size = InstrumentBase::floatFromJVBlock(j_obj.value("payOneBond"));
+    number = j_obj.value("couponNumber").toString().toUInt();
+    figi = j_obj.value("figi").toString();
+    period = quint16(j_obj.value("couponPeriod").toDouble());
+}
 

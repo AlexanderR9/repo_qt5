@@ -52,6 +52,8 @@ public:
     virtual QString caption() const {return QString("Simple page!!!");} //некая надпись соответствующая этому виджету
     virtual QString iconPath() const {return QString();} //некая иконка соответствующая этому виджету
     virtual void resetPage() {} //некая очистка страницы или сброс в начальное состояние
+    virtual int userSign() const {return m_userSign;} //некий вспомогательный признак, может не использоваться
+    virtual QString userData() const {return m_userData;} //некие вспомогательные данные, может не использоваться
 
     void setSpacing(int); //задать отступы для внутренних виджетов (друг от друга)
 
@@ -59,6 +61,8 @@ protected:
     int             m_spliterType;
     QSplitter       *v_splitter;
     QSplitter       *h_splitter;
+    int             m_userSign; //default: -1
+    QString         m_userData; //default: empty
 
     void init();
 

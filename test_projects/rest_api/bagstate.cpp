@@ -68,8 +68,10 @@ void BagState::slotLoadPortfolio(const QJsonObject &j_obj)
             }
         }
     }
+    qDebug("BagState::slotLoadPortfolio 2");
 
     emit signalBagUpdate();
+    qDebug("BagState::slotLoadPortfolio 3");
 }
 void BagState::parsePositions(const QJsonArray &j_arr)
 {

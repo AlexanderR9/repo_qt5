@@ -21,6 +21,11 @@ public:
     static double getDoubleAttrValue(const QString&, const QDomNode&, double defValue = -99); //get double value of attribute, params: attr_name, node, default_value
     static QString getStringAttrValue(const QString&, const QDomNode&, QString defValue = QString()); //get string value of attribute, params: attr_name, node, default_value
     static void createDomHeader(QDomDocument&); // for create first section xml node
+
+    //открывает xml file, загружает QDomDocumet, извлекает рутовую ноду и записывает в параметр r_node,
+    //если параметр need_root_node_name не пустой, то предварительно проверяет имя рутовой ноды (онодолжно совпадать с need_root_node_name).
+    //в случае любой ошибки r_node не запишется, а функция вернет текст ошибки.
+    static QString getDomRootNode(const QString& fname, QDomNode &r_node, QString need_root_node_name = QString());
 	
 };
 

@@ -14,7 +14,7 @@ class CycleWorker : public LSimpleObject
 {
     Q_OBJECT
 public:
-    enum CycleMode {cmCoupons = 211, cmDivs, cmHistory, cmPrices, cmNone = 0};
+    enum CycleMode {cmCoupons = 211, cmDivs, cmHistory, cmBondPrices, cmStockPrices, cmNone = 0};
     struct CycleItem
     {
         CycleItem() {}
@@ -39,7 +39,7 @@ public:
     inline bool cycleModeOn() const {return (m_mode > cmNone);}
     inline QString apiMetod() const {return m_apiMetod;}
 
-    static QString couponsFile();
+    static QString couponsFile(); //full path
     static QString divsFile();
     //static QString historyFile();
 

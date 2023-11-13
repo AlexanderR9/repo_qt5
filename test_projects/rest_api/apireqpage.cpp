@@ -27,6 +27,8 @@ APIReqPage::APIReqPage(QWidget *parent)
       m_cycleWroker(NULL)
 {
     setObjectName("api_req_page");
+    m_userSign = aptReq;
+
 
     initWidgets();
     initSources();
@@ -125,6 +127,7 @@ void APIReqPage::initSources()
 }
 void APIReqPage::trySendReq()
 {
+    m_reqPreparer->clearCycleData();
     int row = m_sourceBox->listWidget()->currentRow();
     if (row < 0)
     {

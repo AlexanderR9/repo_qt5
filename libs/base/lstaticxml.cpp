@@ -1,6 +1,8 @@
 #include "lstaticxml.h"
 
 #include <QDebug>
+#include <QFile>
+#include <QDomNodeList>
 
 
 //////////////// LStaticXML /////////////////////////
@@ -48,6 +50,45 @@ QString LStaticXML::getStringAttrValue(const QString &attr_name, const QDomNode 
 void LStaticXML::createDomHeader(QDomDocument &dom)
 {
     dom.appendChild(dom.createProcessingInstruction("xml", "version=\"1.0\" encoding=\"UTF-8\""));
+}
+QString LStaticXML::getDomRootNode(const QString &fname, QDomNode &r_node, QString need_root_node_name)
+{
+    r_node.clear();
+    if (fname.trimmed().isEmpty()) return QString("Input file is Empty");
+    if (!fname.contains(".xml")) return QString("Input file [%1] is not XML-file").arg(fname);
+
+    QFile f(fname.trimmed());
+    if (!f.exists()) return QString("Input file [%1] not found").arg(fname);
+
+    QDomDocument dom;
+    if (!dom.setContent(&f))
+    {
+        if (f.isOpen()) f.close();
+        return QString("Can't load to DomDocument input file [%1]").arg(fname);
+    }
+    f.close();
+
+    if (!need_root_node_name.isEmpty())
+    {
+        r_node = dom.namedItem(need_root_node_name);
+        if (r_node.isNull()) return QString("Not found root_node by name <%1>").arg(need_root_node_name);
+    }
+    else
+    {
+        QDomNodeList childs = dom.childNodes();
+        if (childs.isEmpty()) return QString("Childs list is empty, input file [%1]").arg(fname);
+        for (int i=0; i< childs.count(); i++)
+        {
+            if (childs.at(i).isElement())
+            {
+                r_node = childs.at(i).cloneNode();
+                break;
+            }
+        }
+    }
+
+    if (r_node.isNull()) return QString("In Childs list not found element node, input file [%1]").arg(fname);
+    return QString();
 }
 
 

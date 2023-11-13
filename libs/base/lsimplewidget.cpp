@@ -27,7 +27,9 @@ LSimpleWidget::LSimpleWidget(QWidget *parent, int t)
     :QWidget(parent),
       m_spliterType(t),
       v_splitter(NULL),
-      h_splitter(NULL)
+      h_splitter(NULL),
+      m_userSign(-1),
+      m_userData(QString())
 {
     setObjectName("lsimple_widget");
 

@@ -55,14 +55,19 @@ struct BondDesc : public InstrumentBase
     QDate finish_date; //maturity_date
     bool amortization;
     bool floating_coupon;
+    float nominal;
 
-    static quint8 filedsCount() {return 14;}
+    static quint8 filedsCount() {return 15;}
 
     void reset();
     QString toStr() const;
     void fromJson(const QJsonValue&);
     QStringList toTableRowData() const;
     void parseFields(const QStringList&);
+
+private:
+    QString getCurrency(const QJsonObject&) const;
+    QString getRisk(const QJsonObject&) const;
 
 };
 
@@ -95,13 +100,17 @@ struct BCoupon
     QString figi;
     QDate pay_date;
     float pay_size;
+    quint16 period;
 
-    void reset() {figi.clear(); number = 9999; pay_date = QDate(); pay_size = -1;}
-    bool invalid() const {return (!pay_date.isValid() || number > 1000 || pay_size <= 0 || figi.isEmpty());}
+    void reset() {figi.clear(); number = 9999; pay_date = QDate(); pay_size = -1; period = 0;}
+    bool invalid() const {return (!pay_date.isValid() || number > 1000 || pay_size <= 0 || period == 0 || figi.isEmpty());}
     void syncData(QDomNode&, QDomDocument&);
     void toNode(QDomNode&, QDomDocument&);
     void fromNode(QDomNode&);
     QString toString() const {return QString("BCoupon: %1 - N=%2  date[%3] size=%4").arg(figi).arg(number).arg(pay_date.toString(InstrumentBase::userDateMask())).arg(pay_size);}
+    float daySize() const;
+    int daysTo() const;
+    void fromJson(const QJsonObject&);
 
 
 };

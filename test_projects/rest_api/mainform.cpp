@@ -10,6 +10,7 @@
 #include "apipages.h"
 #include "apireqpage.h"
 #include "apicommonsettings.h"
+#include "apicouponpage.h"
 
 #include <QDebug>
 #include <QDir>
@@ -61,6 +62,16 @@ void MainForm::initPages()
     connect(req_page, SIGNAL(signalGetStockCycleData(QStringList&)), stock_page, SLOT(slotSetCycleData(QStringList&)));
     connect(req_page, SIGNAL(signalCyclePrice(const QString&, float)), stock_page, SLOT(slotCyclePrice(const QString&, float)));
 
+
+    APICouponPage *c_page = new  APICouponPage(this);
+    m_pages.insert(aptCoupon, c_page);
+    connect(c_page, SIGNAL(signalGetPaperInfoByFigi(const QString&, QPair<QString, QString>&)), bond_page, SLOT(slotGetPaperInfoByFigi(const QString&, QPair<QString, QString>&)));
+
+
+
+    APIDivPage *d_page = new  APIDivPage(this);
+    m_pages.insert(aptDiv, d_page);
+
     APIBagPage *bag_page = new  APIBagPage(this);
     m_pages.insert(aptBag, bag_page);
     connect(req_page, SIGNAL(signalLoadPortfolio(const QJsonObject&)), bag_page, SIGNAL(signalLoadPortfolio(const QJsonObject&)));
@@ -84,19 +95,36 @@ void MainForm::loadData()
     LSimpleWidget *page = activePage();
     if (!page) {slotError("PAGE IS NULL!!!!"); return;}
 
-    if (page->caption().toLower().contains("bond"))
+
+    switch (page->userSign())
     {
-        APIBondsPage *bond_page = qobject_cast<APIBondsPage*>(m_pages.value(aptBond));
-        if (bond_page) bond_page->loadData();
-        else slotError("bond_page is NULL");
+        case aptBond:
+        {
+            APIBondsPage *bond_page = qobject_cast<APIBondsPage*>(m_pages.value(aptBond));
+            if (bond_page) bond_page->loadData();
+            else slotError("bond_page is NULL");
+            break;
+        }
+        case aptStock:
+        {
+            APIStocksPage *stock_page = qobject_cast<APIStocksPage*>(m_pages.value(aptStock));
+            if (stock_page) stock_page->loadData();
+            else slotError("stock_page is NULL");
+            break;
+        }
+        case aptCoupon:
+        {
+            APICouponPage *coupon_page = qobject_cast<APICouponPage*>(m_pages.value(aptCoupon));
+            if (coupon_page) coupon_page->loadData();
+            else slotError("coupon_page is NULL");
+            break;
+        }
+        default:
+        {
+            m_protocol->addText("active page belong not for loading", LProtocolBox::ttWarning);
+            break;
+        }
     }
-    else if (page->caption().toLower().contains("stock"))
-    {
-        APIStocksPage *stock_page = qobject_cast<APIStocksPage*>(m_pages.value(aptStock));
-        if (stock_page) stock_page->loadData();
-        else slotError("stock_page is NULL");
-    }
-    else m_protocol->addText("active page belong not for loading", LProtocolBox::ttWarning);
 }
 void MainForm::initCommonSettings()
 {

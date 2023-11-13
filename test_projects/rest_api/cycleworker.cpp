@@ -68,16 +68,20 @@ void CycleWorker::checkCycleMode(const QString &src)
         return;
     }
 
-    if (src.toLower().contains("coupon")) m_mode = cmCoupons;
-    else if (src.toLower().contains("div")) m_mode = cmDivs;
-    else if (src.toLower().contains("history")) m_mode = cmHistory;
-    else if (src.toLower().contains("price")) m_mode = cmPrices;
+    QString s = src.toLower().trimmed();
+    if (s.contains("coupon")) m_mode = cmCoupons;
+    else if (s.contains("div")) m_mode = cmDivs;
+    else if (s.contains("history")) m_mode = cmHistory;
+    else if (s.contains("price") && s.contains("bond")) m_mode = cmBondPrices;
+    else if (s.contains("price") && s.contains("stock")) m_mode = cmStockPrices;
+
 }
 void CycleWorker::prepareCycleData(QStringList &i_list)
 {
     if (i_list.isEmpty())
     {
         emit signalError(QString("CycleWorker: cycle_data is empty, CYCLE MODE STOPED"));
+        reset();
         return;
     }
 
@@ -96,6 +100,7 @@ void CycleWorker::prepareCycleData(QStringList &i_list)
     if (m_cycleData.isEmpty())
     {
         emit signalError(QString("CycleWorker: cycle_data is empty, CYCLE MODE STOPED"));
+        reset();
         return;
     }
 
@@ -109,8 +114,12 @@ void CycleWorker::trimDataByAPIMetod()
     QString sign;
     switch (m_mode)
     {
+        case cmBondPrices:
         case cmCoupons: {sign = "bond"; break;}
+
+        case cmStockPrices:
         case cmDivs: {sign = "stock"; break;}
+
         default: break;
     }
     if (sign.isEmpty()) return;
@@ -139,7 +148,8 @@ void CycleWorker::getNextCycleData(QStringList &list)
             m_cycleData.removeFirst();
             break;
         }
-        case cmPrices:
+        case cmStockPrices:
+        case cmBondPrices:
         {
             for (int i=0; i<api_commonSettings.i_history.block_size; i++)
             {
@@ -163,7 +173,9 @@ void CycleWorker::handleReplyData(const QJsonObject &j_obj)
         case cmCoupons:     {parseCoupons(j_arr); break;}
         case cmDivs:        {parseDivs(j_arr); break;}
         case cmHistory:     {parseCandles(j_arr); break;}
-        case cmPrices:      {parsePrices(j_arr); break;}
+
+        case cmBondPrices:
+        case cmStockPrices:      {parsePrices(j_arr); break;}
         default: break;
     }
 }
@@ -186,53 +198,31 @@ QString CycleWorker::divsFile()
 //private funcs
 void CycleWorker::parseCoupons(const QJsonArray &j_arr)
 {
+    //load old xml file
     qDebug()<<QString("CycleWorker::parseCoupons:  j_arr size %1").arg(j_arr.count());
     QDomDocument dom;
-    if (LFile::fileExists(CycleWorker::couponsFile()))
-    {
-        QFile f(CycleWorker::couponsFile());
-        if (!dom.setContent(&f))
-            emit signalError(QString("CycleWorker - [%1] can't load to DomDocument").arg(CycleWorker::couponsFile()));
-        if (f.isOpen()) f.close();
-    }
     QDomNode root_node;
-    if (dom.isNull())
+    QString err = LStaticXML::getDomRootNode(CycleWorker::couponsFile(), root_node, QString("calendar"));
+    if (root_node.isNull())
     {
-        LStaticXML::createDomHeader(dom);
+        qWarning()<<"CycleWorker::parseCoupons WARNING - "<<err;
         root_node = dom.createElement("calendar");
-        dom.appendChild(root_node);
-    }
-    else
-    {
-        root_node = dom.namedItem("calendar");
-        if (root_node.isNull())
-        {
-            emit signalError(QString("CycleWorker::invalid struct XML document [%1], node <calendar> not found.").arg(CycleWorker::couponsFile()));
-            return;
-        }
     }
 
-
-    bool ok;
+    //parse current JSON data
     BCoupon bc;
     for (int i=0; i<j_arr.count(); i++)
     {
         if (!j_arr.at(i).isObject()) continue;
-        const QJsonObject &j_obj = j_arr.at(i).toObject();
-
-        bc.pay_date = InstrumentBase::dateFromGoogleDT(j_obj.value("couponDate"));
-        bc.pay_size = InstrumentBase::floatFromJVBlock(j_obj.value("payOneBond"));
-        bc.number = j_obj.value("couponNumber").toString().toUInt(&ok);
-        bc.figi = j_obj.value("figi").toString();
-        qDebug()<<bc.toString();
-
-        if (bc.invalid() || !ok) {qWarning("CycleWorker::parseCoupons WARNING - BCoupon INVALID"); continue;}
-
-        bc.syncData(root_node, dom);
+        bc.fromJson(j_arr.at(i).toObject());
+        if (bc.invalid()) qWarning("CycleWorker::parseCoupons WARNING - BCoupon INVALID");
+        else bc.syncData(root_node, dom);
     }
 
-    qDebug("write dom to file");
-    QString err = LFile::writeFile(CycleWorker::couponsFile(), dom.toString());
+    //write synchronized file
+    LStaticXML::createDomHeader(dom);
+    dom.appendChild(root_node);
+    err = LFile::writeFile(CycleWorker::couponsFile(), dom.toString());
     if (!err.isEmpty()) emit signalError(err);
 }
 void CycleWorker::parseDivs(const QJsonArray &j_arr)
