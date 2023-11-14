@@ -8,7 +8,12 @@
 #include <QDomNode>
 #include <QTableWidget>
 
-#define FIGI_COL    1
+#define FIGI_COL        1
+#define DAY_SIZE_COL    6
+
+#define DAY_SIZE_LIMIT_HIGH     0.4
+#define DAY_SIZE_LIMIT_LOW      0.2
+
 
 //APICouponPage
 APICouponPage::APICouponPage(QWidget *parent)
@@ -89,6 +94,10 @@ void APICouponPage::reloadTableByData()
         row_data << rec.pay_date.toString(InstrumentBase::userDateMask()) << QString::number(rec.pay_size, 'f', 2);
         row_data << QString::number(rec.daySize(), 'f', 4) << QString::number(rec.daysTo());
         LTable::addTableRow(m_tableBox->table(), row_data);
+
+        int l_row = m_tableBox->table()->rowCount() - 1;
+        if (rec.daySize() > DAY_SIZE_LIMIT_HIGH) m_tableBox->table()->item(l_row, DAY_SIZE_COL)->setTextColor(Qt::blue);
+        else if (rec.daySize() < DAY_SIZE_LIMIT_LOW) m_tableBox->table()->item(l_row, DAY_SIZE_COL)->setTextColor(Qt::lightGray);
     }
 
     m_tableBox->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);

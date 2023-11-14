@@ -17,6 +17,7 @@
 #include <QSpacerItem>
 #include <QTableWidget>
 #include <QDir>
+#include <QTimer>
 
 #define COUNTRY_COL         2
 #define CURRENCY_COL        3
@@ -27,6 +28,8 @@
 
 #define PROFIT_COL          5
 #define TO_COMPLETE_COL     7
+
+#define PROFITABILITY_LIMIT     1.4
 
 
 //APIBondsPage
@@ -564,7 +567,6 @@ void APIBagPage::slotBagUpdate()
 }
 void APIBagPage::reloadPosTable()
 {
-    //qDebug("APIBagPage::reloadPosTable()");
     resetPage();
     if (!m_bag->hasPositions())
     {
@@ -589,7 +591,6 @@ void APIBagPage::reloadPosTable()
         else row_data << p_info.at(2) << p_info.at(3);
         row_data << QString::number(pos.count) << pos.strPrice() << pos.strProfit() << pos.paper_type;
 
-       // qDebug()<<QString("paper_type %1, ").arg(pos.paper_type);
         if (pos.paper_type == "bond")
         {
             if (p_info.count() >= 5)
@@ -613,14 +614,16 @@ void APIBagPage::reloadPosTable()
 
         LTable::addTableRow(m_tableBox->table(), row_data);
         int l_row = m_tableBox->table()->rowCount() - 1;
+        if (pos.paper_type != "bond") LTable::setTableRowColor(m_tableBox->table(), l_row, "#FFFFE0");
+
         if (pos.curProfit() > 0) m_tableBox->table()->item(l_row, PROFIT_COL)->setTextColor("#006400");
         else if (pos.curProfit() < 0) m_tableBox->table()->item(l_row, PROFIT_COL)->setTextColor("#A52A2A");
 
         int to_complete = m_tableBox->table()->item(l_row, TO_COMPLETE_COL)->text().toInt(&ok);
         if (!ok) continue;
 
-        if (to_complete <= 0) LTable::setTableTextRowColor(m_tableBox->table(), l_row, QColor("#F4A460"));
-        else if (to_complete < 30) m_tableBox->table()->item(l_row, TO_COMPLETE_COL)->setTextColor(QColor("#00CED1"));
+        if (to_complete <= 0) LTable::setTableTextRowColor(m_tableBox->table(), l_row, QColor("#C0C0C0"));
+        else if (to_complete < 20) m_tableBox->table()->item(l_row, TO_COMPLETE_COL)->setTextColor(QColor("#0000CD"));
         else if (to_complete > 180) m_tableBox->table()->item(l_row, TO_COMPLETE_COL)->setTextColor(QColor("#D2691E"));
 
     }
@@ -756,7 +759,8 @@ void APITablePageBase::slotCyclePrice(const QString &figi, float p)
 
 //APIProfitabilityPage
 APIProfitabilityPage::APIProfitabilityPage(QWidget *parent)
-    :APITablePageBase(parent)
+    :APITablePageBase(parent),
+      m_tick(0)
 {
     setObjectName("profitability_page");
     m_userSign = aptProfitability;
@@ -765,6 +769,20 @@ APIProfitabilityPage::APIProfitabilityPage(QWidget *parent)
     headers << "Company" << "Ticker" << "Finish date" << "Coupon" << "Price" << "Finish coupon" << "Finish profit" << "Profitability_M, %";
     m_tableBox->setHeaderLabels(headers);
     m_tableBox->setTitle("Profitability by finish date");
+
+    QTimer *t = new QTimer(this);
+    connect(t, SIGNAL(timeout()), this, SLOT(slotResizeTimer()));
+    t->start(1000);
+}
+void APIProfitabilityPage::slotResizeTimer()
+{
+    if (m_tick < 0) return;
+    m_tick = -1;
+
+    m_tableBox->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
+    //m_tableBox->setSelectionColor("#DEFFBF", "#6B8E23");
+    m_tableBox->searchExec();
+
 }
 void APIProfitabilityPage::slotRecalcProfitability(const BondDesc &bond_rec, float price)
 {
@@ -788,21 +806,38 @@ void APIProfitabilityPage::slotRecalcProfitability(const BondDesc &bond_rec, flo
     float p_finish = c_finish + (bond_rec.nominal-price);
     row_data << QString::number(p_finish, 'f', 2);
     float v_month = ((p_finish*100/(price+accumulated))/float(bond_rec.daysToFinish()))*30;
-    row_data << QString::number(v_month, 'f', 3);
+    row_data << QString("%1/%2").arg(QString::number(v_month, 'f', 3)).arg(QString::number(v_month*12, 'f', 1));
 
     //sync by table
-    LTable::addTableRow(m_tableBox->table(), row_data);
-    int l_row = m_tableBox->table()->rowCount() - 1;
-    m_tableBox->table()->item(l_row, 0)->setData(Qt::UserRole, bond_rec.figi);
-
-    if (l_row > 0)
+    syncTableData(bond_rec, row_data, v_month);
+}
+void APIProfitabilityPage::syncTableData(const BondDesc &bond_rec, const QStringList &row_data, float v_month)
+{
+    int row = -1;
+    int n = m_tableBox->table()->rowCount();
+    if (n > 0)
     {
-        int n = m_tableBox->table()->rowCount();
         for (int i=0; i<n-1; i++)
-            if (m_tableBox->table()->item(l_row, 0)->data(Qt::UserRole).toString() == bond_rec.figi)
-            {
-                m_tableBox->table()->removeRow(i);
-                break;
-            }
+        {
+            QString u_data = m_tableBox->table()->item(i, 0)->data(Qt::UserRole).toString();
+            if (u_data == bond_rec.figi) {row = i; break;}
+        }
     }
+
+    //update table data
+    if (row >= 0)
+    {
+        LTable::setTableRow(row, m_tableBox->table(), row_data);
+    }
+    else
+    {
+        LTable::addTableRow(m_tableBox->table(), row_data);
+        m_tableBox->table()->item(n, 0)->setData(Qt::UserRole, bond_rec.figi);
+        row = n;
+    }
+
+    if (v_month > PROFITABILITY_LIMIT)
+        m_tableBox->table()->item(row, priceCol())->setTextColor(Qt::blue);
+
+    m_tick++;
 }
