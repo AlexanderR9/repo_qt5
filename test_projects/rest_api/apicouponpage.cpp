@@ -8,6 +8,8 @@
 #include <QDomNode>
 #include <QTableWidget>
 
+#define FIGI_COL    1
+
 //APICouponPage
 APICouponPage::APICouponPage(QWidget *parent)
     :APITablePageBase(parent)
@@ -41,6 +43,7 @@ void APICouponPage::loadData()
     }
     emit signalMsg(QString("loaded validity records: %1 \n").arg(m_data.count()));
 
+    sortByDate();
     reloadTableByData();
 }
 void APICouponPage::loadFigiCoupons(const QDomNode &figi_node)
@@ -92,6 +95,60 @@ void APICouponPage::reloadTableByData()
     m_tableBox->setSelectionColor("#E6E6FA", "#800000");
     m_tableBox->searchExec();
 }
+void APICouponPage::sortByDate()
+{
+    if (m_data.count() < 3) return;
+
+
+    int n = m_data.count();
+    while (1 == 1)
+    {
+        bool has_replace = false;
+        for (int i=0; i<n-1; i++)
+        {
+            const QDate &d = m_data.at(i).pay_date;
+            const QDate &d_next = m_data.at(i+1).pay_date;
+            if (!d.isValid() && d_next.isValid())
+            {
+                BCoupon rec = m_data.takeAt(i);
+                m_data.insert(i+1, rec);
+                has_replace = true;
+            }
+            else if (d.isValid() && d_next.isValid())
+            {
+                if (d_next < d)
+                {
+                    BCoupon rec = m_data.takeAt(i);
+                    m_data.insert(i+1, rec);
+                    has_replace = true;
+                }
+            }
+        }
+        if (!has_replace) break;
+    }
+}
+void APICouponPage::slotFilter(const QStringList &list)
+{
+    qDebug()<<QString("APICouponPage::slotFilter figi list size %1").arg(list.count());
+    QTableWidget *t = m_tableBox->table();
+    int n = t->rowCount();
+    if (n == 0) return;
+
+    for (int i=n-1; i>=0; i--)
+    {
+        QString figi = t->item(i, FIGI_COL)->text().trimmed();
+        if (!list.contains(figi)) t->removeRow(i);
+    }
+}
+void APICouponPage::slotGetCouponRec(const QString &figi, const BCoupon* &c_rec)
+{
+    foreach (const BCoupon &rec, m_data)
+    {
+        if (rec.figi == figi) {c_rec = &rec; break;}
+    }
+}
+
+
 
 //APIDivPage
 APIDivPage::APIDivPage(QWidget *parent)
@@ -100,10 +157,11 @@ APIDivPage::APIDivPage(QWidget *parent)
     setObjectName("api_div_page");
     m_userSign = aptDiv;
 
-
     QStringList headers;
     headers << "Company" << "Ticker" << "Country" << "Currency" << "Date" << "Size" << "Days to";
     m_tableBox->setHeaderLabels(headers);
     m_tableBox->setTitle("Calendar");
-
 }
+
+
+

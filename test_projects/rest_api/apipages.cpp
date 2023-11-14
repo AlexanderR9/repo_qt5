@@ -112,6 +112,20 @@ void APIBondsPage::slotFilter(QString f_value)
         dateFilter(f_value);
 
     m_tableBox->searchExec();
+
+
+    //send visible figi list to coupon page
+    int n = m_tableBox->table()->rowCount();
+    if (n <= 0) return;
+
+    bool ok;
+    QStringList figi_list;
+    for (int i=0; i<n; i++)
+    {
+        quint16 rec_number = m_tableBox->table()->item(i, 0)->data(Qt::UserRole).toUInt(&ok);
+        if (ok) figi_list << figiByRecNumber(rec_number);
+    }
+    emit signalFilter(figi_list);
 }
 void APIBondsPage::dateFilter(const QString &f_value)
 {
@@ -287,6 +301,19 @@ QString APIBondsPage::figiByRecNumber(quint16 rec_number) const
     foreach (const BondDesc &rec, m_data)
         if (rec.number == rec_number) return rec.figi;
     return QString();
+}
+void APIBondsPage::calcProfitability(const QString &figi, float price)
+{
+    if (price <= 0) return;
+
+    foreach (const BondDesc &rec, m_data)
+    {
+        if (rec.figi == figi)
+        {
+            emit signalNeedCalcProfitability(rec, price);
+            break;
+        }
+    }
 }
 
 
@@ -537,7 +564,7 @@ void APIBagPage::slotBagUpdate()
 }
 void APIBagPage::reloadPosTable()
 {
-    qDebug("APIBagPage::reloadPosTable()");
+    //qDebug("APIBagPage::reloadPosTable()");
     resetPage();
     if (!m_bag->hasPositions())
     {
@@ -546,7 +573,7 @@ void APIBagPage::reloadPosTable()
     }
 
 
-    qDebug()<<QString("m_bag->posCount() %2").arg(m_bag->posCount());
+    qDebug()<<QString("APIBagPage: m_bag->posCount() %2").arg(m_bag->posCount());
     bool ok;
     for (quint16 i=0; i<m_bag->posCount(); i++)
     {
@@ -562,7 +589,7 @@ void APIBagPage::reloadPosTable()
         else row_data << p_info.at(2) << p_info.at(3);
         row_data << QString::number(pos.count) << pos.strPrice() << pos.strProfit() << pos.paper_type;
 
-        qDebug()<<QString("paper_type %1, ").arg(pos.paper_type);
+       // qDebug()<<QString("paper_type %1, ").arg(pos.paper_type);
         if (pos.paper_type == "bond")
         {
             if (p_info.count() >= 5)
@@ -584,25 +611,20 @@ void APIBagPage::reloadPosTable()
             else row_data << "?????";
         }
 
-        qDebug("1");
         LTable::addTableRow(m_tableBox->table(), row_data);
         int l_row = m_tableBox->table()->rowCount() - 1;
         if (pos.curProfit() > 0) m_tableBox->table()->item(l_row, PROFIT_COL)->setTextColor("#006400");
         else if (pos.curProfit() < 0) m_tableBox->table()->item(l_row, PROFIT_COL)->setTextColor("#A52A2A");
 
-        qDebug("2");
         int to_complete = m_tableBox->table()->item(l_row, TO_COMPLETE_COL)->text().toInt(&ok);
         if (!ok) continue;
 
-        qDebug("3");
         if (to_complete <= 0) LTable::setTableTextRowColor(m_tableBox->table(), l_row, QColor("#F4A460"));
         else if (to_complete < 30) m_tableBox->table()->item(l_row, TO_COMPLETE_COL)->setTextColor(QColor("#00CED1"));
         else if (to_complete > 180) m_tableBox->table()->item(l_row, TO_COMPLETE_COL)->setTextColor(QColor("#D2691E"));
 
-        qDebug("4");
     }
 
-    qDebug("APIBagPage::reloadPosTable() 3");
     m_tableBox->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
     m_tableBox->setSelectionColor("#DEFFBF", "#6B8E23");
     m_tableBox->searchExec();
@@ -710,7 +732,7 @@ void APITablePageBase::slotSetCycleData(QStringList &list)
 }
 void APITablePageBase::slotCyclePrice(const QString &figi, float p)
 {
-    //qDebug()<<QString("APITablePageBase::slotCyclePrice figi=%1   p=%2").arg(figi).arg(p);
+    qDebug()<<QString("APITablePageBase::slotCyclePrice PAGE[%1]  figi=%2   p=%3").arg(objectName()).arg(figi).arg(p);
     int n = m_tableBox->table()->rowCount();
     if (n <= 0) return;
 
@@ -725,9 +747,62 @@ void APITablePageBase::slotCyclePrice(const QString &figi, float p)
                 p *= (m_tableBox->table()->item(i, NOMINAL_COL)->text().toFloat()/float(100));
 
             m_tableBox->table()->item(i, priceCol())->setText(QString::number(p, 'f', precision));
+            calcProfitability(figi, p);
             break;
         }
     }
 }
 
 
+//APIProfitabilityPage
+APIProfitabilityPage::APIProfitabilityPage(QWidget *parent)
+    :APITablePageBase(parent)
+{
+    setObjectName("profitability_page");
+    m_userSign = aptProfitability;
+
+    QStringList headers;
+    headers << "Company" << "Ticker" << "Finish date" << "Coupon" << "Price" << "Finish coupon" << "Finish profit" << "Profitability_M, %";
+    m_tableBox->setHeaderLabels(headers);
+    m_tableBox->setTitle("Profitability by finish date");
+}
+void APIProfitabilityPage::slotRecalcProfitability(const BondDesc &bond_rec, float price)
+{
+    if (bond_rec.invalid() || price <= 0) return;
+    qDebug("APIProfitabilityPage::slotRecalcProfitability");
+
+    const BCoupon *c_rec = NULL;
+    emit signalGetCouponRec(bond_rec.figi, c_rec);
+    if (!c_rec ) {qWarning()<<QString("APIProfitabilityPage::slotRecalcProfitability WARNING - not found coupon record by figi [%1]").arg(bond_rec.figi); return;}
+    if (c_rec->invalid()) return;
+
+
+    QStringList row_data;
+    row_data << bond_rec.name << bond_rec.isin;
+    row_data << QString("%1 (%2)").arg(bond_rec.finish_date.toString(InstrumentBase::userDateMask())).arg(bond_rec.daysToFinish());
+    float accumulated = c_rec->pay_size*float(c_rec->period-c_rec->daysTo())/float(c_rec->period);
+    row_data << QString("%1/%2/%3").arg(QString::number(accumulated, 'f', 2)).arg(QString::number(c_rec->pay_size-accumulated, 'f', 2)).arg(QString::number(c_rec->pay_size, 'f', 2));
+    row_data << QString("%1/%2 (%3)").arg(QString::number(price, 'f', 1)).arg(QString::number(bond_rec.nominal, 'f', 1)).arg(QString::number(bond_rec.nominal-price, 'f', 1));
+    float c_finish = c_rec->daySize()*bond_rec.daysToFinish();
+    row_data << QString::number(c_finish, 'f', 2);
+    float p_finish = c_finish + (bond_rec.nominal-price);
+    row_data << QString::number(p_finish, 'f', 2);
+    float v_month = ((p_finish*100/(price+accumulated))/float(bond_rec.daysToFinish()))*30;
+    row_data << QString::number(v_month, 'f', 3);
+
+    //sync by table
+    LTable::addTableRow(m_tableBox->table(), row_data);
+    int l_row = m_tableBox->table()->rowCount() - 1;
+    m_tableBox->table()->item(l_row, 0)->setData(Qt::UserRole, bond_rec.figi);
+
+    if (l_row > 0)
+    {
+        int n = m_tableBox->table()->rowCount();
+        for (int i=0; i<n-1; i++)
+            if (m_tableBox->table()->item(l_row, 0)->data(Qt::UserRole).toString() == bond_rec.figi)
+            {
+                m_tableBox->table()->removeRow(i);
+                break;
+            }
+    }
+}

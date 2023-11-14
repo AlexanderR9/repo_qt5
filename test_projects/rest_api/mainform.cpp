@@ -62,10 +62,20 @@ void MainForm::initPages()
     connect(req_page, SIGNAL(signalGetStockCycleData(QStringList&)), stock_page, SLOT(slotSetCycleData(QStringList&)));
     connect(req_page, SIGNAL(signalCyclePrice(const QString&, float)), stock_page, SLOT(slotCyclePrice(const QString&, float)));
 
-
     APICouponPage *c_page = new  APICouponPage(this);
     m_pages.insert(aptCoupon, c_page);
     connect(c_page, SIGNAL(signalGetPaperInfoByFigi(const QString&, QPair<QString, QString>&)), bond_page, SLOT(slotGetPaperInfoByFigi(const QString&, QPair<QString, QString>&)));
+    connect(bond_page, SIGNAL(signalFilter(const QStringList&)), c_page, SLOT(slotFilter(const QStringList&)));
+
+    APIProfitabilityPage *profit_page = new  APIProfitabilityPage(this);
+    m_pages.insert(aptProfitability, profit_page);
+    connect(bond_page, SIGNAL(signalNeedCalcProfitability(const BondDesc&, float)), profit_page, SLOT(slotRecalcProfitability(const BondDesc&, float)));
+    connect(profit_page, SIGNAL(signalGetCouponRec(const QString&, const BCoupon*&)), c_page, SLOT(slotGetCouponRec(const QString&, const BCoupon*&)));
+
+
+
+
+
 
 
 
@@ -380,6 +390,9 @@ void MainForm::autoLoadDataFiles()
     APIStocksPage *stock_page = qobject_cast<APIStocksPage*>(m_pages.value(aptStock));
     if (stock_page) stock_page->loadData();
     else slotError("stock_page is NULL");
+    APICouponPage *coupon_page = qobject_cast<APICouponPage*>(m_pages.value(aptCoupon));
+    if (coupon_page) coupon_page->loadData();
+    else slotError("coupon_page is NULL");
 }
 
 

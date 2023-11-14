@@ -23,13 +23,13 @@ QStringList BagState::tableHeaders() const
 }
 void BagState::slotLoadPositions(const QJsonObject &j_obj)
 {
-    qDebug("BagState::slotLoadPositions");
+   // qDebug("BagState::slotLoadPositions");
     m_positions.clear();
     if (j_obj.isEmpty()) return;
     QStringList keys(j_obj.keys());
     foreach (const QString &v, keys)
     {
-        qDebug()<<QString("next key: %1").arg(v);
+        //qDebug()<<QString("next key: %1").arg(v);
         if (v == "blocked" || v == "money")
         {
             const QJsonValue &jv = j_obj.value(v);
@@ -68,10 +68,7 @@ void BagState::slotLoadPortfolio(const QJsonObject &j_obj)
             }
         }
     }
-    qDebug("BagState::slotLoadPortfolio 2");
-
     emit signalBagUpdate();
-    qDebug("BagState::slotLoadPortfolio 3");
 }
 void BagState::parsePositions(const QJsonArray &j_arr)
 {

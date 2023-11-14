@@ -29,12 +29,16 @@ protected:
 
     void loadFigiCoupons(const QDomNode&);
     void reloadTableByData();
+    void sortByDate();
+
+public slots:
+    void slotFilter(const QStringList&); //list - visible figi
+    void slotGetCouponRec(const QString&, const BCoupon*&);
 
 signals:
     void signalGetPaperInfoByFigi(const QString&, QPair<QString, QString>&);
 
 };
-
 
 
 //APIDivPage

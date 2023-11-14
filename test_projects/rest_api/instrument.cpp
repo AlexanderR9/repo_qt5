@@ -161,6 +161,12 @@ QStringList BondDesc::toTableRowData() const
     row_data << QString::number(-1);
     return row_data;
 }
+int BondDesc::daysToFinish() const
+{
+    if (!finish_date.isValid()) return -1;
+    if (QDate::currentDate() > finish_date) return -1;
+    return QDate::currentDate().daysTo(finish_date);
+}
 
 
 //StockDesc
@@ -278,6 +284,7 @@ float BCoupon::daySize() const
 }
 int BCoupon::daysTo() const
 {
+    if (!pay_date.isValid()) return -1;
     if (QDate::currentDate() > pay_date) return -1;
     return QDate::currentDate().daysTo(pay_date);
 }

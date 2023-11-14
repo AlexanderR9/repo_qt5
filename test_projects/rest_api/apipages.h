@@ -8,7 +8,7 @@ class QSettings;
 class QComboBox;
 class BagState;
 
-enum APIPageType {aptReq = 181, aptBond, aptStock, aptCoupon, aptDiv, aptBag};
+enum APIPageType {aptReq = 181, aptBond, aptStock, aptCoupon, aptDiv, aptProfitability, aptBag};
 
 
 //APITablePageBase
@@ -31,6 +31,7 @@ protected:
     virtual void setCycleItem(QString&, quint16) {}
     virtual int priceCol() const;
     virtual QString figiByRecNumber(quint16) const {return QString();}
+    virtual void calcProfitability(const QString&, float) {}
 
 
 public slots:
@@ -42,6 +43,28 @@ public slots:
 
 
 };
+
+
+//APIProfitabilityPage
+class APIProfitabilityPage : public APITablePageBase
+{
+    Q_OBJECT
+public:
+    APIProfitabilityPage(QWidget*);
+    virtual ~APIProfitabilityPage() {}
+
+    QString iconPath() const {return QString(":/icons/images/crc.png");}
+    QString caption() const {return QString("Profitability");}
+
+public slots:
+    void slotRecalcProfitability(const BondDesc&, float);
+
+signals:
+    void signalGetCouponRec(const QString&, const BCoupon*&);
+
+};
+
+
 
 //APIBondsPage
 class APIBondsPage : public APITablePageBase
@@ -73,6 +96,7 @@ protected:
     void setSelectedUID(QString&, quint16);
     void setCycleItem(QString&, quint16);
     QString figiByRecNumber(quint16) const;
+    void calcProfitability(const QString&, float);
 
 protected slots:
     void slotFilter(QString);
@@ -83,6 +107,7 @@ public slots:
 
 signals:
     void signalFilter(const QStringList&); //list - visible figi
+    void signalNeedCalcProfitability(const BondDesc&, float);
 
 };
 

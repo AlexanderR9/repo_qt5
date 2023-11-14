@@ -64,6 +64,7 @@ struct BondDesc : public InstrumentBase
     void fromJson(const QJsonValue&);
     QStringList toTableRowData() const;
     void parseFields(const QStringList&);
+    int daysToFinish() const;
 
 private:
     QString getCurrency(const QJsonObject&) const;
