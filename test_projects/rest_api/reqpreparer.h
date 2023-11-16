@@ -30,7 +30,7 @@ protected:
     void setMetaPeriod(QString);
 
 private:
-    void prepareReqOperations();
+    void prepareReqOperations(const QString&);
     void prepareReqBondBy();
     void prepareReqShareBy();
     void prepareReqMarket(const QString&);

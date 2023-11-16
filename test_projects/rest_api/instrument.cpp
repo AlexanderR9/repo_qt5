@@ -8,7 +8,6 @@
 #include <QJsonValue>
 
 
-
 //InstrumentBase
 QDate InstrumentBase::dateFromGoogleDT(const QJsonValue &jv_dt)
 {
@@ -33,7 +32,7 @@ float InstrumentBase::floatFromJVBlock(const QJsonValue &jv_block)
         const QJsonObject &f_obj = jv_block.toObject();
         float f_units = f_obj.value("units").toString().toDouble();
         double f_nano = f_obj.value("nano").toDouble();
-        while (f_nano > 1) f_nano /= double(10);
+        while (qAbs(f_nano) > 1) f_nano /= double(10);
         f = f_units + f_nano;
     }
     return f;
@@ -299,40 +298,6 @@ void CouponRecordAbstract::setAttrs(QDomElement &pay_node)
 
 
 //BCoupon
-/*
-void BCoupon::toNode(QDomNode &parent_node, QDomDocument &dom)
-{
-
-    int pr = -1;
-    QDomNode c_node = parent_node.firstChild();
-    while (!c_node.isNull())
-    {
-        if (c_node.nodeName() == "pay")
-        {
-            BCoupon bc(figi);
-            bc.fromNode(c_node);
-            if (bc.invalid()) qWarning("BCoupon::toNode invalid from node");
-            else
-            {
-                if (bc.number < number) pr = 1;
-                else if (bc.number == number) {qDebug("record already exist"); return;}
-                else {pr = 2; break;}
-            }
-        }
-        c_node = c_node.nextSibling();
-    }
-
-    //qDebug("create pay node");
-    QDomElement next_pay_node = dom.createElement("pay");
-    LStaticXML::setAttrNode(next_pay_node, "number", QString::number(number), "date", date.toString(InstrumentBase::userDateMask()),
-                            "size", QString::number(size, 'f', 2), "period", QString::number(period));
-
-    if (pr == 2) parent_node.insertBefore(next_pay_node, c_node);
-    else parent_node.appendChild(next_pay_node);
-
-}
-*/
-
 void BCoupon::setAttrs(QDomElement &pay_node)
 {
     CouponRecordAbstract::setAttrs(pay_node);
@@ -383,6 +348,75 @@ void SDiv::fromJson(const QJsonObject &j_obj)
     size = InstrumentBase::floatFromJVBlock(j_obj.value("dividendNet"));
     yield = InstrumentBase::floatFromJVBlock(j_obj.value("yieldValue"));
     last_price = InstrumentBase::floatFromJVBlock(j_obj.value("closePrice"));
-//    number = j_obj.value("couponNumber").toString().toUInt();
-//    figi = j_obj.value("figi").toString();
 }
+
+//EventOperation
+void EventOperation::fromJson(const QJsonValue &jv)
+{
+    reset();
+    if (jv.isObject())
+    {
+        const QJsonObject &j_obj = jv.toObject();
+        uid = j_obj.value("instrumentUid").toString();
+        kindByAPIType(j_obj.value("operationType").toString());
+        date = InstrumentBase::dateFromGoogleDT(j_obj.value("date"));
+        amount = InstrumentBase::floatFromJVBlock(j_obj.value("payment"));
+        size = InstrumentBase::floatFromJVBlock(j_obj.value("price"));
+        paper_type = j_obj.value("instrumentType").toString();
+        currency = j_obj.value("currency").toString().trimmed().toUpper();
+
+        parseTradesJson(j_obj.value("trades"));
+    }
+    else qWarning("EventOperation::fromJson WARNING - input jv is not convert to QJsonObject");
+}
+void EventOperation::parseTradesJson(const QJsonValue &jv)
+{
+    if (kind != etBuy && kind != etSell) return;
+    if (!jv.isArray()) return;
+
+    bool ok;
+    quint32 quantity = 0;
+    const QJsonArray &j_arr = jv.toArray();
+    for (int i=0; i<j_arr.count(); i++)
+    {
+        if (j_arr.at(i).isObject())
+        {
+            const QJsonObject &j_obj = j_arr.at(i).toObject();
+            quantity = j_obj.value("quantity").toString().toUInt(&ok);
+            if (ok) n_papers += quantity;
+            else qWarning("EventOperation::parseTradesJson WARNING invalid convert to UInt quantity");
+        }
+    }
+}
+QString EventOperation::strKind() const
+{
+    switch (kind)
+    {
+        case etCanceled:        return QString("CANCELED");
+        case etBuy:             return QString("BUY");
+        case etSell:            return QString("SELL");
+        case etCoupon:          return QString("COUPON");
+        case etDiv:             return QString("DIV");
+        case etCommission:      return QString("COMMISSION");
+        case etTax:             return QString("TAX");
+        case etInput:           return QString("INPUT");
+        case etOut:             return QString("OUT");
+        default:    break;
+    }
+    return QString::number(kind);
+}
+void EventOperation::kindByAPIType(QString api_event_type)
+{
+    qDebug()<<QString("EventOperation::kindByAPIType [%1]").arg(api_event_type);
+    if (api_event_type == "OPERATION_TYPE_BROKER_FEE") kind = etCommission;
+    else if (api_event_type == "OPERATION_TYPE_BUY") kind = etBuy;
+    else if (api_event_type == "OPERATION_TYPE_SELL") kind = etSell;
+    else if (api_event_type == "OPERATION_TYPE_TAX") kind = etTax;
+    else if (api_event_type == "OPERATION_TYPE_BOND_TAX") kind = etTax;
+    else if (api_event_type == "OPERATION_TYPE_OUTPUT") kind = etOut;
+    else if (api_event_type == "OPERATION_TYPE_INP_MULTI") kind = etInput;
+
+
+
+}
+

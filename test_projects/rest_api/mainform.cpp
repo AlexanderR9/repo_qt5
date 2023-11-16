@@ -11,6 +11,7 @@
 #include "apireqpage.h"
 #include "apicommonsettings.h"
 #include "apicouponpage.h"
+#include "apieventspage.h"
 
 #include <QDebug>
 #include <QDir>
@@ -73,6 +74,14 @@ void MainForm::initPages()
     connect(d_page, SIGNAL(signalGetPaperInfoByFigi(const QString&, QPair<QString, QString>&)), stock_page, SLOT(slotGetPaperInfoByFigi(const QString&, QPair<QString, QString>&)));
     connect(d_page, SIGNAL(signalGetTickerByFigi(const QString&, QString&)), stock_page, SLOT(slotGetTickerByFigi(const QString&, QString&)));
     connect(stock_page, SIGNAL(signalFilter(const QStringList&)), d_page, SLOT(slotFilter(const QStringList&)));
+
+    APIEventsPage *events_page = new  APIEventsPage(this);
+    m_pages.insert(aptEvent, events_page);
+    connect(req_page, SIGNAL(signalLoadEvents(const QJsonObject&)), events_page, SLOT(slotLoadEvents(const QJsonObject&)));
+    connect(events_page, SIGNAL(signalGetPaperInfoByFigi(const QString&, QPair<QString, QString>&)), stock_page, SLOT(slotGetPaperInfoByFigi(const QString&, QPair<QString, QString>&)));
+    connect(events_page, SIGNAL(signalGetTickerByFigi(const QString&, QString&)), stock_page, SLOT(slotGetTickerByFigi(const QString&, QString&)));
+    connect(events_page, SIGNAL(signalGetPaperInfoByFigi(const QString&, QPair<QString, QString>&)), bond_page, SLOT(slotGetPaperInfoByFigi(const QString&, QPair<QString, QString>&)));
+    connect(events_page, SIGNAL(signalGetTickerByFigi(const QString&, QString&)), bond_page, SLOT(slotGetTickerByFigi(const QString&, QString&)));
 
 
     APIProfitabilityPage *profit_page = new  APIProfitabilityPage(this);

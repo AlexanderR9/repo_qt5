@@ -97,6 +97,7 @@ void API_CommonSettings::parseHistoryNode(const QDomNode &node)
         if (child_node.nodeName() == "prices") i_history.prices.parseConfigNode(child_node);
         else if (child_node.nodeName() == "coupons") i_history.coupons.parseConfigNode(child_node);
         else if (child_node.nodeName() == "divs") i_history.divs.parseConfigNode(child_node);
+        else if (child_node.nodeName() == "events") i_history.events.parseConfigNode(child_node);
 
         child_node = child_node.nextSibling();
     }

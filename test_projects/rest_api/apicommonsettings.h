@@ -38,6 +38,7 @@ struct API_CommonSettings
         HItem prices;
         HItem coupons;
         HItem divs;
+        HItem events;
         quint16 block_size; //data block size (prices)
     };
     struct GlobalFilter

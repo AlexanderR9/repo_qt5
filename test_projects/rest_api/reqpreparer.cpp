@@ -31,7 +31,7 @@ void ApiReqPreparer::prepare(QString src)
     m_reqObj->addReqHeader(QString("Content-Type"), QString("application/json"));
     m_reqObj->setUri(QString("%1.%2").arg(baseURI).arg(src));
 
-    if (src.contains("OperationsService")) prepareReqOperations();
+    if (src.contains("OperationsService")) prepareReqOperations(src);
     else if (src.contains("BondBy")) prepareReqBondBy();
     else if (src.contains("ShareBy")) prepareReqShareBy();
     else if (src.contains("GetBondCoupons")) prepareReqCoupons();
@@ -168,10 +168,16 @@ void ApiReqPreparer::prepareReqBondBy()
     m_reqObj->addMetaData("idType", "INSTRUMENT_ID_TYPE_UID");
     m_reqObj->addMetaData("id", uid);
 }
-void ApiReqPreparer::prepareReqOperations()
+void ApiReqPreparer::prepareReqOperations(const QString &src)
 {
     m_reqObj->addMetaData("currency", "RUB");
     m_reqObj->addMetaData("accountId", QString::number(api_commonSettings.user_id));
+
+    if (src.contains("GetOperations"))
+    {
+        setMetaPeriod("events");
+        m_reqObj->addMetaData("state", "OPERATION_STATE_EXECUTED");
+    }
 }
 void ApiReqPreparer::setMetaPeriod(QString type)
 {
@@ -179,6 +185,7 @@ void ApiReqPreparer::setMetaPeriod(QString type)
     if (type == "prices") h_item = &api_commonSettings.i_history.prices;
     else if (type == "divs") h_item = &api_commonSettings.i_history.divs;
     else if (type == "coupons") h_item = &api_commonSettings.i_history.coupons;
+    else if (type == "events") h_item = &api_commonSettings.i_history.events;
 
     if (h_item)
     {

@@ -33,7 +33,8 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/apireqpage.h \
         $$PWD/reqpreparer.h \
     cycleworker.h \
-    apicouponpage.h
+    apicouponpage.h \
+    apieventspage.h
 
 SOURCES += $$PWD/main.cpp \
 	$$PWD/apipages.cpp \
@@ -44,5 +45,6 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/apireqpage.cpp \
         $$PWD/reqpreparer.cpp \
     cycleworker.cpp \
-    apicouponpage.cpp
+    apicouponpage.cpp \
+    apieventspage.cpp
 

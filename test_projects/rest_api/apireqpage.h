@@ -68,6 +68,7 @@ signals:
     void signalGetCandleSize(QString&);
     void signalLoadPositions(const QJsonObject&);
     void signalLoadPortfolio(const QJsonObject&);
+    void signalLoadEvents(const QJsonObject&);
     void signalGetCycleData(QStringList&);
     void signalGetBondCycleData(QStringList&);
     void signalGetStockCycleData(QStringList&);
