@@ -112,6 +112,7 @@ protected slots:
 public slots:
     void slotGetPaperInfo(QStringList&);
     void slotGetPaperInfoByFigi(const QString&, QPair<QString, QString>&);
+    void slotGetTickerByFigi(const QString&, QString&);
 
 signals:
     void signalFilter(const QStringList&); //list - visible figi
@@ -153,6 +154,11 @@ protected slots:
 
 public slots:
     void slotGetPaperInfo(QStringList&);
+    void slotGetPaperInfoByFigi(const QString&, QPair<QString, QString>&);
+    void slotGetTickerByFigi(const QString&, QString&);
+
+signals:
+    void signalFilter(const QStringList&); //list - visible figi
 
 };
 

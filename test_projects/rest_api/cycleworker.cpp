@@ -139,6 +139,7 @@ void CycleWorker::getNextCycleData(QStringList &list)
         case cmDivs:
         {
             list << m_cycleData.first().figi;
+            m_lastFigi = m_cycleData.first().figi;
             m_cycleData.removeFirst();
             break;
         }
@@ -227,7 +228,32 @@ void CycleWorker::parseCoupons(const QJsonArray &j_arr)
 }
 void CycleWorker::parseDivs(const QJsonArray &j_arr)
 {
+    //load old xml file
+    qDebug()<<QString("CycleWorker::parseDivs:  j_arr size %1").arg(j_arr.count());
+    QDomDocument dom;
+    QDomNode root_node;
+    QString err = LStaticXML::getDomRootNode(CycleWorker::divsFile(), root_node, QString("calendar"));
+    if (root_node.isNull())
+    {
+        qWarning()<<"CycleWorker::parseCoupons WARNING - "<<err;
+        root_node = dom.createElement("calendar");
+    }
 
+    //parse current JSON data
+    SDiv d_rec(m_lastFigi);
+    for (int i=0; i<j_arr.count(); i++)
+    {
+        if (!j_arr.at(i).isObject()) continue;
+        d_rec.fromJson(j_arr.at(i).toObject());
+        if (d_rec.invalid()) qWarning("CycleWorker::parseDivs WARNING - SDiv INVALID");
+        else d_rec.syncData(root_node, dom);
+    }
+
+    //write synchronized file
+    LStaticXML::createDomHeader(dom);
+    dom.appendChild(root_node);
+    err = LFile::writeFile(CycleWorker::divsFile(), dom.toString());
+    if (!err.isEmpty()) emit signalError(err);
 }
 void CycleWorker::parseCandles(const QJsonArray &j_arr)
 {

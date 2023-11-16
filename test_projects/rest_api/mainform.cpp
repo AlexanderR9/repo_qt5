@@ -66,6 +66,14 @@ void MainForm::initPages()
     m_pages.insert(aptCoupon, c_page);
     connect(c_page, SIGNAL(signalGetPaperInfoByFigi(const QString&, QPair<QString, QString>&)), bond_page, SLOT(slotGetPaperInfoByFigi(const QString&, QPair<QString, QString>&)));
     connect(bond_page, SIGNAL(signalFilter(const QStringList&)), c_page, SLOT(slotFilter(const QStringList&)));
+    connect(c_page, SIGNAL(signalGetTickerByFigi(const QString&, QString&)), bond_page, SLOT(slotGetTickerByFigi(const QString&, QString&)));
+
+    APIDivPage *d_page = new  APIDivPage(this);
+    m_pages.insert(aptDiv, d_page);
+    connect(d_page, SIGNAL(signalGetPaperInfoByFigi(const QString&, QPair<QString, QString>&)), stock_page, SLOT(slotGetPaperInfoByFigi(const QString&, QPair<QString, QString>&)));
+    connect(d_page, SIGNAL(signalGetTickerByFigi(const QString&, QString&)), stock_page, SLOT(slotGetTickerByFigi(const QString&, QString&)));
+    connect(stock_page, SIGNAL(signalFilter(const QStringList&)), d_page, SLOT(slotFilter(const QStringList&)));
+
 
     APIProfitabilityPage *profit_page = new  APIProfitabilityPage(this);
     m_pages.insert(aptProfitability, profit_page);
@@ -75,12 +83,6 @@ void MainForm::initPages()
 
 
 
-
-
-
-
-    APIDivPage *d_page = new  APIDivPage(this);
-    m_pages.insert(aptDiv, d_page);
 
     APIBagPage *bag_page = new  APIBagPage(this);
     m_pages.insert(aptBag, bag_page);
@@ -123,10 +125,11 @@ void MainForm::loadData()
             break;
         }
         case aptCoupon:
+        case aptDiv:
         {
-            APICouponPage *coupon_page = qobject_cast<APICouponPage*>(m_pages.value(aptCoupon));
+            APICouponPageAbstract *coupon_page = qobject_cast<APICouponPageAbstract*>(m_pages.value(page->userSign()));
             if (coupon_page) coupon_page->loadData();
-            else slotError("coupon_page is NULL");
+            else slotError(QString("coupon page (sign=%1) is NULL").arg(page->userSign()));
             break;
         }
         default:
@@ -393,6 +396,9 @@ void MainForm::autoLoadDataFiles()
     APICouponPage *coupon_page = qobject_cast<APICouponPage*>(m_pages.value(aptCoupon));
     if (coupon_page) coupon_page->loadData();
     else slotError("coupon_page is NULL");
+    APIDivPage *div_page = qobject_cast<APIDivPage*>(m_pages.value(aptDiv));
+    if (div_page) div_page->loadData();
+    else slotError("div_page is NULL");
 }
 
 

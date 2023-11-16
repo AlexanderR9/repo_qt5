@@ -56,7 +56,7 @@ void ApiReqPreparer::prepareReqDivs()
     }
     else figi = m_cycleData.first();
 
-    emit signalMsg(QString("SELECTED UID: %1").arg(figi));
+    emit signalMsg(QString("SELECTED FIGI: %1").arg(figi));
     m_reqObj->addMetaData("figi", figi);
     setMetaPeriod("divs");
 }
@@ -75,7 +75,7 @@ void ApiReqPreparer::prepareReqCoupons()
     }
     else figi = m_cycleData.first();
 
-    emit signalMsg(QString("SELECTED UID: %1").arg(figi));
+    emit signalMsg(QString("SELECTED FIGI: %1").arg(figi));
     m_reqObj->addMetaData("figi", figi);
     setMetaPeriod("coupons");
 }

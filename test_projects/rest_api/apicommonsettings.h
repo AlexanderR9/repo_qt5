@@ -40,6 +40,19 @@ struct API_CommonSettings
         HItem divs;
         quint16 block_size; //data block size (prices)
     };
+    struct GlobalFilter
+    {
+        GlobalFilter() {}
+        struct GFItem
+        {
+            GFItem() :country("all") {}
+            QString country;
+            void parseConfigNode(const QDomNode&);
+        };
+
+        GFItem bond;
+        GFItem stock;
+    };
 
     QString token;
     qint64 user_id;
@@ -49,6 +62,7 @@ struct API_CommonSettings
     QMap<QString, QString> cycle_metods;
     AutoStartReq start_reqs;
     InstrumentHistory i_history;
+    GlobalFilter g_filter;
 
     static QString appDataPath();
     static QString beginPoint(const InstrumentHistory::HItem&, quint8 hour = 7);
@@ -60,6 +74,7 @@ struct API_CommonSettings
     void parseCandlesNode(const QDomNode&);
     void parseAutoStartNode(const QDomNode&);
     void parseHistoryNode(const QDomNode&);
+    void parseGlobalFilterNode(const QDomNode&);
     void parseToken(QString);
 
 };

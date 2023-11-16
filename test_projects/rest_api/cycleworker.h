@@ -48,6 +48,7 @@ protected:
     int                  m_mode;
     QList<CycleItem>     m_cycleData;
     QString              m_apiMetod; //current real metod
+    QString              m_lastFigi;
 
     void reset();
     void trimDataByAPIMetod();

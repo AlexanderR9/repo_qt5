@@ -29,7 +29,9 @@
 #define PROFIT_COL          5
 #define TO_COMPLETE_COL     7
 
-#define PROFITABILITY_LIMIT     1.4
+#define PROFITABILITY_LIMIT         1.4
+#define COUNTRY_RU                  QString("Российская Федерация")
+#define COUNTRY_US                  QString("Соединенные Штаты")
 
 
 //APIBondsPage
@@ -183,7 +185,13 @@ void APIBondsPage::loadData()
         if (!v.contains(".") || !v.contains("/")) continue;
         BondDesc rec;
         rec.fromFileLine(v);
-        if (!rec.invalid()) m_data.append(rec);
+        if (!rec.invalid())
+        {
+            bool filter_ok = true;
+            if (api_commonSettings.g_filter.bond.country == "rus" && rec.country != COUNTRY_RU) filter_ok = false;
+            if (api_commonSettings.g_filter.bond.country == "usa" && rec.country != COUNTRY_US) filter_ok = false;
+            if (filter_ok) m_data.append(rec);
+        }
         else {qWarning() << QString("INVALID BOND LINE: [%1]").arg(v); n_invalid++;}
     }
 
@@ -267,6 +275,12 @@ void APIBondsPage::slotGetPaperInfo(QStringList &info)
             break;
         }
     }
+}
+void APIBondsPage::slotGetTickerByFigi(const QString &figi, QString &ticker)
+{
+    ticker = "?";
+    foreach (const BondDesc &rec, m_data)
+        if (rec.figi == figi)  {ticker = rec.isin; break;}
 }
 void APIBondsPage::slotGetPaperInfoByFigi(const QString &figi, QPair<QString, QString> &pair)
 {
@@ -375,6 +389,20 @@ void APIStocksPage::slotFilter(QString f_value)
         currencyFilter(f_value);
 
     m_tableBox->searchExec();
+
+    //send visible figi list to coupon page
+    int n = m_tableBox->table()->rowCount();
+    if (n <= 0) return;
+
+    bool ok;
+    QStringList figi_list;
+    for (int i=0; i<n; i++)
+    {
+        quint16 rec_number = m_tableBox->table()->item(i, 0)->data(Qt::UserRole).toUInt(&ok);
+        if (ok) figi_list << figiByRecNumber(rec_number);
+    }
+    emit signalFilter(figi_list);
+
 }
 void APIStocksPage::currencyFilter(const QString &f_value)
 {
@@ -416,7 +444,13 @@ void APIStocksPage::loadData()
         if (!v.contains(".") || !v.contains("/")) continue;
         StockDesc rec;
         rec.fromFileLine(v);
-        if (!rec.invalid()) m_data.append(rec);
+        if (!rec.invalid())
+        {
+            bool filter_ok = true;
+            if (api_commonSettings.g_filter.stock.country == "rus" && rec.country != COUNTRY_RU) filter_ok = false;
+            if (api_commonSettings.g_filter.stock.country == "usa" && rec.country != COUNTRY_US) filter_ok = false;
+            if (filter_ok) m_data.append(rec);
+        }
         else {qWarning() << QString("INVALID STOCK LINE: [%1]").arg(v); n_invalid++;}
     }
 
@@ -483,6 +517,24 @@ QString APIStocksPage::figiByRecNumber(quint16 rec_number) const
     foreach (const StockDesc &rec, m_data)
         if (rec.number == rec_number) return rec.figi;
     return QString();
+}
+void APIStocksPage::slotGetPaperInfoByFigi(const QString &figi, QPair<QString, QString> &pair)
+{
+    foreach (const StockDesc &rec, m_data)
+    {
+        if (rec.figi == figi)
+        {
+            pair.first = rec.name;
+            pair.second = rec.currency;
+            break;
+        }
+    }
+}
+void APIStocksPage::slotGetTickerByFigi(const QString &figi, QString &ticker)
+{
+    ticker = "?";
+    foreach (const StockDesc &rec, m_data)
+        if (rec.figi == figi)  {ticker = rec.ticker; break;}
 }
 
 
@@ -674,16 +726,16 @@ void APITablePageBase::countryFilter(const QString &f_value)
     int n = t->rowCount();
     if (n == 0) return;
 
-    QString f_key_ru("Российская Федерация");
-    QString f_key_us("Соединенные Штаты");
+    //QString f_key_ru("Российская Федерация");
+    //QString f_key_us("Соединенные Штаты");
 
     for (int i=n-1; i>=0; i--)
     {
         QString tv = t->item(i, COUNTRY_COL)->text().trimmed();
-        if (f_value.contains("only rus") && tv != f_key_ru) t->removeRow(i);
-        else if (f_value.contains("exept rus") && tv == f_key_ru) t->removeRow(i);
-        else if (f_value.contains("only usa") && !tv.contains(f_key_us)) t->removeRow(i);
-        else if (f_value.contains("exept usa") && tv.contains(f_key_us)) t->removeRow(i);
+        if (f_value.contains("only rus") && tv != COUNTRY_RU) t->removeRow(i);
+        else if (f_value.contains("exept rus") && tv == COUNTRY_RU) t->removeRow(i);
+        else if (f_value.contains("only usa") && !tv.contains(COUNTRY_US)) t->removeRow(i);
+        else if (f_value.contains("exept usa") && tv.contains(COUNTRY_US)) t->removeRow(i);
     }
 }
 void APITablePageBase::slotSetSelectedUID(QString &uid)
@@ -798,8 +850,8 @@ void APIProfitabilityPage::slotRecalcProfitability(const BondDesc &bond_rec, flo
     QStringList row_data;
     row_data << bond_rec.name << bond_rec.isin;
     row_data << QString("%1 (%2)").arg(bond_rec.finish_date.toString(InstrumentBase::userDateMask())).arg(bond_rec.daysToFinish());
-    float accumulated = c_rec->pay_size*float(c_rec->period-c_rec->daysTo())/float(c_rec->period);
-    row_data << QString("%1/%2/%3").arg(QString::number(accumulated, 'f', 2)).arg(QString::number(c_rec->pay_size-accumulated, 'f', 2)).arg(QString::number(c_rec->pay_size, 'f', 2));
+    float accumulated = c_rec->size*float(c_rec->period-c_rec->daysTo())/float(c_rec->period);
+    row_data << QString("%1/%2/%3").arg(QString::number(accumulated, 'f', 2)).arg(QString::number(c_rec->size-accumulated, 'f', 2)).arg(QString::number(c_rec->size, 'f', 2));
     row_data << QString("%1/%2 (%3)").arg(QString::number(price, 'f', 1)).arg(QString::number(bond_rec.nominal, 'f', 1)).arg(QString::number(bond_rec.nominal-price, 'f', 1));
     float c_finish = c_rec->daySize()*bond_rec.daysToFinish();
     row_data << QString::number(c_finish, 'f', 2);

@@ -226,23 +226,82 @@ QStringList StockDesc::toTableRowData() const
     return row_data;
 }
 
-//BCoupon
-void BCoupon::syncData(QDomNode &node, QDomDocument &dom)
+
+
+/////////////////////// coupon structures /////////////////////////////////////////
+void CouponRecordAbstract::syncData(QDomNode &node, QDomDocument &dom)
 {
     if (node.isNull() || invalid()) return;
-
-    QDomNode figi_node = node.namedItem(figi);
+    QDomNode figi_node = node.namedItem(figi); //ищем существующую ноду с текущим figi
     if (figi_node.isNull())
     {
-        qDebug("create figi_node");
-        figi_node = dom.createElement(figi);
+        qDebug()<<QString("CouponRecordAbstract::syncData create figi_node <%1>").arg(figi);
+        figi_node = dom.createElement(figi); //создаем новую ноду  с текущим figi
         node.appendChild(figi_node);
     }
-    toNode(figi_node, dom);
+    toNode(figi_node, dom); //попытка синхронизировать с запись выплат с найденной/созданной родительской figi_node
 }
+int CouponRecordAbstract::daysTo() const
+{
+    if (!date.isValid()) return -1;
+    if (QDate::currentDate() > date) return -1;
+    return QDate::currentDate().daysTo(date);
+}
+void CouponRecordAbstract::toNode(QDomNode &parent_node, QDomDocument &dom)
+{
+    //find pay record with this->date
+    QDomNode *prev_date_node = NULL;
+    QDate max_prev_date = QDate();
+    QDomNode *next_date_node = NULL;
+    QDate min_next_date = QDate();
+    QDomNode pay_node = parent_node.firstChild();
+    while (!pay_node.isNull())
+    {
+        if (pay_node.nodeName() == "pay")
+        {
+            QDate pay_dt = QDate::fromString(LStaticXML::getStringAttrValue("date", pay_node), InstrumentBase::userDateMask());
+            if (pay_dt.isValid())
+            {
+                if (pay_dt == date) return; //record with date already exists
+
+                if (pay_dt < date)
+                {
+                    if (!max_prev_date.isValid() || max_prev_date < pay_dt)
+                    {
+                        max_prev_date = pay_dt;
+                        prev_date_node = &pay_node;
+                    }
+                }
+                else
+                {
+                    if (!min_next_date.isValid() || min_next_date > pay_dt)
+                    {
+                        min_next_date = pay_dt;
+                        next_date_node = &pay_node;
+                    }
+                }
+            }
+        }
+        pay_node = pay_node.nextSibling();
+    }
+
+    //insert/append new  pay record
+    QDomElement next_pay_node = dom.createElement("pay");
+    setAttrs(next_pay_node);
+    if (prev_date_node) parent_node.insertAfter(next_pay_node, *prev_date_node);
+    else if (next_date_node) parent_node.insertBefore(next_pay_node, *next_date_node);
+    else parent_node.appendChild(next_pay_node);
+}
+void CouponRecordAbstract::setAttrs(QDomElement &pay_node)
+{
+    LStaticXML::setAttrNode(pay_node, "date", date.toString(InstrumentBase::userDateMask()), "size", QString::number(size, 'f', 2));
+}
+
+
+//BCoupon
+/*
 void BCoupon::toNode(QDomNode &parent_node, QDomDocument &dom)
 {
-   // qDebug("BCoupon::toNode");
 
     int pr = -1;
     QDomNode c_node = parent_node.firstChild();
@@ -264,38 +323,66 @@ void BCoupon::toNode(QDomNode &parent_node, QDomDocument &dom)
     }
 
     //qDebug("create pay node");
-    QDomElement next_c_node = dom.createElement("pay");
-    LStaticXML::setAttrNode(next_c_node, "number", QString::number(number), "date", pay_date.toString(InstrumentBase::userDateMask()),
-                            "size", QString::number(pay_size, 'f', 2), "period", QString::number(period));
-    if (pr == 2) parent_node.insertBefore(next_c_node, c_node);
-    else parent_node.appendChild(next_c_node);
+    QDomElement next_pay_node = dom.createElement("pay");
+    LStaticXML::setAttrNode(next_pay_node, "number", QString::number(number), "date", date.toString(InstrumentBase::userDateMask()),
+                            "size", QString::number(size, 'f', 2), "period", QString::number(period));
+
+    if (pr == 2) parent_node.insertBefore(next_pay_node, c_node);
+    else parent_node.appendChild(next_pay_node);
+
+}
+*/
+
+void BCoupon::setAttrs(QDomElement &pay_node)
+{
+    CouponRecordAbstract::setAttrs(pay_node);
+    LStaticXML::setAttrNode(pay_node, "number", QString::number(number), "period", QString::number(period));
 }
 void BCoupon::fromNode(QDomNode &c_node)
 {
-    pay_date = QDate::fromString(LStaticXML::getStringAttrValue("date", c_node), InstrumentBase::userDateMask());
-    pay_size = LStaticXML::getDoubleAttrValue("size", c_node, -1);
+    date = QDate::fromString(LStaticXML::getStringAttrValue("date", c_node), InstrumentBase::userDateMask());
+    size = LStaticXML::getDoubleAttrValue("size", c_node, -1);
     number = LStaticXML::getIntAttrValue("number", c_node, 9999);
     period = LStaticXML::getIntAttrValue("period", c_node, 0);
 }
 float BCoupon::daySize() const
 {
-    if (period > 0) return (pay_size/float(period));
+    if (period > 0) return (size/float(period));
     return -1;
-}
-int BCoupon::daysTo() const
-{
-    if (!pay_date.isValid()) return -1;
-    if (QDate::currentDate() > pay_date) return -1;
-    return QDate::currentDate().daysTo(pay_date);
 }
 void BCoupon::fromJson(const QJsonObject &j_obj)
 {
     if (j_obj.isEmpty()) return;
 
-    pay_date = InstrumentBase::dateFromGoogleDT(j_obj.value("couponDate"));
-    pay_size = InstrumentBase::floatFromJVBlock(j_obj.value("payOneBond"));
+    date = InstrumentBase::dateFromGoogleDT(j_obj.value("couponDate"));
+    size = InstrumentBase::floatFromJVBlock(j_obj.value("payOneBond"));
     number = j_obj.value("couponNumber").toString().toUInt();
     figi = j_obj.value("figi").toString();
     period = quint16(j_obj.value("couponPeriod").toDouble());
 }
 
+
+//SDiv
+void SDiv::setAttrs(QDomElement &pay_node)
+{
+    CouponRecordAbstract::setAttrs(pay_node);
+    LStaticXML::setAttrNode(pay_node, "yield", QString::number(yield, 'f', 3), "last_price", QString::number(last_price, 'f', 3));
+}
+void SDiv::fromNode(QDomNode &d_node)
+{
+    date = QDate::fromString(LStaticXML::getStringAttrValue("date", d_node), InstrumentBase::userDateMask());
+    size = LStaticXML::getDoubleAttrValue("size", d_node, -1);
+    yield = LStaticXML::getDoubleAttrValue("yield", d_node, -1);
+    last_price = LStaticXML::getDoubleAttrValue("last_price", d_node, 0);
+}
+void SDiv::fromJson(const QJsonObject &j_obj)
+{
+    if (j_obj.isEmpty()) return;
+
+    date = InstrumentBase::dateFromGoogleDT(j_obj.value("lastBuyDate"));
+    size = InstrumentBase::floatFromJVBlock(j_obj.value("dividendNet"));
+    yield = InstrumentBase::floatFromJVBlock(j_obj.value("yieldValue"));
+    last_price = InstrumentBase::floatFromJVBlock(j_obj.value("closePrice"));
+//    number = j_obj.value("couponNumber").toString().toUInt();
+//    figi = j_obj.value("figi").toString();
+}

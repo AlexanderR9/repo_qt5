@@ -9,9 +9,12 @@
 
 class QDomNode;
 class QDomDocument;
+class QDomElement;
 class QJsonArray;
 class QJsonObject;
 class QJsonValue;
+
+
 
 //InstrumentBase
 struct InstrumentBase
@@ -91,30 +94,74 @@ struct StockDesc : public InstrumentBase
 
 };
 
-//struct calendar bond coupon pays info
-struct BCoupon
+
+
+/////////////////////// coupon structures /////////////////////////////////////////
+struct CouponRecordAbstract
 {
-    BCoupon() {reset();}
-    BCoupon(const QString &id) {reset(); figi=id;}
+    CouponRecordAbstract() {reset();}
+    virtual ~CouponRecordAbstract() {}
 
-    quint16 number;
     QString figi;
-    QDate pay_date;
-    float pay_size;
-    quint16 period;
+    QDate date;
+    float size;
 
-    void reset() {figi.clear(); number = 9999; pay_date = QDate(); pay_size = -1; period = 0;}
-    bool invalid() const {return (!pay_date.isValid() || number > 1000 || pay_size <= 0 || period == 0 || figi.isEmpty());}
-    void syncData(QDomNode&, QDomDocument&);
-    void toNode(QDomNode&, QDomDocument&);
-    void fromNode(QDomNode&);
-    QString toString() const {return QString("BCoupon: %1 - N=%2  date[%3] size=%4").arg(figi).arg(number).arg(pay_date.toString(InstrumentBase::userDateMask())).arg(pay_size);}
-    float daySize() const;
-    int daysTo() const;
-    void fromJson(const QJsonObject&);
+    virtual void reset() {figi.clear(); date = QDate(); size = -1;}
+    virtual bool invalid() const {return (!date.isValid() || size <= 0 || figi.isEmpty());}
+    virtual QString toString() const = 0;
+    virtual void syncData(QDomNode&, QDomDocument&);
+    virtual void toNode(QDomNode&, QDomDocument&);
+    virtual void fromNode(QDomNode&) = 0;
+    virtual int daysTo() const;
+    virtual void fromJson(const QJsonObject&) = 0;
 
+protected:
+    virtual void setAttrs(QDomElement&);
 
 };
+
+//struct calendar bond coupon pays info
+struct BCoupon : public CouponRecordAbstract
+{
+    BCoupon() :CouponRecordAbstract() {reset();}
+    BCoupon(const QString &id) :CouponRecordAbstract() {reset(); figi=id;}
+
+    quint16 number;
+    quint16 period;
+
+    void reset() {CouponRecordAbstract::reset(); number = 9999; period = 0;}
+    bool invalid() const {return (!date.isValid() || number > 1000 || size <= 0 || period == 0 || figi.isEmpty());}
+    //void toNode(QDomNode&, QDomDocument&);
+    void fromNode(QDomNode&);
+    QString toString() const {return QString("BCoupon: %1 - N=%2  date[%3] size=%4").arg(figi).arg(number).arg(date.toString(InstrumentBase::userDateMask())).arg(size);}
+    float daySize() const;
+    void fromJson(const QJsonObject&);
+
+protected:
+    void setAttrs(QDomElement&);
+
+};
+
+//struct calendar stock div info
+struct SDiv : public CouponRecordAbstract
+{
+    SDiv() :CouponRecordAbstract() {reset();}
+    SDiv(const QString &id) :CouponRecordAbstract() {reset(); figi=id;}
+
+    float yield;
+    float last_price;
+
+    void reset() {CouponRecordAbstract::reset(); yield = last_price = -1;}
+    bool invalid() const {return (!date.isValid() || size <= 0 || figi.isEmpty());}
+    QString toString() const {return QString("SDiv: %1 - date[%2] size=%3(%4%) last_price=%5").arg(figi).arg(date.toString(InstrumentBase::userDateMask())).arg(size).arg(yield).arg(last_price);}
+    void fromNode(QDomNode&);
+    void fromJson(const QJsonObject&);
+
+protected:
+    void setAttrs(QDomElement&);
+
+};
+
 
 
 #endif

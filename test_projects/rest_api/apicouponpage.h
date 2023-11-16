@@ -10,51 +10,76 @@ class LSearchTableWidgetBox;
 class QDomNode;
 
 
+//APICouponPageAbstract
+class APICouponPageAbstract : public APITablePageBase
+{
+    Q_OBJECT
+public:
+    APICouponPageAbstract(QWidget*);
+    virtual ~APICouponPageAbstract() {clearData();}
+
+    virtual void loadData();
+
+protected:
+    QList<CouponRecordAbstract*>  m_data;
+
+    virtual QString dataFile() const = 0;
+    virtual void loadFigiRecord(const QDomNode&);
+    virtual void reloadTableByData();
+    virtual void sortByDate();
+    virtual void createRecord(CouponRecordAbstract*&, const QString&) = 0;
+    virtual void addRowRecord(const CouponRecordAbstract*, const QPair<QString, QString>&, const QString&) = 0;
+
+private:
+    void clearData();
+
+public slots:
+    virtual void slotFilter(const QStringList&); //list - visible figi
+
+signals:
+    void signalGetPaperInfoByFigi(const QString&, QPair<QString, QString>&);
+    void signalGetTickerByFigi(const QString&, QString&);
+
+};
+
 //APICouponPage
-class APICouponPage : public APITablePageBase
+class APICouponPage : public APICouponPageAbstract
 {
     Q_OBJECT
 public:
     APICouponPage(QWidget*);
     virtual ~APICouponPage() {}
 
-    //virtual void resetPage() {}
-    void loadData();
-
     QString iconPath() const {return QString(":/icons/images/b_scale.svg");}
     QString caption() const {return QString("Coupons");}
 
 protected:
-    QList<BCoupon>  m_data;
-
-    void loadFigiCoupons(const QDomNode&);
-    void reloadTableByData();
-    void sortByDate();
+    QString dataFile() const;
+    void createRecord(CouponRecordAbstract*&, const QString&);
+    void addRowRecord(const CouponRecordAbstract*, const QPair<QString, QString>&, const QString&);
 
 public slots:
-    void slotFilter(const QStringList&); //list - visible figi
     void slotGetCouponRec(const QString&, const BCoupon*&);
 
-signals:
-    void signalGetPaperInfoByFigi(const QString&, QPair<QString, QString>&);
 
 };
 
 
 //APIDivPage
-class APIDivPage : public APITablePageBase
+class APIDivPage : public APICouponPageAbstract
 {
     Q_OBJECT
 public:
     APIDivPage(QWidget*);
     virtual ~APIDivPage() {}
 
-    virtual void resetPage() {}
-
     QString iconPath() const {return QString(":/icons/images/r_scale.svg");}
     QString caption() const {return QString("Div calendar");}
 
 protected:
+    QString dataFile() const;
+    void createRecord(CouponRecordAbstract*&, const QString&);
+    void addRowRecord(const CouponRecordAbstract*, const QPair<QString, QString>&, const QString&);
 
 };
 

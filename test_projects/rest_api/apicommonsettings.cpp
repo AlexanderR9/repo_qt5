@@ -82,6 +82,9 @@ void API_CommonSettings::loadConfig(QString &err)
     QDomNode history_node = root_node.namedItem("history");
     if (!history_node.isNull()) parseHistoryNode(history_node);
 
+    QDomNode global_filter_node = root_node.namedItem("global_filter");
+    if (!global_filter_node.isNull()) parseGlobalFilterNode(global_filter_node);
+
 }
 void API_CommonSettings::parseHistoryNode(const QDomNode &node)
 {
@@ -95,6 +98,16 @@ void API_CommonSettings::parseHistoryNode(const QDomNode &node)
         else if (child_node.nodeName() == "coupons") i_history.coupons.parseConfigNode(child_node);
         else if (child_node.nodeName() == "divs") i_history.divs.parseConfigNode(child_node);
 
+        child_node = child_node.nextSibling();
+    }
+}
+void API_CommonSettings::parseGlobalFilterNode(const QDomNode &node)
+{
+    QDomNode child_node = node.firstChild();
+    while (!child_node.isNull())
+    {
+        if (child_node.nodeName() == "bond") g_filter.bond.parseConfigNode(child_node);
+        else if (child_node.nodeName() == "stock") g_filter.stock.parseConfigNode(child_node);
         child_node = child_node.nextSibling();
     }
 }
@@ -207,5 +220,12 @@ void API_CommonSettings::InstrumentHistory::HItem::parseConfigNode(const QDomNod
     end_date = LStaticXML::getStringAttrValue("end", node).trimmed();
     qDebug()<<QString("LOADED PERIOD: %1").arg(toStr());
 }
+void API_CommonSettings::GlobalFilter::GFItem::parseConfigNode(const QDomNode &node)
+{
+    country = "all";
+    if (node.isNull()) return;
+    country = LStaticXML::getStringAttrValue("country", node).trimmed();
+}
+
 
 
