@@ -20,7 +20,13 @@ struct StatTotalSums
     float input;
     float out;
 
-    void reset() {coupon = div = commission = tax = input = out = 0;}
+    quint16 n_records;
+    quint16 n_repayments;
+    quint16 n_coupons;
+
+
+    void reset() {coupon = div = commission = tax = input = out = 0;
+                    n_records = n_repayments = n_coupons = 0;}
 
 };
 

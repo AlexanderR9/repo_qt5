@@ -49,6 +49,9 @@ public:
     inline bool hasPositions() const {return !m_positions.isEmpty();}
     inline const BagPosition& posAt(quint16 i) const {return m_positions.at(i);}
 
+    QString strPapersCost() const;
+    QString strCurProfit() const;
+
 protected:
     QList<BagPosition> m_positions;
     float m_total;
@@ -57,10 +60,13 @@ protected:
 
     void reset();
     void parsePositions(const QJsonArray&);
+    float papersCost_before() const;
+    float papersCost_now() const;
 
 public slots:
     void slotLoadPositions(const QJsonObject&);
     void slotLoadPortfolio(const QJsonObject&);
+
 
 signals:
     void signalBagUpdate();

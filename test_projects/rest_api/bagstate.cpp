@@ -96,6 +96,33 @@ void BagState::parsePositions(const QJsonArray &j_arr)
     if (!m_positions.isEmpty())
         emit signalMsg(QString("Was parsed %1 positions!").arg(m_positions.count()));
 }
+QString BagState::strPapersCost() const
+{
+    if (m_positions.isEmpty()) return "---";
+    float payed_sum = papersCost_before();
+    float cur_sum = papersCost_now();
+    return QString("%1 / %2").arg(QString::number(payed_sum, 'f', 1)).arg(QString::number(cur_sum, 'f', 1));
+}
+QString BagState::strCurProfit() const
+{
+    if (m_positions.isEmpty()) return "---";
+    float profit = papersCost_now() - papersCost_before();
+    return QString::number(profit, 'f', 1);
+}
+float BagState::papersCost_before() const
+{
+    float sum = 0;
+    foreach (const BagPosition &pos, m_positions)
+        sum += pos.count*pos.average_price;
+    return sum;
+}
+float BagState::papersCost_now() const
+{
+    float sum = 0;
+    foreach (const BagPosition &pos, m_positions)
+        sum += pos.count*pos.current_price;
+    return sum;
+}
 
 
 

@@ -65,11 +65,15 @@ void APIEventsPage::reinitWidgets()
     headers.append("Value");
     m_statBox->setHeaderLabels(headers);
     headers.clear();
-    headers << "Coupons" << "Divs" << "Commission" << "Tax" << "Input" << "Out";
+    headers << "Coupons" << "Divs" << "Commission" << "Tax" << "Input, 10^3" << "Out, 10^3";
+    headers << "N repayments" << "N coupons" << "N records";
     m_statBox->setHeaderLabels(headers, Qt::Vertical);
-    for (int i=0; i<m_statBox->table()->rowCount(); i++)
+    int n = m_statBox->table()->rowCount();
+    for (int i=0; i<n; i++)
         LTable::createTableItem(m_statBox->table(), i, 0, "-");
 
+    for (int i=0; i<3; i++)
+        m_statBox->table()->item(n-i-1, 0)->setBackground(QColor("#E0FFFF"));
 
     h_splitter->insertWidget(1, stat_widget);
     m_statBox->resizeByContents();
@@ -301,11 +305,14 @@ void APIEventsPage::dateFilter(int row, bool &need_hide)
 }
 void APIEventsPage::updateStatStruct(const EventOperation &rec)
 {
+    m_stat.n_records++;
+
     switch (rec.kind)
     {
         case EventOperation::etCoupon:
         {
             m_stat.coupon += rec.amount;
+            m_stat.n_coupons++;
             break;
         }
         case EventOperation::etCommission:
@@ -333,18 +340,35 @@ void APIEventsPage::updateStatStruct(const EventOperation &rec)
             m_stat.out += rec.amount;
             break;
         }
+        case EventOperation::etRepayment:
+        {
+            m_stat.n_repayments++;
+            break;
+        }
         default: break;
     }
 }
 void APIEventsPage::updateStatTable()
 {
+    int row = 0;
     QTableWidget *t = m_statBox->table();
-    t->item(0, 0)->setText(QString::number(m_stat.coupon, 'f', 1));
-    t->item(1, 0)->setText(QString::number(m_stat.div, 'f', 1));
-    t->item(2, 0)->setText(QString::number(m_stat.commission, 'f', 1));
-    t->item(3, 0)->setText(QString::number(m_stat.tax, 'f', 1));
-    t->item(4, 0)->setText(QString::number(m_stat.input, 'f', 0));
-    t->item(5, 0)->setText(QString::number(m_stat.out, 'f', 0));
+    t->item(row, 0)->setText(QString::number(m_stat.coupon, 'f', 1)); row++;
+    t->item(row, 0)->setText(QString::number(m_stat.div, 'f', 1)); row++;
+
+    t->item(row, 0)->setTextColor(Qt::darkRed);
+    t->item(row, 0)->setText(QString::number(qAbs(m_stat.commission), 'f', 1)); row++;
+
+    t->item(row, 0)->setTextColor(Qt::darkRed);
+    t->item(row, 0)->setText(QString::number(qAbs(m_stat.tax), 'f', 1)); row++;
+
+    t->item(row, 0)->setText(QString::number(m_stat.input/float(1000), 'f', 1)); row++;
+    t->item(row, 0)->setText(QString::number(qAbs(m_stat.out/float(1000)), 'f', 1)); row++;
+
+    t->item(row, 0)->setText(QString::number(m_stat.n_repayments)); row++;
+    t->item(row, 0)->setText(QString::number(m_stat.n_coupons)); row++;
+    t->item(row, 0)->setText(QString::number(m_stat.n_records)); row++;
+
+    m_statBox->resizeByContents();
 }
 void APIEventsPage::resetPage()
 {

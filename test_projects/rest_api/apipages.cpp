@@ -567,6 +567,16 @@ void APIBagPage::initFilterBox()
     addGeneralEdit(QString("Blocked"), l_row);
     addGeneralEdit(QString("Free"), l_row);
     addGeneralEdit(QString("Total"), l_row);
+
+    QLineEdit *w_line = new QLineEdit(this);
+    w_line->setReadOnly(true);
+    w_line->setMaximumHeight(2);
+    g_lay->addWidget(w_line, l_row, 0, 1, 2); l_row++;
+
+    addGeneralEdit(QString("Full cost of papers"), l_row);
+    addGeneralEdit(QString("Current profit"), l_row);
+
+
     QSpacerItem *spcr = new QSpacerItem(10, 10, QSizePolicy::Maximum);
     g_lay->addItem(spcr, l_row, 0, 2, 2);
 }
@@ -611,6 +621,16 @@ void APIBagPage::slotBagUpdate()
         {
             QLineEdit *edit = qobject_cast<QLineEdit*>(child);
             if (edit) edit->setText(QString::number(api_commonSettings.user_id));
+        }
+        else if (child->objectName().contains("papers"))
+        {
+            QLineEdit *edit = qobject_cast<QLineEdit*>(child);
+            if (edit) edit->setText(m_bag->strPapersCost());
+        }
+        else if (child->objectName().contains("profit"))
+        {
+            QLineEdit *edit = qobject_cast<QLineEdit*>(child);
+            if (edit) edit->setText(m_bag->strCurProfit());
         }
     }
     reloadPosTable();
@@ -816,7 +836,7 @@ APIProfitabilityPage::APIProfitabilityPage(QWidget *parent)
     m_userSign = aptProfitability;
 
     QStringList headers;
-    headers << "Company" << "Ticker" << "Finish date" << "Coupon" << "Price" << "Finish coupon" << "Finish profit" << "Profitability_M, %";
+    headers << "Company" << "Ticker" << "Finish date" << "Coupon" << "Price/Nominal" << "Finish coupon" << "Finish profit" << "Profitability_M, %";
     m_tableBox->setHeaderLabels(headers);
     m_tableBox->setTitle("Profitability by finish date");
 
