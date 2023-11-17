@@ -278,7 +278,6 @@ void APIBondsPage::slotGetPaperInfo(QStringList &info)
 }
 void APIBondsPage::slotGetTickerByFigi(const QString &figi, QString &ticker)
 {
-    ticker = "?";
     foreach (const BondDesc &rec, m_data)
         if (rec.figi == figi || rec.uid == figi)  {ticker = rec.isin; break;}
 }
@@ -532,7 +531,6 @@ void APIStocksPage::slotGetPaperInfoByFigi(const QString &figi, QPair<QString, Q
 }
 void APIStocksPage::slotGetTickerByFigi(const QString &figi, QString &ticker)
 {
-    ticker = "?";
     foreach (const StockDesc &rec, m_data)
         if (rec.figi == figi || rec.uid == figi)  {ticker = rec.ticker; break;}
 }

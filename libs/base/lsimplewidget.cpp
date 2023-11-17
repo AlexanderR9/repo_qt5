@@ -40,6 +40,24 @@ void LSimpleWidget::setSpacing(int a)
     if (a < 0 || a > 100) return;
     if (layout()) layout()->setSpacing(a);
 }
+void LSimpleWidget::addWidgetToSplitter(QWidget *w, int orintation)
+{
+    if (!w) {qWarning("LSimpleWidget::addWidgetToSplitter WARNING - widget is NULL"); return;}
+    switch (orintation)
+    {
+        case Qt::Horizontal:
+        {
+            if (h_splitter) h_splitter->addWidget(w);
+            break;
+        }
+        case Qt::Vertical:
+        {
+            if (v_splitter) v_splitter->addWidget(w);
+            break;
+        }
+        default: break;
+    }
+}
 void LSimpleWidget::init()
 {
     if (layout()) delete layout();
@@ -92,7 +110,7 @@ void LSimpleWidget::save(QSettings &settings)
 }
 bool LSimpleWidget::invalidType() const
 {
-    if (m_spliterType < 11 || m_spliterType > 32) return true;
+    if (m_spliterType < 10 || m_spliterType > 32) return true;
     return false;
 }
 bool LSimpleWidget::onlyVertical() const

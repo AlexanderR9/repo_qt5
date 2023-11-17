@@ -56,6 +56,7 @@ public:
     virtual QString userData() const {return m_userData;} //некие вспомогательные данные, может не использоваться
 
     void setSpacing(int); //задать отступы для внутренних виджетов (друг от друга)
+    void addWidgetToSplitter(QWidget*, int orintation = Qt::Horizontal); //добавить виджет к сплитеру
 
 protected:
     int             m_spliterType;

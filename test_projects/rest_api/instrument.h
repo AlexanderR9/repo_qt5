@@ -165,18 +165,20 @@ protected:
 ////////////////////////// history ////////////////////////////
 struct EventOperation
 {
-    enum EventType {etCanceled = 300, etBuy, etSell, etCoupon, etDiv, etCommission, etTax, etInput, etOut, etUnknown = 999};
+    enum EventType {etCanceled = 300, etBuy, etSell, etCoupon, etDiv, etCommission, etTax,
+                        etInput, etOut, etRepayment, etUnknown = 999};
 
     EventOperation() {reset();}
 
     int kind;
     QDate date;
     quint32 n_papers;
-    float size;
-    float amount;
+    float size; //price one paper
+    float amount;    
     QString paper_type;
     QString uid;
     QString currency;
+
 
     bool invalid() const {return (kind < etCanceled || !date.isValid());}
     void reset() {kind = etUnknown; n_papers = 0; size = amount = -1; date = QDate(); currency.clear(); uid.clear();}

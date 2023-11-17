@@ -401,6 +401,7 @@ QString EventOperation::strKind() const
         case etTax:             return QString("TAX");
         case etInput:           return QString("INPUT");
         case etOut:             return QString("OUT");
+        case etRepayment:       return QString("REPAYMENT");
         default:    break;
     }
     return QString::number(kind);
@@ -415,8 +416,9 @@ void EventOperation::kindByAPIType(QString api_event_type)
     else if (api_event_type == "OPERATION_TYPE_BOND_TAX") kind = etTax;
     else if (api_event_type == "OPERATION_TYPE_OUTPUT") kind = etOut;
     else if (api_event_type == "OPERATION_TYPE_INP_MULTI") kind = etInput;
-
-
+    else if (api_event_type == "OPERATION_TYPE_INPUT") kind = etInput;
+    else if (api_event_type == "OPERATION_TYPE_BOND_REPAYMENT_FULL") kind = etRepayment;
+    else if (api_event_type == "OPERATION_TYPE_COUPON") kind = etCoupon;
 
 }
 
