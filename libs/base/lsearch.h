@@ -57,6 +57,9 @@ protected slots:
     void slotSearch(const QString&);
     void slotTimer();
 
+signals:
+    void signalSearched();  //выполняется каждый раз после произведенного фильтра
+
 };
 
 

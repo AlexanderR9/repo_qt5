@@ -234,7 +234,7 @@ void CouponRecordAbstract::syncData(QDomNode &node, QDomDocument &dom)
     QDomNode figi_node = node.namedItem(figi); //ищем существующую ноду с текущим figi
     if (figi_node.isNull())
     {
-        qDebug()<<QString("CouponRecordAbstract::syncData create figi_node <%1>").arg(figi);
+        //qDebug()<<QString("CouponRecordAbstract::syncData create figi_node <%1>").arg(figi);
         figi_node = dom.createElement(figi); //создаем новую ноду  с текущим figi
         node.appendChild(figi_node);
     }
@@ -408,7 +408,7 @@ QString EventOperation::strKind() const
 }
 void EventOperation::kindByAPIType(QString api_event_type)
 {
-    qDebug()<<QString("EventOperation::kindByAPIType [%1]").arg(api_event_type);
+   // qDebug()<<QString("EventOperation::kindByAPIType [%1]").arg(api_event_type);
     if (api_event_type == "OPERATION_TYPE_BROKER_FEE") kind = etCommission;
     else if (api_event_type == "OPERATION_TYPE_BUY") kind = etBuy;
     else if (api_event_type == "OPERATION_TYPE_SELL") kind = etSell;

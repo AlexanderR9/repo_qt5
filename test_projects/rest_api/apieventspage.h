@@ -8,6 +8,7 @@
 class QJsonObject;
 class LSearchTableWidgetBox;
 class QComboBox;
+class QLineEdit;
 
 struct StatTotalSums
 {
@@ -40,6 +41,7 @@ public:
     virtual ~APIEventsPage() {}
 
     void resetPage();
+
     QString iconPath() const {return QString(":/icons/images/event.png");}
     QString caption() const {return QString("Events");}
 
@@ -54,6 +56,7 @@ protected:
     QComboBox               *m_paperTypeFilterControl;
     QComboBox               *m_kindFilterControl;
     QComboBox               *m_dateFilterControl;
+    QLineEdit               *m_paperResultEdit;
     StatTotalSums           m_stat;
 
     void reloadTableByData();
@@ -63,18 +66,22 @@ protected:
     void recalcStat();
     void updateStatStruct(const EventOperation&);
     void updateStatTable();
+    void initPaperResultWidget();
+    void recalcPaperResult();
 
 
 private:
     void paperTypeFilter(int, bool&);
     void kindFilter(int, bool&);
     void dateFilter(int, bool&);
+    void updateSearchLabel();
 
 public slots:
     void slotLoadEvents(const QJsonObject&);
 
 protected slots:
     void slotFilter();
+    void slotSearched();
 
 
 

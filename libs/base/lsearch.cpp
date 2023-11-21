@@ -63,6 +63,7 @@ void LSearch::slotSearch(const QString &s)
         search(s, m_structs[i]);
         setText(i);
     }
+    emit signalSearched();
 }
 void LSearch::search(const QString &s, LStructSearch &obj)
 {

@@ -118,13 +118,17 @@ public:
     LSearchTableWidgetBox(QWidget *parent = NULL);
     virtual ~LSearchTableWidgetBox() {}
 
-    void searchExec();
-    void searchReset();
+    virtual void searchExec();
+    virtual void searchReset();
+    virtual void setTextLabel(const QString&);
 
 protected:
     LSearch     *m_searchObj;
     QLineEdit   *m_searchEdit;
     QLabel      *m_searchLabel;
+
+signals:
+    void signalSearched();  //выполняется каждый раз после произведенного фильтра
 
 };
 

@@ -256,6 +256,12 @@ LSearchTableWidgetBox::LSearchTableWidgetBox(QWidget *parent)
     m_searchObj = new LSearch(m_searchEdit, this);
     m_searchObj->addTable(m_table, m_searchLabel);
     m_searchObj->exec();
+
+    connect(m_searchObj, SIGNAL(signalSearched()), this, SIGNAL(signalSearched()));
+}
+void LSearchTableWidgetBox::setTextLabel(const QString &s)
+{
+    if (m_searchLabel) m_searchLabel->setText(s);
 }
 void LSearchTableWidgetBox::searchExec()
 {

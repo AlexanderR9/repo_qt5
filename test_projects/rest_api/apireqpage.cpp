@@ -325,19 +325,51 @@ void APIReqPage::parseUserID()
 }
 void APIReqPage::saveBondsFile()
 {
-    //qDebug("APIReqPage::saveBondsFile()");
-    LFile::writeFile(APIBondsPage::dataFile(), "BOND INFO: \n");
+    qDebug("APIReqPage::saveBondsFile()");
+    //read current data
+    QString fname(APIBondsPage::dataFile());
+    QString cur_data;
+    if (LFile::fileExists(fname))
+    {
+        QString err = LFile::readFileStr(fname, cur_data);
+        if (!err.isEmpty())
+        {
+            cur_data.clear();
+            emit signalError(QString("APIReqPage::saveBondsFile() - %1").arg(err));
+        }
+    }
+
+    if (cur_data.isEmpty())
+        LFile::writeFile(fname, "BOND INFO: \n");
+
     const LHttpApiReplyData& r = m_reqObj->lastReply();
     const QJsonArray &j_arr = r.data.constBegin().value().toArray();
     if (j_arr.isEmpty()) return;
 
+    //find last rec number
+    QStringList cur_list(LString::trimSplitList(cur_data));
+    QString last_s = cur_list.last().trimmed();
+    quint16 rec_number = 9999;
+    int pos = last_s.left(6).indexOf(".");
+    if (pos > 0) rec_number = last_s.left(pos).toUInt() + 1;
+    qDebug()<<QString("cur data list %1, next rec number %2").arg(cur_list.count()).arg(rec_number);
+
+    //write new records to bonds-file
     int n = j_arr.count();
+    int n_new = 0;
     for (int i=0; i<n; i++)
     {
         BondDesc bond(j_arr.at(i));
-        LFile::appendFile(APIBondsPage::dataFile(), QString("%1.  %2 \n").arg(i+1).arg(bond.toStr()));
+        if (bond.invalid()) {qWarning() << QString("APIReqPage::saveBondsFile() WARNING - bond invalid [%1]").arg(bond.toStr()); continue;}
+        if (cur_data.contains(bond.uid)) continue;
+
+
+        qDebug()<<QString("add new bond [%1]").arg(bond.toStr());
+        LFile::appendFile(fname, QString("%1.  %2 \n").arg(rec_number).arg(bond.toStr()));
+        rec_number++;
+        n_new++;
     }
-    emit signalMsg(QString("saved file of bonds list (size %1)").arg(n));
+    emit signalMsg(QString("saved file of bonds list (size %1/%2)").arg(n).arg(n_new));
 }
 void APIReqPage::saveStocksFile()
 {

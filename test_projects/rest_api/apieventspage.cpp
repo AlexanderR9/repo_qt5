@@ -9,6 +9,7 @@
 #include <QLabel>
 #include <QDate>
 #include <QComboBox>
+#include <QLineEdit>
 #include <QGridLayout>
 
 
@@ -17,6 +18,8 @@
 #define PAPER_TYPE_COL      3
 #define DATE_COL            5
 #define COUPON_COL          8
+#define KKS_COL             2
+#define N_COL               6
 
 
 #define COLOR_DAY_EVEN      QString("#FFFFF2")
@@ -30,7 +33,8 @@ APIEventsPage::APIEventsPage(QWidget *parent)
     m_statBox(NULL),
     m_paperTypeFilterControl(NULL),
     m_kindFilterControl(NULL),
-    m_dateFilterControl(NULL)
+    m_dateFilterControl(NULL),
+    m_paperResultEdit(NULL)
 {
     setObjectName("api_events_page");
     m_userSign = aptEvent;
@@ -43,12 +47,14 @@ APIEventsPage::APIEventsPage(QWidget *parent)
 
     reinitWidgets();
     initFilterBox();
+
+    connect(m_tableBox, SIGNAL(signalSearched()), this, SLOT(slotSearched()));
 }
 void APIEventsPage::reinitWidgets()
 {
     if (m_filterBox) {m_filterBox->deleteLater(); m_filterBox = NULL;}
 
-    qDebug("APIEventsPage::reinitWidgets");
+    //qDebug("APIEventsPage::reinitWidgets");
     LSimpleWidget *stat_widget = new LSimpleWidget(this, 10);
     stat_widget->setObjectName("events_stat_widget");
     //stat_widget->setSpacing(2);
@@ -65,7 +71,7 @@ void APIEventsPage::reinitWidgets()
     headers.append("Value");
     m_statBox->setHeaderLabels(headers);
     headers.clear();
-    headers << "Coupons" << "Divs" << "Commission" << "Tax" << "Input, 10^3" << "Out, 10^3";
+    headers << "Coupons" << "Divs" << "Commission" << "Tax" << "Input, 10^3" << "Out, 10^3" << "CL Input";
     headers << "N repayments" << "N coupons" << "N records";
     m_statBox->setHeaderLabels(headers, Qt::Vertical);
     int n = m_statBox->table()->rowCount();
@@ -77,6 +83,23 @@ void APIEventsPage::reinitWidgets()
 
     h_splitter->insertWidget(1, stat_widget);
     m_statBox->resizeByContents();
+
+
+    ///////////////init calc result paper lineedit////////////////////
+    initPaperResultWidget();
+
+}
+void APIEventsPage::initPaperResultWidget()
+{
+    QHBoxLayout *h_lay = new QHBoxLayout(0);
+    qobject_cast<QBoxLayout*>(m_statBox->layout())->addLayout(h_lay);
+    h_lay->addWidget(new QLabel("Result of paper", this));
+
+    m_paperResultEdit = new QLineEdit(this);
+    m_paperResultEdit->setReadOnly(true);
+    h_lay->addWidget(m_paperResultEdit);
+
+    recalcPaperResult();
 }
 void APIEventsPage::slotLoadEvents(const QJsonObject &j_obj)
 {
@@ -128,9 +151,6 @@ void APIEventsPage::reloadTableByData()
         }
 
         addRowRecord(rec, pair, QColor(row_color));
-
-        //if (rec.kind == EventOperation::etTax || rec.kind == EventOperation::etCommission)
-            //LTable::setTableRowColor(m_tableBox->table(), l_row, "#FFCDFB");
     }
 
     m_tableBox->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
@@ -152,7 +172,6 @@ void APIEventsPage::addRowRecord(const EventOperation &rec, const QPair<QString,
     else
     {
         row_data << QString::number(rec.size, 'f', 2) << QString("-");
-
     }
     row_data << QString::number(rec.amount, 'f', 1);
     LTable::addTableRow(m_tableBox->table(), row_data);
@@ -160,8 +179,6 @@ void APIEventsPage::addRowRecord(const EventOperation &rec, const QPair<QString,
     int l_row = m_tableBox->table()->rowCount() - 1;
     if (rec.amount < 0) m_tableBox->table()->item(l_row, AMOUNT_COL)->setTextColor(Qt::darkRed);
     LTable::setTableRowColor(m_tableBox->table(), l_row, row_color);
-
-
 }
 void APIEventsPage::load(QSettings &settings)
 {
@@ -171,7 +188,7 @@ void APIEventsPage::load(QSettings &settings)
         if (h_splitter->children().at(i)->objectName() == "events_stat_widget")
         {
             LSimpleWidget *stat_widget = qobject_cast<LSimpleWidget*>(h_splitter->children().at(i));
-            if (stat_widget) {qDebug("loading stat_widget"); stat_widget->load(settings);}
+            if (stat_widget) stat_widget->load(settings);
             else qWarning("APIEventsPage::load WARNING  stat_widget is NULL");
             break;
         }
@@ -185,7 +202,7 @@ void APIEventsPage::save(QSettings &settings)
         if (h_splitter->children().at(i)->objectName() == "events_stat_widget")
         {
             LSimpleWidget *stat_widget = qobject_cast<LSimpleWidget*>(h_splitter->children().at(i));
-            if (stat_widget) {qDebug("saving stat_widget"); stat_widget->save(settings);}
+            if (stat_widget) stat_widget->save(settings);
             else qWarning("APIEventsPage::load WARNING  stat_widget is NULL");
             break;
         }
@@ -208,7 +225,7 @@ void APIEventsPage::initFilterBox()
 
     list.clear();
     m_kindFilterControl = new QComboBox(this);
-    list << NONE_FILTER << "CANCELED" << "COMMISSION" << "BUY" << "SELL" << "COUPON" << "DIV" << "TAX" << "INPUT" << "OUT" << "REPAYMENT";
+    list << NONE_FILTER << "CANCELED" << "COMMISSION" << "!COMMISSION" << "BUY" << "SELL" << "COUPON" << "DIV" << "TAX" << "INPUT" << "OUT" << "REPAYMENT";
     m_kindFilterControl->addItems(list);
     g_lay->addWidget(m_kindFilterControl, 1, 1);
 
@@ -230,7 +247,7 @@ void APIEventsPage::initFilterBox()
 void APIEventsPage::slotFilter()
 {
     if (!sender()) return;
-    qDebug()<<QString("slotFilter");
+    //qDebug()<<QString("slotFilter");
 
     int n = m_tableBox->table()->rowCount();
     if (n <= 0) return;
@@ -240,16 +257,35 @@ void APIEventsPage::slotFilter()
     {
         if (m_tableBox->table()->isRowHidden(i)) continue;
 
-        bool need_hide = false;
-        paperTypeFilter(i, need_hide);
-        if (need_hide) continue;
-        kindFilter(i, need_hide);
-        if (need_hide) continue;
-        dateFilter(i, need_hide);
-        if (need_hide) continue;
+        bool was_hiden = false;
+        paperTypeFilter(i, was_hiden);
+        if (was_hiden) continue;
+        kindFilter(i, was_hiden);
+        if (was_hiden) continue;
+        dateFilter(i, was_hiden);
+        if (was_hiden) continue;
     }
 
+    updateSearchLabel();
     recalcStat();
+    recalcPaperResult();
+}
+void APIEventsPage::slotSearched()
+{
+    //qDebug("APIEventsPage::slotSearched()");
+    updateSearchLabel();
+    recalcStat();
+    recalcPaperResult();
+}
+void APIEventsPage::updateSearchLabel()
+{
+    QTableWidget *t = this->m_tableBox->table();
+    quint32 n = 0;
+    for (int i=0; i<t->rowCount(); i++)
+        if (!t->isRowHidden(i)) n++;
+
+    QString s = QString("Record number: %1/%2").arg(n).arg(t->rowCount());
+    m_tableBox->setTextLabel(s);
 }
 void APIEventsPage::recalcStat()
 {
@@ -281,10 +317,23 @@ void APIEventsPage::kindFilter(int row, bool &need_hide)
     QString text = m_kindFilterControl->currentText().trimmed();
     if (text == NONE_FILTER) return;
 
-    if (m_tableBox->table()->item(row, KIND_COL)->text() != text)
+    bool invert = (text.left(1) == "!");
+    if (invert)
     {
-        m_tableBox->table()->hideRow(row);
-        need_hide = true;
+        text = LString::strTrimLeft(text, 1);
+        if (m_tableBox->table()->item(row, KIND_COL)->text() == text)
+        {
+            m_tableBox->table()->hideRow(row);
+            need_hide = true;
+        }
+    }
+    else
+    {
+        if (m_tableBox->table()->item(row, KIND_COL)->text() != text)
+        {
+            m_tableBox->table()->hideRow(row);
+            need_hide = true;
+        }
     }
 }
 void APIEventsPage::dateFilter(int row, bool &need_hide)
@@ -354,15 +403,14 @@ void APIEventsPage::updateStatTable()
     QTableWidget *t = m_statBox->table();
     t->item(row, 0)->setText(QString::number(m_stat.coupon, 'f', 1)); row++;
     t->item(row, 0)->setText(QString::number(m_stat.div, 'f', 1)); row++;
-
     t->item(row, 0)->setTextColor(Qt::darkRed);
     t->item(row, 0)->setText(QString::number(qAbs(m_stat.commission), 'f', 1)); row++;
-
     t->item(row, 0)->setTextColor(Qt::darkRed);
     t->item(row, 0)->setText(QString::number(qAbs(m_stat.tax), 'f', 1)); row++;
 
     t->item(row, 0)->setText(QString::number(m_stat.input/float(1000), 'f', 1)); row++;
     t->item(row, 0)->setText(QString::number(qAbs(m_stat.out/float(1000)), 'f', 1)); row++;
+    t->item(row, 0)->setText(QString::number((m_stat.input/float(1000)) - qAbs(m_stat.out/float(1000)), 'f', 1)); row++;
 
     t->item(row, 0)->setText(QString::number(m_stat.n_repayments)); row++;
     t->item(row, 0)->setText(QString::number(m_stat.n_coupons)); row++;
@@ -377,6 +425,40 @@ void APIEventsPage::resetPage()
     m_kindFilterControl->setCurrentIndex(0);
     m_dateFilterControl->setCurrentIndex(0);
 }
+void APIEventsPage::recalcPaperResult()
+{
+    //qDebug("APIEventsPage::recalcPaperResult()");
+    QPalette plt;
+    QPalette::ColorRole role = QPalette::Base;
+    plt.setColor(role, Qt::lightGray);
+    m_paperResultEdit->clear();
+    m_paperResultEdit->setPalette(plt);
+
+    QString kks;
+    QTableWidget *t = this->m_tableBox->table();
+    if (t->rowCount() <= 0) return;
+
+    bool ok;
+    float result = 0;
+    quint16 n_ps = 0;
+    for (int i=0; i<t->rowCount(); i++)
+    {
+        if (t->isRowHidden(i)) continue;
+        float a = t->item(i, AMOUNT_COL)->text().toFloat(&ok);
+        if (ok) result += a;
+        if (t->item(i, KIND_COL)->text().trimmed() == "BUY")
+            n_ps += t->item(i, N_COL)->text().toUInt();
 
 
+        if (kks.isEmpty()) {kks = t->item(i, KKS_COL)->text().trimmed(); continue;}
+        if (kks != t->item(i, KKS_COL)->text()) return;
+    }
+    if (result == 0) return;
+
+    qDebug()<<QString("APIEventsPage::recalcPaperResult() result=%1").arg(result);
+
+    plt.setColor(role, Qt::yellow);
+    m_paperResultEdit->setPalette(plt);
+    m_paperResultEdit->setText(QString("%1 (%2ps)").arg(QString::number(result, 'f', 1)).arg(n_ps));
+}
 

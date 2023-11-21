@@ -34,7 +34,7 @@ struct InstrumentBase
     static float floatFromJVBlock(const QJsonValue&);
 
     virtual void reset() {number = 0; name = "?"; country = currency = uid = figi = QString(); api_trade = false;}
-    virtual bool invalid() const {return (name.isEmpty() || uid.isEmpty());}
+    virtual bool invalid() const {return (name.isEmpty() || uid.isEmpty() || figi.isEmpty());}
     virtual void fromFileLine(const QString&);
 
     virtual QString toStr() const = 0;
