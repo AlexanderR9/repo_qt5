@@ -8,7 +8,8 @@ class QSettings;
 class QComboBox;
 class BagState;
 
-enum APIPageType {aptReq = 181, aptBond, aptStock, aptCoupon, aptDiv, aptProfitability, aptEvent, aptBag};
+enum APIPageType {aptReq = 181, aptBond, aptStock, aptCoupon, aptDiv, aptProfitability,
+                    aptEvent, aptOrders, aptBag};
 
 
 //APITablePageBase
@@ -113,6 +114,7 @@ public slots:
     void slotGetPaperInfo(QStringList&);
     void slotGetPaperInfoByFigi(const QString&, QPair<QString, QString>&);
     void slotGetTickerByFigi(const QString&, QString&);
+    void slotGetPaperTypeByUID(const QString&, QString&);
 
 signals:
     void signalFilter(const QStringList&); //list - visible figi
@@ -156,6 +158,7 @@ public slots:
     void slotGetPaperInfo(QStringList&);
     void slotGetPaperInfoByFigi(const QString&, QPair<QString, QString>&);
     void slotGetTickerByFigi(const QString&, QString&);
+    void slotGetPaperTypeByUID(const QString&, QString&);
 
 signals:
     void signalFilter(const QStringList&); //list - visible figi

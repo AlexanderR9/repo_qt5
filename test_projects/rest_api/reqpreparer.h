@@ -34,6 +34,7 @@ private:
     void prepareReqBondBy();
     void prepareReqShareBy();
     void prepareReqMarket(const QString&);
+    void prepareReqOrders(const QString&);
     void prepareReqLastPrices();
     void prepareReqCoupons();
     void prepareReqDivs();

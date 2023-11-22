@@ -38,6 +38,8 @@ void ApiReqPreparer::prepare(QString src)
     else if (src.contains("GetDividends")) prepareReqDivs();
     else if (src.contains("GetLastPrices")) prepareReqLastPrices();
     else if (src.contains("MarketDataService")) prepareReqMarket(src);
+    else if (src.contains("OrdersService")) prepareReqOrders(src);
+
 
     emit signalMsg(QString("URL:   %1 \n").arg(m_reqObj->fullUrl()));
 }
@@ -101,6 +103,14 @@ void ApiReqPreparer::prepareReqLastPrices()
     emit signalMsg(QString("SELECTED UIDs: %1").arg(uid_list.count()));
     QJsonArray j_arr = QJsonArray::fromStringList(uid_list);
     m_reqObj->addMetaData_arr("instrumentId", j_arr);
+}
+void ApiReqPreparer::prepareReqOrders(const QString &src)
+{
+    m_reqObj->addMetaData("accountId", QString::number(api_commonSettings.user_id));
+    if (src.contains("PostOrder"))
+    {
+
+    }
 }
 void ApiReqPreparer::prepareReqMarket(const QString &src)
 {

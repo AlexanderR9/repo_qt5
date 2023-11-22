@@ -30,6 +30,7 @@
 #define TO_COMPLETE_COL     7
 
 #define PROFITABILITY_LIMIT         1.4
+#define PROFITABILITY_LIMIT2        1.15
 #define COUNTRY_RU                  QString("Российская Федерация")
 #define COUNTRY_US                  QString("Соединенные Штаты")
 
@@ -280,6 +281,12 @@ void APIBondsPage::slotGetTickerByFigi(const QString &figi, QString &ticker)
 {
     foreach (const BondDesc &rec, m_data)
         if (rec.figi == figi || rec.uid == figi)  {ticker = rec.isin; break;}
+}
+void APIBondsPage::slotGetPaperTypeByUID(const QString &uid, QString &type)
+{
+    if (!type.isEmpty()) return;
+    foreach (const BondDesc &rec, m_data)
+        if (rec.uid == uid)  {type = "bond"; break;}
 }
 void APIBondsPage::slotGetPaperInfoByFigi(const QString &figi, QPair<QString, QString> &pair)
 {
@@ -533,6 +540,12 @@ void APIStocksPage::slotGetTickerByFigi(const QString &figi, QString &ticker)
 {
     foreach (const StockDesc &rec, m_data)
         if (rec.figi == figi || rec.uid == figi)  {ticker = rec.ticker; break;}
+}
+void APIStocksPage::slotGetPaperTypeByUID(const QString &uid, QString &type)
+{
+    if (!type.isEmpty()) return;
+    foreach (const StockDesc &rec, m_data)
+        if (rec.uid == uid)  {type = "share"; break;}
 }
 
 
@@ -908,6 +921,8 @@ void APIProfitabilityPage::syncTableData(const BondDesc &bond_rec, const QString
 
     if (v_month > PROFITABILITY_LIMIT)
         m_tableBox->table()->item(row, priceCol())->setTextColor(Qt::blue);
+    else if (v_month > PROFITABILITY_LIMIT2)
+        m_tableBox->table()->item(row, priceCol())->setTextColor(Qt::darkGreen);
 
     m_tick++;
 }

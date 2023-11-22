@@ -1,5 +1,6 @@
 #include "instrument.h"
 #include "lstaticxml.h"
+#include "lstring.h"
 
 #include <QDomNode>
 #include <QDomElement>
@@ -23,6 +24,28 @@ QDate InstrumentBase::dateFromGoogleDT(const QJsonValue &jv_dt)
         }
     }
     return q_date;
+}
+QDateTime InstrumentBase::dateTimeFromGoogleDT(const QJsonValue &jv_dt)
+{
+    QDateTime dt;
+    dt.setDate(InstrumentBase::dateFromGoogleDT(jv_dt));
+    dt.setTime(QTime(1, 1, 1));
+    if (jv_dt.isString())
+    {
+        QString gdt = jv_dt.toString().trimmed();
+        int pos = gdt.indexOf("T");
+        if (pos > 0)
+        {
+            gdt = LString::strTrimLeft(gdt, pos+1);
+            pos = gdt.indexOf(".");
+            if (pos > 0)
+            {
+                gdt = gdt.left(pos);
+                dt.setTime(QTime::fromString(gdt, InstrumentBase::userTimeMask()));
+            }
+        }
+    }
+    return dt;
 }
 float InstrumentBase::floatFromJVBlock(const QJsonValue &jv_block)
 {
@@ -422,3 +445,31 @@ void EventOperation::kindByAPIType(QString api_event_type)
 
 }
 
+
+//OrderData
+void OrderData::fromJson(const QJsonValue &jv)
+{
+    reset();
+    if (jv.isObject())
+    {
+        const QJsonObject &j_obj = jv.toObject();
+        uid = j_obj.value("instrumentUid").toString();
+        lots.first = j_obj.value("lotsRequested").toString().toUInt();
+        lots.second = j_obj.value("lotsExecuted").toString().toUInt();
+        time = InstrumentBase::dateTimeFromGoogleDT(j_obj.value("orderDate"));
+
+        type = j_obj.value("direction").toString();
+        type.remove("ORDER_DIRECTION");
+        type = QString("%1/%2").arg(type).arg(j_obj.value("orderType").toString());
+        type.remove("ORDER_TYPE");
+        type.remove("_");
+
+        price = InstrumentBase::floatFromJVBlock(j_obj.value("initialSecurityPrice"));
+        currency = j_obj.value("currency").toString().trimmed().toUpper();
+  }
+    else qWarning("OrderData::fromJson WARNING - input jv is not convert to QJsonObject");
+}
+QString OrderData::strLots() const
+{
+    return QString("%1 / %2").arg(lots.first).arg(lots.second);
+}

@@ -5,6 +5,7 @@
 
 #include <QString>
 #include <QDate>
+#include <QDateTime>
 #include <QDebug>
 
 class QDomNode;
@@ -30,7 +31,9 @@ struct InstrumentBase
     bool api_trade;
 
     static QString userDateMask() {return QString("dd.MM.yyyy");}
+    static QString userTimeMask() {return QString("hh:mm:ss");}
     static QDate dateFromGoogleDT(const QJsonValue&);
+    static QDateTime dateTimeFromGoogleDT(const QJsonValue&);
     static float floatFromJVBlock(const QJsonValue&);
 
     virtual void reset() {number = 0; name = "?"; country = currency = uid = figi = QString(); api_trade = false;}
@@ -191,6 +194,26 @@ private:
 
 };
 
+//OrderData
+struct OrderData
+{
+    OrderData() {reset();}
+
+    QString type;
+    QDateTime time; //дата и время выставления заявки
+    QString uid;
+    QString currency;
+
+    QPair<quint16, quint16> lots; //всего запрошено лотов / уже исполнено лотов
+    float price; //запрошенная цена
+
+    bool invalid() const {return (type==QString("?") || !time.isValid() || uid.isEmpty() || price<=0);}
+    void reset() {type = QString("?"); time = QDateTime(); currency.clear(); uid.clear(); price=-1; lots.first=lots.second=0;}
+    void fromJson(const QJsonValue&);
+    QString strLots() const;
+
+
+};
 
 
 #endif

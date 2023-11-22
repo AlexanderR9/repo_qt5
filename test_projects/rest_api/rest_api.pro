@@ -32,9 +32,10 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/bagstate.h \
         $$PWD/apireqpage.h \
         $$PWD/reqpreparer.h \
-    cycleworker.h \
-    apicouponpage.h \
-    apieventspage.h
+        $$PWD/cycleworker.h \
+        $$PWD/apicouponpage.h \
+        $$PWD/apieventspage.h \
+        $$PWD/apiorderspage.h
 
 SOURCES += $$PWD/main.cpp \
 	$$PWD/apipages.cpp \
@@ -44,7 +45,8 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/bagstate.cpp \
         $$PWD/apireqpage.cpp \
         $$PWD/reqpreparer.cpp \
-    cycleworker.cpp \
-    apicouponpage.cpp \
-    apieventspage.cpp
+        $$PWD/cycleworker.cpp \
+        $$PWD/apicouponpage.cpp \
+        $$PWD/apieventspage.cpp \
+        $$PWD/apiorderspage.cpp
 

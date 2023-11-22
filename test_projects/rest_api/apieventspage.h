@@ -10,6 +10,7 @@ class LSearchTableWidgetBox;
 class QComboBox;
 class QLineEdit;
 
+//statistic operations
 struct StatTotalSums
 {
     StatTotalSums() {reset();}
@@ -82,8 +83,6 @@ public slots:
 protected slots:
     void slotFilter();
     void slotSearched();
-
-
 
 signals:
     void signalGetPaperInfoByFigi(const QString&, QPair<QString, QString>&);

@@ -27,7 +27,7 @@
 #define NONE_FILTER         QString("none")
 
 
-//APICouponPageAbstract
+//APIEventsPage
 APIEventsPage::APIEventsPage(QWidget *parent)
     :APITablePageBase(parent),
     m_statBox(NULL),

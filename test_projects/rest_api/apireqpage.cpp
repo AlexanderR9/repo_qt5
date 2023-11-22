@@ -301,6 +301,10 @@ void APIReqPage::handleReplyData()
     {
         emit signalLoadEvents(m_reqObj->lastReply().data);
     }
+    else if (src.right(9) == "getorders")
+    {
+        emit signalLoadOrders(m_reqObj->lastReply().data);
+    }
     else if (src.right(10) == "lastprices")
     {
         const LHttpApiReplyData& r = m_reqObj->lastReply();
