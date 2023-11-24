@@ -183,7 +183,24 @@ void APIReqPage::toDebugReqMetadata()
     QJsonObject::const_iterator it =  j_obj.constBegin();
     while (it != j_obj.constEnd())
     {
-        qDebug()<<QString("VALUE[%1] => KEY[%2]").arg(it.key()).arg(it.value().toString());
+        if (it.value().isObject())
+        {
+            qDebug()<<QString("KEY[%1] => OBJ").arg(it.key());
+            QJsonObject::const_iterator it2 =  it.value().toObject().constBegin();
+            while (it2 != it.value().toObject().constEnd())
+            {
+                if (it2.value().isDouble()) qDebug()<<QString("   KEY[%1] => VALUE[%2] (DOUBLE)").arg(it2.key()).arg(it2.value().toDouble());
+                else if (it2.value().isBool()) qDebug()<<QString("   KEY[%1] => VALUE[%2] (BOOL)").arg(it2.key()).arg(it2.value().toBool());
+                else qDebug()<<QString("   KEY[%1] => VALUE[%2]").arg(it2.key()).arg(it2.value().toString());
+                it2++;
+            }
+        }
+        else
+        {
+            if (it.value().isDouble()) qDebug()<<QString("   KEY[%1] => VALUE[%2] (DOUBLE)").arg(it.key()).arg(it.value().toDouble());
+            else if (it.value().isBool()) qDebug()<<QString("   KEY[%1] => VALUE[%2] (BOOL)").arg(it.key()).arg(it.value().toBool());
+            else qDebug()<<QString("KEY[%1] => VALUE[%2]").arg(it.key()).arg(it.value().toString());
+        }
         it++;
     }
     qDebug()<<QString();

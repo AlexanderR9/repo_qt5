@@ -35,7 +35,8 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/cycleworker.h \
         $$PWD/apicouponpage.h \
         $$PWD/apieventspage.h \
-        $$PWD/apiorderspage.h
+        $$PWD/apiorderspage.h \
+        $$PWD/apiprofitabilitypage.h
 
 SOURCES += $$PWD/main.cpp \
 	$$PWD/apipages.cpp \
@@ -48,5 +49,6 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/cycleworker.cpp \
         $$PWD/apicouponpage.cpp \
         $$PWD/apieventspage.cpp \
-        $$PWD/apiorderspage.cpp
+        $$PWD/apiorderspage.cpp \
+        $$PWD/apiprofitabilitypage.cpp
 

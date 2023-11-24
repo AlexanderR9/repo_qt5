@@ -60,6 +60,17 @@ float InstrumentBase::floatFromJVBlock(const QJsonValue &jv_block)
     }
     return f;
 }
+void InstrumentBase::floatToJVBlock(float p, QJsonObject &j_obj)
+{
+    int i_units = int(p);
+    float f_nano = int(100*(qAbs(p) - float(i_units)));
+    QString s = QString::number(p, 'f', 2);
+    f_nano = s.right(2).toInt();
+
+    qDebug()<<QString("InstrumentBase::floatToJVBlock  i_units=%1   f_nano=%2").arg(i_units).arg(f_nano);
+    j_obj["units"] = QString::number(i_units);
+    j_obj["nano"] = f_nano;
+}
 void InstrumentBase::fromFileLine(const QString &line)
 {
     reset();

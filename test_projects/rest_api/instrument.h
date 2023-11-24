@@ -21,6 +21,7 @@ class QJsonValue;
 struct InstrumentBase
 {
     InstrumentBase() {reset();}
+    virtual ~InstrumentBase() {}
 
     quint16 number; //порядковый номер
     QString name;
@@ -35,6 +36,8 @@ struct InstrumentBase
     static QDate dateFromGoogleDT(const QJsonValue&);
     static QDateTime dateTimeFromGoogleDT(const QJsonValue&);
     static float floatFromJVBlock(const QJsonValue&);
+    static void floatToJVBlock(float, QJsonObject&);
+
 
     virtual void reset() {number = 0; name = "?"; country = currency = uid = figi = QString(); api_trade = false;}
     virtual bool invalid() const {return (name.isEmpty() || uid.isEmpty() || figi.isEmpty());}
@@ -52,6 +55,7 @@ struct BondDesc : public InstrumentBase
 {
     BondDesc() {reset();}
     BondDesc(const QJsonValue &jv) {fromJson(jv);}
+    virtual ~BondDesc() {}
 
     QString isin; //kks
     QString risk;
@@ -83,6 +87,7 @@ struct StockDesc : public InstrumentBase
 {
     StockDesc() {reset();}
     StockDesc(const QJsonValue &jv) {fromJson(jv);}
+    virtual ~StockDesc() {}
 
     QString ticker;
     QString sector;
@@ -128,6 +133,7 @@ struct BCoupon : public CouponRecordAbstract
 {
     BCoupon() :CouponRecordAbstract() {reset();}
     BCoupon(const QString &id) :CouponRecordAbstract() {reset(); figi=id;}
+    virtual ~BCoupon() {}
 
     quint16 number;
     quint16 period;
@@ -150,6 +156,7 @@ struct SDiv : public CouponRecordAbstract
 {
     SDiv() :CouponRecordAbstract() {reset();}
     SDiv(const QString &id) :CouponRecordAbstract() {reset(); figi=id;}
+    virtual ~SDiv() {}
 
     float yield;
     float last_price;
@@ -172,6 +179,7 @@ struct EventOperation
                         etInput, etOut, etRepayment, etUnknown = 999};
 
     EventOperation() {reset();}
+    virtual ~EventOperation() {}
 
     int kind;
     QDate date;

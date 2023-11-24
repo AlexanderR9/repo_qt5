@@ -2,7 +2,7 @@
 #include "lhttpapirequester.h"
 #include "apicommonsettings.h"
 #include "lhttp_types.h"
-
+#include "instrument.h"
 
 #include <QJsonObject>
 #include <QJsonArray>
@@ -136,6 +136,34 @@ void ApiReqPreparer::prepareReqOrders(const QStringList &req_data)
     if (src.contains("PostOrder"))
     {
         qDebug("PostOrder");
+        if (req_data.count() < 4)
+        {
+            emit signalError("req data too small for create POST_ORDER_REQUEST");
+            m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
+            return;
+        }
+
+        m_reqObj->addMetaData("quantity", req_data.at(req_data.count()-2));
+        m_reqObj->addMetaData("direction", "ORDER_DIRECTION_BUY");
+        m_reqObj->addMetaData("orderType", "ORDER_TYPE_LIMIT");
+        m_reqObj->addMetaData("instrumentId", req_data.at(1));
+
+
+        bool ok;
+        float price = req_data.last().toFloat(&ok);
+        if (ok && price > 0)
+        {
+            QJsonObject price_obj;
+            InstrumentBase::floatToJVBlock(price, price_obj);
+            //price_obj["units"] = int(price);
+            //price_obj["nano"] = int(float(100)*(price - int(price)));
+            m_reqObj->addMetaData_obj("price", price_obj);
+        }
+        else
+        {
+            emit signalError(QString("Invalid BUY price in req_data [%1]").arg(req_data.last()));
+            m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
+        }
     }
     else if (src.contains("Cancel"))
     {

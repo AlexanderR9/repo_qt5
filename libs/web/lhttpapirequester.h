@@ -60,7 +60,8 @@ public:
     inline const LHttpApiReplyData& lastReply() const {return m_lastReply;} //получить данные последнего полученного ответа
     inline void clearMetaData() {m_metadata = QJsonObject();} //очистить m_metadata
     inline void addMetaData(QString key, QString value) {m_metadata[key] = value;} //добавить пару(ключ, значение) в m_metadata
-    inline void addMetaData_arr(QString key, QJsonArray &j_arr) {m_metadata[key] = j_arr;} //добавить пару(ключ, QJsonArray) в m_metadata
+    inline void addMetaData_arr(QString key, const QJsonArray &j_arr) {m_metadata[key] = j_arr;} //добавить пару(ключ, QJsonArray) в m_metadata
+    inline void addMetaData_obj(QString key, const QJsonObject &j_obj) {m_metadata[key] = j_obj;} //добавить пару(ключ, QJsonObject) в m_metadata
     inline void setApiServer(QString s) {m_apiServer = s.trimmed();} //установить доменное имя АПИ сервера
     inline QString apiServer() const {return m_apiServer;}
     inline void setHttpProtocolType(int t) {m_protocolType = t;} //установить тип протогола http

@@ -257,7 +257,7 @@ void CycleWorker::parseDivs(const QJsonArray &j_arr)
 }
 void CycleWorker::parseCandles(const QJsonArray &j_arr)
 {
-
+    Q_UNUSED(j_arr);
 }
 void CycleWorker::parsePrices(const QJsonArray &j_arr)
 {

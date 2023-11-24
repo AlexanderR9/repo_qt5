@@ -13,6 +13,7 @@
 #include "apicouponpage.h"
 #include "apieventspage.h"
 #include "apiorderspage.h"
+#include "apiprofitabilitypage.h"
 
 #include <QDebug>
 #include <QDir>
@@ -102,6 +103,7 @@ void MainForm::initPages()
     m_pages.insert(aptProfitability, profit_page);
     connect(bond_page, SIGNAL(signalNeedCalcProfitability(const BondDesc&, float)), profit_page, SLOT(slotRecalcProfitability(const BondDesc&, float)));
     connect(profit_page, SIGNAL(signalGetCouponRec(const QString&, const BCoupon*&)), c_page, SLOT(slotGetCouponRec(const QString&, const BCoupon*&)));
+    connect(profit_page, SIGNAL(signalBuyOrder(const QStringList&)), req_page, SLOT(slotTrySendOrderReq(const QStringList&)));
 
     APIBagPage *bag_page = new  APIBagPage(this);
     m_pages.insert(aptBag, bag_page);
