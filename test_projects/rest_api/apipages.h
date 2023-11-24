@@ -115,6 +115,7 @@ public slots:
     void slotGetPaperInfoByFigi(const QString&, QPair<QString, QString>&);
     void slotGetTickerByFigi(const QString&, QString&);
     void slotGetPaperTypeByUID(const QString&, QString&);
+    void slotGetBondNominalByUID(const QString&, float&);
 
 signals:
     void signalFilter(const QStringList&); //list - visible figi

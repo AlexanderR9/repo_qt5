@@ -114,6 +114,7 @@ void APIReqPage::initSources()
     quint16 row = 0;
     foreach(const QString &v, api_commonSettings.services)
     {
+        qDebug()<<QString("SRC: %1").arg(v);
         m_sourceBox->listWidget()->addItem(v);
         int pos = v.indexOf('/');
         if (pos > 0)
@@ -124,6 +125,24 @@ void APIReqPage::initSources()
         }
         row++;
     }
+}
+void APIReqPage::slotTrySendOrderReq(const QStringList &req_data)
+{
+    if (requesterBuzy())
+    {
+        emit signalError("Requester object is buzy.");
+        emit signalFinished(hreBuzy);
+        return;
+    }
+    m_reqPreparer->clearCycleData();
+    if (req_data.count() < 2)
+    {
+        emit signalError("Order request data is invalid.");
+        emit signalFinished(hreWrongReqParams);
+        return;
+    }
+
+    standardRequest(QString(), req_data);
 }
 void APIReqPage::trySendReq()
 {
@@ -155,8 +174,25 @@ void APIReqPage::trySendReq()
     }
 
     /////////////////STANDARD REQ////////////////////////////////
+    standardRequest(src);
+}
+void APIReqPage::toDebugReqMetadata()
+{
+    qDebug()<<QString("/////////// REQUEST METADATA ///////////////");
+    const QJsonObject &j_obj = m_reqObj->metadata();
+    QJsonObject::const_iterator it =  j_obj.constBegin();
+    while (it != j_obj.constEnd())
+    {
+        qDebug()<<QString("VALUE[%1] => KEY[%2]").arg(it.key()).arg(it.value().toString());
+        it++;
+    }
+    qDebug()<<QString();
+}
+void APIReqPage::standardRequest(const QString &src, const QStringList &req_data)
+{
+    if (req_data.isEmpty()) m_reqPreparer->prepare(src);
+    else m_reqPreparer->prepareOrderReq(req_data);
 
-    m_reqPreparer->prepare(src);
     if (m_reqPreparer->invalidReq())
     {
         int e_code = hreUnknown;
@@ -168,6 +204,8 @@ void APIReqPage::trySendReq()
     else
     {
         printHeaders();
+        emit signalMsg("request started ....");
+        toDebugReqMetadata();
         m_reqObj->start(hrmPost);
     }
 }
@@ -257,10 +295,7 @@ void APIReqPage::checkReply()
         m_replyBox->resizeByContents();
         m_replyBox->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::SingleSelection);
 
-        if (m_cycleWroker->cycleModeOn())
-        {
-            m_cycleWroker->handleReplyData(r.data);
-        }
+        if (m_cycleWroker->cycleModeOn()) m_cycleWroker->handleReplyData(r.data);
         else  handleReplyData();
     }
 }
@@ -275,7 +310,7 @@ void APIReqPage::setExpandLevel(int a)
 void APIReqPage::handleReplyData()
 {
     QString src = m_reqObj->fullUrl().toLower();
-   // qDebug()<<QString("APIReqPage::handleReplyData() SRC [%1]").arg(src);
+    qDebug()<<QString("APIReqPage::handleReplyData() SRC [%1]").arg(src);
 
     if (src.right(5) == "bonds")
     {
@@ -304,6 +339,11 @@ void APIReqPage::handleReplyData()
     else if (src.right(9) == "getorders")
     {
         emit signalLoadOrders(m_reqObj->lastReply().data);
+    }
+    else if (src.right(13) == "getstoporders")
+    {
+        qDebug("reply stop_orders");
+        emit signalLoadStopOrders(m_reqObj->lastReply().data);
     }
     else if (src.right(10) == "lastprices")
     {

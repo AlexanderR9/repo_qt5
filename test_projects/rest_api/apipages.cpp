@@ -288,6 +288,12 @@ void APIBondsPage::slotGetPaperTypeByUID(const QString &uid, QString &type)
     foreach (const BondDesc &rec, m_data)
         if (rec.uid == uid)  {type = "bond"; break;}
 }
+void APIBondsPage::slotGetBondNominalByUID(const QString &uid, float &f)
+{
+    f = -1;
+    foreach (const BondDesc &rec, m_data)
+        if (rec.uid == uid)  {f = rec.nominal; break;}
+}
 void APIBondsPage::slotGetPaperInfoByFigi(const QString &figi, QPair<QString, QString> &pair)
 {
     foreach (const BondDesc &rec, m_data)

@@ -454,6 +454,7 @@ void OrderData::fromJson(const QJsonValue &jv)
     {
         const QJsonObject &j_obj = jv.toObject();
         uid = j_obj.value("instrumentUid").toString();
+        order_id = j_obj.value("orderId").toString();
         lots.first = j_obj.value("lotsRequested").toString().toUInt();
         lots.second = j_obj.value("lotsExecuted").toString().toUInt();
         time = InstrumentBase::dateTimeFromGoogleDT(j_obj.value("orderDate"));
@@ -472,4 +473,47 @@ void OrderData::fromJson(const QJsonValue &jv)
 QString OrderData::strLots() const
 {
     return QString("%1 / %2").arg(lots.first).arg(lots.second);
+}
+void OrderData::reset()
+{
+    type = QString("?");
+    time = QDateTime();
+    order_id.clear();
+    currency.clear();
+    uid.clear();
+    price=-1;
+    lots.first=lots.second=0;
+}
+bool OrderData::invalid() const
+{
+    return (type==QString("?") || !time.isValid() || uid.isEmpty() || order_id.isEmpty() || price<=0);
+}
+
+
+
+//StopOrderData
+void StopOrderData::fromJson(const QJsonValue &jv)
+{
+    reset();
+    if (jv.isObject())
+    {
+        const QJsonObject &j_obj = jv.toObject();
+        uid = j_obj.value("instrumentUid").toString();
+        order_id = j_obj.value("stopOrderId").toString();
+        lots.first = j_obj.value("lotsRequested").toString().toUInt();
+        time = InstrumentBase::dateTimeFromGoogleDT(j_obj.value("createDate"));
+        currency = j_obj.value("currency").toString().trimmed().toUpper();
+        price = InstrumentBase::floatFromJVBlock(j_obj.value("stopPrice"));
+
+        type = j_obj.value("direction").toString();
+        type.remove("STOP_ORDER_DIRECTION");
+        type = QString("%1/%2").arg(type).arg(j_obj.value("orderType").toString());
+        type.remove("STOP_ORDER_TYPE");
+        type.remove("_");
+  }
+    else qWarning("StopOrderData::fromJson WARNING - input jv is not convert to QJsonObject");
+}
+QString StopOrderData::strLots() const
+{
+    return QString("%1").arg(lots.first);
 }

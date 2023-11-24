@@ -16,6 +16,7 @@ public:
 
     QString name() const {return QString("requester_preparer_obj");}
     void prepare(QString);
+    void prepareOrderReq(const QStringList&);
     bool invalidReq() const;
 
     inline void setCycleData(const QStringList &list) {m_cycleData.clear(); m_cycleData.append(list);}
@@ -28,13 +29,14 @@ protected:
     QStringList             m_cycleData;
 
     void setMetaPeriod(QString);
+    void prepareHeaders(const QString&);
 
 private:
     void prepareReqOperations(const QString&);
     void prepareReqBondBy();
     void prepareReqShareBy();
     void prepareReqMarket(const QString&);
-    void prepareReqOrders(const QString&);
+    void prepareReqOrders(const QStringList&);
     void prepareReqLastPrices();
     void prepareReqCoupons();
     void prepareReqDivs();

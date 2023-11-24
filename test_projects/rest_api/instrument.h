@@ -197,21 +197,35 @@ private:
 //OrderData
 struct OrderData
 {
-    OrderData() {reset();}
+    OrderData() :is_stop(false) {reset();}
+    virtual ~OrderData() {}
 
     QString type;
     QDateTime time; //дата и время выставления заявки
     QString uid;
     QString currency;
+    QString order_id;
+    bool is_stop;
 
     QPair<quint16, quint16> lots; //всего запрошено лотов / уже исполнено лотов
     float price; //запрошенная цена
 
-    bool invalid() const {return (type==QString("?") || !time.isValid() || uid.isEmpty() || price<=0);}
-    void reset() {type = QString("?"); time = QDateTime(); currency.clear(); uid.clear(); price=-1; lots.first=lots.second=0;}
-    void fromJson(const QJsonValue&);
-    QString strLots() const;
+    virtual bool invalid() const;
+    virtual void reset();
+    virtual void fromJson(const QJsonValue&);
+    virtual QString strLots() const;
 
+};
+
+//OrderData
+struct StopOrderData : public OrderData
+{
+    StopOrderData() :OrderData()  {this->is_stop = true;}
+    virtual ~StopOrderData() {}
+
+
+    virtual void fromJson(const QJsonValue&);
+    virtual QString strLots() const;
 
 };
 

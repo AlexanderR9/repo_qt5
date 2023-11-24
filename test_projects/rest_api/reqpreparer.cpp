@@ -20,7 +20,7 @@ bool ApiReqPreparer::invalidReq() const
 {
     return m_reqObj->metadata().keys().contains("err");
 }
-void ApiReqPreparer::prepare(QString src)
+void ApiReqPreparer::prepareHeaders(const QString &src)
 {
     m_reqObj->clearMetaData();
 
@@ -31,6 +31,12 @@ void ApiReqPreparer::prepare(QString src)
     m_reqObj->addReqHeader(QString("Content-Type"), QString("application/json"));
     m_reqObj->setUri(QString("%1.%2").arg(baseURI).arg(src));
 
+}
+void ApiReqPreparer::prepare(QString src)
+{
+    prepareHeaders(src);
+    qDebug("ApiReqPreparer::prepare");
+
     if (src.contains("OperationsService")) prepareReqOperations(src);
     else if (src.contains("BondBy")) prepareReqBondBy();
     else if (src.contains("ShareBy")) prepareReqShareBy();
@@ -38,9 +44,21 @@ void ApiReqPreparer::prepare(QString src)
     else if (src.contains("GetDividends")) prepareReqDivs();
     else if (src.contains("GetLastPrices")) prepareReqLastPrices();
     else if (src.contains("MarketDataService")) prepareReqMarket(src);
-    else if (src.contains("OrdersService")) prepareReqOrders(src);
+    else if (src.contains("OrdersService")) prepareReqOrders(QStringList()<<src);
 
+    emit signalMsg(QString("URL:   %1 \n").arg(m_reqObj->fullUrl()));
+}
+void ApiReqPreparer::prepareOrderReq(const QStringList &req_data)
+{
+    if (req_data.isEmpty())
+    {
+        m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
+        return;
+    }
 
+    qDebug("ApiReqPreparer::prepareOrderReq");
+    prepareHeaders(req_data.first());
+    prepareReqOrders(req_data);
     emit signalMsg(QString("URL:   %1 \n").arg(m_reqObj->fullUrl()));
 }
 void ApiReqPreparer::prepareReqDivs()
@@ -104,12 +122,31 @@ void ApiReqPreparer::prepareReqLastPrices()
     QJsonArray j_arr = QJsonArray::fromStringList(uid_list);
     m_reqObj->addMetaData_arr("instrumentId", j_arr);
 }
-void ApiReqPreparer::prepareReqOrders(const QString &src)
+void ApiReqPreparer::prepareReqOrders(const QStringList &req_data)
 {
+    if (req_data.isEmpty())
+    {
+        emit signalError("req data is empty for ORDER_REQUEST");
+        m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
+        return;
+    }
+
+    QString src(req_data.first());
     m_reqObj->addMetaData("accountId", QString::number(api_commonSettings.user_id));
     if (src.contains("PostOrder"))
     {
-
+        qDebug("PostOrder");
+    }
+    else if (src.contains("Cancel"))
+    {
+        QString key_id = (src.toLower().contains("stop") ? "stopOrderId" : "orderId");
+        qDebug("Cancel");
+        if (req_data.count() < 2)
+        {
+            emit signalError("req data has no order_id for ORDER_REQUEST");
+            m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
+        }
+        else m_reqObj->addMetaData(key_id, req_data.at(1));
     }
 }
 void ApiReqPreparer::prepareReqMarket(const QString &src)

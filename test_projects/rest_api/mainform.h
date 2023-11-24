@@ -23,6 +23,7 @@ protected:
     QSplitter                   *v_splitter;
     QTabWidget                  *m_tab;
     QMap<int, LSimpleWidget*>    m_pages;
+    bool                         m_autoStartMakerFinished;
 
     QString projectName() const {return "rest_api_tester";}
     QString mainTitle() const {return QString("REST API tester (Qt5)!");}

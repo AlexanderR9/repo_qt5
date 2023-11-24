@@ -37,7 +37,8 @@ MainForm::MainForm(QWidget *parent)
     :LMainWidget(parent),
     m_protocol(NULL),
     v_splitter(NULL),
-    m_tab(NULL)
+    m_tab(NULL),
+    m_autoStartMakerFinished(true)
 {
     setObjectName("main_form_restapi_tester");
 }
@@ -87,21 +88,20 @@ void MainForm::initPages()
     APIOrdersPage *orders_page = new  APIOrdersPage(this);
     m_pages.insert(aptOrders, orders_page);
     connect(req_page, SIGNAL(signalLoadOrders(const QJsonObject&)), orders_page, SLOT(slotLoadOrders(const QJsonObject&)));
+    connect(req_page, SIGNAL(signalLoadStopOrders(const QJsonObject&)), orders_page, SLOT(slotLoadStopOrders(const QJsonObject&)));
     connect(orders_page, SIGNAL(signalGetPaperInfoByFigi(const QString&, QPair<QString, QString>&)), stock_page, SLOT(slotGetPaperInfoByFigi(const QString&, QPair<QString, QString>&)));
     connect(orders_page, SIGNAL(signalGetTickerByFigi(const QString&, QString&)), stock_page, SLOT(slotGetTickerByFigi(const QString&, QString&)));
     connect(orders_page, SIGNAL(signalGetPaperInfoByFigi(const QString&, QPair<QString, QString>&)), bond_page, SLOT(slotGetPaperInfoByFigi(const QString&, QPair<QString, QString>&)));
     connect(orders_page, SIGNAL(signalGetTickerByFigi(const QString&, QString&)), bond_page, SLOT(slotGetTickerByFigi(const QString&, QString&)));
     connect(orders_page, SIGNAL(signalGetPaperTypeByUID(const QString&, QString&)), bond_page, SLOT(slotGetPaperTypeByUID(const QString&, QString&)));
     connect(orders_page, SIGNAL(signalGetPaperTypeByUID(const QString&, QString&)), stock_page, SLOT(slotGetPaperTypeByUID(const QString&, QString&)));
+    connect(orders_page, SIGNAL(signalGetBondNominalByUID(const QString&, float&)), bond_page, SLOT(slotGetBondNominalByUID(const QString&, float&)));
+    connect(orders_page, SIGNAL(signalCancelOrder(const QStringList&)), req_page, SLOT(slotTrySendOrderReq(const QStringList&)));
 
     APIProfitabilityPage *profit_page = new  APIProfitabilityPage(this);
     m_pages.insert(aptProfitability, profit_page);
     connect(bond_page, SIGNAL(signalNeedCalcProfitability(const BondDesc&, float)), profit_page, SLOT(slotRecalcProfitability(const BondDesc&, float)));
     connect(profit_page, SIGNAL(signalGetCouponRec(const QString&, const BCoupon*&)), c_page, SLOT(slotGetCouponRec(const QString&, const BCoupon*&)));
-
-
-
-
 
     APIBagPage *bag_page = new  APIBagPage(this);
     m_pages.insert(aptBag, bag_page);
@@ -205,6 +205,8 @@ void MainForm::initActions()
     addAction(LMainWidget::atClear);
     addAction(LMainWidget::atSettings);
     addAction(LMainWidget::atExit);
+
+    this->getAction(atClear)->setToolTip("Clear protocol");
 }
 void MainForm::slotAction(int type)
 {
@@ -243,12 +245,13 @@ void MainForm::enableActions(bool b)
     getAction(LMainWidget::atStart)->setEnabled(b);
     getAction(LMainWidget::atSettings)->setEnabled(b);
     getAction(LMainWidget::atClear)->setEnabled(b);
+    getAction(LMainWidget::atLoadData)->setEnabled(b);
 }
 void MainForm::clear()
 {
     m_protocol->clearProtocol();
-    LSimpleWidget *page = activePage();
-    if (page) page->resetPage();
+    //LSimpleWidget *page = activePage();
+    //if (page) page->resetPage();
 }
 LSimpleWidget* MainForm::activePage() const
 {
@@ -331,6 +334,7 @@ void MainForm::slotReqFinished(int result)
     m_protocol->addText(" ---------------- Request finished -------------------", LProtocolBox::ttData);
     m_protocol->addSpace();
     if (!autoStartModeNow()) enableActions(true);
+    else qWarning("WARNING: can't enableActions, MODE=AUTO_START");
 }
 void MainForm::slotAppSettingsChanged(QStringList list)
 {
@@ -368,8 +372,9 @@ void MainForm::slotAutoStart()
     {
         ast->stop();
         enableActions(true);
-        getAction(LMainWidget::atLoadData)->setEnabled(true);
+        //getAction(LMainWidget::atLoadData)->setEnabled(true);
         slotMsg("Auto start finished!");
+        m_autoStartMakerFinished = true;
         return;
     }
 
@@ -386,11 +391,12 @@ void MainForm::runAutoStart()
         slotError("Auto start node is invalid or is absent");
         return;
     }
+    m_autoStartMakerFinished = false;
 
     QString s = QString("RUN AUTO_START MODE: timeout=%1, req count %2").arg(api_commonSettings.start_reqs.timeout).arg(api_commonSettings.start_reqs.src.count());
     m_protocol->addText(s, LProtocolBox::ttFile);
     enableActions(false);
-    getAction(LMainWidget::atLoadData)->setEnabled(false);
+    //getAction(LMainWidget::atLoadData)->setEnabled(false);
 
     autoLoadDataFiles();
 
@@ -400,7 +406,8 @@ void MainForm::runAutoStart()
 }
 bool MainForm::autoStartModeNow() const
 {
-    return !getAction(LMainWidget::atLoadData)->isEnabled();
+    //return !getAction(LMainWidget::atLoadData)->isEnabled();
+    return (m_autoStartMakerFinished == false);
 }
 void MainForm::autoLoadDataFiles()
 {

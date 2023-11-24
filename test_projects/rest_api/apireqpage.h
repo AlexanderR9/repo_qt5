@@ -52,10 +52,17 @@ protected:
     void printHeaders(QString s = "req"); //param - req or resp
     void prepareCycleData();
 
+private:
+    void standardRequest(const QString&, const QStringList &req_data = QStringList());
+    void toDebugReqMetadata(); //diag func
+
 protected slots:
     void slotCycleWorkerFinished();
     void slotCycleWorkerNextReq();
     void slotReqFinished(int);
+
+public slots:
+    void slotTrySendOrderReq(const QStringList&);
 
 signals:
     void signalFinished(int);
@@ -70,6 +77,7 @@ signals:
     void signalLoadPortfolio(const QJsonObject&);
     void signalLoadEvents(const QJsonObject&);
     void signalLoadOrders(const QJsonObject&);
+    void signalLoadStopOrders(const QJsonObject&);
     void signalGetCycleData(QStringList&);
     void signalGetBondCycleData(QStringList&);
     void signalGetStockCycleData(QStringList&);
