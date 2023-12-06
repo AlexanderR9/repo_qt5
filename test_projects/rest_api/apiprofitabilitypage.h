@@ -39,6 +39,10 @@ signals:
     void signalGetCouponRec(const QString&, const BCoupon*&);
     void signalBuyOrder(const QStringList&);
 
+private:
+    float getCurrentPrice(int) const;
+    float curAccumulatedCoupon(int) const;
+
 };
 
 

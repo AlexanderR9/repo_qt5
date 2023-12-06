@@ -53,6 +53,8 @@ protected slots:
     void slotGetPricesDepth(quint16 &dp) {dp = quint16(depth());}
     void slotGetCandleSize(QString &cp) {cp = candleSize();}
     void slotAutoStart();
+    void slotDisableActions(bool disabled) {enableActions(!disabled);}
+
 
 private:
     QString serverAPI() const;

@@ -6,6 +6,7 @@
 #include "lhttp_types.h"
 #include "reqpreparer.h"
 #include "cycleworker.h"
+#include "lsplash.h"
 
 #include <QListWidget>
 #include <QTreeWidget>
@@ -13,7 +14,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonValue>
-
+#include <QTest>
 
 
 //APIReqPage
@@ -24,11 +25,11 @@ APIReqPage::APIReqPage(QWidget *parent)
       m_reqObj(NULL),
       m_reqPreparer(NULL),
       m_printHeaders(true),
-      m_cycleWroker(NULL)
+      m_cycleWroker(NULL),
+      m_needUpdateOrders(0)
 {
     setObjectName("api_req_page");
     m_userSign = aptReq;
-
 
     initWidgets();
     initSources();
@@ -41,6 +42,41 @@ APIReqPage::~APIReqPage()
     if (m_reqPreparer) {delete m_reqPreparer; m_reqPreparer = NULL;}
     if (m_reqObj) {delete m_reqObj; m_reqObj = NULL;}
 }
+void APIReqPage::needUpdateOrders()
+{
+    if (m_needUpdateOrders == 1)
+    {
+        LSplash spl;
+        spl.startDelay("updating orders list");
+        QTest::qWait(api_commonSettings.i_history.timeout*2);
+
+        for (int i=0; i<m_sourceBox->listWidget()->count(); i++)
+        {
+            QListWidgetItem *l_item = m_sourceBox->listWidget()->item(i);
+            if (l_item->text().toLower().contains("getorders"))
+            {
+                m_sourceBox->listWidget()->setCurrentRow(i);
+                break;
+            }
+        }
+        trySendReq();
+        m_needUpdateOrders = 2;
+        spl.stopDelay();
+    }
+    else if (m_needUpdateOrders == 2)
+    {
+        for (int i=0; i<m_sourceBox->listWidget()->count(); i++)
+        {
+            QListWidgetItem *l_item = m_sourceBox->listWidget()->item(i);
+            if (l_item->text().toLower().contains("getstoporders"))
+            {
+                m_sourceBox->listWidget()->setCurrentRow(i);
+                break;
+            }
+        }
+        trySendReq();
+    }
+}
 void APIReqPage::slotReqFinished(int result)
 {
     if (m_cycleWroker->cycleModeOn())
@@ -52,6 +88,7 @@ void APIReqPage::slotReqFinished(int result)
         }
         emit signalMsg("next cycle request finished \n");
     }
+    //else if (m_needUpdateOrders != 0) needUpdateOrders();
     else emit signalFinished(result);
 }
 void APIReqPage::initReqObject()
@@ -142,10 +179,13 @@ void APIReqPage::slotTrySendOrderReq(const QStringList &req_data)
         return;
     }
 
+    m_needUpdateOrders++;
+    emit signalDisableActions(true);
     standardRequest(QString(), req_data);
 }
 void APIReqPage::trySendReq()
 {
+    m_needUpdateOrders = 0;
     m_reqPreparer->clearCycleData();
     int row = m_sourceBox->listWidget()->currentRow();
     if (row < 0)

@@ -39,6 +39,7 @@ protected:
     ApiReqPreparer      *m_reqPreparer;
     bool                 m_printHeaders;
     CycleWorker         *m_cycleWroker;
+    quint8               m_needUpdateOrders;
 
     void initWidgets();
     void initSources();
@@ -51,6 +52,7 @@ protected:
     void parseUserID();
     void printHeaders(QString s = "req"); //param - req or resp
     void prepareCycleData();
+    void needUpdateOrders();
 
 private:
     void standardRequest(const QString&, const QStringList &req_data = QStringList());
@@ -82,6 +84,7 @@ signals:
     void signalGetBondCycleData(QStringList&);
     void signalGetStockCycleData(QStringList&);
     void signalCyclePrice(const QString&, float);
+    void signalDisableActions(bool);
 
 };
 

@@ -2,9 +2,8 @@
 #include "ltable.h"
 #include "apicommonsettings.h"
 #include "instrument.h"
+#include "apitradedialog.h"
 
-//#include <QJsonObject>
-//#include <QJsonArray>
 #include <QTableWidget>
 #include <QDebug>
 #include <QPoint>
@@ -17,6 +16,9 @@
 #define NAME_COL            0
 #define TICKER_COL          1
 #define PRICE_COL           4
+#define COUPON_COL          3
+#define DATE_COL            2
+
 
 
 //APIProfitabilityPage
@@ -43,9 +45,7 @@ void APIProfitabilityPage::slotResizeTimer()
 {
     if (m_tick < 0) return;
     m_tick = -1;
-
     m_tableBox->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
-    //m_tableBox->setSelectionColor("#DEFFBF", "#6B8E23");
     m_tableBox->searchExec();
 }
 void APIProfitabilityPage::slotContextMenu(QPoint p)
@@ -67,11 +67,28 @@ void APIProfitabilityPage::slotBuyOrder()
 {
     QTableWidget *t = m_tableBox->table();
     int row = LTable::selectedRows(t).first();
+    qDebug()<<QString("APIProfitabilityPage::slotBuyOrder()  sel row %1").arg(row);
     QString uid = t->item(row, 1)->data(Qt::UserRole).toString();
-    //qDebug()<<QString("slotBuyOrder  order_id=[%1],  is_stop=[%2]").arg(id).arg(is_stop);
     QString p_name = QString("%1 / %2").arg(t->item(row, NAME_COL)->text()).arg(t->item(row, TICKER_COL)->text());
 
+    //prepare dialog
+    TradeOperationData t_data(totBuyLimit);
+    t_data.company = p_name;
+    t_data.paper_type = "bond";
+    t_data.finish_date = t->item(row, DATE_COL)->text();
+    t_data.price = getCurrentPrice(row);
+    t_data.coupon = curAccumulatedCoupon(row);
+    t_data.lots = 1;
+    APITradeDialog d(t_data, this);
+    d.exec();
+    if (!d.isApply())
+    {
+        qDebug()<<QString("APIProfitabilityPage::slotBuyOrder() operation was canceled");
+        emit signalMsg("operation was canceled!");
+        return;
+    }
 
+    //prepare request data
     QString src = QString();
     foreach(const QString &v, api_commonSettings.services)
     {
@@ -81,34 +98,49 @@ void APIProfitabilityPage::slotBuyOrder()
             break;
         }
     }
-
     if (src.isEmpty())
     {
         emit signalError(QString("Not found API metod for buy order, uid=[%1]").arg(uid));
         return;
     }
 
-    //example
-    float price = 981.6;
-    QString s_price = t->item(row, PRICE_COL)->text();
+    QStringList req_data;
+    req_data << src << uid << QString::number(t_data.lots) << QString::number(t_data.price, 'f', 2);
+    emit signalMsg(QString("Try set BUY order id: [%1], paper: [%2]").arg(uid).arg(p_name));
+    emit signalBuyOrder(req_data);
+
+}
+float APIProfitabilityPage::getCurrentPrice(int row) const
+{
+    if (row < 0 || row >= m_tableBox->table()->rowCount()) return -1;
+    QString s_price = m_tableBox->table()->item(row, PRICE_COL)->text();
+
     int pos = s_price.indexOf("/");
     if (pos > 0)
     {
         s_price = s_price.left(pos);
         bool ok;
         float p = s_price.toFloat(&ok);
-        if (ok & p > 100 && p < 1000)
-        {
-            price = p - 5;
-        }
+        if (ok & p > 0) return p;
     }
-    quint16 lots = 2;
+    qWarning("APIProfitabilityPage::getCurrentPrice WARNING invalid current price");
+    return -1;
+}
+float APIProfitabilityPage::curAccumulatedCoupon(int row) const
+{
+    if (row < 0 || row >= m_tableBox->table()->rowCount()) return -1;
+    QString s_price = m_tableBox->table()->item(row, COUPON_COL)->text();
 
-
-    QStringList req_data;
-    req_data << src << uid << QString::number(lots) << QString::number(price, 'f', 2);
-    emit signalMsg(QString("Try set BUY order id: [%1], paper: [%2]").arg(uid).arg(p_name));
-    emit signalBuyOrder(req_data);
+    int pos = s_price.indexOf("/");
+    if (pos > 0)
+    {
+        s_price = s_price.left(pos);
+        bool ok;
+        float p = s_price.toFloat(&ok);
+        if (ok & p > 0) return p;
+    }
+    qWarning("APIProfitabilityPage::curAccumulatedCoupon WARNING invalid current AccumulatedCoupon");
+    return -1;
 }
 void APIProfitabilityPage::slotRecalcProfitability(const BondDesc &bond_rec, float price)
 {

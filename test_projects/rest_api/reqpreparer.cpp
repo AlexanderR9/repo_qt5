@@ -130,9 +130,9 @@ void ApiReqPreparer::prepareReqOrders(const QStringList &req_data)
         m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
         return;
     }
+    m_reqObj->addMetaData("accountId", QString::number(api_commonSettings.user_id));
 
     QString src(req_data.first());
-    m_reqObj->addMetaData("accountId", QString::number(api_commonSettings.user_id));
     if (src.contains("PostOrder"))
     {
         qDebug("PostOrder");

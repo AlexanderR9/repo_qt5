@@ -51,6 +51,7 @@ void MainForm::initPages()
     connect(req_page, SIGNAL(signalGetReqParams(QString&, QString&)), this, SLOT(slotGetReqParams(QString&, QString&)));
     connect(req_page, SIGNAL(signalGetPricesDepth(quint16&)), this, SLOT(slotGetPricesDepth(quint16&)));
     connect(req_page, SIGNAL(signalGetCandleSize(QString&)), this, SLOT(slotGetCandleSize(QString&)));
+    connect(req_page, SIGNAL(signalDisableActions(bool)), this, SLOT(slotDisableActions(bool)));
 
     APIBondsPage *bond_page = new  APIBondsPage(this);
     m_pages.insert(aptBond, bond_page);

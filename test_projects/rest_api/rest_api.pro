@@ -8,7 +8,7 @@ UI_DIR=ui
 
 QT -= gui
 QT *= network widgets xml
-QT += webenginewidgets
+QT += webenginewidgets testlib
 
 INCLUDEPATH += . \
             $$PWD \
@@ -36,7 +36,8 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/apicouponpage.h \
         $$PWD/apieventspage.h \
         $$PWD/apiorderspage.h \
-        $$PWD/apiprofitabilitypage.h
+        $$PWD/apiprofitabilitypage.h \
+        $$PWD/apitradedialog.h
 
 SOURCES += $$PWD/main.cpp \
 	$$PWD/apipages.cpp \
@@ -50,5 +51,6 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/apicouponpage.cpp \
         $$PWD/apieventspage.cpp \
         $$PWD/apiorderspage.cpp \
-        $$PWD/apiprofitabilitypage.cpp
+        $$PWD/apiprofitabilitypage.cpp \
+        $$PWD/apitradedialog.cpp
 
