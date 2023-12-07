@@ -53,9 +53,19 @@ float InstrumentBase::floatFromJVBlock(const QJsonValue &jv_block)
     if (jv_block.isObject())
     {
         const QJsonObject &f_obj = jv_block.toObject();
-        float f_units = f_obj.value("units").toString().toDouble();
-        double f_nano = f_obj.value("nano").toDouble();
-        while (qAbs(f_nano) > 1) f_nano /= double(10);
+        const QJsonValue &jv_units = f_obj.value("units");
+        float f_units = 0;
+        if (jv_units.isString()) f_units = jv_units.toString().toFloat();
+        else if (jv_units.isDouble()) f_units = jv_units.toDouble();
+        else f_units = -1;
+
+        float f_nano = 0;
+        const QJsonValue &jv_nano = f_obj.value("nano");
+        if (jv_nano.isString()) f_nano = jv_nano.toString().toFloat();
+        else if (jv_nano.isDouble()) f_nano = jv_nano.toDouble();
+        else f_nano = -9999;
+
+        while (qAbs(f_nano) > 0.99) f_nano /= double(10);
         f = f_units + f_nano;
     }
     return f;
@@ -447,6 +457,8 @@ void EventOperation::kindByAPIType(QString api_event_type)
     else if (api_event_type == "OPERATION_TYPE_SELL") kind = etSell;
     else if (api_event_type == "OPERATION_TYPE_TAX") kind = etTax;
     else if (api_event_type == "OPERATION_TYPE_BOND_TAX") kind = etTax;
+    else if (api_event_type == "OPERATION_TYPE_DIVIDEND_TAX") kind = etTax;
+    else if (api_event_type == "OPERATION_TYPE_DIVIDEND") kind = etDiv;
     else if (api_event_type == "OPERATION_TYPE_OUTPUT") kind = etOut;
     else if (api_event_type == "OPERATION_TYPE_INP_MULTI") kind = etInput;
     else if (api_event_type == "OPERATION_TYPE_INPUT") kind = etInput;

@@ -834,7 +834,11 @@ void APITablePageBase::slotCyclePrice(const QString &figi, float p)
         if (ok && figi == figiByRecNumber(rec_number))
         {
             if (objectName().contains("bond"))
-                p *= (m_tableBox->table()->item(i, NOMINAL_COL)->text().toFloat()/float(100));
+            {
+                float b_nominal = m_tableBox->table()->item(i, NOMINAL_COL)->text().toFloat();
+                float f_price = p/float(100);
+                p = b_nominal*f_price;
+            }
 
             m_tableBox->table()->item(i, priceCol())->setText(QString::number(p, 'f', precision));
             calcProfitability(figi, p);

@@ -45,7 +45,6 @@ protected:
     void updateWidgetsSizePolicy();
 
 protected slots:
-    //void slotApply();
     void slotRecalcResult();
 
 

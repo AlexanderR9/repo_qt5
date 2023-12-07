@@ -5,6 +5,7 @@
 
 #include <QDir>
 #include <QDebug>
+#include <QSettings>
 
 #define APP_DATA_FOLDER     QString("data")
 #define APP_CONFIG_FILE     QString("config.xml")
@@ -226,6 +227,16 @@ void API_CommonSettings::GlobalFilter::GFItem::parseConfigNode(const QDomNode &n
     country = "all";
     if (node.isNull()) return;
     country = LStaticXML::getStringAttrValue("country", node).trimmed();
+}
+void API_CommonSettings::TradeDialog::save(QSettings &settings)
+{
+    settings.setValue(QString("API_CommonSettings/TradeDialog/deviation_index"), deviation_index);
+    settings.setValue(QString("API_CommonSettings/TradeDialog/lots_index"), lots_index);
+}
+void API_CommonSettings::TradeDialog::load(QSettings &settings)
+{
+    deviation_index = settings.value(QString("API_CommonSettings/TradeDialog/deviation_index"), -1).toInt();
+    lots_index = settings.value(QString("API_CommonSettings/TradeDialog/lots_index"), -1).toInt();
 }
 
 

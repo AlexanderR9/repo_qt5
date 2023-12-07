@@ -42,6 +42,10 @@ protected:
     LSimpleWidget* activePage() const;
     void enableActions(bool);
     bool autoStartModeNow() const;
+    void updateOrdersList();
+    void updateEventsList();
+    void updateBagInfo();
+
 
 protected slots:
     void slotAction(int); //virtual slot from parent

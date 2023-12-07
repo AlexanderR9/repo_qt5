@@ -6,6 +6,8 @@
 
 
 class QDomNode;
+class QSettings;
+
 
 //API_CommonSettings
 struct API_CommonSettings
@@ -54,6 +56,15 @@ struct API_CommonSettings
         GFItem bond;
         GFItem stock;
     };
+    struct TradeDialog
+    {
+        TradeDialog() :deviation_index(-1), lots_index(-1) {}
+        int deviation_index;
+        int lots_index;
+        void save(QSettings&);
+        void load(QSettings&);
+    };
+
 
     QString token;
     qint64 user_id;
@@ -64,6 +75,7 @@ struct API_CommonSettings
     AutoStartReq start_reqs;
     InstrumentHistory i_history;
     GlobalFilter g_filter;
+    TradeDialog t_dialog;
 
     static QString appDataPath();
     static QString beginPoint(const InstrumentHistory::HItem&, quint8 hour = 7);

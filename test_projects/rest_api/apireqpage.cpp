@@ -26,7 +26,7 @@ APIReqPage::APIReqPage(QWidget *parent)
       m_reqPreparer(NULL),
       m_printHeaders(true),
       m_cycleWroker(NULL),
-      m_needUpdateOrders(0)
+      m_needUpdateInfo(ruiNone)
 {
     setObjectName("api_req_page");
     m_userSign = aptReq;
@@ -42,40 +42,108 @@ APIReqPage::~APIReqPage()
     if (m_reqPreparer) {delete m_reqPreparer; m_reqPreparer = NULL;}
     if (m_reqObj) {delete m_reqObj; m_reqObj = NULL;}
 }
-void APIReqPage::needUpdateOrders()
+void APIReqPage::updateOrders()
 {
-    if (m_needUpdateOrders == 1)
+    m_needUpdateInfo = ruiOrders;
+    needUpdateInfo();
+}
+void APIReqPage::updateBag()
+{
+    m_needUpdateInfo = ruiBagPositions;
+    needUpdateInfo();
+}
+void APIReqPage::updateEvents()
+{
+    if (!selectSrcRow("getoperation"))
     {
-        LSplash spl;
-        spl.startDelay("updating orders list");
-        QTest::qWait(api_commonSettings.i_history.timeout*2);
+        emit signalError("[getoperation]:SRC not found by list.");
+        emit signalFinished(hreWrongReqParams);
+        return;
+    }
+    trySendReq();
+}
+void APIReqPage::needUpdateInfo()
+{
+    emit signalDisableActions(true);
+    switch (m_needUpdateInfo)
+    {
+        case ruiOrders:
+        {
+            if (!selectSrcRow("getorders"))
+            {
+                m_needUpdateInfo = ruiNone;
+                emit signalError("[getorders]:SRC not found by list.");
+                emit signalFinished(hreWrongReqParams);
+                return;
+            }
+            m_needUpdateInfo = ruiStopOrders;
+            trySendReq();
+            break;
+        }
+        case ruiStopOrders:
+        {
+            if (!selectSrcRow("getstoporders"))
+            {
+                m_needUpdateInfo = ruiNone;
+                emit signalError("[getstoporders]:SRC not found by list.");
+                emit signalFinished(hreWrongReqParams);
+                return;
+            }
+            m_needUpdateInfo = ruiNone;
+            trySendReq();
+            break;
+        }
+        case ruiBagPositions:
+        {
+            if (!selectSrcRow("getpos"))
+            {
+                m_needUpdateInfo = ruiNone;
+                emit signalError("[getpos]:SRC not found by list.");
+                emit signalFinished(hreWrongReqParams);
+                return;
+            }
+            m_needUpdateInfo = ruiBagAmount;
+            trySendReq();
+            break;
+        }
+        case ruiBagAmount:
+        {
+            if (!selectSrcRow("getportf"))
+            {
+                m_needUpdateInfo = ruiNone;
+                emit signalError("[getportf]:SRC not found by list.");
+                emit signalFinished(hreWrongReqParams);
+                return;
+            }
+            m_needUpdateInfo = ruiNone;
+            trySendReq();
+            break;
+        }
+        default:
+        {
+            emit signalError(QString("invalid update info code: %1").arg(m_needUpdateInfo));
+            emit signalFinished(hreWrongReqParams);
+            m_needUpdateInfo = ruiNone;
+            break;
+        }
+    }
+}
+bool APIReqPage::selectSrcRow(QString s) const
+{
+    m_sourceBox->listWidget()->clearSelection();
+    m_sourceBox->listWidget()->clearFocus();
+    if (s.trimmed().isEmpty()) return false;
 
-        for (int i=0; i<m_sourceBox->listWidget()->count(); i++)
-        {
-            QListWidgetItem *l_item = m_sourceBox->listWidget()->item(i);
-            if (l_item->text().toLower().contains("getorders"))
-            {
-                m_sourceBox->listWidget()->setCurrentRow(i);
-                break;
-            }
-        }
-        trySendReq();
-        m_needUpdateOrders = 2;
-        spl.stopDelay();
-    }
-    else if (m_needUpdateOrders == 2)
+    for (int i=0; i<m_sourceBox->listWidget()->count(); i++)
     {
-        for (int i=0; i<m_sourceBox->listWidget()->count(); i++)
+        QListWidgetItem *l_item = m_sourceBox->listWidget()->item(i);
+        if (l_item->text().toLower().contains(s))
         {
-            QListWidgetItem *l_item = m_sourceBox->listWidget()->item(i);
-            if (l_item->text().toLower().contains("getstoporders"))
-            {
-                m_sourceBox->listWidget()->setCurrentRow(i);
-                break;
-            }
+            m_sourceBox->listWidget()->setCurrentRow(i);
+            return true;
         }
-        trySendReq();
     }
+    return false;
 }
 void APIReqPage::slotReqFinished(int result)
 {
@@ -88,7 +156,7 @@ void APIReqPage::slotReqFinished(int result)
         }
         emit signalMsg("next cycle request finished \n");
     }
-    //else if (m_needUpdateOrders != 0) needUpdateOrders();
+    //else if (isNeedUpdateInfo()) needUpdateInfo();
     else emit signalFinished(result);
 }
 void APIReqPage::initReqObject()
@@ -179,13 +247,12 @@ void APIReqPage::slotTrySendOrderReq(const QStringList &req_data)
         return;
     }
 
-    m_needUpdateOrders++;
     emit signalDisableActions(true);
     standardRequest(QString(), req_data);
 }
 void APIReqPage::trySendReq()
 {
-    m_needUpdateOrders = 0;
+    //m_needUpdateOrders = 0;
     m_reqPreparer->clearCycleData();
     int row = m_sourceBox->listWidget()->currentRow();
     if (row < 0)
@@ -355,6 +422,8 @@ void APIReqPage::checkReply()
         if (m_cycleWroker->cycleModeOn()) m_cycleWroker->handleReplyData(r.data);
         else  handleReplyData();
     }
+
+    if (isNeedUpdateInfo()) needUpdateInfo();
 }
 bool APIReqPage::replyOk() const
 {

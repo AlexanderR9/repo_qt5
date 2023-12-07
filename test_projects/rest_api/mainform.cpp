@@ -206,10 +206,16 @@ void MainForm::initActions()
     addAction(LMainWidget::atStart);
     addAction(LMainWidget::atLoadData);
     addAction(LMainWidget::atClear);
+    addAction(LMainWidget::atRefresh);
+    addAction(LMainWidget::atMonitoring);
+    addAction(LMainWidget::atBag);
     addAction(LMainWidget::atSettings);
     addAction(LMainWidget::atExit);
 
     this->getAction(atClear)->setToolTip("Clear protocol");
+    this->getAction(atRefresh)->setToolTip("Update orders list");
+    this->getAction(atBag)->setToolTip("Update bag info");
+    this->getAction(atMonitoring)->setToolTip("Update events");
 }
 void MainForm::slotAction(int type)
 {
@@ -219,6 +225,9 @@ void MainForm::slotAction(int type)
         case LMainWidget::atStart: {sendAPIRequest(); break;}
         case LMainWidget::atLoadData: {loadData(); break;}
         case LMainWidget::atClear: {clear(); break;}
+        case LMainWidget::atRefresh: {updateOrdersList(); break;}
+        case LMainWidget::atBag: {updateBagInfo(); break;}
+        case LMainWidget::atMonitoring: {updateEventsList(); break;}
         default: break;
     }
 }
@@ -231,6 +240,39 @@ void MainForm::initWidgets()
     v_splitter->addWidget(m_tab);
     v_splitter->addWidget(m_protocol);
     addWidget(v_splitter, 0, 0);
+}
+void MainForm::updateOrdersList()
+{
+    m_protocol->addText(QString("Try send request..."), LProtocolBox::ttData);
+    APIReqPage *req_page = qobject_cast<APIReqPage*>(m_pages.value(aptReq));
+    if (req_page)
+    {
+        enableActions(false);
+        req_page->updateOrders();
+    }
+    else slotError("req_page is NULL");
+}
+void MainForm::updateEventsList()
+{
+    m_protocol->addText(QString("Try send request..."), LProtocolBox::ttData);
+    APIReqPage *req_page = qobject_cast<APIReqPage*>(m_pages.value(aptReq));
+    if (req_page)
+    {
+        enableActions(false);
+        req_page->updateEvents();
+    }
+    else slotError("req_page is NULL");
+}
+void MainForm::updateBagInfo()
+{
+    m_protocol->addText(QString("Try send request..."), LProtocolBox::ttData);
+    APIReqPage *req_page = qobject_cast<APIReqPage*>(m_pages.value(aptReq));
+    if (req_page)
+    {
+        enableActions(false);
+        req_page->updateBag();
+    }
+    else slotError("req_page is NULL");
 }
 void MainForm::sendAPIRequest()
 {
@@ -249,12 +291,13 @@ void MainForm::enableActions(bool b)
     getAction(LMainWidget::atSettings)->setEnabled(b);
     getAction(LMainWidget::atClear)->setEnabled(b);
     getAction(LMainWidget::atLoadData)->setEnabled(b);
+    getAction(LMainWidget::atRefresh)->setEnabled(b);
+    getAction(LMainWidget::atBag)->setEnabled(b);
+    getAction(LMainWidget::atMonitoring)->setEnabled(b);
 }
 void MainForm::clear()
 {
     m_protocol->clearProtocol();
-    //LSimpleWidget *page = activePage();
-    //if (page) page->resetPage();
 }
 LSimpleWidget* MainForm::activePage() const
 {
@@ -272,6 +315,7 @@ void MainForm::save()
         page->save(settings);
 
     settings.setValue(QString("%1/tab_index").arg(objectName()), m_tab->currentIndex());
+    api_commonSettings.t_dialog.save(settings);
 }
 void MainForm::load()
 {
@@ -313,7 +357,7 @@ void MainForm::load()
 
     int tab_index = settings.value(QString("%1/tab_index").arg(objectName()), 0).toInt();
     if (m_tab) m_tab->setCurrentIndex(tab_index);
-
+    api_commonSettings.t_dialog.load(settings);
     runAutoStart();
 }
 void MainForm::slotError(const QString &text)
@@ -375,7 +419,6 @@ void MainForm::slotAutoStart()
     {
         ast->stop();
         enableActions(true);
-        //getAction(LMainWidget::atLoadData)->setEnabled(true);
         slotMsg("Auto start finished!");
         m_autoStartMakerFinished = true;
         return;
@@ -399,8 +442,6 @@ void MainForm::runAutoStart()
     QString s = QString("RUN AUTO_START MODE: timeout=%1, req count %2").arg(api_commonSettings.start_reqs.timeout).arg(api_commonSettings.start_reqs.src.count());
     m_protocol->addText(s, LProtocolBox::ttFile);
     enableActions(false);
-    //getAction(LMainWidget::atLoadData)->setEnabled(false);
-
     autoLoadDataFiles();
 
     QTimer *ast = new QTimer(this);
@@ -409,7 +450,6 @@ void MainForm::runAutoStart()
 }
 bool MainForm::autoStartModeNow() const
 {
-    //return !getAction(LMainWidget::atLoadData)->isEnabled();
     return (m_autoStartMakerFinished == false);
 }
 void MainForm::autoLoadDataFiles()

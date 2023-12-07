@@ -14,6 +14,8 @@ class APIReqPage : public LSimpleWidget
 {
     Q_OBJECT
 public:
+    enum ReqUpdateInfo {ruiOrders = 110, ruiStopOrders, ruiBagPositions, ruiBagAmount, ruiNone = 0};
+
     APIReqPage(QWidget*);
     virtual ~APIReqPage();
 
@@ -28,6 +30,9 @@ public:
     bool replyOk() const;
     void setExpandLevel(int);
     bool requesterBuzy() const;
+    void updateOrders();
+    void updateBag();
+    void updateEvents();
 
     inline void setPrintHeaders(bool b) {m_printHeaders = b;}
 
@@ -39,7 +44,7 @@ protected:
     ApiReqPreparer      *m_reqPreparer;
     bool                 m_printHeaders;
     CycleWorker         *m_cycleWroker;
-    quint8               m_needUpdateOrders;
+    int                  m_needUpdateInfo;
 
     void initWidgets();
     void initSources();
@@ -52,11 +57,14 @@ protected:
     void parseUserID();
     void printHeaders(QString s = "req"); //param - req or resp
     void prepareCycleData();
-    void needUpdateOrders();
+    void needUpdateInfo();
+
+    inline bool isNeedUpdateInfo() const {return (m_needUpdateInfo != ruiNone);}
 
 private:
     void standardRequest(const QString&, const QStringList &req_data = QStringList());
     void toDebugReqMetadata(); //diag func
+    bool selectSrcRow(QString) const;
 
 protected slots:
     void slotCycleWorkerFinished();
