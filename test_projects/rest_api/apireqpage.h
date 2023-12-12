@@ -6,7 +6,7 @@
 class LHttpApiRequester;
 class ApiReqPreparer;
 class CycleWorker;
-
+struct PlaceOrderData;
 
 
 //APIReqPage
@@ -62,7 +62,7 @@ protected:
     inline bool isNeedUpdateInfo() const {return (m_needUpdateInfo != ruiNone);}
 
 private:
-    void standardRequest(const QString&, const QStringList &req_data = QStringList());
+    void standardRequest(const QString&, const PlaceOrderData *pod = NULL);
     void toDebugReqMetadata(); //diag func
     bool selectSrcRow(QString) const;
 
@@ -72,7 +72,7 @@ protected slots:
     void slotReqFinished(int);
 
 public slots:
-    void slotTrySendOrderReq(const QStringList&);
+    void slotTrySendOrderReq(const PlaceOrderData&); //попытка выполнить операцию c ордером: buy/sell/cancel
 
 signals:
     void signalFinished(int);

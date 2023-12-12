@@ -25,6 +25,7 @@ struct BagPosition
     QString strPrice() const {return QString("%1 / %2").arg(QString::number(average_price, 'f', 1)).arg(QString::number(current_price, 'f', 1));}
     float curProfit() const {return (float(count)*(current_price - average_price));}
     QString strProfit() const {return QString::number(curProfit(), 'f', 1);}
+    float margin() const {return (count*average_price);}
 
 
 };

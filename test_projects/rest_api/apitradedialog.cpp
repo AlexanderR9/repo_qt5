@@ -56,7 +56,7 @@ void APITradeDialog::init()
     this->setWidgetValue(key, m_data.paper_type);
 
     key = "price";
-    this->addSimpleWidget("Current price", LSimpleDialog::sdtDoubleLine, key, 1);
+    this->addSimpleWidget("Current price", LSimpleDialog::sdtDoubleLine, key, precision());
     this->setWidgetValue(key, m_data.price);
 
     if (m_data.isBond())
@@ -71,7 +71,7 @@ void APITradeDialog::init()
     }
 
     key = "lots";
-    this->addSimpleWidget("Lot size", LSimpleDialog::sdtIntCombo, key);
+    this->addSimpleWidget(QString("Lot size (x %1ps)").arg(m_data.in_lot), LSimpleDialog::sdtIntCombo, key);
     const SimpleWidget *sw = this->widgetByKey(key);
     if (sw)
     {
@@ -82,20 +82,24 @@ void APITradeDialog::init()
     }
 
     key = "pstep";
-    this->addSimpleWidget("Price diviation", LSimpleDialog::sdtDoubleCombo, key);
+    QString dev_caption("Price diviation");
+    if (!m_data.isBond()) dev_caption = QString("%1, %").arg(dev_caption);
+    this->addSimpleWidget(dev_caption, LSimpleDialog::sdtDoubleCombo, key);
     sw = this->widgetByKey(key);
     if (sw)
     {
-        for (int i=1; i<=20; i++) sw->comboBox->addItem(QString::number(float(-1*0.2*i), 'f', 1));
-        for (int i=1; i<=15; i++) sw->comboBox->addItem(QString::number(float(-1*(4+2*i)), 'f', 1));
+        qint8 sign = 1;
+        if (m_data.isBuyType()) sign = -1;
+        for (int i=1; i<=20; i++) sw->comboBox->addItem(QString::number(float(sign*0.2*i), 'f', 1));
+        for (int i=1; i<=15; i++) sw->comboBox->addItem(QString::number(float(sign*(4+2*i)), 'f', 1));
         if (api_commonSettings.t_dialog.deviation_index < 0) sw->comboBox->setCurrentIndex(10);
         else sw->comboBox->setCurrentIndex(api_commonSettings.t_dialog.deviation_index);
     }
 
     key = "result";
-    this->addSimpleWidget("Operation price (1ps)", LSimpleDialog::sdtDoubleLine, key, 1);
+    this->addSimpleWidget("Operation price (1ps)", LSimpleDialog::sdtDoubleLine, key, precision());
     key = "total";
-    this->addSimpleWidget("Total sum (need)", LSimpleDialog::sdtDoubleLine, key, 1);
+    this->addSimpleWidget("Total sum (need)", LSimpleDialog::sdtDoubleLine, key, precision());
 }
 void APITradeDialog::updateTitle()
 {
@@ -104,26 +108,33 @@ void APITradeDialog::updateTitle()
     {
         case totBuyLimit: {s.append("BUY_LIMIT"); break;}
         case totSellLimit: {s.append("SELL_LIMIT"); break;}
+        case totSellStop: {s.append("SELL_STOP"); break;}
         default: {s.append("?"); break;}
     }
     setWindowTitle(s);
     setBoxTitle("Parameters");
+    if (m_data.invalid()) return;
 
     //update price lineedit color
-    if (!m_data.invalid() && m_data.isBond())
+    if (m_data.isBond())
     {
-        QPalette palette;
+        QPalette p_palette;
         if (m_data.price < 950)
         {
-            palette.setColor(QPalette::Base, "#FFB6C1");
-            widgetByKey("price")->edit->setPalette(palette);
+            p_palette.setColor(QPalette::Base, "#FFB6C1");
+            widgetByKey("price")->edit->setPalette(p_palette);
         }
         else if (m_data.price > 1050)
         {
-            palette.setColor(QPalette::Base, "#A52A2A");
-            widgetByKey("price")->edit->setPalette(palette);
+            p_palette.setColor(QPalette::Base, "#A52A2A");
+            widgetByKey("price")->edit->setPalette(p_palette);
         }
     }
+
+    //update paper type text
+    QPalette t_palette;
+    t_palette.setColor(QPalette::Text, m_data.isBond() ? Qt::darkGreen : Qt::blue);
+    widgetByKey("ptype")->edit->setPalette(t_palette);
 }
 void APITradeDialog::slotRecalcResult()
 {
@@ -145,13 +156,34 @@ void APITradeDialog::slotRecalcResult()
 
     if (ok2)
     {
-        m_data.price = cur_price + dev;
-        float total = m_data.lots*(m_data.price + coup);
+        if (m_data.isBond())
+        {
+            m_data.price = cur_price + dev;
+        }
+        else
+        {
+            float f_dev = 1 + dev/100;
+            m_data.price = cur_price*f_dev;
+        }
+        trimPrice();
+
+        float total = m_data.lots*m_data.in_lot*(m_data.price + coup);
         setWidgetValue("result", m_data.price);
         setWidgetValue("total", total);
-
         api_commonSettings.t_dialog.deviation_index = widgetByKey("pstep")->comboBox->currentIndex();
         api_commonSettings.t_dialog.lots_index = widgetByKey("lots")->comboBox->currentIndex();
     }
+}
+quint8 APITradeDialog::precision() const
+{
+    if (m_data.price > 5000) return 0;
+    if (m_data.price > 10) return 1;
+    if (m_data.price < 1) return 3;
+    return 2;
+}
+void APITradeDialog::trimPrice()
+{
+    if (m_data.price > 10000) m_data.price = 10*qRound(m_data.price/10);
+    if (m_data.price > 1500) m_data.price = qRound(m_data.price);
 }
 

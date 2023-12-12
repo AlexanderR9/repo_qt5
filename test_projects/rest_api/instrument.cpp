@@ -217,6 +217,7 @@ void StockDesc::reset()
     InstrumentBase::reset();
     ticker.clear();
     sector.clear();
+    in_lot = 1;
 }
 void StockDesc::fromJson(const QJsonValue &jv)
 {
@@ -232,6 +233,7 @@ void StockDesc::fromJson(const QJsonValue &jv)
         ticker = j_obj.value("ticker").toString();
         sector = j_obj.value("sector").toString();
         api_trade =  j_obj.value("apiTradeAvailableFlag").toBool();
+        in_lot = j_obj.value("lot").toDouble();
 
         if (country.trimmed().isEmpty()) country = "?";
         if (sector.trimmed().isEmpty()) sector = "---";
@@ -249,13 +251,14 @@ void StockDesc::parseFields(const QStringList &list)
     figi = list.at(5);
     uid = list.at(6);
     api_trade = (list.at(7) == "true");
+    if (list.count() > 8) in_lot = list.at(8).toUInt();
 }
 QString StockDesc::toStr() const
 {
     QString s(name);
     s = QString("%1 / %2 / %3 / %4").arg(s).arg(country).arg(currency).arg(ticker);
     s = QString("%1 / %2 / %3 / %4").arg(s).arg(sector).arg(figi).arg(uid);
-    s = QString("%1 / %2").arg(s).arg(api_trade? "true" : "false");
+    s = QString("%1 / %2 / %3").arg(s).arg(api_trade? "true" : "false").arg(in_lot);
     return s;
 }
 QStringList StockDesc::toTableRowData() const
@@ -264,7 +267,7 @@ QStringList StockDesc::toTableRowData() const
     if (invalid()) return row_data;
 
     row_data << name << ticker << country << currency << sector;
-    row_data << QString::number(-1);
+    row_data << QString::number(in_lot) << QString::number(-1);
     return row_data;
 }
 
@@ -539,3 +542,22 @@ QString StopOrderData::strLots() const
 {
     return QString("%1").arg(lots.first);
 }
+
+
+//PlaceOrderData
+void PlaceOrderData::reset()
+{
+    uid.clear();
+    kind = "sell"; //buy/sell
+    is_stop = false;
+    price = -1;
+    lots = 1;
+}
+bool PlaceOrderData::invalid() const
+{
+    if (kind != "buy" && kind != "sell" && kind != "cancel") return true;
+    if (uid.isEmpty()) return true;
+    if (!isCancel()) return (price<=0 || lots<1);
+    return false;
+}
+

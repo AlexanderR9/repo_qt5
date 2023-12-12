@@ -8,7 +8,7 @@
 
 struct BondDesc;
 struct BCoupon;
-
+struct PlaceOrderData;
 
 
 //APIProfitabilityPage
@@ -24,6 +24,7 @@ public:
 
 protected:
     int m_tick;
+    PlaceOrderData m_buyData;
 
     void syncTableData(const BondDesc&, const QStringList&, float);
 
@@ -37,7 +38,7 @@ protected slots:
 
 signals:
     void signalGetCouponRec(const QString&, const BCoupon*&);
-    void signalBuyOrder(const QStringList&);
+    void signalBuyOrder(const PlaceOrderData&);
 
 private:
     float getCurrentPrice(int) const;

@@ -32,7 +32,7 @@ void ApiReqPreparer::prepareHeaders(const QString &src)
     m_reqObj->setUri(QString("%1.%2").arg(baseURI).arg(src));
 
 }
-void ApiReqPreparer::prepare(QString src)
+void ApiReqPreparer::prepare(QString src, const PlaceOrderData *req_data)
 {
     prepareHeaders(src);
     qDebug("ApiReqPreparer::prepare");
@@ -44,23 +44,116 @@ void ApiReqPreparer::prepare(QString src)
     else if (src.contains("GetDividends")) prepareReqDivs();
     else if (src.contains("GetLastPrices")) prepareReqLastPrices();
     else if (src.contains("MarketDataService")) prepareReqMarket(src);
-    else if (src.contains("OrdersService")) prepareReqOrders(QStringList()<<src);
+    else if (src.contains("OrdersService")) prepareReqOrders(req_data);
 
+    qDebug("ApiReqPreparer::prepare 1");
+    QString furl = m_reqObj->fullUrl();
     emit signalMsg(QString("URL:   %1 \n").arg(m_reqObj->fullUrl()));
+    qDebug("ApiReqPreparer::prepare 2");
 }
-void ApiReqPreparer::prepareOrderReq(const QStringList &req_data)
+void ApiReqPreparer::prepareReqOrders(const PlaceOrderData *req_data)
 {
-    if (req_data.isEmpty())
+    m_reqObj->addMetaData("accountId", QString::number(api_commonSettings.user_id));
+    if (!req_data) return;
+
+    if (req_data->invalid())
+    {
+        emit signalError("ApiReqPreparer: req data is invalid for ORDER_REQUEST");
+        m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
+        return;
+    }
+    if (req_data->isCancel())
+    {
+        QString key_id = (req_data->is_stop ? "stopOrderId" : "orderId");
+        m_reqObj->addMetaData(key_id, req_data->uid);
+    }
+    else if (!req_data->is_stop)
+    {
+        m_reqObj->addMetaData("quantity", QString::number(req_data->lots));
+        m_reqObj->addMetaData("direction", QString("ORDER_DIRECTION_%1").arg(req_data->kind.toUpper()));
+        m_reqObj->addMetaData("orderType", "ORDER_TYPE_LIMIT");
+        m_reqObj->addMetaData("instrumentId", req_data->uid);
+
+        QJsonObject price_obj;
+        InstrumentBase::floatToJVBlock(req_data->price, price_obj);
+        m_reqObj->addMetaData_obj("price", price_obj);
+    }
+    else
+    {
+        m_reqObj->addMetaData("quantity", QString::number(req_data->lots));
+        m_reqObj->addMetaData("direction", QString("STOP_ORDER_DIRECTION_%1").arg(req_data->kind.toUpper()));
+        m_reqObj->addMetaData("instrumentId", req_data->uid);
+        m_reqObj->addMetaData("stopOrderType", "STOP_ORDER_TYPE_LIMIT");
+        m_reqObj->addMetaData("expirationType", "STOP_ORDER_EXPIRATION_TYPE_GOOD_TILL_CANCEL");
+
+        QJsonObject price_obj;
+        InstrumentBase::floatToJVBlock(req_data->price, price_obj);
+        m_reqObj->addMetaData_obj("price", price_obj);
+        m_reqObj->addMetaData_obj("stopPrice", price_obj);
+    }
+
+    /*
+    QString src(req_data.first());
+    if (src.contains("PostOrder"))
+    {
+       // qDebug("PostOrder");
+        if (req_data.count() < 5)
+        {
+            emit signalError("req data too small for create POST_ORDER_REQUEST");
+            m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
+            return;
+        }
+
+        m_reqObj->addMetaData("quantity", req_data.at(req_data.count()-2));
+        m_reqObj->addMetaData("direction", QString("ORDER_DIRECTION_%1").arg(req_data.last().toUpper()));
+        m_reqObj->addMetaData("orderType", "ORDER_TYPE_LIMIT");
+        m_reqObj->addMetaData("instrumentId", req_data.at(1));
+
+
+        bool ok;
+        quint8 price_index = 3;
+        float price = req_data.at(price_index).toFloat(&ok);
+        if (ok && price > 0)
+        {
+            QJsonObject price_obj;
+            InstrumentBase::floatToJVBlock(price, price_obj);
+            m_reqObj->addMetaData_obj("price", price_obj);
+        }
+        else
+        {
+            emit signalError(QString("Invalid %1 price in req_data [%2]").arg(req_data.last()).arg(req_data.at(price_index)));
+            m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
+        }
+    }
+    else if (src.contains("Cancel"))
+    {
+        QString key_id = (src.toLower().contains("stop") ? "stopOrderId" : "orderId");
+        //qDebug("Cancel");
+        if (req_data.count() < 2)
+        {
+            emit signalError("req data has no order_id for ORDER_REQUEST");
+            m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
+        }
+        else m_reqObj->addMetaData(key_id, req_data.at(1));
+    }
+    */
+}
+
+
+/*
+void ApiReqPreparer::prepareOrderReq(const PlaceOrderData *req_data)
+{
+    if (req_data->invalid())
     {
         m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
         return;
     }
 
-    qDebug("ApiReqPreparer::prepareOrderReq");
-    prepareHeaders(req_data.first());
-    prepareReqOrders(req_data);
-    emit signalMsg(QString("URL:   %1 \n").arg(m_reqObj->fullUrl()));
+    //prepareHeaders(req_data.first());
+    //prepareReqOrders(req_data);
+    //emit signalMsg(QString("URL:   %1 \n").arg(m_reqObj->fullUrl()));
 }
+*/
 void ApiReqPreparer::prepareReqDivs()
 {
     QString figi("figi");
@@ -122,61 +215,7 @@ void ApiReqPreparer::prepareReqLastPrices()
     QJsonArray j_arr = QJsonArray::fromStringList(uid_list);
     m_reqObj->addMetaData_arr("instrumentId", j_arr);
 }
-void ApiReqPreparer::prepareReqOrders(const QStringList &req_data)
-{
-    if (req_data.isEmpty())
-    {
-        emit signalError("req data is empty for ORDER_REQUEST");
-        m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
-        return;
-    }
-    m_reqObj->addMetaData("accountId", QString::number(api_commonSettings.user_id));
 
-    QString src(req_data.first());
-    if (src.contains("PostOrder"))
-    {
-        qDebug("PostOrder");
-        if (req_data.count() < 4)
-        {
-            emit signalError("req data too small for create POST_ORDER_REQUEST");
-            m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
-            return;
-        }
-
-        m_reqObj->addMetaData("quantity", req_data.at(req_data.count()-2));
-        m_reqObj->addMetaData("direction", "ORDER_DIRECTION_BUY");
-        m_reqObj->addMetaData("orderType", "ORDER_TYPE_LIMIT");
-        m_reqObj->addMetaData("instrumentId", req_data.at(1));
-
-
-        bool ok;
-        float price = req_data.last().toFloat(&ok);
-        if (ok && price > 0)
-        {
-            QJsonObject price_obj;
-            InstrumentBase::floatToJVBlock(price, price_obj);
-            //price_obj["units"] = int(price);
-            //price_obj["nano"] = int(float(100)*(price - int(price)));
-            m_reqObj->addMetaData_obj("price", price_obj);
-        }
-        else
-        {
-            emit signalError(QString("Invalid BUY price in req_data [%1]").arg(req_data.last()));
-            m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
-        }
-    }
-    else if (src.contains("Cancel"))
-    {
-        QString key_id = (src.toLower().contains("stop") ? "stopOrderId" : "orderId");
-        qDebug("Cancel");
-        if (req_data.count() < 2)
-        {
-            emit signalError("req data has no order_id for ORDER_REQUEST");
-            m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
-        }
-        else m_reqObj->addMetaData(key_id, req_data.at(1));
-    }
-}
 void ApiReqPreparer::prepareReqMarket(const QString &src)
 {
     QString uid;

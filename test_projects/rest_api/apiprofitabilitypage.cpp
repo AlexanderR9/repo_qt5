@@ -28,6 +28,7 @@ APIProfitabilityPage::APIProfitabilityPage(QWidget *parent)
 {
     setObjectName("profitability_page");
     m_userSign = aptProfitability;
+    m_buyData.reset();
 
     QStringList headers;
     headers << "Company" << "Ticker" << "Finish date" << "Coupon" << "Price/Nominal" << "Finish coupon" << "Finish profit" << "Profitability_M, %";
@@ -50,7 +51,7 @@ void APIProfitabilityPage::slotResizeTimer()
 }
 void APIProfitabilityPage::slotContextMenu(QPoint p)
 {
-    qDebug()<<QString("APIOrdersPage::slotContextMenu  %1/%2").arg(p.x()).arg(p.y());
+    qDebug()<<QString("APIProfitabilityPage::slotContextMenu  %1/%2").arg(p.x()).arg(p.y());
     QTableWidget *t = m_tableBox->table();
     if (LTable::selectedRows(t).count() != 1) return;
 
@@ -65,10 +66,13 @@ void APIProfitabilityPage::slotContextMenu(QPoint p)
 }
 void APIProfitabilityPage::slotBuyOrder()
 {
+    m_buyData.reset();
     QTableWidget *t = m_tableBox->table();
     int row = LTable::selectedRows(t).first();
     qDebug()<<QString("APIProfitabilityPage::slotBuyOrder()  sel row %1").arg(row);
-    QString uid = t->item(row, 1)->data(Qt::UserRole).toString();
+    m_buyData.uid = t->item(row, 1)->data(Qt::UserRole).toString();
+    m_buyData.is_stop = false;
+    m_buyData.kind = "buy";
     QString p_name = QString("%1 / %2").arg(t->item(row, NAME_COL)->text()).arg(t->item(row, TICKER_COL)->text());
 
     //prepare dialog
@@ -87,8 +91,12 @@ void APIProfitabilityPage::slotBuyOrder()
         emit signalMsg("operation was canceled!");
         return;
     }
+    m_buyData.lots = t_data.lots;
+    m_buyData.price = t_data.price;
+
 
     //prepare request data
+    /*
     QString src = QString();
     foreach(const QString &v, api_commonSettings.services)
     {
@@ -103,12 +111,12 @@ void APIProfitabilityPage::slotBuyOrder()
         emit signalError(QString("Not found API metod for buy order, uid=[%1]").arg(uid));
         return;
     }
+    */
 
-    QStringList req_data;
-    req_data << src << uid << QString::number(t_data.lots) << QString::number(t_data.price, 'f', 2);
-    emit signalMsg(QString("Try set BUY order id: [%1], paper: [%2]").arg(uid).arg(p_name));
-    emit signalBuyOrder(req_data);
-
+    //QStringList req_data;
+    //req_data << src << uid << QString::number(t_data.lots) << QString::number(t_data.price, 'f', 2) << "buy";
+    emit signalMsg(QString("Try set BUY order id: [%1], paper: [%2]").arg(m_buyData.uid).arg(p_name));
+    emit signalBuyOrder(m_buyData);
 }
 float APIProfitabilityPage::getCurrentPrice(int row) const
 {

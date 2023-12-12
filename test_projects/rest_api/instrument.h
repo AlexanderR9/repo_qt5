@@ -91,8 +91,9 @@ struct StockDesc : public InstrumentBase
 
     QString ticker;
     QString sector;
+    quint32 in_lot; //count papers in one lot
 
-    static quint8 filedsCount() {return 8;}
+    static quint8 filedsCount() {return 9;}
 
     void reset();
     QString toStr() const;
@@ -225,7 +226,7 @@ struct OrderData
 
 };
 
-//OrderData
+//StopOrderData
 struct StopOrderData : public OrderData
 {
     StopOrderData() :OrderData()  {this->is_stop = true;}
@@ -234,6 +235,25 @@ struct StopOrderData : public OrderData
 
     virtual void fromJson(const QJsonValue&);
     virtual QString strLots() const;
+
+};
+
+//PlaceOrderData
+struct PlaceOrderData
+{
+    PlaceOrderData() {reset();}
+
+    QString uid;
+    QString kind; // buy/sell/cancel
+    bool is_stop;
+    float price;
+    quint16 lots;
+
+    void reset();
+    bool invalid() const;
+    bool isCancel() const {return (kind == "cancel");}
+    bool isBuy() const {return (kind == "buy");}
+    bool isSell() const {return (kind == "sell");}
 
 };
 

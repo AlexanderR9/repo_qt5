@@ -131,42 +131,13 @@ public slots:
     void slotGetPaperInfoByFigi(const QString&, QPair<QString, QString>&);
     void slotGetTickerByFigi(const QString&, QString&);
     void slotGetPaperTypeByUID(const QString&, QString&);
+    void slotGetLotSize(const QString&, quint16&);
 
 signals:
     void signalFilter(const QStringList&); //list - visible figi
 
 };
 
-
-//APIBagPage
-class APIBagPage : public APITablePageBase
-{
-    Q_OBJECT
-public:
-    APIBagPage(QWidget*);
-    virtual ~APIBagPage() {}
-
-    QString iconPath() const {return QString(":/icons/images/bag.svg");}
-    QString caption() const {return QString("Bag");}
-
-protected:
-    BagState    *m_bag;
-
-    void initFilterBox();
-    void reloadPosTable();
-
-private:
-    void addGeneralEdit(QString, int&);
-
-signals:
-    void signalLoadPositions(const QJsonObject&);
-    void signalLoadPortfolio(const QJsonObject&);
-    void signalGetPaperInfo(QStringList&);
-
-protected slots:
-    void slotBagUpdate();
-
-};
 
 
 

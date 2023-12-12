@@ -14,6 +14,7 @@
 #include "apieventspage.h"
 #include "apiorderspage.h"
 #include "apiprofitabilitypage.h"
+#include "apibagpage.h"
 
 #include <QDebug>
 #include <QDir>
@@ -98,13 +99,13 @@ void MainForm::initPages()
     connect(orders_page, SIGNAL(signalGetPaperTypeByUID(const QString&, QString&)), bond_page, SLOT(slotGetPaperTypeByUID(const QString&, QString&)));
     connect(orders_page, SIGNAL(signalGetPaperTypeByUID(const QString&, QString&)), stock_page, SLOT(slotGetPaperTypeByUID(const QString&, QString&)));
     connect(orders_page, SIGNAL(signalGetBondNominalByUID(const QString&, float&)), bond_page, SLOT(slotGetBondNominalByUID(const QString&, float&)));
-    connect(orders_page, SIGNAL(signalCancelOrder(const QStringList&)), req_page, SLOT(slotTrySendOrderReq(const QStringList&)));
+    connect(orders_page, SIGNAL(signalCancelOrder(const PlaceOrderData&)), req_page, SLOT(slotTrySendOrderReq(const PlaceOrderData&)));
 
     APIProfitabilityPage *profit_page = new  APIProfitabilityPage(this);
     m_pages.insert(aptProfitability, profit_page);
     connect(bond_page, SIGNAL(signalNeedCalcProfitability(const BondDesc&, float)), profit_page, SLOT(slotRecalcProfitability(const BondDesc&, float)));
     connect(profit_page, SIGNAL(signalGetCouponRec(const QString&, const BCoupon*&)), c_page, SLOT(slotGetCouponRec(const QString&, const BCoupon*&)));
-    connect(profit_page, SIGNAL(signalBuyOrder(const QStringList&)), req_page, SLOT(slotTrySendOrderReq(const QStringList&)));
+    connect(profit_page, SIGNAL(signalBuyOrder(const PlaceOrderData&)), req_page, SLOT(slotTrySendOrderReq(const PlaceOrderData&)));
 
     APIBagPage *bag_page = new  APIBagPage(this);
     m_pages.insert(aptBag, bag_page);
@@ -112,6 +113,8 @@ void MainForm::initPages()
     connect(req_page, SIGNAL(signalLoadPositions(const QJsonObject&)), bag_page, SIGNAL(signalLoadPositions(const QJsonObject&)));
     connect(bag_page, SIGNAL(signalGetPaperInfo(QStringList&)), bond_page, SLOT(slotGetPaperInfo(QStringList&)));
     connect(bag_page, SIGNAL(signalGetPaperInfo(QStringList&)), stock_page, SLOT(slotGetPaperInfo(QStringList&)));
+    connect(bag_page, SIGNAL(signalGetLotSize(const QString&, quint16&)), stock_page, SLOT(slotGetLotSize(const QString&, quint16&)));
+    connect(bag_page, SIGNAL(signalSendOrderCommand(const PlaceOrderData&)), req_page, SLOT(slotTrySendOrderReq(const PlaceOrderData&)));
 
     m_tab->clear();
     foreach (LSimpleWidget *page, m_pages)

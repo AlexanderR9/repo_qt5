@@ -20,6 +20,7 @@ public:
     QString caption() const {return QString("Orders");}
 
 protected:
+    PlaceOrderData       m_cancelData;
     QList<OrderData*>    m_orders;
 
     void updateTableByData(bool);
@@ -40,7 +41,7 @@ signals:
     void signalGetTickerByFigi(const QString&, QString&);
     void signalGetPaperTypeByUID(const QString&, QString&);
     void signalGetBondNominalByUID(const QString&, float&);
-    void signalCancelOrder(const QStringList&);
+    void signalCancelOrder(const PlaceOrderData&);
 
 };
 

@@ -219,7 +219,7 @@ void APIReqPage::initSources()
     quint16 row = 0;
     foreach(const QString &v, api_commonSettings.services)
     {
-        qDebug()<<QString("SRC: %1").arg(v);
+        //qDebug()<<QString("SRC: %1").arg(v);
         m_sourceBox->listWidget()->addItem(v);
         int pos = v.indexOf('/');
         if (pos > 0)
@@ -231,7 +231,7 @@ void APIReqPage::initSources()
         row++;
     }
 }
-void APIReqPage::slotTrySendOrderReq(const QStringList &req_data)
+void APIReqPage::slotTrySendOrderReq(const PlaceOrderData &req_data)
 {
     if (requesterBuzy())
     {
@@ -240,15 +240,26 @@ void APIReqPage::slotTrySendOrderReq(const QStringList &req_data)
         return;
     }
     m_reqPreparer->clearCycleData();
-    if (req_data.count() < 2)
+    if (req_data.invalid())
     {
         emit signalError("Order request data is invalid.");
         emit signalFinished(hreWrongReqParams);
         return;
     }
 
+    QString need_src = req_data.isCancel() ? "cancel" : "post";
+    if (req_data.is_stop) need_src.append("stop");
+    need_src.append("order");
+    if (!selectSrcRow(need_src))
+    {
+        emit signalError(QString("[%1]:SRC not found by list.").arg(need_src));
+        emit signalFinished(hreWrongReqParams);
+        return;
+    }
+
     emit signalDisableActions(true);
-    standardRequest(QString(), req_data);
+    int row = m_sourceBox->listWidget()->currentRow();
+    standardRequest(m_sourceBox->listWidget()->item(row)->text(), &req_data);
 }
 void APIReqPage::trySendReq()
 {
@@ -312,13 +323,17 @@ void APIReqPage::toDebugReqMetadata()
     }
     qDebug()<<QString();
 }
-void APIReqPage::standardRequest(const QString &src, const QStringList &req_data)
+void APIReqPage::standardRequest(const QString &src, const PlaceOrderData *req_data)
 {
-    if (req_data.isEmpty()) m_reqPreparer->prepare(src);
-    else m_reqPreparer->prepareOrderReq(req_data);
+    //if (req_data) m_reqPreparer->prepareOrderReq(req_data);
+    //else m_reqPreparer->prepare(src);
 
+    qDebug()<<QString("APIReqPage::standardRequest  src[%1]  req_data[%2]").arg(src).arg(req_data?"TRUE":"NULL");
+    m_reqPreparer->prepare(src, req_data);
+    qDebug("1");
     if (m_reqPreparer->invalidReq())
     {
+        qDebug("req is FAULT");
         int e_code = hreUnknown;
         if (m_reqObj->metadata().value("err").isString()) e_code = m_reqObj->metadata().value("err").toString().toInt();
         else emit signalError(QString("invalid metadata err_value type"));
@@ -327,6 +342,7 @@ void APIReqPage::standardRequest(const QString &src, const QStringList &req_data
     }
     else
     {
+        qDebug("req is OK");
         printHeaders();
         emit signalMsg("request started ....");
         toDebugReqMetadata();
@@ -358,7 +374,7 @@ void APIReqPage::slotCycleWorkerNextReq()
     QStringList next_data;
     m_cycleWroker->getNextCycleData(next_data);
     m_reqPreparer->setCycleData(next_data);
-    m_reqPreparer->prepare(src);
+    m_reqPreparer->prepare(src, NULL);
     printHeaders();
     m_reqObj->start(hrmPost);
 

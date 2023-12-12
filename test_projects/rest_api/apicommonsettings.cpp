@@ -187,7 +187,7 @@ void API_CommonSettings::parseAutoStartNode(const QDomNode &node)
         if (i+1 == keys.at(i))
         {
             start_reqs.src.append(map.value(i+1));
-            qDebug()<<QString("step=%1  src=%2").arg(i+1).arg(start_reqs.src.last());
+            //qDebug()<<QString("step=%1  src=%2").arg(i+1).arg(start_reqs.src.last());
         }
         else
         {
@@ -220,7 +220,7 @@ void API_CommonSettings::InstrumentHistory::HItem::parseConfigNode(const QDomNod
 
     begin_date = LStaticXML::getStringAttrValue("begin", node).trimmed();
     end_date = LStaticXML::getStringAttrValue("end", node).trimmed();
-    qDebug()<<QString("LOADED PERIOD: %1").arg(toStr());
+   // qDebug()<<QString("LOADED PERIOD: %1").arg(toStr());
 }
 void API_CommonSettings::GlobalFilter::GFItem::parseConfigNode(const QDomNode &node)
 {

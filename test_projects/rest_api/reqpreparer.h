@@ -4,7 +4,7 @@
 #include "lsimpleobj.h"
 
 class LHttpApiRequester;
-
+struct PlaceOrderData;
 
 //ApiReqPrepare
 class ApiReqPreparer : public LSimpleObject
@@ -15,8 +15,8 @@ public:
     virtual ~ApiReqPreparer() {}
 
     QString name() const {return QString("requester_preparer_obj");}
-    void prepare(QString);
-    void prepareOrderReq(const QStringList&);
+    void prepare(QString, const PlaceOrderData*);
+    //void prepareOrderReq(QString, const PlaceOrderData*);
     bool invalidReq() const;
 
     inline void setCycleData(const QStringList &list) {m_cycleData.clear(); m_cycleData.append(list);}
@@ -36,7 +36,7 @@ private:
     void prepareReqBondBy();
     void prepareReqShareBy();
     void prepareReqMarket(const QString&);
-    void prepareReqOrders(const QStringList&);
+    void prepareReqOrders(const PlaceOrderData*);
     void prepareReqLastPrices();
     void prepareReqCoupons();
     void prepareReqDivs();

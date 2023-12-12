@@ -200,7 +200,7 @@ QString CycleWorker::divsFile()
 void CycleWorker::parseCoupons(const QJsonArray &j_arr)
 {
     //load old xml file
-    qDebug()<<QString("CycleWorker::parseCoupons:  j_arr size %1").arg(j_arr.count());
+    //qDebug()<<QString("CycleWorker::parseCoupons:  j_arr size %1").arg(j_arr.count());
     QDomDocument dom;
     QDomNode root_node;
     QString err = LStaticXML::getDomRootNode(CycleWorker::couponsFile(), root_node, QString("calendar"));
@@ -229,7 +229,7 @@ void CycleWorker::parseCoupons(const QJsonArray &j_arr)
 void CycleWorker::parseDivs(const QJsonArray &j_arr)
 {
     //load old xml file
-    qDebug()<<QString("CycleWorker::parseDivs:  j_arr size %1").arg(j_arr.count());
+    //qDebug()<<QString("CycleWorker::parseDivs:  j_arr size %1").arg(j_arr.count());
     QDomDocument dom;
     QDomNode root_node;
     QString err = LStaticXML::getDomRootNode(CycleWorker::divsFile(), root_node, QString("calendar"));

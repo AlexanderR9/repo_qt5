@@ -21,6 +21,7 @@ APIOrdersPage::APIOrdersPage(QWidget *parent)
 {
     setObjectName("api_orders_page");
     m_userSign = aptOrders;
+    m_cancelData.reset();
 
     QStringList headers;
     headers << "Kind" << "Company" << "Ticker" << "Paper type" << "Currency" << "Date" << "Lots" << "Price";
@@ -45,17 +46,19 @@ void APIOrdersPage::slotContextMenu(QPoint p)
 
     // Вызываем контекстное меню
     menu->popup(m_tableBox->table()->viewport()->mapToGlobal(p));
-
 }
 void APIOrdersPage::slotCancelOrder()
 {
+    m_cancelData.reset();
     QTableWidget *t = m_tableBox->table();
     int row = LTable::selectedRows(t).first();
-    QString id = t->item(row, 1)->data(Qt::UserRole).toString();
-    bool is_stop = t->item(row, 0)->data(Qt::UserRole).toBool();
-    qDebug()<<QString("slotCancelOrder  order_id=[%1],  is_stop=[%2]").arg(id).arg(is_stop);
+    m_cancelData.uid = t->item(row, 1)->data(Qt::UserRole).toString();
+    m_cancelData.is_stop = t->item(row, 0)->data(Qt::UserRole).toBool();
+    m_cancelData.kind = "cancel";
+    //qDebug()<<QString("slotCancelOrder  order_id=[%1],  is_stop=[%2]").arg(id).arg(is_stop);
     QString p_name = QString("%1 / %2").arg(t->item(row, NAME_COL)->text()).arg(t->item(row, TICKER_COL)->text());
 
+    /*
     QString src = QString();
     foreach(const QString &v, api_commonSettings.services)
     {
@@ -74,14 +77,15 @@ void APIOrdersPage::slotCancelOrder()
 
     if (src.isEmpty())
     {
-        emit signalError(QString("Not found API metod for cancel order, id=[%1]").arg(id));
+        emit signalError(QString("Not found API metod for cancel order, id=[%1]").arg(m_cancelData.uid));
         return;
     }
+    */
 
-    QStringList req_data;
-    req_data << src << id << p_name;
-    emit signalMsg(QString("Try cancel order id: [%1], paper: [%2]").arg(id).arg(p_name));
-    emit signalCancelOrder(req_data);
+    //QStringList req_data;
+    //req_data << src << id << p_name;
+    emit signalMsg(QString("Try cancel order id: [%1], paper: [%2]").arg(m_cancelData.uid).arg(p_name));
+    emit signalCancelOrder(m_cancelData);
 }
 void APIOrdersPage::clearData()
 {
