@@ -1,7 +1,9 @@
 #include "tcpclientobj.h"
+#include "ltime.h"
 
 #include <QTcpSocket>
 #include <QHostAddress>
+#include <QDebug>
 
 
 
@@ -14,6 +16,7 @@ LTcpClientObj::LTcpClientObj(QObject *parent)
     m_readOnly(false)
 {
     setObjectName("l_tcp_client");
+    setConnectTimeout();
 
     initClient();
 
@@ -34,12 +37,14 @@ void LTcpClientObj::slotSocketConnected()
 {
     qDebug()<<QString("LTcpClientObj::slotSocketConnected()  sender=[%1]").arg(sender()->objectName());
     emit signalMsg(QString("%0: %1 conected").arg(name()).arg(sender()->objectName()));
-
+    emit signalEvent("connected");
 }
 void LTcpClientObj::slotSocketDisconnected()
 {
     qDebug()<<QString("LTcpClientObj::slotSocketDisconnected()  sender=[%1]").arg(sender()->objectName());
     emit signalMsg(QString("%0: %1 disconected").arg(name()).arg(sender()->objectName()));
+    emit signalEvent("disconnected");
+
 }
 void LTcpClientObj::slotSocketError()
 {
@@ -48,6 +53,7 @@ void LTcpClientObj::slotSocketError()
     qDebug()<<QString("LTcpClientObj::slotSocketError()  sender=[%1]  ERR: %2").arg(sender()->objectName()).arg(err);
 
     emit signalError(QString("%0: was error of %1, %2").arg(name()).arg(m_clientSocket->errorString()));
+    emit signalEvent("error");
 }
 void LTcpClientObj::slotSocketStateChanged()
 {
@@ -72,6 +78,10 @@ bool LTcpClientObj::isConnected() const
 {
     return (m_clientSocket->state() == QAbstractSocket::ConnectedState);
 }
+bool LTcpClientObj::isDisconnected() const
+{
+    return (m_clientSocket->state() == QAbstractSocket::UnconnectedState);
+}
 bool LTcpClientObj::isConnecting() const
 {
     return (m_clientSocket->state() == QAbstractSocket::ConnectingState);
@@ -89,8 +99,42 @@ void LTcpClientObj::tryConnect()
         return;
     }
 
+   // qDebug()<<QString("connectToHost  ")<<LTime::strCurrentTime();
+
      QIODevice::OpenMode mode = (m_readOnly ? QIODevice::ReadOnly : QIODevice::ReadWrite);
      m_clientSocket->connectToHost(QHostAddress(m_host), m_port, mode);
+
+     /*
+     if(!m_clientSocket->waitForConnected(m_connectTimeout))
+     {
+         qDebug()<<QString("waitForConnected, cur state %1,  ").arg(strState())<<LTime::strCurrentTime();
+         m_clientSocket->abort();
+     }
+     */
+
+
+    // qDebug("--------end connecting-----------");
+}
+void LTcpClientObj::abortSocket()
+{
+    if (m_clientSocket) return;
+    if (!isDisconnected()) m_clientSocket->abort();
+}
+QString LTcpClientObj::strState() const
+{
+    if (!m_clientSocket) return QString("null");
+    if (isConnected()) return QString("connected");
+    if (isDisconnected()) return QString("unconnected");
+
+    switch (m_clientSocket->state())
+    {
+        case QAbstractSocket::ConnectingState: return QString("connecting");
+        case QAbstractSocket::ClosingState: return QString("closing");
+        case QAbstractSocket::ListeningState: return QString("listening");
+        case QAbstractSocket::BoundState: return QString("bound");
+        default: break;
+    }
+    return QString("unknown");
 }
 void LTcpClientObj::tryDisconnect()
 {
