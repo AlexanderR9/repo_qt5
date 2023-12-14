@@ -33,6 +33,7 @@ public:
     void updateOrders();
     void updateBag();
     void updateEvents();
+    void getVisibleBondPrices();
 
     inline void setPrintHeaders(bool b) {m_printHeaders = b;}
 

@@ -59,6 +59,7 @@ public:
 
     virtual void resetPage();
     void loadData();
+    void filterByDate(QString);
 
     static QString dataFile();
 
@@ -77,6 +78,7 @@ protected:
     void setCycleItem(QString&, quint16);
     QString figiByRecNumber(quint16) const;
     void calcProfitability(const QString&, float);
+    void updateCouponPage();
 
 protected slots:
     void slotFilter(QString);

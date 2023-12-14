@@ -52,6 +52,16 @@ void APIReqPage::updateBag()
     m_needUpdateInfo = ruiBagPositions;
     needUpdateInfo();
 }
+void APIReqPage::getVisibleBondPrices()
+{
+    if (!selectSrcRow("of bonds"))
+    {
+        emit signalError("[price of bonds]:SRC not found by list.");
+        emit signalFinished(hreWrongReqParams);
+        return;
+    }
+    trySendReq();
+}
 void APIReqPage::updateEvents()
 {
     if (!selectSrcRow("getoperation"))

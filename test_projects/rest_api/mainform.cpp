@@ -197,6 +197,12 @@ void MainForm::initCommonSettings()
     key = QString("candle_size");
     lCommonSettings.addParam(QString("Candle size (one interval)"), LSimpleDialog::sdtStringCombo, key);
 
+    key = QString("bond_period_filter");
+    lCommonSettings.addParam(QString("Filter period for bons"), LSimpleDialog::sdtStringCombo, key);
+    combo_list.clear();
+    combo_list << "none" << "1 month" << "2 month" << "3 month" << "6 month" << "1 year" << "2 year" << "3 year";
+    lCommonSettings.setComboList(key, combo_list);
+
     key = QString("print_headers");
     lCommonSettings.addParam(QString("Out headers to protocol"), LSimpleDialog::sdtBool, key);
     lCommonSettings.setDefValue(key, false);
@@ -214,6 +220,7 @@ void MainForm::initActions()
     addAction(LMainWidget::atRefresh);
     addAction(LMainWidget::atMonitoring);
     addAction(LMainWidget::atBag);
+    addAction(LMainWidget::atData);
     addAction(LMainWidget::atSettings);
     addAction(LMainWidget::atExit);
 
@@ -221,6 +228,9 @@ void MainForm::initActions()
     this->getAction(atRefresh)->setToolTip("Update orders list");
     this->getAction(atBag)->setToolTip("Update bag info");
     this->getAction(atMonitoring)->setToolTip("Update events");
+    this->getAction(atMonitoring)->setIcon(QIcon(":/icons/images/octane.svg"));
+    this->getAction(atData)->setToolTip("Get visible bond prices");
+
 }
 void MainForm::slotAction(int type)
 {
@@ -232,6 +242,7 @@ void MainForm::slotAction(int type)
         case LMainWidget::atClear: {clear(); break;}
         case LMainWidget::atRefresh: {updateOrdersList(); break;}
         case LMainWidget::atBag: {updateBagInfo(); break;}
+        case LMainWidget::atData: {getVisibleBondPrices(); break;}
         case LMainWidget::atMonitoring: {updateEventsList(); break;}
         default: break;
     }
@@ -267,6 +278,19 @@ void MainForm::updateEventsList()
         req_page->updateEvents();
     }
     else slotError("req_page is NULL");
+}
+void MainForm::getVisibleBondPrices()
+{
+    m_protocol->addText(QString("Try get prices for visible bond:"), LProtocolBox::ttFile);
+    APIBondsPage *bond_page = qobject_cast<APIBondsPage*>(m_pages.value(aptBond));
+    if (!bond_page) {slotError("bond_page is NULL"); return;}
+    bond_page->filterByDate(bondsPeriod());
+
+    APIReqPage *req_page = qobject_cast<APIReqPage*>(m_pages.value(aptReq));
+    if (!req_page) {slotError("req_page is NULL"); return;}
+    m_protocol->addText(QString("Try send request..."), LProtocolBox::ttData);
+    enableActions(false);
+    req_page->getVisibleBondPrices();
 }
 void MainForm::updateBagInfo()
 {
@@ -489,6 +513,10 @@ QString MainForm::baseURI() const
 QString MainForm::token() const
 {
     return lCommonSettings.paramValue("token").toString();
+}
+QString MainForm::bondsPeriod() const
+{
+    return lCommonSettings.paramValue("bond_period_filter").toString();
 }
 QString MainForm::candleSize() const
 {

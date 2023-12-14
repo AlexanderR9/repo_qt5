@@ -52,7 +52,7 @@ void APITradeDialog::init()
     this->addSimpleWidget("Order kind", LSimpleDialog::sdtString, key);
     this->setWidgetValue(key, captionByOrderType(m_data.order_type));
 
-    key = "ptype";
+    key = "company";
     this->addSimpleWidget("Company", LSimpleDialog::sdtString, key);
     this->setWidgetValue(key, m_data.company);
 

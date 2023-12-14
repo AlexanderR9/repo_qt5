@@ -45,6 +45,7 @@ protected:
     void updateOrdersList();
     void updateEventsList();
     void updateBagInfo();
+    void getVisibleBondPrices();
 
 
 protected slots:
@@ -64,6 +65,7 @@ private:
     QString serverAPI() const;
     QString baseURI() const;
     QString token() const;
+    QString bondsPeriod() const;
     int expandLevel() const;
     int depth() const;
     QString candleSize() const;

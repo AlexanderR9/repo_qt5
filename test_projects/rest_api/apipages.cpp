@@ -99,6 +99,12 @@ void APIBondsPage::initFilterBox()
     connect(m_riskFilterControl, SIGNAL(currentIndexChanged(QString)), this, SLOT(slotFilter(QString)));
     connect(m_finishDateControl, SIGNAL(currentIndexChanged(QString)), this, SLOT(slotFilter(QString)));
 }
+void APIBondsPage::filterByDate(QString f_value)
+{
+    dateFilter(f_value);
+    m_tableBox->searchExec();
+    updateCouponPage();
+}
 void APIBondsPage::slotFilter(QString f_value)
 {
     //qDebug()<<QString("slotFilter,  f_value=%1").arg(f_value);
@@ -114,8 +120,11 @@ void APIBondsPage::slotFilter(QString f_value)
 
     m_tableBox->searchExec();
 
-
     //send visible figi list to coupon page
+    updateCouponPage();
+}
+void APIBondsPage::updateCouponPage()
+{
     int n = m_tableBox->table()->rowCount();
     if (n <= 0) return;
 

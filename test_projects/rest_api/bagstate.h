@@ -71,7 +71,6 @@ public slots:
     void slotLoadPositions(const QJsonObject&);
     void slotLoadPortfolio(const QJsonObject&);
 
-
 signals:
     void signalBagUpdate();
     void signalGetBondEndDateByUID(const QString&, QDate&);
