@@ -65,6 +65,7 @@ void BagState::slotLoadPortfolio(const QJsonObject &j_obj)
             if (j_obj.value(v).isArray())
             {
                 parsePositions(j_obj.value(v).toArray());
+                sortPositions();
             }
         }
     }
@@ -122,6 +123,56 @@ float BagState::papersCost_now() const
     foreach (const BagPosition &pos, m_positions)
         sum += pos.count*pos.current_price;
     return sum;
+}
+void BagState::sortPositions()
+{
+    int n = m_positions.count();
+    if (n < 3) return;
+    qDebug()<<QString("BagState::sortPositions() 1    n=%1").arg(n);
+
+    //update finish dates
+    for (int i=0; i<n; i++)
+        if (m_positions.at(i).isBond())
+            emit signalGetBondEndDateByUID(m_positions.at(i).uid, m_positions[i].finish_date);
+
+    //extract stocks
+    QList<BagPosition> mid_list;
+    for (int i=n-1; i>=0; i--)
+        if (!m_positions.at(i).isBond()) mid_list.append(m_positions.takeAt(i));
+
+    qDebug()<<QString("BagState::sortPositions() 2    n=%1/%2").arg(m_positions.count()).arg(mid_list.count());
+
+    //try sort
+    n = m_positions.count();
+    if (n > 1)
+    {
+        while (2 > 1)
+        {
+            bool has_replace = false;
+            for (int i=0; i<n-1; i++)
+            {
+                const QDate &d = m_positions.at(i).finish_date;
+                const QDate &d_next = m_positions.at(i+1).finish_date;
+                if (d.isValid() && d_next.isValid())
+                {
+                    if (d_next > d)
+                    {
+                        BagPosition rec = m_positions.takeAt(i);
+                        m_positions.insert(i+1, rec);
+                        has_replace = true;
+                    }
+                }
+            }
+            if (!has_replace) break;
+        }
+    }
+
+    //merge containers
+    if (!mid_list.isEmpty())
+        foreach (const BagPosition &v, mid_list)
+            m_positions.prepend(v);
+
+
 }
 
 

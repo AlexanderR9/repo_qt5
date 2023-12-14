@@ -19,6 +19,7 @@
 #define TICKER_COL          2
 #define TO_COMPLETE_COL     8
 #define PAPER_TYPE_COL      7
+#define PAPER_COUNT_COL     3
 
 
 //APIBagPage
@@ -42,6 +43,7 @@ APIBagPage::APIBagPage(QWidget *parent)
     connect(this, SIGNAL(signalLoadPositions(const QJsonObject&)), m_bag, SLOT(slotLoadPositions(const QJsonObject&)));
     connect(m_bag, SIGNAL(signalBagUpdate()), this, SLOT(slotBagUpdate()));
     connect(m_tableBox->table(), SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu(QPoint)));
+    connect(m_bag, SIGNAL(signalGetBondEndDateByUID(const QString&, QDate&)), this, SIGNAL(signalGetBondEndDateByUID(const QString&, QDate&)));
 
 }
 void APIBagPage::slotContextMenu(QPoint p)
@@ -52,194 +54,27 @@ void APIBagPage::slotContextMenu(QPoint p)
 
     m_orderData.reset();
     QMenu *menu = new QMenu(this);
-    QAction *act = new QAction(QIcon(":/icons/images/ball_green.svg"), QString("Buy order"), this);
+    QAction *act = new QAction(QIcon(APITradeDialog::iconByOrderType(totBuyLimit)), QString("Buy order"), this);
     menu->addAction(act);
     connect(act, SIGNAL(triggered()), this, SLOT(slotBuyOrder()));
 
-    act = new QAction(QIcon(":/icons/images/ball_red.svg"), QString("Sell order"), this);
+    act = new QAction(QIcon(APITradeDialog::iconByOrderType(totSellLimit)), QString("Sell order"), this);
     menu->addAction(act);
     connect(act, SIGNAL(triggered()), this, SLOT(slotSellOrder()));
 
     menu->addSeparator();
-    act = new QAction(QIcon(":/icons/images/ball_gray.svg"), QString("Sell stop order"), this);
+
+    act = new QAction(QIcon(APITradeDialog::iconByOrderType(totTakeProfit)), QString("Set take profit"), this);
     menu->addAction(act);
-    connect(act, SIGNAL(triggered()), this, SLOT(slotSellStopOrder()));
+    connect(act, SIGNAL(triggered()), this, SLOT(slotSetTakeProfit()));
+
+    act = new QAction(QIcon(APITradeDialog::iconByOrderType(totStopLoss)), QString("Set stop loss"), this);
+    menu->addAction(act);
+    connect(act, SIGNAL(triggered()), this, SLOT(slotSetStopLoss()));
 
     // Вызываем контекстное меню
     menu->popup(m_tableBox->table()->viewport()->mapToGlobal(p));
 }
-void APIBagPage::slotBuyOrder()
-{
-    qDebug("APIBagPage::slotBuyOrder()");
-    QTableWidget *t = m_tableBox->table();
-    int row = LTable::selectedRows(t).first();
-    m_orderData.uid = t->item(row, 1)->data(Qt::UserRole).toString();
-    QString p_name = QString("%1 / %2").arg(t->item(row, NAME_COL)->text()).arg(t->item(row, TICKER_COL)->text());
-    m_orderData.is_stop = false;
-    m_orderData.kind = "buy";
-
-    //prepare dialog
-    TradeOperationData t_data(totBuyLimit);
-    t_data.company = p_name;
-    t_data.paper_type = t->item(row, PAPER_TYPE_COL)->text();
-    if (t_data.isBond())
-    {
-        bool ok;
-        int d = t->item(row, TO_COMPLETE_COL)->text().toInt(&ok);
-        if (!ok || d < 3)
-        {
-            emit signalError(QString("invalid finish data for bond (%1)").arg(p_name));
-            return;
-        }
-        t_data.finish_date = QString("%1 (%2)").arg(QDate::currentDate().addDays(d).toString(InstrumentBase::userDateMask())).arg(d);
-    }
-    else emit signalGetLotSize(m_orderData.uid, t_data.in_lot);
-    t_data.price = getCurrentPrice(row);
-    t_data.lots = 1;
-
-    APITradeDialog d(t_data, this);
-    d.exec();
-    if (d.isApply())
-    {
-        m_orderData.lots = t_data.lots;
-        m_orderData.price = t_data.price;
-        emit signalMsg(QString("Try set BUY order id: [%1], paper: [%2]").arg(m_orderData.uid).arg(p_name));
-        emit signalSendOrderCommand(m_orderData);
-    }
-    else emit signalMsg("operation was canceled!");
-
-
-/*
-    //prepare request data
-    QString src = QString();
-    foreach(const QString &v, api_commonSettings.services)
-    {
-        if (v.toLower().contains("post") && v.toLower().contains("order"))
-        {
-            src = v;
-            break;
-        }
-    }
-    if (src.isEmpty())
-    {
-        emit signalError(QString("Not found API metod for buy order, uid=[%1]").arg(uid));
-        return;
-    }
-
-    QStringList req_data;
-    req_data << src << uid << QString::number(t_data.lots) << QString::number(t_data.price, 'f', 2) << "buy";
-    emit signalMsg(QString("Try set %1 order id: [%2], paper: [%3]").arg(req_data.last()).arg(uid).arg(p_name));
-    emit signalSendOrderCommand(req_data);
-    */
-
-}
-void APIBagPage::slotSellOrder()
-{
-    qDebug("APIBagPage::slotSellOrder()");
-    QTableWidget *t = m_tableBox->table();
-    int row = LTable::selectedRows(t).first();
-    m_orderData.uid = t->item(row, 1)->data(Qt::UserRole).toString();
-    QString p_name = QString("%1 / %2").arg(t->item(row, NAME_COL)->text()).arg(t->item(row, TICKER_COL)->text());
-    m_orderData.is_stop = false;
-    m_orderData.kind = "sell";
-
-    //prepare dialog
-    TradeOperationData t_data(totSellLimit);
-    t_data.company = p_name;
-    t_data.paper_type = t->item(row, PAPER_TYPE_COL)->text();
-    if (t_data.isBond())
-    {
-        bool ok;
-        int d = t->item(row, TO_COMPLETE_COL)->text().toInt(&ok);
-        if (!ok || d < 3)
-        {
-            emit signalError(QString("invalid finish data for bond (%1)").arg(p_name));
-            return;
-        }
-        t_data.finish_date = QString("%1 (%2)").arg(QDate::currentDate().addDays(d).toString(InstrumentBase::userDateMask())).arg(d);
-    }
-    else emit signalGetLotSize(m_orderData.uid, t_data.in_lot);
-    t_data.price = getCurrentPrice(row);
-    t_data.lots = 1;
-
-    APITradeDialog d(t_data, this);
-    d.exec();
-    if (d.isApply())
-    {
-        m_orderData.lots = t_data.lots;
-        m_orderData.price = t_data.price;
-        emit signalMsg(QString("Try set SELL order id: [%1], paper: [%2]").arg(m_orderData.uid).arg(p_name));
-        emit signalSendOrderCommand(m_orderData);
-    }
-    else emit signalMsg("operation was canceled!");
-
-
-    /*
-    QTableWidget *t = m_tableBox->table();
-    int row = LTable::selectedRows(t).first();
-    QString uid = t->item(row, 1)->data(Qt::UserRole).toString();
-    QString p_name = QString("%1 / %2").arg(t->item(row, NAME_COL)->text()).arg(t->item(row, TICKER_COL)->text());
-
-    //prepare dialog
-    TradeOperationData t_data(totSellLimit);
-    t_data.company = p_name;
-    t_data.paper_type = t->item(row, PAPER_TYPE_COL)->text();
-    if (t_data.isBond())
-    {
-        bool ok;
-        int d = t->item(row, TO_COMPLETE_COL)->text().toInt(&ok);
-        if (!ok || d < 3)
-        {
-            emit signalError(QString("invalid finish data for bond (%1)").arg(p_name));
-            return;
-        }
-        t_data.finish_date = QString("%1 (%2)").arg(QDate::currentDate().addDays(d).toString(InstrumentBase::userDateMask())).arg(d);
-    }
-    else
-    {
-        emit signalGetLotSize(uid, t_data.in_lot);
-    }
-    t_data.price = getCurrentPrice(row);
-    t_data.lots = 1;
-
-    APITradeDialog d(t_data, this);
-    d.exec();
-    if (!d.isApply())
-    {
-        emit signalMsg("operation was canceled!");
-        return;
-    }
-
-
-    //prepare request data
-    QString src = QString();
-    foreach(const QString &v, api_commonSettings.services)
-    {
-        if (v.toLower().contains("post") && v.toLower().contains("order"))
-        {
-            src = v;
-            break;
-        }
-    }
-    if (src.isEmpty())
-    {
-        emit signalError(QString("Not found API metod for buy order, uid=[%1]").arg(uid));
-        return;
-    }
-
-    QStringList req_data;
-    req_data << src << uid << QString::number(t_data.lots) << QString::number(t_data.price, 'f', 2) << "sell";
-    emit signalMsg(QString("Try set %1 order id: [%2], paper: [%3]").arg(req_data.last()).arg(uid).arg(p_name));
-    emit signalSendOrderCommand(req_data);
-    */
-}
-void APIBagPage::slotSellStopOrder()
-{
-    qDebug("APIBagPage::slotSellStopOrder()");
-
-}
-
-
 void APIBagPage::initFilterBox()
 {
     m_filterBox->setTitle("General state");
@@ -345,7 +180,7 @@ void APIBagPage::reloadPosTable()
         else row_data << p_info.at(2) << p_info.at(3);
         row_data << QString::number(pos.count) << pos.strPrice() << QString::number(int(pos.margin())) << pos.strProfit() << pos.paper_type;
 
-        if (pos.paper_type == "bond")
+        if (pos.isBond())
         {
             if (p_info.count() >= 5)
             {
@@ -402,5 +237,156 @@ float APIBagPage::getCurrentPrice(int row) const
     }
     qWarning("APIBagPage::getCurrentPrice WARNING invalid current price");
     return -1;
+}
+quint16 APIBagPage::paperCount(int row) const
+{
+    if (row < 0 || row >= m_tableBox->table()->rowCount()) return -1;
+    QString s_count = m_tableBox->table()->item(row, PAPER_COUNT_COL)->text();
+
+    bool ok;
+    quint16 n = s_count.toUInt(&ok);
+    if (!ok)
+    {
+        qWarning()<<QString("APIBagPage::paperCount WARNING invalid paper count (%1)").arg(s_count);
+        n = 0;
+    }
+    return n;
+}
+void APIBagPage::tryPlaceOrder(TradeOperationData &t_data)
+{
+    APITradeDialog d(t_data, this);
+    d.exec();
+    if (d.isApply())
+    {
+        m_orderData.lots = t_data.lots;
+        m_orderData.price = t_data.price;
+        emit signalMsg(QString("Try set order(%1) id: [%2], paper: [%3], price=%4").
+                       arg(APITradeDialog::captionByOrderType(t_data.order_type)).arg(m_orderData.uid).arg(t_data.company).arg(m_orderData.price));
+
+        if (m_orderData.nominal > 0)
+            m_orderData.price = float(qRound((10000*m_orderData.price)/m_orderData.nominal))/float(100);
+
+        qDebug()<<QString("nominal=%1  result price: %2").arg(m_orderData.nominal).arg(m_orderData.price);
+
+        emit signalSendOrderCommand(m_orderData);
+    }
+    else emit signalMsg("operation was canceled!");
+}
+void APIBagPage::prepareOrderData(TradeOperationData &t_data, int max_p)
+{
+    QTableWidget *t = m_tableBox->table();
+    int row = LTable::selectedRows(t).first();
+
+    t_data.company = QString("%1 / %2").arg(t->item(row, NAME_COL)->text()).arg(t->item(row, TICKER_COL)->text());
+    t_data.paper_type = t->item(row, PAPER_TYPE_COL)->text();
+    if (t_data.isBond())
+    {
+        bool ok;
+        int d = t->item(row, TO_COMPLETE_COL)->text().toInt(&ok);
+        if (!ok || d < 3)
+        {
+            emit signalError(QString("invalid finish data for bond (%1)").arg(t_data.company));
+            return;
+        }
+        t_data.finish_date = QString("%1 (%2)").arg(QDate::currentDate().addDays(d).toString(InstrumentBase::userDateMask())).arg(d);
+
+        if (m_orderData.isStop())
+            emit signalGetBondNominalByUID(m_orderData.uid, m_orderData.nominal);
+    }
+    else emit signalGetLotSize(m_orderData.uid, t_data.in_lot);
+    t_data.price = getCurrentPrice(row);
+    t_data.lots = 1;
+    t_data.maxLot_ps = max_p;
+}
+
+
+////////////////ORDERS SLOTS/////////////////////////
+void APIBagPage::slotBuyOrder()
+{
+    qDebug("APIBagPage::slotBuyOrder()");
+    QTableWidget *t = m_tableBox->table();
+    int row = LTable::selectedRows(t).first();
+    m_orderData.uid = t->item(row, 1)->data(Qt::UserRole).toString();
+    m_orderData.kind = "buy";
+
+    //prepare data
+    TradeOperationData t_data(totBuyLimit);
+    prepareOrderData(t_data);
+
+    //send order
+    tryPlaceOrder(t_data);
+}
+void APIBagPage::slotSellOrder()
+{
+    qDebug("APIBagPage::slotSellOrder()");
+    QTableWidget *t = m_tableBox->table();
+    int row = LTable::selectedRows(t).first();
+    m_orderData.uid = t->item(row, 1)->data(Qt::UserRole).toString();
+    m_orderData.kind = "sell";
+
+    //prepare data
+    TradeOperationData t_data(totSellLimit);
+    prepareOrderData(t_data, paperCount(row));
+
+    //send order
+    tryPlaceOrder(t_data);
+
+/*
+    //prepare dialog
+    TradeOperationData t_data(totSellLimit);
+    t_data.company = QString("%1 / %2").arg(t->item(row, NAME_COL)->text()).arg(t->item(row, TICKER_COL)->text());
+    t_data.paper_type = t->item(row, PAPER_TYPE_COL)->text();
+    if (t_data.isBond())
+    {
+        bool ok;
+        int d = t->item(row, TO_COMPLETE_COL)->text().toInt(&ok);
+        if (!ok || d < 3)
+        {
+            emit signalError(QString("invalid finish data for bond (%1)").arg(t_data.company));
+            return;
+        }
+        t_data.finish_date = QString("%1 (%2)").arg(QDate::currentDate().addDays(d).toString(InstrumentBase::userDateMask())).arg(d);
+    }
+    else emit signalGetLotSize(m_orderData.uid, t_data.in_lot);
+    t_data.price = getCurrentPrice(row);
+    t_data.lots = 1;
+    t_data.maxLot_ps = paperCount(row);
+
+    //send order
+    tryPlaceOrder(t_data);
+    */
+
+}
+void APIBagPage::slotSetTakeProfit()
+{
+    qDebug("APIBagPage::slotSetTakeProfit()");
+    QTableWidget *t = m_tableBox->table();
+    int row = LTable::selectedRows(t).first();
+    m_orderData.uid = t->item(row, 1)->data(Qt::UserRole).toString();
+    m_orderData.is_stop = 1;
+    m_orderData.kind = "sell";
+
+    //prepare data
+    TradeOperationData t_data(totTakeProfit);
+    prepareOrderData(t_data, paperCount(row));
+
+    //send order
+    tryPlaceOrder(t_data);
+}
+void APIBagPage::slotSetStopLoss()
+{
+    qDebug("APIBagPage::slotSetStopLoss()");
+    QTableWidget *t = m_tableBox->table();
+    int row = LTable::selectedRows(t).first();
+    m_orderData.uid = t->item(row, 1)->data(Qt::UserRole).toString();
+    m_orderData.is_stop = 2;
+    m_orderData.kind = "sell";
+
+    //prepare data
+    TradeOperationData t_data(totStopLoss);
+    prepareOrderData(t_data, paperCount(row));
+
+    //send order
+    tryPlaceOrder(t_data);
 }
 

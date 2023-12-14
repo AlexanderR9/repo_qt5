@@ -87,6 +87,7 @@ public slots:
     void slotGetTickerByFigi(const QString&, QString&);
     void slotGetPaperTypeByUID(const QString&, QString&);
     void slotGetBondNominalByUID(const QString&, float&);
+    void slotGetBondEndDateByUID(const QString&, QDate&);
 
 signals:
     void signalFilter(const QStringList&); //list - visible figi

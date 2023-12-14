@@ -20,6 +20,7 @@ APITradeDialog::APITradeDialog(TradeOperationData &data, QWidget *parent)
     addVerticalSpacer();
     resize(700, 400);
     updateTitle();
+    updateKindWidget();
 
     if (m_data.invalid())
     {
@@ -47,7 +48,11 @@ void APITradeDialog::updateWidgetsSizePolicy()
 }
 void APITradeDialog::init()
 {
-    QString key = "company";
+    QString key = "kind";
+    this->addSimpleWidget("Order kind", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, captionByOrderType(m_data.order_type));
+
+    key = "ptype";
     this->addSimpleWidget("Company", LSimpleDialog::sdtString, key);
     this->setWidgetValue(key, m_data.company);
 
@@ -72,46 +77,97 @@ void APITradeDialog::init()
 
     key = "lots";
     this->addSimpleWidget(QString("Lot size (x %1ps)").arg(m_data.in_lot), LSimpleDialog::sdtIntCombo, key);
-    const SimpleWidget *sw = this->widgetByKey(key);
-    if (sw)
-    {
-        for (int i=1; i<=5; i++) sw->comboBox->addItem(QString::number(i));
-        for (int i=1; i<=5; i++) sw->comboBox->addItem(QString::number(i*10));        
-        if (api_commonSettings.t_dialog.lots_index < 0) sw->comboBox->setCurrentIndex(1);
-        else sw->comboBox->setCurrentIndex(api_commonSettings.t_dialog.lots_index);
-    }
+    fillLots();
 
     key = "pstep";
     QString dev_caption("Price diviation");
     if (!m_data.isBond()) dev_caption = QString("%1, %").arg(dev_caption);
     this->addSimpleWidget(dev_caption, LSimpleDialog::sdtDoubleCombo, key);
-    sw = this->widgetByKey(key);
-    if (sw)
-    {
-        qint8 sign = 1;
-        if (m_data.isBuyType()) sign = -1;
-        for (int i=1; i<=20; i++) sw->comboBox->addItem(QString::number(float(sign*0.2*i), 'f', 1));
-        for (int i=1; i<=15; i++) sw->comboBox->addItem(QString::number(float(sign*(4+2*i)), 'f', 1));
-        if (api_commonSettings.t_dialog.deviation_index < 0) sw->comboBox->setCurrentIndex(10);
-        else sw->comboBox->setCurrentIndex(api_commonSettings.t_dialog.deviation_index);
-    }
+    fillDeviations();
 
     key = "result";
     this->addSimpleWidget("Operation price (1ps)", LSimpleDialog::sdtDoubleLine, key, precision());
     key = "total";
     this->addSimpleWidget("Total sum (need)", LSimpleDialog::sdtDoubleLine, key, precision());
 }
+void APITradeDialog::fillLots()
+{
+    const SimpleWidget *sw = this->widgetByKey("lots");
+    if (!sw) return;
+
+    if (m_data.maxLot_ps > 0)
+    {
+        int l = 1;
+        int d = 0;
+        while (d < m_data.maxLot_ps)
+        {
+            sw->comboBox->addItem(QString::number(l));
+            d += m_data.in_lot;
+            l++;
+        }
+    }
+    else
+    {
+        for (int i=1; i<=5; i++) sw->comboBox->addItem(QString::number(i));
+        for (int i=1; i<=5; i++) sw->comboBox->addItem(QString::number(i*10));
+        if (api_commonSettings.t_dialog.lots_index < 0 || api_commonSettings.t_dialog.lots_index >= sw->comboBox->count())
+            sw->comboBox->setCurrentIndex(1);
+        else sw->comboBox->setCurrentIndex(api_commonSettings.t_dialog.lots_index);
+    }
+}
+void APITradeDialog::fillDeviations()
+{
+    const SimpleWidget *sw = this->widgetByKey("pstep");
+    if (!sw) return;
+
+    qint8 sign = 1;
+    if (m_data.downKind()) sign = -1;
+    for (int i=1; i<=20; i++) sw->comboBox->addItem(QString::number(float(sign*0.2*i), 'f', 1));
+    for (int i=1; i<=15; i++) sw->comboBox->addItem(QString::number(float(sign*(4+2*i)), 'f', 1));
+    for (int i=0; i<=2; i++) sw->comboBox->addItem(QString::number(float(sign*(50+20*i)), 'f', 1));
+    if (api_commonSettings.t_dialog.deviation_index < 0) sw->comboBox->setCurrentIndex(10);
+    else sw->comboBox->setCurrentIndex(api_commonSettings.t_dialog.deviation_index);
+}
+QString APITradeDialog::captionByOrderType(int t)
+{
+    switch (t)
+    {
+        case totBuyLimit: return QString("BUY_LIMIT");
+        case totSellLimit: return QString("SELL_LIMIT");
+        case totTakeProfit: return QString("TAKE_PROFIT");
+        case totStopLoss: return QString("STOP_LOSS");
+        default: break;
+    }
+    return "UNKNOWN_ORDER_TYPE";
+}
+QString APITradeDialog::iconByOrderType(int t)
+{
+    switch (t)
+    {
+        case totBuyLimit: return QString(":/icons/images/ball_green.svg");
+        case totSellLimit: return QString(":/icons/images/ball_red.svg");
+        case totTakeProfit: return QString(":/icons/images/up.svg");
+        case totStopLoss: return QString(":/icons/images/down.svg");
+        default: break;
+    }
+    return "???";
+}
+void APITradeDialog::updateKindWidget()
+{
+    const SimpleWidget *sw = this->widgetByKey("kind");
+    if (!sw) return;
+
+    QString color = "#006400";
+    if (m_data.redKind()) color = "#800000";
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg(color));
+    sw->edit->addAction(QIcon(iconByOrderType(m_data.order_type)), QLineEdit::LeadingPosition);
+
+}
 void APITradeDialog::updateTitle()
 {
     QString s("Trade operation: ");
-    switch (m_data.order_type)
-    {
-        case totBuyLimit: {s.append("BUY_LIMIT"); break;}
-        case totSellLimit: {s.append("SELL_LIMIT"); break;}
-        case totSellStop: {s.append("SELL_STOP"); break;}
-        default: {s.append("?"); break;}
-    }
-    setWindowTitle(s);
+    setWindowTitle(QString("%1 %2").arg(s).arg(captionByOrderType(m_data.order_type)));
+    setWindowIcon(QIcon(iconByOrderType(m_data.order_type)));
     setBoxTitle("Parameters");
     if (m_data.invalid()) return;
 

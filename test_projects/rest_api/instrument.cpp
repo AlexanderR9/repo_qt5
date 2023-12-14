@@ -549,9 +549,10 @@ void PlaceOrderData::reset()
 {
     uid.clear();
     kind = "sell"; //buy/sell
-    is_stop = false;
+    is_stop = 0;
     price = -1;
     lots = 1;
+    nominal = -1;
 }
 bool PlaceOrderData::invalid() const
 {

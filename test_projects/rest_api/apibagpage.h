@@ -4,6 +4,7 @@
 #include "apipages.h"
 #include "instrument.h"
 
+struct TradeOperationData;
 
 //APIBagPage
 class APIBagPage : public APITablePageBase
@@ -22,10 +23,21 @@ protected:
 
     void initFilterBox();
     void reloadPosTable();
+    void tryPlaceOrder(TradeOperationData&);
+    void prepareOrderData(TradeOperationData&, int max_p = -1);
 
 private:
     void addGeneralEdit(QString, int&);
     float getCurrentPrice(int) const;
+    quint16 paperCount(int) const;
+
+protected slots:
+    void slotBagUpdate();
+    void slotContextMenu(QPoint);
+    void slotBuyOrder();
+    void slotSellOrder();
+    void slotSetTakeProfit();
+    void slotSetStopLoss();
 
 signals:
     void signalLoadPositions(const QJsonObject&);
@@ -33,13 +45,9 @@ signals:
     void signalGetPaperInfo(QStringList&);
     void signalGetLotSize(const QString&, quint16&);
     void signalSendOrderCommand(const PlaceOrderData&);
+    void signalGetBondNominalByUID(const QString&, float&);
+    void signalGetBondEndDateByUID(const QString&, QDate&);
 
-protected slots:
-    void slotBagUpdate();
-    void slotContextMenu(QPoint);
-    void slotBuyOrder();
-    void slotSellOrder();
-    void slotSellStopOrder();
 
 };
 

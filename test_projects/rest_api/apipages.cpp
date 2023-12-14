@@ -289,6 +289,12 @@ void APIBondsPage::slotGetBondNominalByUID(const QString &uid, float &f)
     foreach (const BondDesc &rec, m_data)
         if (rec.uid == uid)  {f = rec.nominal; break;}
 }
+void APIBondsPage::slotGetBondEndDateByUID(const QString &uid, QDate &f_date)
+{
+    f_date = QDate();
+    foreach (const BondDesc &rec, m_data)
+        if (rec.uid == uid)  {f_date = rec.finish_date; break;}
+}
 void APIBondsPage::slotGetPaperInfoByFigi(const QString &figi, QPair<QString, QString> &pair)
 {
     foreach (const BondDesc &rec, m_data)

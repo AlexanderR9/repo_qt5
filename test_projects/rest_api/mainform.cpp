@@ -115,6 +115,8 @@ void MainForm::initPages()
     connect(bag_page, SIGNAL(signalGetPaperInfo(QStringList&)), stock_page, SLOT(slotGetPaperInfo(QStringList&)));
     connect(bag_page, SIGNAL(signalGetLotSize(const QString&, quint16&)), stock_page, SLOT(slotGetLotSize(const QString&, quint16&)));
     connect(bag_page, SIGNAL(signalSendOrderCommand(const PlaceOrderData&)), req_page, SLOT(slotTrySendOrderReq(const PlaceOrderData&)));
+    connect(bag_page, SIGNAL(signalGetBondNominalByUID(const QString&, float&)), bond_page, SLOT(slotGetBondNominalByUID(const QString&, float&)));
+    connect(bag_page, SIGNAL(signalGetBondEndDateByUID(const QString&, QDate&)), bond_page, SLOT(slotGetBondEndDateByUID(const QString&, QDate&)));
 
     m_tab->clear();
     foreach (LSimpleWidget *page, m_pages)

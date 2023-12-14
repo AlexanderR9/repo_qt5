@@ -245,15 +245,17 @@ struct PlaceOrderData
 
     QString uid;
     QString kind; // buy/sell/cancel
-    bool is_stop;
+    quint8 is_stop; //0-none, 1-tp, 2-sl
     float price;
     quint16 lots;
+    float nominal; //only bond
 
     void reset();
     bool invalid() const;
     bool isCancel() const {return (kind == "cancel");}
     bool isBuy() const {return (kind == "buy");}
     bool isSell() const {return (kind == "sell");}
+    bool isStop() const {return (is_stop == 1 || is_stop == 2);}
 
 };
 

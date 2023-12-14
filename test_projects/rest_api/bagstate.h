@@ -4,6 +4,7 @@
 
 #include "lsimpleobj.h"
 
+#include <QDate>
 #include <QList>
 #include <QStringList>
 
@@ -19,14 +20,15 @@ struct BagPosition
     float average_price;
     float current_price;
     QString paper_type;
+    QDate finish_date; //only bond
 
-    void reset() {uid.clear(); count = 0; average_price = current_price = -1; paper_type.clear();}
+    void reset() {uid.clear(); count = 0; average_price = current_price = -1; paper_type.clear(); finish_date=QDate();}
     bool invalid() const {return (uid.isEmpty() || count == 0);}
     QString strPrice() const {return QString("%1 / %2").arg(QString::number(average_price, 'f', 1)).arg(QString::number(current_price, 'f', 1));}
     float curProfit() const {return (float(count)*(current_price - average_price));}
     QString strProfit() const {return QString::number(curProfit(), 'f', 1);}
     float margin() const {return (count*average_price);}
-
+    bool isBond() const {return (paper_type == "bond");}
 
 };
 
@@ -63,6 +65,7 @@ protected:
     void parsePositions(const QJsonArray&);
     float papersCost_before() const;
     float papersCost_now() const;
+    void sortPositions();
 
 public slots:
     void slotLoadPositions(const QJsonObject&);
@@ -71,6 +74,7 @@ public slots:
 
 signals:
     void signalBagUpdate();
+    void signalGetBondEndDateByUID(const QString&, QDate&);
 
 };
 

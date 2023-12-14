@@ -71,7 +71,6 @@ void APIProfitabilityPage::slotBuyOrder()
     int row = LTable::selectedRows(t).first();
     qDebug()<<QString("APIProfitabilityPage::slotBuyOrder()  sel row %1").arg(row);
     m_buyData.uid = t->item(row, 1)->data(Qt::UserRole).toString();
-    m_buyData.is_stop = false;
     m_buyData.kind = "buy";
     QString p_name = QString("%1 / %2").arg(t->item(row, NAME_COL)->text()).arg(t->item(row, TICKER_COL)->text());
 
