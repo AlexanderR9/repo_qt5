@@ -10,8 +10,9 @@
 #include <QMenu>
 #include <QTimer>
 
-#define PROFITABILITY_LIMIT         1.4
-#define PROFITABILITY_LIMIT2        1.15
+#define PROFITABILITY_LIMIT             1.4
+#define PROFITABILITY_LIMIT2            1.15
+#define PROFITABILITY_LIMIT_MIN         0.9
 
 #define NAME_COL            0
 #define TICKER_COL          1
@@ -206,6 +207,8 @@ void APIProfitabilityPage::syncTableData(const BondDesc &bond_rec, const QString
         m_tableBox->table()->item(row, priceCol())->setTextColor(Qt::blue);
     else if (v_month > PROFITABILITY_LIMIT2)
         m_tableBox->table()->item(row, priceCol())->setTextColor(Qt::darkGreen);
+    else if (v_month < PROFITABILITY_LIMIT_MIN)
+        m_tableBox->table()->item(row, priceCol())->setTextColor(Qt::lightGray);
 
     m_tick++;
 }
