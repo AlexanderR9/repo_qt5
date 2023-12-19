@@ -285,7 +285,7 @@ void APIBagPage::prepareOrderData(TradeOperationData &t_data, int max_p)
         int d = t->item(row, TO_COMPLETE_COL)->text().toInt(&ok);
         if (!ok || d < 3)
         {
-            emit signalError(QString("invalid finish data for bond (%1)").arg(t_data.company));
+            emit signalError(QString("can't operation for this bond(%1), finish date too near to current date").arg(t_data.company));
             return;
         }
         t_data.finish_date = QString("%1 (%2)").arg(QDate::currentDate().addDays(d).toString(InstrumentBase::userDateMask())).arg(d);

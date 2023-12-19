@@ -173,8 +173,8 @@ protected:
 
 };
 
-////////////////////////// history ////////////////////////////
-struct EventOperation
+////////////////////////// history of operations ////////////////////////////
+struct EventOperation  : public InstrumentBase
 {
     enum EventType {etCanceled = 300, etBuy, etSell, etCoupon, etDiv, etCommission, etTax,
                         etInput, etOut, etRepayment, etUnknown = 999};
@@ -183,19 +183,25 @@ struct EventOperation
     virtual ~EventOperation() {}
 
     int kind;
-    QDate date;
+    QDateTime date;
     quint32 n_papers;
     float size; //price one paper
     float amount;    
     QString paper_type;
-    QString uid;
-    QString currency;
 
+    static quint8 filedsCount() {return 9;}
+    static QString dataFile() {return QString("events.txt");}
 
-    bool invalid() const {return (kind < etCanceled || !date.isValid());}
-    void reset() {kind = etUnknown; n_papers = 0; size = amount = -1; date = QDate(); currency.clear(); uid.clear();}
+    bool invalid() const {return (kind < etCanceled || !date.date().isValid());}
+    void reset();
     void fromJson(const QJsonValue&);
     QString strKind() const;
+    QString toStr() const; //file line
+    QStringList toTableRowData() const;
+    void parseFields(const QStringList&);
+    bool isSame(const EventOperation&) const;
+    bool isBond() const {return (paper_type == "bond");}
+
 
 private:
     void kindByAPIType(QString);

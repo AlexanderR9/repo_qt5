@@ -404,11 +404,13 @@ void EventOperation::fromJson(const QJsonValue &jv)
     {
         const QJsonObject &j_obj = jv.toObject();
         uid = j_obj.value("instrumentUid").toString();
+        if (uid.trimmed().isEmpty()) uid = "none";
         kindByAPIType(j_obj.value("operationType").toString());
-        date = InstrumentBase::dateFromGoogleDT(j_obj.value("date"));
+        date = InstrumentBase::dateTimeFromGoogleDT(j_obj.value("date"));
         amount = InstrumentBase::floatFromJVBlock(j_obj.value("payment"));
         size = InstrumentBase::floatFromJVBlock(j_obj.value("price"));
         paper_type = j_obj.value("instrumentType").toString();
+        if (paper_type.trimmed().isEmpty()) paper_type = "---";
         currency = j_obj.value("currency").toString().trimmed().toUpper();
 
         parseTradesJson(j_obj.value("trades"));
@@ -469,6 +471,73 @@ void EventOperation::kindByAPIType(QString api_event_type)
     else if (api_event_type == "OPERATION_TYPE_COUPON") kind = etCoupon;
 
 }
+void EventOperation::reset()
+{
+    InstrumentBase::reset();
+    kind = etUnknown;
+    n_papers = 0;
+    size = amount = -1;
+    date = QDateTime();
+    uid = "none";
+    paper_type = "---";
+}
+QString EventOperation::toStr() const
+{
+    QString s(date.date().toString(InstrumentBase::userDateMask()));
+    s = QString("%1 / %2").arg(s).arg(date.time().toString(InstrumentBase::userTimeMask()));
+    s = QString("%1 / %2 / %3 / %4").arg(s).arg(kind).arg(currency).arg(paper_type);
+    s = QString("%1 / %2 / %3 / %4").arg(s).arg(n_papers).arg(QString::number(size, 'f', 4)).arg(QString::number(amount, 'f', 4));
+    s = QString("%1 / %2").arg(s).arg(uid);
+    return s;
+}
+QStringList EventOperation::toTableRowData() const
+{
+    QStringList row_data;
+    if (invalid()) return row_data;
+
+    row_data << strKind() << paper_type << currency;
+    row_data << QString("%1 (%2)").arg(date.date().toString(InstrumentBase::userDateMask())).arg(date.time().toString("hh:mm"));
+    row_data << QString::number(n_papers);
+
+    if (kind == EventOperation::etBuy || kind == EventOperation::etSell)
+    {
+        row_data << QString("%1/%2").arg(QString::number(size, 'f', 2)).arg(QString::number(size*n_papers, 'f', 1));
+        float saved_coupons = qAbs(amount) - (size*n_papers);
+        row_data << QString("%1/%2").arg(QString::number(saved_coupons/n_papers, 'f', 2)).arg(QString::number(saved_coupons, 'f', 1));
+    }
+    else
+    {
+        row_data << QString::number(size, 'f', 2) << QString("-");
+    }
+    row_data << QString::number(amount, 'f', 1);
+
+    return row_data;
+}
+void EventOperation::parseFields(const QStringList &list)
+{
+    if (list.count() != filedsCount()) return;
+
+    quint8 i = 0;
+    date.setDate(QDate::fromString(list.at(i), InstrumentBase::userDateMask())); i++;
+    date.setTime(QTime::fromString(list.at(i), InstrumentBase::userTimeMask())); i++;
+    kind = list.at(i).toInt(); i++;
+    currency = list.at(i); i++;
+    paper_type = list.at(i); i++;
+    n_papers = list.at(i).toUInt(); i++;
+    size = list.at(i).toFloat(); i++;
+    amount = list.at(i).toFloat(); i++;
+    uid = list.at(i); i++;
+}
+bool EventOperation::isSame(const EventOperation &other) const
+{
+    return (date == other.date && kind == other.kind && uid == other.uid && n_papers == other.n_papers);
+}
+/*
+bool EventOperation::invalid() const
+{
+    return ((kind < etCanceled) || (date.date().year() < 2010) || (date.date().year() > 2040));
+}
+*/
 
 
 //OrderData

@@ -1,5 +1,8 @@
 #include "apieventspage.h"
 #include "ltable.h"
+#include "lfile.h"
+#include "apicommonsettings.h"
+
 
 #include <QJsonObject>
 #include <QJsonArray>
@@ -8,6 +11,7 @@
 #include <QDebug>
 #include <QLabel>
 #include <QDate>
+#include <QDir>
 #include <QComboBox>
 #include <QLineEdit>
 #include <QGridLayout>
@@ -105,21 +109,34 @@ void APIEventsPage::slotLoadEvents(const QJsonObject &j_obj)
 {
     m_events.clear();
     if (j_obj.isEmpty()) return;
+    loadDataFromFile();
 
     const QJsonValue &j_operations = j_obj.value("operations");
     if (!j_operations.isArray()) return;
 
     const QJsonArray &j_arr = j_operations.toArray();
     int n = j_arr.count();
-    qDebug()<<QString(" APIEventsPage::slotLoadEvents arr_size %1").arg(n);
+    qDebug()<<QString(" APIEventsPage::slotLoadEvents json_arr_size %1").arg(n);
     for (int i=0; i<n; i++)
     {
         EventOperation e;
         e.fromJson(j_arr.at(i));
-        if (!e.invalid()) m_events.append(e);
+        if (e.invalid())
+        {
+            qWarning()<<QString("APIEventsPage::slotLoadEvents - WARNING: invalid event record, i=%1").arg(i);
+            qWarning()<<"    "<<e.toStr();
+        }
+        else
+        {
+            syncRecByFile(e);
+            //qDebug()<<QString("i=%1  m_events.size=%2  last_rec: ").arg(i).arg(m_events.size())<<e.toStr();
+            //qDebug()<<"   "<<m_events.last().toStr();
+            //m_events.append(e);
+        }
     }
-
     emit signalMsg(QString("loaded validity records: %1 \n").arg(m_events.count()));
+
+    sortByDate();
     reloadTableByData();
     recalcStat();
 }
@@ -143,11 +160,11 @@ void APIEventsPage::reloadTableByData()
         if (pair.second.length() < 2) pair.second = "---"; //ticker
         if (pair.first.length() < 5) pair.first = "---"; //company name
 
-        if (!cur_date.isValid() || cur_date != rec.date)
+        if (!cur_date.isValid() || cur_date != rec.date.date())
         {
             if (row_color == COLOR_DAY_EVEN) row_color = COLOR_DAY_ODD;
             else row_color = COLOR_DAY_EVEN;
-            cur_date = rec.date;
+            cur_date = rec.date.date();
         }
 
         addRowRecord(rec, pair, QColor(row_color));
@@ -159,7 +176,10 @@ void APIEventsPage::reloadTableByData()
 }
 void APIEventsPage::addRowRecord(const EventOperation &rec, const QPair<QString, QString> &info, QColor row_color)
 {
-    QStringList row_data;
+    QStringList row_data(rec.toTableRowData());
+    row_data.insert(1, info.second);
+    row_data.insert(1, info.first);
+    /*
     row_data << rec.strKind() << info.first << info.second << rec.paper_type << rec.currency;
     row_data << rec.date.toString(InstrumentBase::userDateMask()) << QString::number(rec.n_papers);
 
@@ -174,8 +194,9 @@ void APIEventsPage::addRowRecord(const EventOperation &rec, const QPair<QString,
         row_data << QString::number(rec.size, 'f', 2) << QString("-");
     }
     row_data << QString::number(rec.amount, 'f', 1);
-    LTable::addTableRow(m_tableBox->table(), row_data);
+    */
 
+    LTable::addTableRow(m_tableBox->table(), row_data);
     int l_row = m_tableBox->table()->rowCount() - 1;
     if (rec.amount < 0) m_tableBox->table()->item(l_row, AMOUNT_COL)->setTextColor(Qt::darkRed);
     LTable::setTableRowColor(m_tableBox->table(), l_row, row_color);
@@ -346,7 +367,7 @@ void APIEventsPage::dateFilter(int row, bool &need_hide)
     if (!ok) return;
 
     QDate limit_date = QDate::currentDate().addDays(-1*n_month*30);
-    if (m_events.at(row).date < limit_date)
+    if (m_events.at(row).date.date() < limit_date)
     {
         m_tableBox->table()->hideRow(row);
         need_hide = true;
@@ -461,4 +482,84 @@ void APIEventsPage::recalcPaperResult()
     m_paperResultEdit->setPalette(plt);
     m_paperResultEdit->setText(QString("%1 (%2ps)").arg(QString::number(result, 'f', 1)).arg(n_ps));
 }
+QString APIEventsPage::dataFile()
+{
+    return QString("%1%2%3").arg(API_CommonSettings::appDataPath()).arg(QDir::separator()).arg(EventOperation::dataFile());
+}
+void APIEventsPage::loadDataFromFile()
+{
+    emit signalMsg(QString("OPEN FILE: %1").arg(APIEventsPage::dataFile()));
+    QStringList list;
+    QString err = LFile::readFileSL(APIEventsPage::dataFile(), list);
+    if (!err.isEmpty()) {emit signalError(err); return;}
+    emit signalMsg(QString("FILE_LIST_SIZE: %1").arg(list.count()));
+
+
+    int n_invalid = 0;
+    foreach (const QString &v, list)
+    {
+        if (v.trimmed().isEmpty()) continue;
+        if (!v.contains("/")) continue;
+
+        EventOperation rec;
+        rec.fromFileLine(v);
+        if (!rec.invalid()) m_events.append(rec);
+        else
+        {
+            qWarning() << QString("INVALID EVENTS LINE: [%1]").arg(v); n_invalid++;
+            qDebug()<<QString("kind=%1  date validity: %2,  time validity: %3").arg(rec.kind).
+                      arg(rec.date.date().isValid()?"ok":"invalid").arg(rec.date.time().isValid()?"ok":"invalid");
+        }
+    }
+
+    emit signalMsg(QString("found invalid lines: %1/%2").arg(n_invalid).arg(m_events.count()));
+}
+void APIEventsPage::syncRecByFile(const EventOperation &rec)
+{
+    //check contains rec in m_events
+    bool is_new = true;
+    foreach (const EventOperation &v, m_events)
+        if (v.isSame(rec)) {is_new=false; break;}
+    if (!is_new) return;
+
+    //check filedata
+    QString err;
+    QString fname(dataFile());
+    if (!LFile::fileExists(fname))
+    {
+        emit signalMsg(QString("Need create datafile: %1").arg(fname));
+        err = LFile::writeFile(fname, QString("OPERATIONS HISTORY: \n"));
+        if (!err.isEmpty()) {emit signalError(err); return;}
+    }
+
+    //add data
+    m_events.append(rec);
+    QString fline(rec.toStr());
+    emit signalMsg(QString("Add new EVENT record: %1").arg(fline));
+    err = LFile::appendFile(fname, QString("%1.  %2 \n").arg(m_events.count()).arg(fline));
+    if (!err.isEmpty()) {emit signalError(err); return;}
+}
+void APIEventsPage::sortByDate()
+{
+    if (m_events.count() < 3) return;
+
+    int n = m_events.count();
+    while (1 == 1)
+    {
+        bool has_replace = false;
+        for (int i=0; i<n-1; i++)
+        {
+            const QDateTime &dt = m_events.at(i).date;
+            const QDateTime &dt_next = m_events.at(i+1).date;
+            if (dt_next > dt)
+            {
+                EventOperation rec = m_events.takeAt(i+1);
+                m_events.insert(i, rec);
+                has_replace = true;
+            }
+        }
+        if (!has_replace) break;
+    }
+}
+
 

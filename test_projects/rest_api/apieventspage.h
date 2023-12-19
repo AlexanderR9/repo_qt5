@@ -50,6 +50,8 @@ public:
     void load(QSettings&);
     void save(QSettings&);
 
+    static QString dataFile();
+
 
 protected:
     QList<EventOperation>    m_events;
@@ -69,6 +71,9 @@ protected:
     void updateStatTable();
     void initPaperResultWidget();
     void recalcPaperResult();
+    void loadDataFromFile(); //загрузка текущих записей из файла
+    void syncRecByFile(const EventOperation&); //синхронизировать запись с текущими данными, если запись не найдена, то добавить в конец файла и в m_events
+    void sortByDate();
 
 
 private:
@@ -78,7 +83,7 @@ private:
     void updateSearchLabel();
 
 public slots:
-    void slotLoadEvents(const QJsonObject&);
+    void slotLoadEvents(const QJsonObject&); //выполняется после успешного запроса получения истории операций
 
 protected slots:
     void slotFilter();

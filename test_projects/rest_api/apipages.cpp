@@ -101,6 +101,16 @@ void APIBondsPage::initFilterBox()
 }
 void APIBondsPage::filterByDate(QString f_value)
 {
+    if (m_finishDateControl)
+    {
+        int pos = m_finishDateControl->findText(f_value);
+        if (pos >= 0)
+        {
+            m_finishDateControl->setCurrentIndex(pos);
+            return;
+        }
+    }
+
     dateFilter(f_value);
     m_tableBox->searchExec();
     updateCouponPage();
