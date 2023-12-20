@@ -149,7 +149,10 @@ public:
     QListWidget* listWidget() const;
     void setRowColor(quint16, QString);
     void setRowTextColor(quint16, QString);
-
+    void setSelectionColor(QString background_color, QString text_color = "#000000");
+    void setBaseColor(QString background_color, QString text_color = "#000000");
+    void addItem(QString text, QString icon_path = QString());
+    void setSelectionMode(int, int); //params: SelectionBehavior, SelectionMode
 
 protected:
     QListWidget    *m_listWidget;

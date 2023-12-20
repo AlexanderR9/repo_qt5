@@ -309,6 +309,38 @@ void LListWidgetBox::setRowTextColor(quint16 i, QString s_color)
     if (!m_listWidget || !s_color.contains('#')) return;
     if (i < m_listWidget->count()) m_listWidget->item(i)->setTextColor(s_color);
 }
+void LListWidgetBox::setSelectionColor(QString bg_color, QString text_color)
+{
+    if (m_listWidget)
+    {
+        QString style_value = QString("selection-color: %1; selection-background-color: %2;").arg(text_color).arg(bg_color);
+        m_listWidget->setStyleSheet(style_value);
+    }
+}
+void LListWidgetBox::setBaseColor(QString bg_color, QString text_color)
+{
+    if (m_listWidget)
+    {
+        QString style_value = QString("color: %1; background-color: %2;").arg(text_color).arg(bg_color);
+        m_listWidget->setStyleSheet(style_value);
+    }
+}
+void LListWidgetBox::addItem(QString text, QString icon_path)
+{
+    QListWidgetItem *l_item = NULL;
+    if (icon_path.trimmed().isEmpty()) l_item = new QListWidgetItem(text);
+    else l_item = new QListWidgetItem(QIcon(icon_path), text);
+    m_listWidget->addItem(l_item);
+}
+void LListWidgetBox::setSelectionMode(int behavior, int mode)
+{
+    if (m_listWidget)
+    {
+        m_listWidget->setSelectionBehavior(QAbstractItemView::SelectionBehavior(behavior));
+        m_listWidget->setSelectionMode(QAbstractItemView::SelectionMode(mode));
+        m_listWidget->update();
+    }
+}
 
 
 //LTreeWidgetBox
