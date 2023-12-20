@@ -582,6 +582,15 @@ bool OrderData::invalid() const
 {
     return (type==QString("?") || !time.isValid() || uid.isEmpty() || order_id.isEmpty() || price<=0);
 }
+QString OrderData::toStr() const
+{
+    QString s("ORDER: ");
+    if (invalid()) return QString("%1 INVALID").arg(s);
+    s = QString("%1 type[%2] time[%3]").arg(s).arg(type).arg(time.toString("dd.MM.yyyy"));
+    s = QString("%1 order_id[%2] currency[%3]").arg(s).arg(order_id).arg(currency);
+    s = QString("%1 price[%2] lots[%3]  UID[%4]").arg(s).arg(price).arg(strLots()).arg(uid);
+    return s;
+}
 
 
 

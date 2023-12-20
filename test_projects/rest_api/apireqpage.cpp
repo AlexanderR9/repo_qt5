@@ -166,7 +166,6 @@ void APIReqPage::slotReqFinished(int result)
         }
         emit signalMsg("next cycle request finished \n");
     }
-    //else if (isNeedUpdateInfo()) needUpdateInfo();
     else emit signalFinished(result);
 }
 void APIReqPage::initReqObject()

@@ -117,6 +117,7 @@ void MainForm::initPages()
     connect(bag_page, SIGNAL(signalSendOrderCommand(const PlaceOrderData&)), req_page, SLOT(slotTrySendOrderReq(const PlaceOrderData&)));
     connect(bag_page, SIGNAL(signalGetBondNominalByUID(const QString&, float&)), bond_page, SLOT(slotGetBondNominalByUID(const QString&, float&)));
     connect(bag_page, SIGNAL(signalGetBondEndDateByUID(const QString&, QDate&)), bond_page, SLOT(slotGetBondEndDateByUID(const QString&, QDate&)));
+    connect(orders_page, SIGNAL(signalSendOrdersInfoToBag(const QMap<QString, QString>&)), bag_page, SLOT(slotUpdateOrdersInfo(const QMap<QString, QString>&)));
 
     m_tab->clear();
     foreach (LSimpleWidget *page, m_pages)
@@ -322,6 +323,7 @@ void MainForm::enableActions(bool b)
     getAction(LMainWidget::atLoadData)->setEnabled(b);
     getAction(LMainWidget::atRefresh)->setEnabled(b);
     getAction(LMainWidget::atBag)->setEnabled(b);
+    getAction(LMainWidget::atData)->setEnabled(b);
     getAction(LMainWidget::atMonitoring)->setEnabled(b);
 }
 void MainForm::clear()

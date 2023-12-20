@@ -12,14 +12,15 @@
 #include <QPoint>
 #include <QMenu>
 
-#define MARGIN_COL          5
-#define PROFIT_COL          6
-#define PRICE_COL           4
 #define NAME_COL            1
 #define TICKER_COL          2
-#define TO_COMPLETE_COL     8
-#define PAPER_TYPE_COL      7
 #define PAPER_COUNT_COL     3
+#define IN_ORDERS_COL       4
+#define PRICE_COL           5
+#define MARGIN_COL          6
+#define PROFIT_COL          7
+#define PAPER_TYPE_COL      8
+#define TO_COMPLETE_COL     9
 
 
 //APIBagPage
@@ -162,65 +163,106 @@ void APIBagPage::reloadPosTable()
         emit signalMsg(QString("Bag positions list is empty!"));
         return;
     }
+    else qDebug()<<QString("APIBagPage: m_bag->posCount() %2").arg(m_bag->posCount());
 
-
-    qDebug()<<QString("APIBagPage: m_bag->posCount() %2").arg(m_bag->posCount());
-    bool ok;
+    //fill table
     for (quint16 i=0; i<m_bag->posCount(); i++)
     {
         const BagPosition &pos = m_bag->posAt(i);
-        qDebug()<< pos.uid;
-        QStringList p_info;
-        p_info << pos.paper_type << pos.uid;
-        emit signalGetPaperInfo(p_info);
+        addPosition(pos);
 
-        QStringList row_data;
-        row_data << QString::number(i+1);
-        if (p_info.count() != 5) row_data << QString("?") << QString("?");
-        else row_data << p_info.at(2) << p_info.at(3);
-        row_data << QString::number(pos.count) << pos.strPrice() << QString::number(int(pos.margin())) << pos.strProfit() << pos.paper_type;
-
-        if (pos.isBond())
-        {
-            if (p_info.count() >= 5)
-            {
-                QDate fd = QDate::fromString(p_info.at(4), InstrumentBase::userDateMask());
-                if (fd.isValid())
-                {
-                    int dn = QDate::currentDate().daysTo(fd);
-                    if (dn < 0) dn = -1;
-                    row_data << QString::number(dn);
-                }
-                else row_data << "???";
-            }
-            else row_data << "????";
-        }
-        else
-        {
-            if (p_info.count() >= 5) row_data << p_info.at(4);
-            else row_data << "?????";
-        }
-
-        LTable::addTableRow(m_tableBox->table(), row_data);
         int l_row = m_tableBox->table()->rowCount() - 1;
         m_tableBox->table()->item(l_row, 1)->setData(Qt::UserRole, pos.uid);
-        if (pos.paper_type != "bond") LTable::setTableRowColor(m_tableBox->table(), l_row, "#FFFFE0");
-
-        if (pos.curProfit() > 0) m_tableBox->table()->item(l_row, PROFIT_COL)->setTextColor("#006400");
-        else if (pos.curProfit() < 0) m_tableBox->table()->item(l_row, PROFIT_COL)->setTextColor("#A52A2A");
-
-        int to_complete = m_tableBox->table()->item(l_row, TO_COMPLETE_COL)->text().toInt(&ok);
-        if (!ok) continue;
-
-        if (to_complete <= 0) LTable::setTableTextRowColor(m_tableBox->table(), l_row, QColor("#C0C0C0"));
-        else if (to_complete < 20) m_tableBox->table()->item(l_row, TO_COMPLETE_COL)->setTextColor(QColor("#0000CD"));
-        else if (to_complete > 180) m_tableBox->table()->item(l_row, TO_COMPLETE_COL)->setTextColor(QColor("#D2691E"));
-
+        updateCellsColors(l_row, pos);
     }
 
+    //set selection mode for table
     m_tableBox->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
     m_tableBox->setSelectionColor("#DEFFBF", "#6B8E23");
     m_tableBox->searchExec();
+}
+void APIBagPage::addPosition(const BagPosition &pos)
+{
+    QTableWidget *t = m_tableBox->table();
+
+    //qDebug()<< pos.uid;
+    QStringList p_info;
+    p_info << pos.paper_type << pos.uid;
+    emit signalGetPaperInfo(p_info);
+
+    QStringList row_data;
+    row_data << QString::number(t->rowCount()+1);
+    if (p_info.count() != 5) row_data << QString("?") << QString("?");
+    else row_data << p_info.at(2) << p_info.at(3);
+    row_data << QString::number(pos.count) << QString("-");
+    row_data << pos.strPrice() << QString::number(int(pos.margin())) << pos.strProfit() << pos.paper_type;
+
+    if (pos.isBond())
+    {
+        if (p_info.count() >= 5)
+        {
+            QDate fd = QDate::fromString(p_info.at(4), InstrumentBase::userDateMask());
+            if (fd.isValid())
+            {
+                int dn = QDate::currentDate().daysTo(fd);
+                if (dn < 0) dn = -1;
+                row_data << QString::number(dn);
+            }
+            else row_data << "???";
+        }
+        else row_data << "????";
+    }
+    else
+    {
+        if (p_info.count() >= 5) row_data << p_info.at(4);
+        else row_data << "?????";
+    }
+
+    LTable::addTableRow(t, row_data);
+}
+void APIBagPage::updateCellsColors(int l_row, const BagPosition &pos)
+{
+    QTableWidget *t = m_tableBox->table();
+
+    //brush paper type cell
+    if (!pos.isBond()) LTable::setTableRowColor(t, l_row, "#FFFFE0");
+
+    //brush profit cell
+    if (pos.curProfit() > 0) t->item(l_row, PROFIT_COL)->setTextColor("#006400");
+    else if (pos.curProfit() < 0) t->item(l_row, PROFIT_COL)->setTextColor("#A52A2A");
+
+    //brush days to finish cell
+    bool ok;
+    int to_complete = t->item(l_row, TO_COMPLETE_COL)->text().toInt(&ok);
+    if (ok)
+    {
+        if (to_complete <= 0) LTable::setTableTextRowColor(t, l_row, QColor("#C0C0C0"));
+        else if (to_complete < 20) t->item(l_row, TO_COMPLETE_COL)->setTextColor(QColor("#0000CD"));
+        else if (to_complete > 180) t->item(l_row, TO_COMPLETE_COL)->setTextColor(QColor("#D2691E"));
+    }
+}
+void APIBagPage::slotUpdateOrdersInfo(const QMap<QString, QString> &map)
+{
+    QTableWidget *t = m_tableBox->table();
+    for (int i=0; i<t->rowCount(); i++)
+    {
+        QColor cl = "#800000";
+        QString uid = t->item(i, 1)->data(Qt::UserRole).toString();
+        if (map.contains(uid))
+        {
+            QString s_count = map.value(uid).trimmed();
+            t->item(i, IN_ORDERS_COL)->setText(s_count);
+            if (s_count.contains("?")) cl = "#B22222";
+            else if (s_count.contains("B(")) cl = "#004400";
+        }
+        else
+        {
+            t->item(i, IN_ORDERS_COL)->setText("---");
+            cl = "#D3D3D3";
+        }
+        t->item(i, IN_ORDERS_COL)->setTextColor(QColor(cl));
+    }
+    m_tableBox->resizeByContents();
 }
 float APIBagPage::getCurrentPrice(int row) const
 {

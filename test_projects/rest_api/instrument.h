@@ -229,6 +229,7 @@ struct OrderData
     virtual void reset();
     virtual void fromJson(const QJsonValue&);
     virtual QString strLots() const;
+    virtual QString toStr() const;
 
 };
 

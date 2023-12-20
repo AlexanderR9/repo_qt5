@@ -5,6 +5,8 @@
 #include "instrument.h"
 
 struct TradeOperationData;
+struct BagPosition;
+
 
 //APIBagPage
 class APIBagPage : public APITablePageBase
@@ -23,8 +25,10 @@ protected:
 
     void initFilterBox();
     void reloadPosTable();
+    void addPosition(const BagPosition&);
     void tryPlaceOrder(TradeOperationData&);
     void prepareOrderData(TradeOperationData&, int max_p = -1);
+    void updateCellsColors(int i, const BagPosition&);
 
 private:
     void addGeneralEdit(QString, int&);
@@ -38,6 +42,10 @@ protected slots:
     void slotSellOrder();
     void slotSetTakeProfit();
     void slotSetStopLoss();
+
+public slots:
+    void slotUpdateOrdersInfo(const QMap<QString, QString>&);
+
 
 signals:
     void signalLoadPositions(const QJsonObject&);

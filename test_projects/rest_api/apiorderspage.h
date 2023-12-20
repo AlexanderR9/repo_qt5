@@ -27,6 +27,7 @@ protected:
     void addRowRecord(const OrderData*, const QPair<QString, QString>&);
     void clearData();
     void clearDataByKind(bool);
+    void calcPapersInOrders();
 
 public slots:
     void slotLoadOrders(const QJsonObject&);
@@ -42,6 +43,7 @@ signals:
     void signalGetPaperTypeByUID(const QString&, QString&);
     void signalGetBondNominalByUID(const QString&, float&);
     void signalCancelOrder(const PlaceOrderData&);
+    void signalSendOrdersInfoToBag(const QMap<QString, QString>&);
 
 };
 

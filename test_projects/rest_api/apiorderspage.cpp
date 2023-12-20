@@ -125,6 +125,61 @@ void APIOrdersPage::slotLoadStopOrders(const QJsonObject &j_obj)
     }
     emit signalMsg(QString("loaded validity STOP_ORDER records: %1/%2 \n").arg(j_arr.count()).arg(m_orders.count()));
     updateTableByData(true);
+
+    //send orders info to bag page
+    calcPapersInOrders();
+
+}
+void APIOrdersPage::calcPapersInOrders()
+{
+    QStringList keys;
+    qDebug("//////////////////calcPapersInOrders///////////////////");
+    foreach (const OrderData *v, m_orders)
+    {
+        if (!v) continue;
+        qDebug() << v->toStr();
+        if (!keys.contains(v->uid)) keys.append(v->uid);
+    }
+
+    QMap<QString, QString> map;
+    foreach (const QString &key, keys)
+    {
+        //key - UID of paper
+        QMap<QString, quint16> count_map;
+        foreach (const OrderData *v, m_orders)
+        {
+            if (!v) continue;
+            if (key == v->uid)
+            {
+                quint16 n = count_map.value(v->type, 0) + v->lots.first;
+                count_map.insert(v->type, n);
+            }
+        }
+        //------------------------------------
+        QString s;
+        QMap<QString, quint16>::const_iterator it = count_map.constBegin();
+        while (it != count_map.constEnd())
+        {
+            QString type = it.key().toLower().trimmed();
+            if (type.contains("limit") && type.contains("buy")) s = QString("%1 B(%2)").arg(s).arg(it.value());
+            else if (type.contains("limit") && type.contains("sell")) s = QString("%1 S(%2)").arg(s).arg(it.value());
+            else if (type.contains("takeprofit")) s = QString("%1 TP(%2)").arg(s).arg(it.value());
+            else if (type.contains("stoploss")) s = QString("%1 SL(%2)").arg(s).arg(it.value());
+            it++;
+        }
+
+        s = s.trimmed();
+        if (s.isEmpty())
+        {
+            qWarning()<<QString("APIOrdersPage::calcPapersInOrders() WARNING: count value is empty for: %1").arg(key);
+            s = "???";
+        }
+        map.insert(key, s);
+    }
+
+    if (!map.isEmpty())
+        emit signalSendOrdersInfoToBag(map);
+
 }
 void APIOrdersPage::updateTableByData(bool is_stop)
 {

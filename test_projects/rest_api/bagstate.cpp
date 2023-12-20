@@ -18,7 +18,7 @@ void BagState::reset()
 QStringList BagState::tableHeaders() const
 {
     QStringList headers;
-    headers << "N pos" << "Name" << "Ticker" << "Count" << "Price (buy/cur)" << "Margin" << "Profit" << "Type" << "To complete";
+    headers << "N pos" << "Name" << "Ticker" << "Count" << "In orders" << "Price (buy/cur)" << "Margin" << "Profit" << "Type" << "To complete";
     return headers;
 }
 void BagState::slotLoadPositions(const QJsonObject &j_obj)
