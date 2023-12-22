@@ -2,6 +2,7 @@
 #define APICONFIG_H
 
 #include <QStringList>
+#include <QByteArray>
 
 
 //APIConfig
@@ -21,10 +22,16 @@ struct APIConfig
 
     Candle candle;
     QStringList tickers;
+    QString api_key;
+    QString api_key_private;
+    quint16 req_delay;
 
 
     static QString appDataPath();
+    static QByteArray calcHMACSha256(QByteArray, QByteArray); //рассчет подписи для идентификации
+
     void loadTickers();
+    void setApiKeys(QString, QString);
 
 };
 

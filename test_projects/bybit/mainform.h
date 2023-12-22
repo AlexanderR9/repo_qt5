@@ -43,7 +43,7 @@ protected slots:
 
 
 private:
-
+    int expandLevel() const;
 
 };
 

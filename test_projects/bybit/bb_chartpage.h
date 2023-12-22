@@ -5,6 +5,9 @@
 
 
 class LChartWidget;
+struct BB_APIReqParams;
+class QJsonObject;
+class QPointF;
 
 
 //BB_ChartPage
@@ -26,6 +29,19 @@ protected:
 
     void init();
     void loadTickers();
+    void initChart();
+    void repaintChart(const QList<QPointF>&);
+
+protected slots:
+    void slotTickerChanged(int);
+
+public slots:
+    void slotJsonReply(int, const QJsonObject&);
+
+
+signals:
+    void signalSendReq(const BB_APIReqParams&);
+
 
 };
 

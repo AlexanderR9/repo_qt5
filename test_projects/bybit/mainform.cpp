@@ -12,7 +12,6 @@
 
 #include <QDebug>
 #include <QDir>
-#include <QTest>
 #include <QTimer>
 #include <QSettings>
 #include <QSplitter>
@@ -93,11 +92,37 @@ void MainForm::initCommonSettings()
 {
     QStringList combo_list;
 
-    QString key = QString("file1");
-    lCommonSettings.addParam(QString("File 1"), LSimpleDialog::sdtFilePath, key);
+    QString key = QString("candle_size");
+    lCommonSettings.addParam(QString("Candle size"), LSimpleDialog::sdtStringCombo, key);
+    combo_list.clear();
+    combo_list << "1" << "5" << "15" << "60" << "240" << "720" << "D" << "W" << "M";
+    lCommonSettings.setComboList(key, combo_list);
+
+    key = QString("candle_count");
+    lCommonSettings.addParam(QString("Candles count"), LSimpleDialog::sdtIntCombo, key);
+    combo_list.clear();
+    combo_list << "25" << "50" << "100" << "200" << "300" << "500";
+    lCommonSettings.setComboList(key, combo_list);
+
+    key = QString("apikey");
+    lCommonSettings.addParam(QString("API key"), LSimpleDialog::sdtString, key);
     lCommonSettings.setDefValue(key, QString(""));
 
+    key = QString("apikey2");
+    lCommonSettings.addParam(QString("API key (private)"), LSimpleDialog::sdtString, key);
+    lCommonSettings.setDefValue(key, QString(""));
 
+    key = QString("req_delay");
+    lCommonSettings.addParam(QString("Request delay"), LSimpleDialog::sdtIntCombo, key);
+    combo_list.clear();
+    combo_list << "500" << "1000" << "2000" << "3000" << "5000" << "10000";
+    lCommonSettings.setComboList(key, combo_list);
+
+    key = QString("view_expand");
+    lCommonSettings.addParam(QString("View expand level"), LSimpleDialog::sdtIntCombo, key);
+    combo_list.clear();
+    combo_list << "1" << "2" << "3" << "4" << "5";
+    lCommonSettings.setComboList(key, combo_list);
 
 }
 void MainForm::slotError(const QString &text)
@@ -126,10 +151,26 @@ void MainForm::load()
     if (!ba.isEmpty()) v_splitter->restoreState(ba);
 
     m_centralWidget->load(settings);
+    m_centralWidget->setExpandLevel(expandLevel());
+
+    //restore apiconfig
+    QString apikey1(lCommonSettings.paramValue("apikey").toString());
+    QString apikey2(lCommonSettings.paramValue("apikey2").toString());
+    api_config.setApiKeys(apikey1, apikey2);
+    api_config.req_delay = lCommonSettings.paramValue("req_delay").toInt();
+    api_config.candle.size = lCommonSettings.paramValue("candle_size").toString();
+    api_config.candle.number = lCommonSettings.paramValue("candle_count").toInt();
 }
 void MainForm::slotAppSettingsChanged(QStringList list)
 {
     LMainWidget::slotAppSettingsChanged(list);
+    if (list.contains("candle_size")) api_config.candle.size = lCommonSettings.paramValue("candle_size").toString();
+    if (list.contains("candle_count")) api_config.candle.number = lCommonSettings.paramValue("candle_count").toInt();
+    if (list.contains("req_delay")) api_config.req_delay = lCommonSettings.paramValue("req_delay").toInt();
+    if (list.contains("view_expand")) m_centralWidget->setExpandLevel(expandLevel());
+
+
+
     /*
     if (list.contains("server_api") || list.contains("print_headers"))
     {
@@ -150,3 +191,8 @@ void MainForm::slotAppSettingsChanged(QStringList list)
     */
 }
 
+//private
+int MainForm::expandLevel() const
+{
+    return lCommonSettings.paramValue("view_expand").toInt();
+}

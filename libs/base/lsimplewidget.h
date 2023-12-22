@@ -76,6 +76,10 @@ private:
     bool onlyVertical() const;
     bool onlyHorizontal() const;
 
+public slots:
+    virtual void slotEnableControls(bool) {}
+
+
 };
 
 
