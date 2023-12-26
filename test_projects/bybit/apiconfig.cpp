@@ -15,6 +15,7 @@ void APIConfig::reset()
 {
     candle.reset();
     req_delay=3000;
+    req_limit_pos = 50;
 }
 QString APIConfig::appDataPath()
 {
@@ -29,7 +30,7 @@ void APIConfig::loadTickers()
 void APIConfig::setApiKeys(QString key1, QString key2)
 {
     int h = key1.length()/2;
-    QString api_key = QString("%1%2").arg(key1.right(key1.length()-h)).arg(key1.left(h));
+    api_key = QString("%1%2").arg(key1.right(key1.length()-h)).arg(key1.left(h));
 
     api_key_private.clear();
     int n = key2.length();

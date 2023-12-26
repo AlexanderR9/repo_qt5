@@ -5,6 +5,7 @@
 #include "jsonviewpage.h"
 #include "bb_apistruct.h"
 #include "apiconfig.h"
+#include "bb_positionspage.h"
 
 #include <QStackedWidget>
 #include <QSplitter>
@@ -57,6 +58,12 @@ void BB_CentralWidget::createPages()
     JSONViewPage *j_page = new JSONViewPage(this);
     w_stack->addWidget(j_page);
     connect(this, SIGNAL(signalJsonReply(int, const QJsonObject&)), j_page, SLOT(slotReloadJsonReply(int, const QJsonObject&)));
+
+    BB_PositionsPage *pos_page = new BB_PositionsPage(this);
+    w_stack->addWidget(pos_page);
+    connect(pos_page, SIGNAL(signalSendReq(const BB_APIReqParams&)), this, SLOT(slotSendReq(const BB_APIReqParams&)));
+    connect(this, SIGNAL(signalJsonReply(int, const QJsonObject&)), pos_page, SLOT(slotJsonReply(int, const QJsonObject&)));
+
 
     for (int i=0; i<w_stack->count(); i++)
     {
@@ -114,16 +121,6 @@ void BB_CentralWidget::load(QSettings &settings)
     int cp = settings.value(QString("%1/current_page").arg(objectName()), 0).toInt();
     w_list->listWidget()->setCurrentRow(cp);
 
-
-    /*
-    QByteArray ba = settings.value(QString("%1/v_spltitter_state").arg(objectName()), QByteArray()).toByteArray();
-    if (v_splitter && !ba.isEmpty()) v_splitter->restoreState(ba);
-
-    ba.clear();
-    ba = settings.value(QString("%1/h_spltitter_state").arg(objectName()), QByteArray()).toByteArray();
-    if (h_splitter && !ba.isEmpty()) h_splitter->restoreState(ba);
-    */
-
 }
 void BB_CentralWidget::save(QSettings &settings)
 {
@@ -137,13 +134,6 @@ void BB_CentralWidget::save(QSettings &settings)
 
     settings.setValue(QString("%1/current_page").arg(objectName()), w_stack->currentIndex());
 
-    /*
-    if (v_splitter)
-        settings.setValue(QString("%1/v_spltitter_state").arg(objectName()), v_splitter->saveState());
-
-    if (h_splitter)
-        settings.setValue(QString("%1/h_spltitter_state").arg(objectName()), h_splitter->saveState());
-        */
 }
 void BB_CentralWidget::slotReqFinished(int result)
 {
@@ -157,36 +147,9 @@ void BB_CentralWidget::slotReqFinished(int result)
     else emit signalError("request fault");
 
 
-    /*
-    const LHttpApiReplyData& r = m_reqObj->lastReply();
-    slotMessage(QString("------------headers %1---------------").arg(r.headers.count()));
-    foreach (const QString v, r.headers) slotMessage(v);
-
-    if (r.data.isEmpty()) slotMessage("WARNING: REPLY JSON IS EMPTY");
-    else
-    {
-        QStringList keys(r.data.keys());
-        slotMessage(QString("\n------------json data %1---------------").arg(keys.count()));
-        foreach (const QString &v, keys)
-        {
-            slotMessage(QString("KEY: %1").arg(v));
-            const QJsonValue &jv = r.data.value(v);
-            if (jv.isDouble()) slotMessage(QString("VALUE: %1").arg(jv.toDouble()));
-            else if (jv.isString()) slotMessage(QString("VALUE: %1").arg(jv.toString()));
-            else slotMessage(QString("VALUE: ???"));
-        }
-    }
-
-    if (r.isOk())
-    {
-        m_replyBox->loadJSON(r.data, "JSON struct");
-        m_replyBox->expandLevel();
-        m_replyBox->resizeByContents();
-        m_replyBox->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::SingleSelection);
-
-        if (m_reqObj->fullUrl().contains("instruments-info")) saveTickers(r.data);
-    }
-    */
+    //out headers of reply
+    emit signalMsg(QString("------------headers %1---------------").arg(r.headers.count()));
+    foreach (const QString v, r.headers) emit signalMsg(v);
 
 }
 void BB_CentralWidget::prepareReq(const BB_APIReqParams &req_data)
@@ -222,7 +185,6 @@ void BB_CentralWidget::slotSendReq(const BB_APIReqParams &req_data)
     emit signalEnableControls(false);
 
     qDebug()<<req_data.toStr();
-
     m_reqObj->start(req_data.metod);
 
 }
@@ -240,6 +202,14 @@ bool BB_CentralWidget::requesterBuzy() const
 {
     if (m_reqObj) return m_reqObj->isBuzy();
     return false;
+}
+void BB_CentralWidget::updateDataPage()
+{
+    if (w_stack->currentIndex() == 2)
+    {
+        BB_PositionsPage *page = qobject_cast<BB_PositionsPage*>(w_stack->currentWidget());
+        if (page) page->updateDataPage();
+    }
 }
 
 

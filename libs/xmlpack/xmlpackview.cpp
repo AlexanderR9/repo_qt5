@@ -103,6 +103,11 @@ void LXMLPackView::initPacket(const QDomDocument &dom)
 
     prepareView();
 }
+void LXMLPackView::destroyPacket()
+{
+    resetView();
+    resizeColumns();
+}
 void LXMLPackView::setPacket(LXMLPackObj *p)
 {   
     if (!p)

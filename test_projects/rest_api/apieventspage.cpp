@@ -179,27 +179,16 @@ void APIEventsPage::addRowRecord(const EventOperation &rec, const QPair<QString,
     QStringList row_data(rec.toTableRowData());
     row_data.insert(1, info.second);
     row_data.insert(1, info.first);
-    /*
-    row_data << rec.strKind() << info.first << info.second << rec.paper_type << rec.currency;
-    row_data << rec.date.toString(InstrumentBase::userDateMask()) << QString::number(rec.n_papers);
-
-    if (rec.kind == EventOperation::etBuy || rec.kind == EventOperation::etSell)
-    {
-        row_data << QString("%1/%2").arg(QString::number(rec.size, 'f', 2)).arg(QString::number(rec.size*rec.n_papers, 'f', 1));
-        float saved_coupons = qAbs(rec.amount) - (rec.size*rec.n_papers);
-        row_data << QString("%1/%2").arg(QString::number(saved_coupons/rec.n_papers, 'f', 2)).arg(QString::number(saved_coupons, 'f', 1));
-    }
-    else
-    {
-        row_data << QString::number(rec.size, 'f', 2) << QString("-");
-    }
-    row_data << QString::number(rec.amount, 'f', 1);
-    */
 
     LTable::addTableRow(m_tableBox->table(), row_data);
     int l_row = m_tableBox->table()->rowCount() - 1;
     if (rec.amount < 0) m_tableBox->table()->item(l_row, AMOUNT_COL)->setTextColor(Qt::darkRed);
     LTable::setTableRowColor(m_tableBox->table(), l_row, row_color);
+
+    //kind operation
+    if (rec.strKind().toLower().trimmed() == "sell")
+        m_tableBox->table()->item(l_row, KIND_COL)->setTextColor(QColor("#8B0000"));
+
 }
 void APIEventsPage::load(QSettings &settings)
 {

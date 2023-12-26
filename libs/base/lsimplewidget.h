@@ -102,6 +102,7 @@ public:
     void setSelectionMode(int, int); //params: SelectionBehavior, SelectionMode
     void setSelectionColor(QString background_color, QString text_color = "#000000");
     void sortingOn(); //активировать возможность сортировки столбцов по клику на соответствующем заголовке
+    void removeAllRows();
 
     QTableWidget* table() const;
 

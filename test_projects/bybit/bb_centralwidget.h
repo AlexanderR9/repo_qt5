@@ -24,6 +24,8 @@ public:
     virtual void save(QSettings&);
     void setExpandLevel(int);
     bool requesterBuzy() const;
+    void updateDataPage();
+
 
 protected:
     LListWidgetBox      *w_list;
@@ -48,6 +50,9 @@ public slots:
 signals:
     void signalEnableControls(bool);
     void signalJsonReply(int, const QJsonObject&);
+
+private:
+    QString hmacSha1(QByteArray, QByteArray) const;
 
 };
 

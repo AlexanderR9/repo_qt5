@@ -66,11 +66,11 @@ void MainForm::slotAction(int type)
 void MainForm::actStart()
 {
     m_protocol->addSpace();
-    m_protocol->addText("Run test .......", LProtocolBox::ttFile);
+    m_protocol->addText("Run updatating data of page .......", LProtocolBox::ttFile);
 
+    if (m_centralWidget) m_centralWidget->updateDataPage();
 
-
-    m_protocol->addText("finished!");
+    //m_protocol->addText("finished!");
 }
 
 void MainForm::initWidgets()
@@ -124,6 +124,12 @@ void MainForm::initCommonSettings()
     combo_list << "1" << "2" << "3" << "4" << "5";
     lCommonSettings.setComboList(key, combo_list);
 
+    key = QString("limit_pos");
+    lCommonSettings.addParam(QString("Limit request positions"), LSimpleDialog::sdtIntCombo, key);
+    combo_list.clear();
+    combo_list << "25" << "50" << "100" << "200" << "300" << "500";
+    lCommonSettings.setComboList(key, combo_list);
+
 }
 void MainForm::slotError(const QString &text)
 {
@@ -168,27 +174,7 @@ void MainForm::slotAppSettingsChanged(QStringList list)
     if (list.contains("candle_count")) api_config.candle.number = lCommonSettings.paramValue("candle_count").toInt();
     if (list.contains("req_delay")) api_config.req_delay = lCommonSettings.paramValue("req_delay").toInt();
     if (list.contains("view_expand")) m_centralWidget->setExpandLevel(expandLevel());
-
-
-
-    /*
-    if (list.contains("server_api") || list.contains("print_headers"))
-    {
-        APIReqPage *req_page = qobject_cast<APIReqPage*>(m_pages.value(aptReq));
-        if (req_page)
-        {
-            req_page->setServerAPI(hptHttps, serverAPI());
-            req_page->setPrintHeaders(printHeaders());
-        }
-        else slotError("req_page is NULL");
-    }
-    else if (list.contains("expand_level"))
-    {
-        APIReqPage *req_page = qobject_cast<APIReqPage*>(m_pages.value(aptReq));
-        if (req_page) req_page->setExpandLevel(expandLevel());
-        else slotError("req_page is NULL");
-    }
-    */
+    if (list.contains("limit_pos")) api_config.req_limit_pos = lCommonSettings.paramValue("limit_pos").toInt();
 }
 
 //private

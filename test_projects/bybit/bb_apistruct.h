@@ -3,7 +3,8 @@
 
 #include <QMap>
 
-enum BB_ReqType {rtCandles = 501};
+enum BB_ReqType {rtCandles = 181, rtPositions, rtOrders};
+
 
 //необходимые данные для формирования запроса перед отправкой
 struct BB_APIReqParams

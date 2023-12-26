@@ -79,6 +79,8 @@ public:
     virtual void setPacket(LXMLPackObj*); //установить экземпляр пакета для отображения
     virtual void initPacket(const QDomDocument&); //инициализировать m_packet
 
+    virtual void destroyPacket(); //удалить содержимое вьюхи
+
 
     virtual void setPacketByteOrder(int); //устанавливает порядок байт для записи пакета в поток данных в m_packet
     virtual void resizeColumns(); //подогнать размеры столбцов под контент    

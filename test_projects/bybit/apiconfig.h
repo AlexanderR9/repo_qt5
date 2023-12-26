@@ -25,6 +25,7 @@ struct APIConfig
     QString api_key;
     QString api_key_private;
     quint16 req_delay;
+    quint16 req_limit_pos;
 
 
     static QString appDataPath();

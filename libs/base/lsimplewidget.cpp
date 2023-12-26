@@ -156,6 +156,10 @@ void LTableWidgetBox::setHeaderLabels(const QStringList &list, int orintation)
 {
     LTable::setTableHeaders(m_table, list, orintation);
 }
+void LTableWidgetBox::removeAllRows()
+{
+    LTable::removeAllRowsTable(m_table);
+}
 void LTableWidgetBox::vHeaderHide()
 {
     m_table->verticalHeader()->hide();

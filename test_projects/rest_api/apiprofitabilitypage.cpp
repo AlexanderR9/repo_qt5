@@ -93,28 +93,6 @@ void APIProfitabilityPage::slotBuyOrder()
     }
     m_buyData.lots = t_data.lots;
     m_buyData.price = t_data.price;
-
-
-    //prepare request data
-    /*
-    QString src = QString();
-    foreach(const QString &v, api_commonSettings.services)
-    {
-        if (v.toLower().contains("post") && v.toLower().contains("order"))
-        {
-            src = v;
-            break;
-        }
-    }
-    if (src.isEmpty())
-    {
-        emit signalError(QString("Not found API metod for buy order, uid=[%1]").arg(uid));
-        return;
-    }
-    */
-
-    //QStringList req_data;
-    //req_data << src << uid << QString::number(t_data.lots) << QString::number(t_data.price, 'f', 2) << "buy";
     emit signalMsg(QString("Try set BUY order id: [%1], paper: [%2]").arg(m_buyData.uid).arg(p_name));
     emit signalBuyOrder(m_buyData);
 }
@@ -209,6 +187,9 @@ void APIProfitabilityPage::syncTableData(const BondDesc &bond_rec, const QString
         m_tableBox->table()->item(row, priceCol())->setTextColor(Qt::darkGreen);
     else if (v_month < PROFITABILITY_LIMIT_MIN)
         m_tableBox->table()->item(row, priceCol())->setTextColor(Qt::lightGray);
+
+    if (bond_rec.nominal < 900)
+        m_tableBox->table()->item(row, PRICE_COL)->setTextColor("#8B0000");
 
     m_tick++;
 }
