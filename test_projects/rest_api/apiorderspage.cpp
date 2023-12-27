@@ -9,6 +9,7 @@
 #include <QDebug>
 #include <QPoint>
 #include <QMenu>
+#include <QDir>
 
 #define KIND_COL            0
 #define NAME_COL            1
@@ -31,6 +32,10 @@ APIOrdersPage::APIOrdersPage(QWidget *parent)
     m_tableBox->table()->setContextMenuPolicy(Qt::CustomContextMenu);
 
     connect(m_tableBox->table(), SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu(QPoint)));
+}
+QString APIOrdersPage::logFile()
+{
+    return QString("%1%2%3").arg(API_CommonSettings::appDataPath()).arg(QDir::separator()).arg(QString("orders_log.txt"));
 }
 void APIOrdersPage::slotContextMenu(QPoint p)
 {

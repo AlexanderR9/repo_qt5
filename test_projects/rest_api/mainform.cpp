@@ -212,6 +212,10 @@ void MainForm::initCommonSettings()
     lCommonSettings.addParam(QString("Run AUTO_START requests"), LSimpleDialog::sdtBool, key);
     lCommonSettings.setDefValue(key, false);
 
+    key = QString("sort_profit");
+    lCommonSettings.addParam(QString("Sorting by profitability"), LSimpleDialog::sdtBool, key);
+    lCommonSettings.setDefValue(key, false);
+
 }
 void MainForm::initActions()
 {

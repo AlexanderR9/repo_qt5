@@ -19,6 +19,8 @@ public:
     QString iconPath() const {return QString(":/icons/images/clock.svg");}
     QString caption() const {return QString("Orders");}
 
+    static QString logFile();
+
 protected:
     PlaceOrderData       m_cancelData;
     QList<OrderData*>    m_orders;

@@ -6,6 +6,7 @@
 #include "bb_apistruct.h"
 #include "apiconfig.h"
 #include "bb_positionspage.h"
+#include "bb_historypage.h"
 
 #include <QStackedWidget>
 #include <QSplitter>
@@ -64,6 +65,10 @@ void BB_CentralWidget::createPages()
     connect(pos_page, SIGNAL(signalSendReq(const BB_APIReqParams&)), this, SLOT(slotSendReq(const BB_APIReqParams&)));
     connect(this, SIGNAL(signalJsonReply(int, const QJsonObject&)), pos_page, SLOT(slotJsonReply(int, const QJsonObject&)));
 
+    BB_HistoryPage *h_page = new BB_HistoryPage(this);
+    w_stack->addWidget(h_page);
+    connect(h_page, SIGNAL(signalSendReq(const BB_APIReqParams&)), this, SLOT(slotSendReq(const BB_APIReqParams&)));
+    connect(this, SIGNAL(signalJsonReply(int, const QJsonObject&)), h_page, SLOT(slotJsonReply(int, const QJsonObject&)));
 
     for (int i=0; i<w_stack->count(); i++)
     {
@@ -205,10 +210,21 @@ bool BB_CentralWidget::requesterBuzy() const
 }
 void BB_CentralWidget::updateDataPage()
 {
-    if (w_stack->currentIndex() == 2)
+    switch (w_stack->currentIndex())
     {
-        BB_PositionsPage *page = qobject_cast<BB_PositionsPage*>(w_stack->currentWidget());
-        if (page) page->updateDataPage();
+        case 2:
+        {
+            BB_PositionsPage *page = qobject_cast<BB_PositionsPage*>(w_stack->currentWidget());
+            if (page) page->updateDataPage();
+            break;
+        }
+        case 3:
+        {
+            BB_HistoryPage *page = qobject_cast<BB_HistoryPage*>(w_stack->currentWidget());
+            if (page) page->updateDataPage();
+            break;
+        }
+        default: break;
     }
 }
 

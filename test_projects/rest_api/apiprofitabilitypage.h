@@ -27,6 +27,8 @@ protected:
     PlaceOrderData m_buyData;
 
     void syncTableData(const BondDesc&, const QStringList&, float);
+    int indexOf(const QString&) const; //find record in the table by figi, return row_index or -1
+    void sortByProfitability(int, float);
 
 public slots:
     void slotRecalcProfitability(const BondDesc&, float);

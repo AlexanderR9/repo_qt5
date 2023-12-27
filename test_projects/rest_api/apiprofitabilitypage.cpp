@@ -3,6 +3,7 @@
 #include "apicommonsettings.h"
 #include "instrument.h"
 #include "apitradedialog.h"
+#include "lcommonsettings.h"
 
 #include <QTableWidget>
 #include <QDebug>
@@ -10,8 +11,8 @@
 #include <QMenu>
 #include <QTimer>
 
-#define PROFITABILITY_LIMIT             1.4
-#define PROFITABILITY_LIMIT2            1.15
+#define PROFITABILITY_LIMIT             1.35
+#define PROFITABILITY_LIMIT2            1.12
 #define PROFITABILITY_LIMIT_MIN         0.9
 
 #define NAME_COL            0
@@ -52,7 +53,7 @@ void APIProfitabilityPage::slotResizeTimer()
 }
 void APIProfitabilityPage::slotContextMenu(QPoint p)
 {
-    qDebug()<<QString("APIProfitabilityPage::slotContextMenu  %1/%2").arg(p.x()).arg(p.y());
+   // qDebug()<<QString("APIProfitabilityPage::slotContextMenu  %1/%2").arg(p.x()).arg(p.y());
     QTableWidget *t = m_tableBox->table();
     if (LTable::selectedRows(t).count() != 1) return;
 
@@ -70,7 +71,7 @@ void APIProfitabilityPage::slotBuyOrder()
     m_buyData.reset();
     QTableWidget *t = m_tableBox->table();
     int row = LTable::selectedRows(t).first();
-    qDebug()<<QString("APIProfitabilityPage::slotBuyOrder()  sel row %1").arg(row);
+  //  qDebug()<<QString("APIProfitabilityPage::slotBuyOrder()  sel row %1").arg(row);
     m_buyData.uid = t->item(row, 1)->data(Qt::UserRole).toString();
     m_buyData.kind = "buy";
     QString p_name = QString("%1 / %2").arg(t->item(row, NAME_COL)->text()).arg(t->item(row, TICKER_COL)->text());
@@ -87,7 +88,7 @@ void APIProfitabilityPage::slotBuyOrder()
     d.exec();
     if (!d.isApply())
     {
-        qDebug()<<QString("APIProfitabilityPage::slotBuyOrder() operation was canceled");
+        //qDebug()<<QString("APIProfitabilityPage::slotBuyOrder() operation was canceled");
         emit signalMsg("operation was canceled!");
         return;
     }
@@ -107,7 +108,7 @@ float APIProfitabilityPage::getCurrentPrice(int row) const
         s_price = s_price.left(pos);
         bool ok;
         float p = s_price.toFloat(&ok);
-        if (ok & p > 0) return p;
+        if (ok && p > 0) return p;
     }
     qWarning("APIProfitabilityPage::getCurrentPrice WARNING invalid current price");
     return -1;
@@ -123,7 +124,7 @@ float APIProfitabilityPage::curAccumulatedCoupon(int row) const
         s_price = s_price.left(pos);
         bool ok;
         float p = s_price.toFloat(&ok);
-        if (ok & p > 0) return p;
+        if (ok && p > 0) return p;
     }
     qWarning("APIProfitabilityPage::curAccumulatedCoupon WARNING invalid current AccumulatedCoupon");
     return -1;
@@ -131,13 +132,12 @@ float APIProfitabilityPage::curAccumulatedCoupon(int row) const
 void APIProfitabilityPage::slotRecalcProfitability(const BondDesc &bond_rec, float price)
 {
     if (bond_rec.invalid() || price <= 0) return;
-    qDebug("APIProfitabilityPage::slotRecalcProfitability");
+    //qDebug()<<QString("APIProfitabilityPage::slotRecalcProfitability  [%1]").arg(bond_rec.isin);
 
     const BCoupon *c_rec = NULL;
     emit signalGetCouponRec(bond_rec.figi, c_rec);
     if (!c_rec ) {qWarning()<<QString("APIProfitabilityPage::slotRecalcProfitability WARNING - not found coupon record by figi [%1]").arg(bond_rec.figi); return;}
     if (c_rec->invalid()) return;
-
 
     QStringList row_data;
     row_data << bond_rec.name << bond_rec.isin;
@@ -157,40 +157,69 @@ void APIProfitabilityPage::slotRecalcProfitability(const BondDesc &bond_rec, flo
 }
 void APIProfitabilityPage::syncTableData(const BondDesc &bond_rec, const QStringList &row_data, float v_month)
 {
-    int row = -1;
-    int n = m_tableBox->table()->rowCount();
-    if (n > 0)
-    {
-        for (int i=0; i<n-1; i++)
-        {
-            QString u_data = m_tableBox->table()->item(i, 0)->data(Qt::UserRole).toString();
-            if (u_data == bond_rec.figi) {row = i; break;}
-        }
-    }
+    QTableWidget *t = m_tableBox->table();
+    int row = indexOf(bond_rec.figi);
 
     //update table data
     if (row >= 0)
     {
-        LTable::setTableRow(row, m_tableBox->table(), row_data);
+        LTable::setTableRow(row, t, row_data);
     }
     else
     {
-        LTable::addTableRow(m_tableBox->table(), row_data);
-        m_tableBox->table()->item(n, 0)->setData(Qt::UserRole, bond_rec.figi);
-        m_tableBox->table()->item(n, 1)->setData(Qt::UserRole, bond_rec.uid);
-        row = n;
+        row = t->rowCount();
+        LTable::addTableRow(t, row_data);
+        t->item(row, 0)->setData(Qt::UserRole, bond_rec.figi);
+        t->item(row, 1)->setData(Qt::UserRole, bond_rec.uid);
     }
 
+    //set cells color
     if (v_month > PROFITABILITY_LIMIT)
-        m_tableBox->table()->item(row, priceCol())->setTextColor(Qt::blue);
+        t->item(row, priceCol())->setTextColor(Qt::blue);
     else if (v_month > PROFITABILITY_LIMIT2)
-        m_tableBox->table()->item(row, priceCol())->setTextColor(Qt::darkGreen);
+        t->item(row, priceCol())->setTextColor(Qt::darkGreen);
     else if (v_month < PROFITABILITY_LIMIT_MIN)
-        m_tableBox->table()->item(row, priceCol())->setTextColor(Qt::lightGray);
+        t->item(row, priceCol())->setTextColor(Qt::lightGray);
 
     if (bond_rec.nominal < 900)
-        m_tableBox->table()->item(row, PRICE_COL)->setTextColor("#8B0000");
+        t->item(row, PRICE_COL)->setTextColor("#8B0000");
 
     m_tick++;
+    sortByProfitability(row, v_month);
+}
+void APIProfitabilityPage::sortByProfitability(int row, float value)
+{
+    //qDebug()<<QString("sortByProfitability row=%1  value=%2").arg(row).arg(value);
+    if (!lCommonSettings.paramValue("sort_profit").toBool()) return;
+    QTableWidget *t = m_tableBox->table();
+    if (t->rowCount() < 2) return;
+    if (row < 0 || row >= t->rowCount()) return;
+
+    for (int i=0; i<t->rowCount(); i++)
+    {
+        if (i >= row) break;
+
+        QString s_price = t->item(i, priceCol())->text().trimmed();
+        int pos = s_price.indexOf("/");
+        if (pos > 0)
+        {
+            if (value > s_price.left(pos).trimmed().toFloat())
+            {
+                //qDebug()<<QString("need replace: i=%1, vprof=%2").arg(i).arg(s_price.left(pos).trimmed().toFloat());
+                LTable::shiftTableRow(t, row, i-row);
+                break;
+            }
+        }
+    }
+}
+int APIProfitabilityPage::indexOf(const QString &figi) const
+{
+    int n = m_tableBox->table()->rowCount();
+    for (int i=0; i<n; i++)
+    {
+        QString u_data = m_tableBox->table()->item(i, 0)->data(Qt::UserRole).toString();
+        if (u_data == figi) return i;
+    }
+    return -1;
 }
 

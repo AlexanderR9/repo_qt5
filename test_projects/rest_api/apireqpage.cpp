@@ -2,6 +2,7 @@
 #include "lfile.h"
 #include "lhttpapirequester.h"
 #include "apipages.h"
+#include "apiorderspage.h"
 #include "apicommonsettings.h"
 #include "lhttp_types.h"
 #include "reqpreparer.h"
@@ -272,7 +273,6 @@ void APIReqPage::slotTrySendOrderReq(const PlaceOrderData &req_data)
 }
 void APIReqPage::trySendReq()
 {
-    //m_needUpdateOrders = 0;
     m_reqPreparer->clearCycleData();
     int row = m_sourceBox->listWidget()->currentRow();
     if (row < 0)
@@ -334,9 +334,6 @@ void APIReqPage::toDebugReqMetadata()
 }
 void APIReqPage::standardRequest(const QString &src, const PlaceOrderData *req_data)
 {
-    //if (req_data) m_reqPreparer->prepareOrderReq(req_data);
-    //else m_reqPreparer->prepare(src);
-
     qDebug()<<QString("APIReqPage::standardRequest  src[%1]  req_data[%2]").arg(src).arg(req_data?"TRUE":"NULL");
     m_reqPreparer->prepare(src, req_data);
     qDebug("1");
@@ -355,8 +352,37 @@ void APIReqPage::standardRequest(const QString &src, const PlaceOrderData *req_d
         printHeaders();
         emit signalMsg("request started ....");
         toDebugReqMetadata();
+        addOrdersLog(req_data);
         m_reqObj->start(hrmPost);
     }
+}
+void APIReqPage::addOrdersLog(const PlaceOrderData *req_data)
+{
+    if (!req_data) return;
+
+    QString err;
+    QString fname(APIOrdersPage::logFile());
+    if (!LFile::fileExists(fname))
+    {
+        err = LFile::writeFile(fname, "SENT ORDERS LOG: \n");
+        if (!err.isEmpty())
+        {
+            emit signalError(QString("APIReqPage::addOrdersLog() - %1").arg(err));
+            return;
+        }
+    }
+
+    QDateTime dt(QDateTime::currentDateTimeUtc());
+    QString s = QString("%1 / %2").arg(dt.date().toString(InstrumentBase::userDateMask())).arg(dt.time().toString(InstrumentBase::userTimeMask()));
+    s = QString("%1 / %2 / %3").arg(s).arg(req_data->kind.trimmed().toUpper()).arg(req_data->lots);
+    s = QString("%1 / %2 / %3").arg(s).arg(QString::number(req_data->price, 'f', 2)).arg(req_data->uid);
+    if (req_data->isStop()) s.append(" / IS_STOP");
+    if (req_data->nominal > 0) s.append(" / IS_BOND");
+
+    err = LFile::appendFile(fname, QString("%1 \n").arg(s));
+    if (!err.isEmpty())
+        emit signalError(QString("APIReqPage::addOrdersLog() - %1").arg(err));
+
 }
 void APIReqPage::slotCycleWorkerNextReq()
 {

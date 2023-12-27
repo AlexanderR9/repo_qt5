@@ -28,23 +28,24 @@ BB_PositionsPage::BB_PositionsPage(QWidget *parent)
 }
 void BB_PositionsPage::init()
 {
-    m_table = new LTableWidgetBox(this);
+    m_table = new LSearchTableWidgetBox(this);
     m_table->setTitle("Current positions");
     initTable(m_table);
 
-    m_orderTable = new LTableWidgetBox(this);
+    m_orderTable = new LSearchTableWidgetBox(this);
     m_orderTable->setTitle("Placed orders");
     initTable(m_orderTable);
 
 }
-void BB_PositionsPage::initTable(LTableWidgetBox *t)
+void BB_PositionsPage::initTable(LSearchTableWidgetBox *t)
 {
     if (!t) return;
-    //t->vHeaderHide();
+    t->vHeaderHide();
     t->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
     t->setHeaderLabels(tableHeaders());
     t->resizeByContents();
     h_splitter->addWidget(t);
+    t->searchExec();
 }
 QStringList BB_PositionsPage::tableHeaders() const
 {
@@ -119,6 +120,8 @@ void BB_PositionsPage::fillPosTable(const QJsonArray &j_arr)
         LTable::addTableRow(m_table->table(), row_data);
     }
     m_table->resizeByContents();
+    m_table->searchExec();
+
 }
 void BB_PositionsPage::fillOrdersTable(const QJsonArray &j_arr)
 {
@@ -139,6 +142,8 @@ void BB_PositionsPage::fillOrdersTable(const QJsonArray &j_arr)
 
     }
     m_orderTable->resizeByContents();
+    m_orderTable->searchExec();
+
 }
 
 

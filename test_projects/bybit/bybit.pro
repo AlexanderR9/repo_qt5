@@ -33,7 +33,8 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/jsonviewpage.h \
         $$PWD/apiconfig.h \
         $$PWD/bb_apistruct.h \
-    bb_positionspage.h
+    bb_positionspage.h \
+    bb_historypage.h
 
 
 SOURCES += $$PWD/main.cpp \
@@ -43,6 +44,7 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/jsonviewpage.cpp \
         $$PWD/apiconfig.cpp \
         $$PWD/bb_apistruct.cpp \
-    bb_positionspage.cpp
+    bb_positionspage.cpp \
+    bb_historypage.cpp
 
 

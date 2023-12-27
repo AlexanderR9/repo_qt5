@@ -59,6 +59,7 @@ protected:
     void printHeaders(QString s = "req"); //param - req or resp
     void prepareCycleData();
     void needUpdateInfo();
+    void addOrdersLog(const PlaceOrderData*);
 
     inline bool isNeedUpdateInfo() const {return (m_needUpdateInfo != ruiNone);}
 

@@ -240,6 +240,7 @@ quint8 APITradeDialog::precision() const
 void APITradeDialog::trimPrice()
 {
     if (m_data.price > 10000) m_data.price = 10*qRound(m_data.price/10);
-    if (m_data.price > 1500) m_data.price = qRound(m_data.price);
+    else if (m_data.price > 1500) m_data.price = qRound(m_data.price);
+    else if (m_data.price > 10)  m_data.price = float(qRound(m_data.price*10))/float(10);
 }
 

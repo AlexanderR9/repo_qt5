@@ -27,8 +27,8 @@ public:
     void updateDataPage();
 
 protected:
-    LTableWidgetBox     *m_table;
-    LTableWidgetBox     *m_orderTable;
+    LSearchTableWidgetBox     *m_table;
+    LSearchTableWidgetBox     *m_orderTable;
     int cur_stage;
 
     void init();
@@ -37,7 +37,7 @@ protected:
     void fillOrdersTable(const QJsonArray&);
 
 private:
-    void initTable(LTableWidgetBox*);
+    void initTable(LSearchTableWidgetBox*);
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);
