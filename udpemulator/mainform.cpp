@@ -102,8 +102,6 @@ void MainForm::initCommonSettings()
 
     key = QString("outfile");
     lCommonSettings.addParam(QString("Out file for writing received packets"), LSimpleDialog::sdtFilePath, key);
-
-
 }
 void MainForm::save()
 {
@@ -137,8 +135,10 @@ void MainForm::slotMsg(const QString &text)
 }
 void MainForm::preparePacket()
 {
+    m_parts.clear();
     m_testPacket.clear();
     QString fname(packFile().trimmed());
+    quint16 part_size = 0;
     if (!fname.isEmpty())
     {
         QStringList list;
@@ -149,11 +149,23 @@ void MainForm::preparePacket()
             foreach (const QString &v, list)
             {
                 if (v.contains("#")) continue;
-                if (!v.contains(":")) continue;
+                if (!v.contains(":")) continue;                
+
+                if (v.trimmed() == "BREAK:")
+                {
+                    if (part_size > 0) m_parts.append(part_size);
+                    //qDebug()<<QString("find part %1 bytes").arg(part_size);
+                    part_size = 0;
+                    continue;
+                }
+
+                part_size += (LString::subCount(v, ":") + 1);
+
                 if (s.isEmpty()) s = v.trimmed();
                 else s = QString("%1:%2").arg(s).arg(v.trimmed());
             }
             qDebug()<<s;
+            if (!m_parts.isEmpty() && part_size > 0) m_parts.append(part_size);
 
             list.clear();
             list = LString::trimSplitList(s, ":", false);
@@ -166,6 +178,10 @@ void MainForm::preparePacket()
                  char ch = v.toInt(&ok, 16);
                  if (ok) m_testPacket.append(ch);
             }
+
+            if (!m_parts.isEmpty())
+                foreach (quint16 v, m_parts)
+                    qDebug()<<QString("find part %1 bytes").arg(v);
 
         }
         else slotError(err);
@@ -249,8 +265,23 @@ void MainForm::sendPack()
 {
     qDebug("MainForm::sendPack()");
     QHostAddress h(host());
-    qint64 n = udp_socket->writeDatagram(m_testPacket, h, port());
-    slotMsg(QString("sended datagram, size %1").arg(n));
+    qint64 n = -1;
+    if (m_parts.isEmpty())
+    {
+        n = udp_socket->writeDatagram(m_testPacket, h, port());
+        slotMsg(QString("sended datagram, size %1").arg(n));
+    }
+    else
+    {
+        QByteArray ba(m_testPacket);
+        foreach (quint16 v, m_parts)
+        {
+            n = udp_socket->writeDatagram(ba.left(v), h, port());
+            slotMsg(QString("sended part datagram, size %1").arg(n));
+            ba.remove(0, v);
+            QTest::qWait(50);
+        }
+    }
 }
 QString MainForm::host() const
 {

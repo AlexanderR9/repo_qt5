@@ -39,6 +39,8 @@ protected:
     int                  m_mode;
     quint16              m_counter;
     QByteArray           m_testPacket;
+    QList<quint16>       m_parts; //udp пакеты могут отправлятся порциями, если этот список не пуст то m_testPacket разбивается на части указаннык в этом списке
+
 
     QString projectName() const {return "udpemulator";}
     QString mainTitle() const {return QString("UDP emulator (Qt5)!");}
