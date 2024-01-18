@@ -64,6 +64,15 @@ struct API_CommonSettings
         void save(QSettings&);
         void load(QSettings&);
     };
+    struct UidClone
+    {
+        UidClone() :uid(QString()), ticker(QString()) {clones.clear();}
+        QString uid;
+        QString ticker;
+        QStringList clones; //clones of uids
+        bool invalid() const {return (uid.isEmpty() || clones.isEmpty());}
+        void parseXmlNode(const QDomNode&);
+    };
 
 
     QString token;
@@ -76,12 +85,15 @@ struct API_CommonSettings
     InstrumentHistory i_history;
     GlobalFilter g_filter;
     TradeDialog t_dialog;
+    QList<UidClone> uid_clones;
 
     static QString appDataPath();
     static QString beginPoint(const InstrumentHistory::HItem&, quint8 hour = 7);
     static QString endPoint(const InstrumentHistory::HItem&, quint8 hour = 19);
 
     void reset();
+
+    //load basic config
     void loadConfig(QString&);
     void parseServicesNode(const QDomNode&);
     void parseCandlesNode(const QDomNode&);
@@ -89,6 +101,13 @@ struct API_CommonSettings
     void parseHistoryNode(const QDomNode&);
     void parseGlobalFilterNode(const QDomNode&);
     void parseToken(QString);
+
+    //load uid clones data
+    void loadUidClones(QString&);
+    void parseUidClones(const QDomNode&);
+
+    bool isCloneUid(const QString&) const;
+    QString getOrigUidByClone(const QString&) const;
 
 };
 

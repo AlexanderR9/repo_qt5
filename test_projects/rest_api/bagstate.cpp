@@ -1,5 +1,6 @@
 #include "bagstate.h"
 #include "instrument.h"
+#include "apicommonsettings.h"
 
 #include <QJsonObject>
 #include <QJsonArray>
@@ -71,6 +72,16 @@ void BagState::slotLoadPortfolio(const QJsonObject &j_obj)
     }
     emit signalBagUpdate();
 }
+void BagState::checkCloneUid(BagPosition &pos)
+{
+    if (api_commonSettings.isCloneUid(pos.uid))
+    {
+        emit signalMsg(QString("find bag clone UID - [%1]").arg(pos.uid));
+        QString orig_uid = api_commonSettings.getOrigUidByClone(pos.uid).trimmed();
+        if (orig_uid.isEmpty()) qWarning()<<QString("BagState::checkCloneUid WARNING orig_uid is empty by clone [%1]").arg(pos.uid);
+        else pos.uid = orig_uid;
+    }
+}
 void BagState::parsePositions(const QJsonArray &j_arr)
 {
     if (j_arr.isEmpty()) return;
@@ -88,6 +99,7 @@ void BagState::parsePositions(const QJsonArray &j_arr)
             pos.count = InstrumentBase::floatFromJVBlock(j_obj.value("quantity"));
             pos.uid = j_obj.value("instrumentUid").toString();
             pos.paper_type = j_obj.value("instrumentType").toString();
+            checkCloneUid(pos);
 
             if (pos.invalid()) emit signalError(QString("invalid loading position %1").arg(i));
             else if (pos.paper_type != "currency") m_positions.append(pos);

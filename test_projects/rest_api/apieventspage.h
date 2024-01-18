@@ -74,7 +74,7 @@ protected:
     void loadDataFromFile(); //загрузка текущих записей из файла
     void syncRecByFile(const EventOperation&); //синхронизировать запись с текущими данными, если запись не найдена, то добавить в конец файла и в m_events
     void sortByDate();
-
+    void checkCloneUid(EventOperation&); //проверить uid пришедшего события в ответе на предмена клона, если это клон, то подменить его на нормальный uid из базы  активов
 
 private:
     void paperTypeFilter(int, bool&);

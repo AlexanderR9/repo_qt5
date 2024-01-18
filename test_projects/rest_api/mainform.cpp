@@ -60,6 +60,7 @@ void MainForm::initPages()
     connect(req_page, SIGNAL(signalGetSelectedBondUIDList(QStringList&)), bond_page, SLOT(slotSetSelectedUIDList(QStringList&)));
     connect(req_page, SIGNAL(signalGetBondCycleData(QStringList&)), bond_page, SLOT(slotSetCycleData(QStringList&)));
     connect(req_page, SIGNAL(signalCyclePrice(const QString&, float)), bond_page, SLOT(slotCyclePrice(const QString&, float)));
+    connect(req_page, SIGNAL(signalGetTickerByFigi(const QString&, QString&)), bond_page, SLOT(slotGetTickerByFigi(const QString&, QString&)));
 
     APIStocksPage *stock_page = new  APIStocksPage(this);
     m_pages.insert(aptStock, stock_page);
@@ -67,6 +68,7 @@ void MainForm::initPages()
     connect(req_page, SIGNAL(signalGetSelectedStockUIDList(QStringList&)), stock_page, SLOT(slotSetSelectedUIDList(QStringList&)));
     connect(req_page, SIGNAL(signalGetStockCycleData(QStringList&)), stock_page, SLOT(slotSetCycleData(QStringList&)));
     connect(req_page, SIGNAL(signalCyclePrice(const QString&, float)), stock_page, SLOT(slotCyclePrice(const QString&, float)));
+    connect(req_page, SIGNAL(signalGetTickerByFigi(const QString&, QString&)), stock_page, SLOT(slotGetTickerByFigi(const QString&, QString&)));
 
     APICouponPage *c_page = new  APICouponPage(this);
     m_pages.insert(aptCoupon, c_page);
@@ -367,6 +369,11 @@ void MainForm::load()
         slotMsg(QString("loaded candle sizes: %1").arg(api_commonSettings.candle_sizes.keys().count()));
         slotMsg(QString("loaded api functions: %1").arg(api_commonSettings.services.count()));
         lCommonSettings.setComboList(QString("candle_size"), api_commonSettings.candle_sizes.keys());
+
+        api_commonSettings.loadUidClones(err);
+        if (!err.isEmpty()) slotError(err);
+        else slotMsg(QString("found clones UID for %1 assets").arg(api_commonSettings.uid_clones.count()));
+
         initPages();
     }
 

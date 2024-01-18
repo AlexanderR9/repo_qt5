@@ -372,10 +372,13 @@ void APIReqPage::addOrdersLog(const PlaceOrderData *req_data)
         }
     }
 
+    QString ticker;
+    emit signalGetTickerByFigi(req_data->uid, ticker);
+
     QDateTime dt(QDateTime::currentDateTimeUtc());
     QString s = QString("%1 / %2").arg(dt.date().toString(InstrumentBase::userDateMask())).arg(dt.time().toString(InstrumentBase::userTimeMask()));
     s = QString("%1 / %2 / %3").arg(s).arg(req_data->kind.trimmed().toUpper()).arg(req_data->lots);
-    s = QString("%1 / %2 / %3").arg(s).arg(QString::number(req_data->price, 'f', 2)).arg(req_data->uid);
+    s = QString("%1 / %2 / %3 / %4").arg(s).arg(QString::number(req_data->price, 'f', 2)).arg(req_data->uid).arg(ticker);
     if (req_data->isStop()) s.append(" / IS_STOP");
     if (req_data->nominal > 0) s.append(" / IS_BOND");
 

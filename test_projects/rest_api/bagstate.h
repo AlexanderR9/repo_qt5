@@ -66,6 +66,7 @@ protected:
     float papersCost_before() const;
     float papersCost_now() const;
     void sortPositions();
+    void checkCloneUid(BagPosition&); //проверить uid инструмента в позиции на предмет клона, если это клон, то подменить его на нормальный uid из базы  активов
 
 public slots:
     void slotLoadPositions(const QJsonObject&);

@@ -95,6 +95,17 @@ void APIOrdersPage::clearDataByKind(bool is_stop)
             t->removeRow(i);
     }
 }
+void APIOrdersPage::checkCloneUid(OrderData *order)
+{
+    if (!order) return;
+    if (api_commonSettings.isCloneUid(order->uid))
+    {
+        emit signalMsg(QString("find clone UID - [%1]").arg(order->uid));
+        QString orig_uid = api_commonSettings.getOrigUidByClone(order->uid).trimmed();
+        if (orig_uid.isEmpty()) qWarning()<<QString("APIOrdersPage::checkCloneUid WARNING orig_uid is empty by clone [%1]").arg(order->uid);
+        else order->uid = orig_uid;
+    }
+}
 void APIOrdersPage::slotLoadOrders(const QJsonObject &j_obj)
 {
     clearDataByKind(false);
@@ -108,6 +119,7 @@ void APIOrdersPage::slotLoadOrders(const QJsonObject &j_obj)
     {
         OrderData *order = new OrderData();
         order->fromJson(j_arr.at(i));
+        checkCloneUid(order);
         if (!order->invalid()) m_orders.append(order);
     }
     emit signalMsg(QString("loaded validity ORDER records: %1/%2 \n").arg(j_arr.count()).arg(m_orders.count()));
@@ -126,6 +138,7 @@ void APIOrdersPage::slotLoadStopOrders(const QJsonObject &j_obj)
     {
         StopOrderData *order = new StopOrderData();
         order->fromJson(j_arr.at(i));
+        checkCloneUid(order);
         if (!order->invalid()) m_orders.append(order);
     }
     emit signalMsg(QString("loaded validity STOP_ORDER records: %1/%2 \n").arg(j_arr.count()).arg(m_orders.count()));

@@ -10,6 +10,7 @@
 #define APP_DATA_FOLDER     QString("data")
 #define APP_CONFIG_FILE     QString("config.xml")
 #define INVALID_DATE        QString("2000-01-01T01:01:01Z")
+#define UID_CLONE_CONFIG    QString("clone_uid.xml")
 
 //global var
 API_CommonSettings api_commonSettings;
@@ -44,6 +45,49 @@ void API_CommonSettings::reset()
     candle_sizes.clear();
     token.clear();
     start_reqs.reset();
+}
+void API_CommonSettings::loadUidClones(QString &err)
+{
+    uid_clones.clear();
+    QString fname = QString("%1%2%3").arg(API_CommonSettings::appDataPath()).arg(QDir::separator()).arg(UID_CLONE_CONFIG);
+    if (!LFile::fileExists(fname))
+    {
+        err = QString("API_CommonSettings::loadUidClones - config file not found [%1]").arg(fname);
+        return;
+    }
+
+    QFile f(fname.trimmed());
+    QDomDocument dom;
+    if (!dom.setContent(&f))
+    {
+        err = QString("API_CommonSettings::loadUidClones - config filename [%1] can't load to DomDocument").arg(fname);
+        if (f.isOpen()) f.close();
+        return;
+    }
+    f.close();
+
+    QDomNode root_node = dom.namedItem("clones");
+    if (root_node.isNull())
+    {
+        err = QString("API_CommonSettings::loadUidClones: invalid struct XML document [%1], node <%2> not found.").arg(fname).arg("clones");
+        return;
+    }
+
+    parseUidClones(root_node);
+}
+void API_CommonSettings::parseUidClones(const QDomNode &node)
+{
+    QDomNode child_node = node.firstChild();
+    while (!child_node.isNull())
+    {
+        if (child_node.nodeName() == "asset")
+        {
+            UidClone rec;
+            rec.parseXmlNode(child_node);
+            if (!rec.invalid()) uid_clones.append(rec);
+        }
+        child_node = child_node.nextSibling();
+    }
 }
 void API_CommonSettings::loadConfig(QString &err)
 {
@@ -210,6 +254,24 @@ void API_CommonSettings::parseToken(QString commonSettingsToken)
     commonSettingsToken = LString::strTrimRight(commonSettingsToken, a);
     token = QString("%1%2%3%4").arg("t.").arg(s2).arg(commonSettingsToken).arg(s1);
 }
+bool API_CommonSettings::isCloneUid(const QString &uid) const
+{
+    if (!uid_clones.isEmpty())
+    {
+        foreach (const UidClone &v, uid_clones)
+            if (v.clones.contains(uid)) return true;
+    }
+    return false;
+}
+QString API_CommonSettings::getOrigUidByClone(const QString &uid) const
+{
+    if (!uid_clones.isEmpty())
+    {
+        foreach (const UidClone &v, uid_clones)
+            if (v.clones.contains(uid)) return v.uid;
+    }
+    return QString();
+}
 
 
 /////////////////////////////
@@ -238,6 +300,20 @@ void API_CommonSettings::TradeDialog::load(QSettings &settings)
     deviation_index = settings.value(QString("API_CommonSettings/TradeDialog/deviation_index"), -1).toInt();
     lots_index = settings.value(QString("API_CommonSettings/TradeDialog/lots_index"), -1).toInt();
 }
-
+void API_CommonSettings::UidClone::parseXmlNode(const QDomNode &node)
+{
+    uid = LStaticXML::getStringAttrValue("uid", node).trimmed();
+    ticker = LStaticXML::getStringAttrValue("ticker", node).trimmed();
+    QDomNode child_node = node.firstChild();
+    while (!child_node.isNull())
+    {
+        if (child_node.nodeName() == "clone")
+        {
+            QString c_uid = ticker = LStaticXML::getStringAttrValue("value", child_node).trimmed();
+            if (!c_uid.isEmpty()) clones.append(c_uid);
+        }
+        child_node = child_node.nextSibling();
+    }
+}
 
 

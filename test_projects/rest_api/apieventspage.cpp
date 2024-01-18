@@ -116,7 +116,9 @@ void APIEventsPage::slotLoadEvents(const QJsonObject &j_obj)
 
     const QJsonArray &j_arr = j_operations.toArray();
     int n = j_arr.count();
-    qDebug()<<QString(" APIEventsPage::slotLoadEvents json_arr_size %1").arg(n);
+    //qDebug()<<QString(" APIEventsPage::slotLoadEvents json_arr_size %1").arg(n);
+
+    emit signalMsg(QString("received records from API-server: %1").arg(n));
     for (int i=0; i<n; i++)
     {
         EventOperation e;
@@ -128,10 +130,8 @@ void APIEventsPage::slotLoadEvents(const QJsonObject &j_obj)
         }
         else
         {
+            checkCloneUid(e);
             syncRecByFile(e);
-            //qDebug()<<QString("i=%1  m_events.size=%2  last_rec: ").arg(i).arg(m_events.size())<<e.toStr();
-            //qDebug()<<"   "<<m_events.last().toStr();
-            //m_events.append(e);
         }
     }
     emit signalMsg(QString("loaded validity records: %1 \n").arg(m_events.count()));
@@ -139,6 +139,18 @@ void APIEventsPage::slotLoadEvents(const QJsonObject &j_obj)
     sortByDate();
     reloadTableByData();
     recalcStat();
+
+    m_kindFilterControl->setCurrentIndex(3); //default filter by [!COMMISION]
+}
+void APIEventsPage::checkCloneUid(EventOperation &e)
+{
+    if (api_commonSettings.isCloneUid(e.uid))
+    {
+        emit signalMsg(QString("find clone UID - [%1]").arg(e.uid));
+        QString orig_uid = api_commonSettings.getOrigUidByClone(e.uid).trimmed();
+        if (orig_uid.isEmpty()) qWarning()<<QString("APIEventsPage::checkCloneUid WARNING orig_uid is empty by clone [%1]").arg(e.uid);
+        else e.uid = orig_uid;
+    }
 }
 void APIEventsPage::reloadTableByData()
 {

@@ -86,7 +86,7 @@ protected slots:
 public slots:
     void slotGetPaperInfo(QStringList&);
     void slotGetPaperInfoByFigi(const QString&, QPair<QString, QString>&);
-    void slotGetTickerByFigi(const QString&, QString&);
+    void slotGetTickerByFigi(const QString&, QString&); //input param - figi or uid
     void slotGetPaperTypeByUID(const QString&, QString&);
     void slotGetBondNominalByUID(const QString&, float&);
     void slotGetBondEndDateByUID(const QString&, QDate&);
@@ -132,7 +132,7 @@ protected slots:
 public slots:
     void slotGetPaperInfo(QStringList&);
     void slotGetPaperInfoByFigi(const QString&, QPair<QString, QString>&);
-    void slotGetTickerByFigi(const QString&, QString&);
+    void slotGetTickerByFigi(const QString&, QString&);  //input param - figi or uid
     void slotGetPaperTypeByUID(const QString&, QString&);
     void slotGetLotSize(const QString&, quint16&);
 

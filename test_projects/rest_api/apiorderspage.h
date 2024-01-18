@@ -30,6 +30,7 @@ protected:
     void clearData();
     void clearDataByKind(bool);
     void calcPapersInOrders();
+    void checkCloneUid(OrderData*); //проверить uid пришедшего ордера в ответе на предмена клона, если это клон, то подменить его на нормальный uid из базы  активов
 
 public slots:
     void slotLoadOrders(const QJsonObject&);

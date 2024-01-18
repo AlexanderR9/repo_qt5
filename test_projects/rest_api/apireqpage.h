@@ -95,6 +95,7 @@ signals:
     void signalGetStockCycleData(QStringList&);
     void signalCyclePrice(const QString&, float);
     void signalDisableActions(bool);
+    void signalGetTickerByFigi(const QString&, QString&); // input param - figi or uid
 
 };
 
