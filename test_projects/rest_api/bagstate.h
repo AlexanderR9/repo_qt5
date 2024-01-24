@@ -47,7 +47,7 @@ public:
 
     inline QString strBlocked() const {return QString::number(m_blocked, 'f', 1);}
     inline QString strFree() const {return QString::number(m_free, 'f', 1);}
-    inline QString strTotal() const {return QString::number(m_total, 'f', 1);}
+    inline QString strTotal() const {return QString::number(m_total/1000, 'f', 2);}
     inline quint16 posCount() const {return m_positions.count();}
     inline bool hasPositions() const {return !m_positions.isEmpty();}
     inline const BagPosition& posAt(quint16 i) const {return m_positions.at(i);}

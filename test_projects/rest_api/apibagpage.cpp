@@ -86,7 +86,7 @@ void APIBagPage::initFilterBox()
     addGeneralEdit(QString("User ID"), l_row);
     addGeneralEdit(QString("Blocked"), l_row);
     addGeneralEdit(QString("Free"), l_row);
-    addGeneralEdit(QString("Total"), l_row);
+    addGeneralEdit(QString("Total, (10^3)"), l_row);
 
     QLineEdit *w_line = new QLineEdit(this);
     w_line->setReadOnly(true);
