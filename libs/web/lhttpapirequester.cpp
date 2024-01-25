@@ -44,6 +44,8 @@ void LHttpApiRequester::slotFinished(QNetworkReply *reply)
     int code = hreUnknown;
     if (reply)
     {
+        emit signalMsg(QString("LHttpApiRequester::slotFinished  err_code=%1").arg(reply->error()));
+
         m_lastReply.takeHeaders(reply);
         m_lastReply.takeData(reply);
         if (!m_lastReply.isOk())

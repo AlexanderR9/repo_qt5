@@ -275,7 +275,7 @@ float APIBagPage::getCurrentPrice(int row) const
         s_price = LString::strTrimLeft(s_price, pos+1).trimmed();
         bool ok;
         float p = s_price.toFloat(&ok);
-        if (ok & p > 0) return p;
+        if (ok && p > 0) return p;
     }
     qWarning("APIBagPage::getCurrentPrice WARNING invalid current price");
     return -1;

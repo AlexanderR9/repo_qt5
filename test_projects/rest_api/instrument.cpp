@@ -76,7 +76,7 @@ void InstrumentBase::floatToJVBlock(float p, QJsonObject &j_obj)
     if (i_units > p) i_units--;
     int i_nano = QString::number(p, 'f', 2).right(2).toInt();
 
-    qDebug()<<QString("InstrumentBase::floatToJVBlock  i_units=%1   i_nano=%2  need_price=%3").arg(i_units).arg(i_nano).arg(QString::number(p, 'float', 2));
+    qDebug()<<QString("InstrumentBase::floatToJVBlock  i_units=%1   i_nano=%2  need_price=%3").arg(i_units).arg(i_nano).arg(QString::number(p, 'f', 2));
     j_obj["units"] = QString::number(i_units);
     j_obj["nano"] = 10000000*i_nano;
 }
