@@ -32,7 +32,7 @@ protected:
     int cur_stage;
 
     void init();
-    QStringList tableHeaders() const;
+    QStringList tableHeaders(QString) const;
     void fillPosTable(const QJsonArray&);
     void fillOrdersTable(const QJsonArray&);
 

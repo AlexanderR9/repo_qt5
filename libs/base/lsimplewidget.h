@@ -5,6 +5,7 @@
 #include <QWidget>
 #include <QString>
 #include <QGroupBox>
+#include <QMap>
 
 
 class QSplitter;
@@ -93,6 +94,8 @@ class LTableWidgetBox : public QGroupBox
 {
     Q_OBJECT
 public:
+    enum SortingDataType {sdtString = 555, sdtNumeric};
+
     LTableWidgetBox(QWidget *parent = NULL, int type = 1);
     virtual ~LTableWidgetBox() {}
 
@@ -103,13 +106,17 @@ public:
     void setSelectionColor(QString background_color, QString text_color = "#000000");
     void sortingOn(); //активировать возможность сортировки столбцов по клику на соответствующем заголовке
     void removeAllRows();
+    void addSortingData(quint8, SortingDataType); //добавить данные для сортировки по указанному столбцу
 
     QTableWidget* table() const;
 
 protected:
     QTableWidget    *m_table;
+    QMap<quint8, SortingDataType> m_sortingData; //данные которые указывают какие столбцы должны реагировать на сортировку
 
     void init();
+    void slotSortString(quint8 col, int order);
+    void slotSortNumeric(quint8 col, int order);
 
 protected slots:
     virtual void slotItemDoubleClicked(QTableWidgetItem*); //в базовом класе копируется содержимое итема в буфер обмена

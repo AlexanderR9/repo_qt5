@@ -203,10 +203,46 @@ void LTableWidgetBox::sortingOn()
         }
     }
 }
+void LTableWidgetBox::addSortingData(quint8 col, SortingDataType t)
+{
+    if (!m_table) return;
+    if (col < m_table->columnCount())
+        m_sortingData.insert(col, t);
+}
+void LTableWidgetBox::slotSortString(quint8 col, int order)
+{
+    Q_UNUSED(order);
+    m_table->sortByColumn(col);
+}
+void LTableWidgetBox::slotSortNumeric(quint8 col, int order)
+{
+    int row = -1;
+    int n_rows = m_table->rowCount();
+
+    if (order == 0)
+    {
+        double min = 0;
+        for (int i=0; i<n_rows; i++)
+        {
+            min = LTable::minNumericColValue(m_table, col, row, i);
+            if (row > 0) LTable::shiftTableRowToBegin(m_table, row);
+        }
+    }
+    else
+    {
+        double max = 0;
+        for (int i=0; i<n_rows; i++)
+        {
+            max = LTable::maxNumericColValue(m_table, col, row, i);
+            if (row > 0) LTable::shiftTableRowToBegin(m_table, row);
+        }
+    }
+}
 void LTableWidgetBox::slotSortByColumn(int col)
 {
     qDebug()<<QString("slotSortByColumn %1").arg(col);
 
+    if (!m_sortingData.contains(col)) return;
     if (m_table->rowCount() < 3) return;
     if (col < 0 || col >= m_table->columnCount()) return;
 
@@ -215,29 +251,16 @@ void LTableWidgetBox::slotSortByColumn(int col)
     if (sort_order != 0) m_table->horizontalHeaderItem(col)->setData(Qt::UserRole, int(0));
     else m_table->horizontalHeaderItem(col)->setData(Qt::UserRole, int(1));
 
-    m_table->sortByColumn(col);
-/*
-    if (col > 2)
+    switch (m_sortingData.value(col))
     {
-
-        switch (sort_order)
-        {
-            case 0: {decreaseSortNum(col); break;}
-            case 1: {increaseSortNum(col); break;}
-            default:
-            {
-                qWarning()<<QString("LTableWidgetBox::slotSortByColumn: WARNING - invalid sort_order %1, col %2").arg(sort_order).arg(col);
-                break;
-            }
-        }
+        case sdtString: {slotSortString(col, sort_order); break;}
+        case sdtNumeric: {slotSortNumeric(col, sort_order); break;}
+        default: {qWarning()<<QString("LTableWidgetBox::slotSortByColumn WARNING invalid sort_type %1").arg(m_sortingData.value(col)); break;}
     }
-    else m_table->sortByColumn(col);
-    */
 
     resizeByContents();
     m_table->scrollToTop();
     //m_table->selectRow(0);
-
 }
 
 
