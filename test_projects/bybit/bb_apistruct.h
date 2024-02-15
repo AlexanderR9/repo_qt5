@@ -3,7 +3,8 @@
 
 #include <QMap>
 
-enum BB_ReqType {rtCandles = 181, rtPositions, rtOrders, rtHistory};
+//типы страниц пользовательского интерфейса
+enum BB_ReqType {rtCandles = 181, rtPositions, rtOrders, rtHistory, rtBag};
 
 
 //необходимые данные для формирования запроса перед отправкой

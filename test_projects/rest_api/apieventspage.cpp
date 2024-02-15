@@ -24,6 +24,7 @@
 #define COUPON_COL          8
 #define KKS_COL             2
 #define N_COL               6
+#define TICKER_COL          2
 
 
 #define COLOR_DAY_EVEN      QString("#FFFFF2")
@@ -104,6 +105,30 @@ void APIEventsPage::initPaperResultWidget()
     h_lay->addWidget(m_paperResultEdit);
 
     recalcPaperResult();
+}
+void APIEventsPage::slotGetEventsHistoryByTicker(const QString &ticker, QStringList &list)
+{
+    qDebug("APIEventsPage::slotGetEventsHistoryByTicker");
+    QTableWidget *t = m_tableBox->table();
+    int n = t->rowCount();
+    for (int i=0; i<n; i++)
+    {
+        if (ticker == t->item(i, TICKER_COL)->text().trimmed())
+        {
+            QString kind = t->item(i, KIND_COL)->text().trimmed();
+            if (kind == "SELL" || kind == "BUY")
+            {
+                //headers table (for asset info box) << "Date" << "Operation" << "Count" << "Result";
+                QString s_date = t->item(i, DATE_COL)->text().trimmed();
+                int pos = s_date.indexOf(LString::spaceSymbol());
+                if (pos > 0) s_date = s_date.left(pos);
+                QString line_row = QString("%1;%2").arg(s_date).arg(kind);
+                line_row = QString("%1;%2").arg(line_row).arg(t->item(i, N_COL)->text().trimmed());
+                line_row = QString("%1;%2").arg(line_row).arg(t->item(i, N_COL+1)->text().trimmed());
+                list.append(line_row);
+            }
+        }
+    }
 }
 void APIEventsPage::slotLoadEvents(const QJsonObject &j_obj)
 {

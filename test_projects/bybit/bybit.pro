@@ -33,8 +33,9 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/jsonviewpage.h \
         $$PWD/apiconfig.h \
         $$PWD/bb_apistruct.h \
-    bb_positionspage.h \
-    bb_historypage.h
+        $$PWD/bb_positionspage.h \
+        $$PWD/bb_historypage.h \
+        $$PWD/bb_bagstatepage.h
 
 
 SOURCES += $$PWD/main.cpp \
@@ -44,7 +45,8 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/jsonviewpage.cpp \
         $$PWD/apiconfig.cpp \
         $$PWD/bb_apistruct.cpp \
-    bb_positionspage.cpp \
-    bb_historypage.cpp
+        $$PWD/bb_positionspage.cpp \
+        $$PWD/bb_historypage.cpp \
+        $$PWD/bb_bagstatepage.cpp
 
 

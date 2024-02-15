@@ -121,6 +121,13 @@ void MainForm::initPages()
     connect(bag_page, SIGNAL(signalGetBondEndDateByUID(const QString&, QDate&)), bond_page, SLOT(slotGetBondEndDateByUID(const QString&, QDate&)));
     connect(orders_page, SIGNAL(signalSendOrdersInfoToBag(const QMap<QString, QString>&)), bag_page, SLOT(slotUpdateOrdersInfo(const QMap<QString, QString>&)));
 
+    //for asset info box
+    connect(profit_page, SIGNAL(signalGetBondRiskByTicker(const QString&, QString&)), bond_page, SLOT(slotGetBondRiskByTicker(const QString&, QString&)));
+    connect(profit_page, SIGNAL(signalGetCouponInfoByTicker(const QString&, QDate&, float&)), c_page, SLOT(slotGetCouponInfoByTicker(const QString&, QDate&, float&)));
+    connect(profit_page, SIGNAL(signalGetPaperCountByTicker(const QString&, int&, float&)), bag_page, SLOT(slotGetPaperCountByTicker(const QString&, int&, float&)));
+    connect(profit_page, SIGNAL(signalGetEventsHistoryByTicker(const QString&, QStringList&)), events_page, SLOT(slotGetEventsHistoryByTicker(const QString&, QStringList&)));
+
+
     m_tab->clear();
     foreach (LSimpleWidget *page, m_pages)
     {

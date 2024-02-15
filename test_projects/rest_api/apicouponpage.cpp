@@ -11,6 +11,7 @@
 #define FIGI_COL        1
 #define DAY_SIZE_COL    7
 #define DIV_SIZE_COL    5
+//#define COUPON_DATE_COL 5
 
 #define DAY_SIZE_LIMIT_HIGH         0.4
 #define DAY_SIZE_LIMIT_LOW          0.2
@@ -32,87 +33,30 @@ APICouponPage::APICouponPage(QWidget *parent)
     m_tableBox->setHeaderLabels(headers);
     m_tableBox->setTitle("Coupon list");
 }
-
 void APICouponPage::createRecord(CouponRecordAbstract* &rec, const QString &figi)
 {
     if (rec) {delete rec; rec = NULL;}
     rec = new BCoupon(figi);
 }
-/*
-void APICouponPage::reloadTableByData()
+void APICouponPage::slotGetCouponInfoByTicker(const QString &ticker, QDate &d, float &size)
 {
+    d = QDate();
+    size = -1;
 
-    resetPage();
-    if (m_data.isEmpty())
+    QTableWidget *t = m_tableBox->table();
+    int n = t->rowCount();
+    for (int i=0; i<n; i++)
     {
-        emit signalMsg(QString("Coupons data is empty!"));
-        return;
-    }
-
-    foreach (const BCoupon &rec, m_data)
-    {
-        if (rec.invalid()) continue;
-        QStringList row_data;
-        QPair<QString, QString> pair;
-        emit signalGetPaperInfoByFigi(rec.figi, pair);
-
-        QString ticker;
-        emit signalGetTickerByFigi(rec.figi, ticker);
-
-
-        row_data << pair.first << rec.figi << ticker << pair.second << QString::number(rec.period);
-        row_data << rec.date.toString(InstrumentBase::userDateMask()) << QString::number(rec.size, 'f', 2);
-        row_data << QString::number(rec.daySize(), 'f', 4) << QString::number(rec.daysTo());
-        LTable::addTableRow(m_tableBox->table(), row_data);
-
-        int l_row = m_tableBox->table()->rowCount() - 1;
-        if (rec.daySize() > DAY_SIZE_LIMIT_HIGH) m_tableBox->table()->item(l_row, DAY_SIZE_COL)->setTextColor(Qt::blue);
-        else if (rec.daySize() < DAY_SIZE_LIMIT_LOW) m_tableBox->table()->item(l_row, DAY_SIZE_COL)->setTextColor(Qt::lightGray);
-    }
-
-    m_tableBox->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
-    m_tableBox->setSelectionColor("#E6E6FA", "#800000");
-    m_tableBox->searchExec();
-
-}
-*/
-/*
-void APICouponPage::sortByDate()
-{
-
-    if (m_data.count() < 3) return;
-
-    int n = m_data.count();
-    while (1 == 1)
-    {
-        bool has_replace = false;
-        for (int i=0; i<n-1; i++)
+        if (ticker == t->item(i, FIGI_COL+1)->text().trimmed())
         {
-            const QDate &d = m_data.at(i).date;
-            const QDate &d_next = m_data.at(i+1).date;
-            if (!d.isValid() && d_next.isValid())
-            {
-                BCoupon rec = m_data.takeAt(i);
-                m_data.insert(i+1, rec);
-                has_replace = true;
-            }
-            else if (d.isValid() && d_next.isValid())
-            {
-                if (d_next < d)
-                {
-                    BCoupon rec = m_data.takeAt(i);
-                    m_data.insert(i+1, rec);
-                    has_replace = true;
-                }
-            }
+            QString figi = t->item(i, FIGI_COL)->text().trimmed();
+            const BCoupon *c_rec = NULL;
+            slotGetCouponRec(figi, c_rec);
+            if (c_rec) {d = c_rec->date; size = c_rec->size;}
+            break;
         }
-        if (!has_replace) break;
     }
-
 }
-*/
-
-
 void APICouponPage::slotGetCouponRec(const QString &figi, const BCoupon* &c_rec)
 {
     foreach (const CouponRecordAbstract *rec, m_data)

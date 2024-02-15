@@ -314,6 +314,12 @@ void APIBondsPage::slotGetBondEndDateByUID(const QString &uid, QDate &f_date)
     foreach (const BondDesc &rec, m_data)
         if (rec.uid == uid)  {f_date = rec.finish_date; break;}
 }
+void APIBondsPage::slotGetBondRiskByTicker(const QString &ticker, QString &risk)
+{
+    risk = "??";
+    foreach (const BondDesc &rec, m_data)
+        if (rec.isin == ticker)  {risk = rec.risk; break;}
+}
 void APIBondsPage::slotGetPaperInfoByFigi(const QString &figi, QPair<QString, QString> &pair)
 {
     foreach (const BondDesc &rec, m_data)

@@ -84,6 +84,7 @@ private:
 
 public slots:
     void slotLoadEvents(const QJsonObject&); //выполняется после успешного запроса получения истории операций
+    void slotGetEventsHistoryByTicker(const QString&, QStringList&);
 
 protected slots:
     void slotFilter();

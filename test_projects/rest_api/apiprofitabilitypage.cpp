@@ -4,6 +4,7 @@
 #include "instrument.h"
 #include "apitradedialog.h"
 #include "lcommonsettings.h"
+#include "lstring.h"
 
 #include <QTableWidget>
 #include <QDebug>
@@ -39,10 +40,48 @@ APIProfitabilityPage::APIProfitabilityPage(QWidget *parent)
     m_tableBox->sortingOn();
     m_tableBox->table()->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(m_tableBox->table(), SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu(QPoint)));
+    connect(m_tableBox->table(), SIGNAL(itemClicked(QTableWidgetItem*)), this, SLOT(slotTableClicked(QTableWidgetItem*)));
+
 
     QTimer *t = new QTimer(this);
     connect(t, SIGNAL(timeout()), this, SLOT(slotResizeTimer()));
     t->start(1000);
+
+    //init asset info box
+    initAssetInfoBox();
+
+}
+void APIProfitabilityPage::slotTableClicked(QTableWidgetItem *item)
+{
+    if (!item) return;
+    int row = item->row();
+    qDebug()<<QString("APIProfitabilityPage::slotTableClicked row=%1").arg(row);
+
+    QList<int> sel_list(LTable::selectedRows(m_tableBox->table()));
+    if (sel_list.contains(row))
+    {
+        qDebug("sel_list.contains(row)");
+        QString ticker = m_tableBox->table()->item(row, TICKER_COL)->text().trimmed();
+        emit signalUpdateInfoBox(ticker);
+    }
+}
+void APIProfitabilityPage::initAssetInfoBox()
+{
+    m_filterBox->setTitle("Asset information");
+    if (m_filterBox->layout()) {delete m_filterBox->layout();}
+    QVBoxLayout *v_lay = new QVBoxLayout(0);
+    v_lay->setSpacing(0);
+    m_filterBox->setLayout(v_lay);
+
+    AssetInfoWidget *aiw = new AssetInfoWidget(m_filterBox);
+    v_lay->addWidget(aiw);
+
+    connect(m_tableBox->table(), SIGNAL(itemSelectionChanged()), aiw, SLOT(slotReset()));
+    connect(this, SIGNAL(signalUpdateInfoBox(const QString&)), aiw, SLOT(slotRunUpdate(QString)));
+    connect(aiw, SIGNAL(signalGetBondRiskByTicker(const QString&, QString&)), this, SIGNAL(signalGetBondRiskByTicker(const QString&, QString&)));
+    connect(aiw, SIGNAL(signalGetPaperCountByTicker(const QString&, int&, float&)), this, SIGNAL(signalGetPaperCountByTicker(const QString&, int&, float&)));
+    connect(aiw, SIGNAL(signalGetCouponInfoByTicker(const QString&, QDate&, float&)), this, SIGNAL(signalGetCouponInfoByTicker(const QString&, QDate&, float&)));
+    connect(aiw, SIGNAL(signalGetEventsHistoryByTicker(const QString&, QStringList&)), this, SIGNAL(signalGetEventsHistoryByTicker(const QString&, QStringList&)));
 }
 void APIProfitabilityPage::slotResizeTimer()
 {
@@ -222,4 +261,117 @@ int APIProfitabilityPage::indexOf(const QString &figi) const
     }
     return -1;
 }
+
+///////////////AssetInfoWidget////////////////
+AssetInfoWidget::AssetInfoWidget(QWidget *parent)
+    :QWidget(parent)
+{
+        setupUi(this);
+        setObjectName(QString("asset_info_widget"));
+
+        init();
+        refreshTable();
+}
+void AssetInfoWidget::init()
+{
+    LTable::fullClearTable(historyTable);
+
+    QStringList headers;
+    headers << "Date" << "Operation" << "Count" << "Result";
+    LTable::setTableHeaders(historyTable, headers);
+
+}
+void AssetInfoWidget::refreshTable()
+{
+    LTable::resizeTableContents(historyTable);
+    rowsLabel->setText(QString("Rows: %1").arg(historyTable->rowCount()));
+}
+void AssetInfoWidget::slotReset()
+{
+    bagLineEdit->clear();
+    couponDateLineEdit->clear();
+    couponSizeLineEdit->clear();
+    riskLineEdit->clear();
+    LTable::removeAllRowsTable(historyTable);
+    refreshTable();
+}
+void AssetInfoWidget::slotRunUpdate(const QString &ts)
+{
+    QString ticker(ts.trimmed());
+
+    //qDebug()<<QString("AssetInfoWidget::slotRunUpdate  ticker=%1").arg(ticker);
+    QString risk;
+    emit signalGetBondRiskByTicker(ticker, risk);
+    updateRisk(risk);
+
+    int n_papers = 0;
+    float cur_profit = 0;
+    emit signalGetPaperCountByTicker(ticker, n_papers, cur_profit);
+    updateBag(n_papers, cur_profit);
+
+    QDate d;
+    float c_size = 0;
+    emit signalGetCouponInfoByTicker(ticker, d, c_size);
+    updateCoupon(d, c_size);
+
+    QStringList events_data;
+    emit signalGetEventsHistoryByTicker(ticker, events_data);
+    updateHistory(events_data);
+}
+void AssetInfoWidget::updateRisk(QString s)
+{
+    riskLineEdit->setText(s);
+
+    QPalette palette(riskLineEdit->palette());
+    palette.setColor (QPalette :: Text, Qt::red);
+    if (s == "LOW" || s == "MID") palette.setColor (QPalette :: Text, Qt::darkGreen);
+    else if (s.contains("?")) palette.setColor (QPalette :: Text, Qt :: gray);
+    riskLineEdit->setPalette(palette);
+}
+void AssetInfoWidget::updateBag(int n_papers, float cur_profit)
+{
+    QPalette palette(riskLineEdit->palette());
+    palette.setColor(QPalette::Text, Qt::black);
+
+    if (n_papers > 0)
+    {
+        bagLineEdit->setText(QString("%1 (profit=%2)").arg(n_papers).arg(QString::number(cur_profit, 'f', 1)));
+        if (cur_profit < 0) palette.setColor (QPalette::Text, Qt::red);
+    }
+    else
+    {
+       bagLineEdit->setText("---");
+       palette.setColor(QPalette::Text, Qt::gray);
+    }
+
+    bagLineEdit->setPalette(palette);
+}
+void AssetInfoWidget::updateCoupon(const QDate &d, float size)
+{
+    if (d.isValid())
+    {
+        int day_to = QDate::currentDate().daysTo(d);
+        couponDateLineEdit->setText(QString("%1 (%2 days)").arg(d.toString(InstrumentBase::userDateMask())).arg(day_to));
+        couponSizeLineEdit->setText(QString::number(size, 'f', 2));
+    }
+    else couponSizeLineEdit->setText("-1");
+}
+void AssetInfoWidget::updateHistory(const QStringList &data)
+{
+    int n_cols = historyTable->columnCount();
+    foreach (const QString &v, data)
+    {
+        QStringList list(LString::trimSplitList(v, ";"));
+        if (list.count() == n_cols)
+        {
+            int l_row = historyTable->rowCount();
+            LTable::addTableRow(historyTable, list);
+            if (v.contains("SELL")) historyTable->item(l_row, 1)->setTextColor(Qt::red);
+            else if (v.contains("BUY")) historyTable->item(l_row, 1)->setTextColor(Qt::darkGreen);
+        }
+        else qWarning()<<QString("AssetInfoWidget::updateHistory WARNING list.count(%1) != table cols(%2)").arg(list.count()).arg(n_cols);
+    }
+    refreshTable();
+}
+
 

@@ -14,7 +14,8 @@ INCLUDEPATH += . \
             $$PWD \
             $$PWD/../../libs/base \
             $$PWD/../../libs/base/ui_h \
-            $$PWD/../../libs/web
+            $$PWD/../../libs/web \
+            $$PWD/ui
 
 #path for libs files
 DEPENDPATH += $$PWD/../../libs/base/build \
@@ -55,4 +56,7 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/apiprofitabilitypage.cpp \
         $$PWD/apitradedialog.cpp \
         $$PWD/apibagpage.cpp
+
+FORMS += $$PWD/ui/assetinfowidget.ui
+
 

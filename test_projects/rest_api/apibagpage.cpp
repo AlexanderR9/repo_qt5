@@ -241,6 +241,22 @@ void APIBagPage::updateCellsColors(int l_row, const BagPosition &pos)
         else if (to_complete > 180) t->item(l_row, TO_COMPLETE_COL)->setTextColor(QColor("#D2691E"));
     }
 }
+void APIBagPage::slotGetPaperCountByTicker(const QString &ticker, int &n_papers, float &cur_profit)
+{
+    n_papers = -1;
+    cur_profit = 0;
+
+    QTableWidget *t = m_tableBox->table();
+    for (int i=0; i<t->rowCount(); i++)
+    {
+        if (ticker == t->item(i, TICKER_COL)->text().trimmed())
+        {
+            n_papers = t->item(i, PAPER_COUNT_COL)->text().trimmed().toInt();
+            cur_profit = t->item(i, PROFIT_COL)->text().trimmed().toFloat();
+            break;
+        }
+    }
+}
 void APIBagPage::slotUpdateOrdersInfo(const QMap<QString, QString> &map)
 {
     QTableWidget *t = m_tableBox->table();

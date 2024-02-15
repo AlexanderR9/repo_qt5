@@ -7,6 +7,7 @@
 #include "apiconfig.h"
 #include "bb_positionspage.h"
 #include "bb_historypage.h"
+#include "bb_bagstatepage.h"
 
 #include <QStackedWidget>
 #include <QSplitter>
@@ -69,6 +70,10 @@ void BB_CentralWidget::createPages()
     w_stack->addWidget(h_page);
     connect(h_page, SIGNAL(signalSendReq(const BB_APIReqParams&)), this, SLOT(slotSendReq(const BB_APIReqParams&)));
     connect(this, SIGNAL(signalJsonReply(int, const QJsonObject&)), h_page, SLOT(slotJsonReply(int, const QJsonObject&)));
+
+    BB_BagStatePage *bs_page = new BB_BagStatePage(this);
+    w_stack->addWidget(bs_page);
+
 
     for (int i=0; i<w_stack->count(); i++)
     {

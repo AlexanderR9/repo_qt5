@@ -9,4 +9,6 @@ full_clear
 data
 save
 *.tar.gz
+ui_assetinfowidget.h
+
 

@@ -60,6 +60,7 @@ protected:
 
 public slots:
     void slotGetCouponRec(const QString&, const BCoupon*&);
+    void slotGetCouponInfoByTicker(const QString&, QDate&, float&);
 
 
 };
