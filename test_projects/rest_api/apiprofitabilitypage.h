@@ -41,6 +41,7 @@ protected slots:
     void slotContextMenu(QPoint);
     void slotBuyOrder();
     void slotTableClicked(QTableWidgetItem*);
+    void slotGetCurrentPriceBySelected(float&);
 
 signals:
     void signalGetCouponRec(const QString&, const BCoupon*&);
@@ -79,12 +80,14 @@ protected:
     void updateBag(int, float);
     void updateCoupon(const QDate&, float);
     void updateHistory(const QStringList&);
+    void updatePrice(float);
 
 signals:
     void signalGetBondRiskByTicker(const QString&, QString&);
     void signalGetPaperCountByTicker(const QString&, int&, float&);
     void signalGetCouponInfoByTicker(const QString&, QDate&, float&);
     void signalGetEventsHistoryByTicker(const QString&, QStringList&);
+    void signalGetCurrentPriceBySelected(float&);
 
 
 

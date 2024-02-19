@@ -65,6 +65,17 @@ void APIProfitabilityPage::slotTableClicked(QTableWidgetItem *item)
         emit signalUpdateInfoBox(ticker);
     }
 }
+void APIProfitabilityPage::slotGetCurrentPriceBySelected(float &cur_price)
+{
+    cur_price = -1;
+    QList<int> sel_list(LTable::selectedRows(m_tableBox->table()));
+    if (!sel_list.isEmpty())
+    {
+        QString s_price = m_tableBox->table()->item(sel_list.first(), PRICE_COL)->text().trimmed();
+        int pos = s_price.indexOf("/");
+        if (pos > 0) cur_price = s_price.left(pos).trimmed().toFloat();
+    }
+}
 void APIProfitabilityPage::initAssetInfoBox()
 {
     m_filterBox->setTitle("Asset information");
@@ -82,6 +93,9 @@ void APIProfitabilityPage::initAssetInfoBox()
     connect(aiw, SIGNAL(signalGetPaperCountByTicker(const QString&, int&, float&)), this, SIGNAL(signalGetPaperCountByTicker(const QString&, int&, float&)));
     connect(aiw, SIGNAL(signalGetCouponInfoByTicker(const QString&, QDate&, float&)), this, SIGNAL(signalGetCouponInfoByTicker(const QString&, QDate&, float&)));
     connect(aiw, SIGNAL(signalGetEventsHistoryByTicker(const QString&, QStringList&)), this, SIGNAL(signalGetEventsHistoryByTicker(const QString&, QStringList&)));
+    connect(aiw, SIGNAL(signalGetCurrentPriceBySelected(float&)), this, SLOT(slotGetCurrentPriceBySelected(float&)));
+
+
 }
 void APIProfitabilityPage::slotResizeTimer()
 {
@@ -291,6 +305,7 @@ void AssetInfoWidget::slotReset()
     bagLineEdit->clear();
     couponDateLineEdit->clear();
     couponSizeLineEdit->clear();
+    priceLineEdit->clear();
     riskLineEdit->clear();
     LTable::removeAllRowsTable(historyTable);
     refreshTable();
@@ -317,6 +332,10 @@ void AssetInfoWidget::slotRunUpdate(const QString &ts)
     QStringList events_data;
     emit signalGetEventsHistoryByTicker(ticker, events_data);
     updateHistory(events_data);
+
+    float p = 0;
+    emit signalGetCurrentPriceBySelected(p);
+    updatePrice(p);
 }
 void AssetInfoWidget::updateRisk(QString s)
 {
@@ -355,6 +374,23 @@ void AssetInfoWidget::updateCoupon(const QDate &d, float size)
         couponSizeLineEdit->setText(QString::number(size, 'f', 2));
     }
     else couponSizeLineEdit->setText("-1");
+}
+void AssetInfoWidget::updatePrice(float p)
+{
+    QPalette palette(priceLineEdit->palette());
+    priceLineEdit->setText(QString::number(p, 'f', 2));
+
+    if (p > 0 && historyTable->rowCount() > 0)
+    {
+        QString s_price = historyTable->item(0, 3)->text().trimmed();
+        int pos = s_price.indexOf("/");
+        float t_price = -1;
+        if (pos > 0) t_price = s_price.left(pos).trimmed().toFloat();
+
+        if (t_price > 0 && t_price < p) palette.setColor(QPalette::Text, Qt::darkRed);
+        if (t_price > 0 && t_price > p) palette.setColor(QPalette::Text, Qt::darkBlue);
+    }
+    priceLineEdit->setPalette(palette);
 }
 void AssetInfoWidget::updateHistory(const QStringList &data)
 {
