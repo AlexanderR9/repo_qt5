@@ -38,11 +38,12 @@ struct BB_BagState
     float freezed_pos;
     float freezed_order;
     float balance; //total sum on the balance of trading bill
+    float balance_free; //free sum in the unfined wallet
     float pos_result; //current result by all opened positions
     quint16 n_pos;
     quint16 n_order;
 
-    void reset() {freezed_pos = freezed_order = balance = -1; pos_result = 0; n_pos = n_order = 0;}
+    void reset() {freezed_pos = freezed_order = -1; balance = balance_free = 0; pos_result = 0; n_pos = n_order = 0;}
     float sumFreezed() const;
 
 };

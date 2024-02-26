@@ -135,7 +135,8 @@ void BB_CentralWidget::load(QSettings &settings)
     }
 
     int cp = settings.value(QString("%1/current_page").arg(objectName()), 0).toInt();
-    w_list->listWidget()->setCurrentRow(cp);
+    //w_list->listWidget()->setCurrentRow(cp);
+    w_list->listWidget()->setCurrentRow(0);
 }
 void BB_CentralWidget::save(QSettings &settings)
 {

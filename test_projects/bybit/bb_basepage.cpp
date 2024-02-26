@@ -1,7 +1,7 @@
 #include "bb_basepage.h"
 #include "bb_apistruct.h"
 #include "lhttp_types.h"
-#include "apiconfig.h"
+//#include "apiconfig.h"
 
 #include <QDebug>
 
@@ -31,17 +31,18 @@ void BB_BasePage::reset()
 void BB_BasePage::sendRequest(int limit, QString name_extra)
 {
     if (limit > 0)
-        m_reqData->params.insert("limit", QString::number(api_config.req_limit_pos));
+        m_reqData->params.insert("limit", QString::number(limit));
 
     m_reqData->name = BB_APIReqParams::strReqTypeByType(m_reqData->req_type, name_extra);
 
     emit signalSendReq(m_reqData);
 }
-bool BB_BasePage::updateTimeOver(quint16 secs, bool force)
+bool BB_BasePage::updateTimeOver(bool force)
 {
     QTime ct = QTime::currentTime();
+    if (minUpdatingInterval() < 3) return false;
     if (!m_updateTime.isValid() || force) {m_updateTime = ct; return true;}
-    if (m_updateTime.secsTo(ct) > secs) {m_updateTime = ct; return true;}
+    if (m_updateTime.secsTo(ct) > minUpdatingInterval()) {m_updateTime = ct; return true;}
     return false;
 }
 

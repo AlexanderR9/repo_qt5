@@ -14,9 +14,9 @@
 
 #define API_POS_URI                 QString("v5/position/list")
 #define API_ORDERS_URI              QString("v5/order/realtime")
-#define MIN_UPDATING_INTERVAL       30 //secs
 #define TRADE_TYPE_COL              2
 #define FREEZED_SUM_COL             4
+#define MAX_ORDERS_PAGE             50
 
 
 //BB_PositionsPage
@@ -24,6 +24,7 @@ BB_PositionsPage::BB_PositionsPage(QWidget *parent)
     :BB_BasePage(parent, 20, rtPositions),
     m_table(NULL),
     m_orderTable(NULL)
+    //m_orderCursor(1)
 {
     setObjectName("positions_page");
     init();
@@ -36,6 +37,7 @@ void BB_PositionsPage::clearTables()
 {
     m_table->removeAllRows();
     m_orderTable->removeAllRows();
+    m_reqData->params.remove("cursor");
 }
 void BB_PositionsPage::init()
 {
@@ -80,7 +82,7 @@ QStringList BB_PositionsPage::tableHeaders(QString type) const
 }
 void BB_PositionsPage::updateDataPage(bool force)
 {
-    if (!updateTimeOver(MIN_UPDATING_INTERVAL, force)) return;
+    if (!updateTimeOver(force)) return;
 
     clearTables();
     m_reqData->uri = API_POS_URI;
@@ -103,12 +105,26 @@ void BB_PositionsPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
     {
         fillPosTable(j_arr);
 
-        //next request (orders)
+        //next request (orders: first page)
         m_reqData->uri = API_ORDERS_URI;
         m_reqData->req_type = rtOrders;
-        sendRequest(api_config.req_limit_pos);
+        m_reqData->params.insert("cursor", QString::number(0));
+        sendRequest(MAX_ORDERS_PAGE);
     }
-    else if (req_type == rtOrders) fillOrdersTable(j_arr);
+    else if (req_type == rtOrders)
+    {
+        //qDebug()<<QString("getted part of orders, size=%1, m_orderCursor=%2").arg(j_arr.count()).arg(m_orderCursor);
+        fillOrdersTable(j_arr);
+
+        //next request (orders: next page)
+        QString next_cursor = jv.toObject().value("nextPageCursor").toString().trimmed();
+        if (!next_cursor.isEmpty())
+        {
+            qDebug()<<QString("nextPageCursor: [%1]").arg(next_cursor);
+            m_reqData->params.insert("cursor", next_cursor);
+            sendRequest(MAX_ORDERS_PAGE);
+        }
+    }
 }
 void BB_PositionsPage::fillPosTable(const QJsonArray &j_arr)
 {
@@ -149,10 +165,9 @@ void BB_PositionsPage::fillPosTable(const QJsonArray &j_arr)
 void BB_PositionsPage::fillOrdersTable(const QJsonArray &j_arr)
 {
     //qDebug("BB_PositionsPage::fillOrdersTable");
-    m_orderTable->removeAllRows();
+    //m_orderTable->removeAllRows();
     for (int i=0; i<j_arr.count(); i++)
     {
-
         QJsonObject j_el = j_arr.at(i).toObject();
         if (j_el.isEmpty()) {qWarning()<<QString("BB_PositionsPage::fillOrdersTable WARNING j_el is empty (index=%1)").arg(i); break;}
 

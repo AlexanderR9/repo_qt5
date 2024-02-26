@@ -25,6 +25,9 @@ protected:
     void init();
     void updateTable();
 
+public slots:
+    void slotJsonReply(int, const QJsonObject&);
+
 signals:
     void signalGetPosState(BB_BagState&);
 

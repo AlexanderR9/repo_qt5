@@ -27,6 +27,7 @@ public:
 protected:
     LSearchTableWidgetBox     *m_table;
     LSearchTableWidgetBox     *m_orderTable;
+    //quint8                     m_orderCursor;
 
     void init();
     QStringList tableHeaders(QString) const;

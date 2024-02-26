@@ -23,7 +23,8 @@ protected:
 
     virtual void reset();
     virtual void sendRequest(int limit = -1, QString name_extra = QString());
-    virtual bool updateTimeOver(quint16 secs = 60, bool force = false);
+    virtual bool updateTimeOver(bool force = false);
+    virtual int minUpdatingInterval() const {return 60;}
 
 public slots:
     virtual void slotJsonReply(int, const QJsonObject&);
