@@ -263,12 +263,45 @@ bool API_CommonSettings::isCloneUid(const QString &uid) const
     }
     return false;
 }
+bool API_CommonSettings::hasCloneUid(const QString &orig_uid) const
+{
+    if (!uid_clones.isEmpty())
+    {
+        foreach (const UidClone &v, uid_clones)
+            if (v.uid == orig_uid) return true;
+    }
+    return false;
+}
+bool API_CommonSettings::isHasCloneBond(const QString &orig_uid) const
+{
+    if (!uid_clones.isEmpty())
+    {
+        foreach (const UidClone &v, uid_clones)
+            if (v.uid == orig_uid) return v.is_bond;
+    }
+    return false;
+}
 QString API_CommonSettings::getOrigUidByClone(const QString &uid) const
 {
     if (!uid_clones.isEmpty())
     {
         foreach (const UidClone &v, uid_clones)
             if (v.clones.contains(uid)) return v.uid;
+    }
+    return QString();
+}
+QString API_CommonSettings::getLastCloneUidByOrig(const QString &orig_uid) const
+{
+    if (!uid_clones.isEmpty())
+    {
+        foreach (const UidClone &v, uid_clones)
+        {
+            if (v.uid == orig_uid)
+            {
+                if (!v.clones.isEmpty()) return v.clones.last();
+            }
+            break;
+        }
     }
     return QString();
 }
@@ -304,6 +337,7 @@ void API_CommonSettings::UidClone::parseXmlNode(const QDomNode &node)
 {
     uid = LStaticXML::getStringAttrValue("uid", node).trimmed();
     ticker = LStaticXML::getStringAttrValue("ticker", node).trimmed();
+    is_bond = (LStaticXML::getStringAttrValue("is_bond", node).trimmed() == "true");
     QDomNode child_node = node.firstChild();
     while (!child_node.isNull())
     {

@@ -1,7 +1,7 @@
 #ifndef BB_CHARTPAGE_H
 #define BB_CHARTPAGE_H
 
-#include "lsimplewidget.h"
+#include "bb_basepage.h"
 
 
 class LChartWidget;
@@ -11,7 +11,7 @@ class QPointF;
 
 
 //BB_ChartPage
-class BB_ChartPage : public LSimpleWidget
+class BB_ChartPage : public BB_BasePage
 {
     Q_OBJECT
 public:
@@ -20,7 +20,8 @@ public:
 
     QString iconPath() const {return QString(":/icons/images/chart.svg");}
     QString caption() const {return QString("Chart");}
-    //virtual void resetPage();
+
+    void updateDataPage(bool) {}
 
 protected:
     LListWidgetBox  *w_listAll;
@@ -37,11 +38,6 @@ protected slots:
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);
-
-
-signals:
-    void signalSendReq(const BB_APIReqParams&);
-
 
 };
 

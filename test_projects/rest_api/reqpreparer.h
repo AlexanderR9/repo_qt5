@@ -15,8 +15,7 @@ public:
     virtual ~ApiReqPreparer() {}
 
     QString name() const {return QString("requester_preparer_obj");}
-    void prepare(QString, const PlaceOrderData*);
-    //void prepareOrderReq(QString, const PlaceOrderData*);
+    void prepare(QString, const PlaceOrderData*); //подгтовить запрос m_reqObj к отправке
     bool invalidReq() const;
 
     inline void setCycleData(const QStringList &list) {m_cycleData.clear(); m_cycleData.append(list);}

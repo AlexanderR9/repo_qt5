@@ -7,7 +7,6 @@
 #include <QCryptographicHash>
 
 
-
 //global var
 APIConfig api_config;
 
@@ -31,7 +30,6 @@ void APIConfig::setApiKeys(QString key1, QString key2)
 {
     int h = key1.length()/2;
     api_key = QString("%1%2").arg(key1.right(key1.length()-h)).arg(key1.left(h));
-
     api_key_private.clear();
     int n = key2.length();
     for (int i=0; i<n; i++)

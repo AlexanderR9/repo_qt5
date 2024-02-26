@@ -21,7 +21,7 @@
 
 //BB_ChartPage
 BB_ChartPage::BB_ChartPage(QWidget *parent)
-    :LSimpleWidget(parent, 32),
+    :BB_BasePage(parent, 32, rtCandles),
       w_listAll(NULL),
       w_listFavor(NULL),
       w_chart(NULL)
@@ -30,6 +30,9 @@ BB_ChartPage::BB_ChartPage(QWidget *parent)
     init();
     loadTickers();
     initChart();
+
+    m_reqData->params.insert("category", "linear");
+    m_reqData->uri = API_CHART_URI;
 
     connect(w_listAll->listWidget(), SIGNAL(currentRowChanged(int)), this, SLOT(slotTickerChanged(int)));
 
@@ -45,21 +48,14 @@ void BB_ChartPage::slotTickerChanged(int i)
         return;
     }
 
-    //get ticker form listwidget
     QString ticker = QString("%1%2").arg(w_listAll->listWidget()->item(row)->text()).arg("USDT");
-    BB_APIReqParams req_data(QString("GET_CANDLES(%1)").arg(ticker), hrmGet);
-    req_data.uri = API_CHART_URI;
-    req_data.params.insert("category", "linear");
-    req_data.params.insert("symbol", ticker);
-    req_data.params.insert("interval", api_config.candle.size);
-    req_data.params.insert("limit", QString::number(api_config.candle.number));
-    req_data.req_type = rtCandles;
-
-    emit signalSendReq(req_data);
+    m_reqData->params.insert("symbol", ticker);
+    m_reqData->params.insert("interval", api_config.candle.size);
+    sendRequest(api_config.candle.number, ticker);
 }
 void BB_ChartPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 {
-    qDebug()<<QString("BB_ChartPage::slotJsonReply req_type=%1").arg(req_type);
+    BB_BasePage::slotJsonReply(req_type, j_obj);
     if (req_type != rtCandles) return;
 
     w_chart->clearChartPoints();
@@ -71,7 +67,6 @@ void BB_ChartPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
     const QJsonArray &j_arr = j_list.toArray();
     if (j_arr.isEmpty())  {emit signalError("BB_ChartPage: j_arr QJsonArray is empty"); return;}
 
-    //qDebug()<<QString("BB_ChartPage::slotJsonReply  j_arr.count(%1)").arg(j_arr.count());
     bool ok;
     QList<QPointF> points;
     for (int i=0; i<j_arr.count(); i++)
@@ -129,7 +124,6 @@ void BB_ChartPage::initChart()
     w_chart->setCrossColor(QColor(150, 190, 150));
     w_chart->setAxisXType(LChartAxisParams::xvtDate);
     w_chart->setCrossXAxisTextViewMode(2);
-    //m_chart->setAxisOffsets(12, 12, 50);
     w_chart->setPointSize(2);
 
     LChartParams p;
@@ -149,5 +143,4 @@ void BB_ChartPage::loadTickers()
     }
 
 }
-
 

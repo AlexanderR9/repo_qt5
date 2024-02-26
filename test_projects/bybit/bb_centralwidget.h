@@ -37,14 +37,15 @@ protected:
     void createPages();
     void initReqObject();
     int pageCount() const;
-    void prepareReq(const BB_APIReqParams&);
+    void prepareReq(const BB_APIReqParams*);
 
 protected slots:
     void slotReqFinished(int);
     void slotPageChanged(int);
+    void slotPageActivated(int);
 
 public slots:
-    void slotSendReq(const BB_APIReqParams&);
+    void slotSendReq(const BB_APIReqParams*);
     void slotEnableControls(bool);
 
 signals:

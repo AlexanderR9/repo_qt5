@@ -1,20 +1,18 @@
 #ifndef BB_POSITIONSPAGE_H
 #define BB_POSITIONSPAGE_H
 
-#include "lsimplewidget.h"
+#include "bb_basepage.h"
 
 
 struct BB_APIReqParams;
 class QJsonObject;
 class QPointF;
 class QJsonArray;
+struct BB_BagState;
 
 
-
-
-
-//BB_ChartPage
-class BB_PositionsPage : public LSimpleWidget
+//BB_PositionsPage
+class BB_PositionsPage : public BB_BasePage
 {
     Q_OBJECT
 public:
@@ -24,27 +22,24 @@ public:
     QString iconPath() const {return QString(":/icons/images/ball_green.svg");}
     QString caption() const {return QString("Positions");}
 
-    void updateDataPage();
+    void updateDataPage(bool force = false);
 
 protected:
     LSearchTableWidgetBox     *m_table;
     LSearchTableWidgetBox     *m_orderTable;
-    int cur_stage;
 
     void init();
     QStringList tableHeaders(QString) const;
     void fillPosTable(const QJsonArray&);
     void fillOrdersTable(const QJsonArray&);
+    void clearTables(); //remove all rows
 
 private:
     void initTable(LSearchTableWidgetBox*);
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);
-
-signals:
-    void signalSendReq(const BB_APIReqParams&);
-
+    void slotGetPosState(BB_BagState&);
 
 };
 

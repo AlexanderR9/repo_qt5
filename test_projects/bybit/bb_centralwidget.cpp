@@ -37,13 +37,23 @@ BB_CentralWidget::BB_CentralWidget(QWidget *parent)
 
     connect(w_list->listWidget(), SIGNAL(currentRowChanged(int)), this, SLOT(slotPageChanged(int)));
     connect(this, SIGNAL(signalEnableControls(bool)), this, SLOT(slotEnableControls(bool)));
+    connect(w_stack, SIGNAL(currentChanged(int)), this, SLOT(slotPageActivated(int)));
+
 }
 void BB_CentralWidget::slotPageChanged(int i)
 {
-    qDebug()<<QString("slotPageChanged  i=%1  pageCount %2").arg(i).arg(pageCount());
+   // qDebug()<<QString("slotPageChanged  i=%1  pageCount %2").arg(i).arg(pageCount());
     if (i < 0 || i >= pageCount()) return;
     w_stack->setCurrentIndex(i);
+}
+void BB_CentralWidget::slotPageActivated(int i)
+{
+    //int page_kind = qobject_cast<const LSimpleWidget*>(w_stack->widget(i))->userSign();
+   // qDebug()<<QString("slotPageActivated  page_sign=%1").arg(page_kind);
+    if (i < 0 || i >= pageCount()) return;
 
+    BB_BasePage *page = qobject_cast<BB_BasePage*>(w_stack->widget(i));
+    if (page) page->updateDataPage(false);
 }
 int BB_CentralWidget::pageCount() const
 {
@@ -52,37 +62,33 @@ int BB_CentralWidget::pageCount() const
 }
 void BB_CentralWidget::createPages()
 {
-    BB_ChartPage *p_chart = new BB_ChartPage(this);
-    w_stack->addWidget(p_chart);
-    connect(p_chart, SIGNAL(signalSendReq(const BB_APIReqParams&)), this, SLOT(slotSendReq(const BB_APIReqParams&)));
-    connect(this, SIGNAL(signalJsonReply(int, const QJsonObject&)), p_chart, SLOT(slotJsonReply(int, const QJsonObject&)));
-
     JSONViewPage *j_page = new JSONViewPage(this);
     w_stack->addWidget(j_page);
-    connect(this, SIGNAL(signalJsonReply(int, const QJsonObject&)), j_page, SLOT(slotReloadJsonReply(int, const QJsonObject&)));
+
+    BB_ChartPage *p_chart = new BB_ChartPage(this);
+    w_stack->addWidget(p_chart);
 
     BB_PositionsPage *pos_page = new BB_PositionsPage(this);
     w_stack->addWidget(pos_page);
-    connect(pos_page, SIGNAL(signalSendReq(const BB_APIReqParams&)), this, SLOT(slotSendReq(const BB_APIReqParams&)));
-    connect(this, SIGNAL(signalJsonReply(int, const QJsonObject&)), pos_page, SLOT(slotJsonReply(int, const QJsonObject&)));
 
     BB_HistoryPage *h_page = new BB_HistoryPage(this);
     w_stack->addWidget(h_page);
-    connect(h_page, SIGNAL(signalSendReq(const BB_APIReqParams&)), this, SLOT(slotSendReq(const BB_APIReqParams&)));
-    connect(this, SIGNAL(signalJsonReply(int, const QJsonObject&)), h_page, SLOT(slotJsonReply(int, const QJsonObject&)));
 
     BB_BagStatePage *bs_page = new BB_BagStatePage(this);
     w_stack->addWidget(bs_page);
+    connect(bs_page, SIGNAL(signalGetPosState(BB_BagState&)), pos_page, SLOT(slotGetPosState(BB_BagState&)));
 
 
     for (int i=0; i<w_stack->count(); i++)
     {
-        LSimpleWidget *w = qobject_cast<LSimpleWidget*>(w_stack->widget(i));
+        BB_BasePage *w = qobject_cast<BB_BasePage*>(w_stack->widget(i));
         if (w)
         {
             w_list->addItem(w->caption(), w->iconPath());
             connect(w, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
             connect(w, SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
+            connect(w, SIGNAL(signalSendReq(const BB_APIReqParams*)), this, SLOT(slotSendReq(const BB_APIReqParams*)));
+            connect(this, SIGNAL(signalJsonReply(int, const QJsonObject&)), w, SLOT(slotJsonReply(int, const QJsonObject&)));
         }
     }
 }
@@ -130,7 +136,6 @@ void BB_CentralWidget::load(QSettings &settings)
 
     int cp = settings.value(QString("%1/current_page").arg(objectName()), 0).toInt();
     w_list->listWidget()->setCurrentRow(cp);
-
 }
 void BB_CentralWidget::save(QSettings &settings)
 {
@@ -143,7 +148,6 @@ void BB_CentralWidget::save(QSettings &settings)
     }
 
     settings.setValue(QString("%1/current_page").arg(objectName()), w_stack->currentIndex());
-
 }
 void BB_CentralWidget::slotReqFinished(int result)
 {
@@ -156,47 +160,36 @@ void BB_CentralWidget::slotReqFinished(int result)
     if (r.isOk()) emit signalJsonReply(userSign(), r.data);
     else emit signalError("request fault");
 
-
     //out headers of reply
     emit signalMsg(QString("------------headers %1---------------").arg(r.headers.count()));
     foreach (const QString v, r.headers) emit signalMsg(v);
-
 }
-void BB_CentralWidget::prepareReq(const BB_APIReqParams &req_data)
+void BB_CentralWidget::prepareReq(const BB_APIReqParams *req_data)
 {
     qint64 ts = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
-    QString hmac_msg = QString("%1%2%3%4").arg(ts).arg(api_config.api_key).arg(api_config.req_delay).arg(req_data.paramsLine());
+    QString hmac_msg = QString("%1%2%3%4").arg(ts).arg(api_config.api_key).arg(api_config.req_delay).arg(req_data->paramsLine());
     QByteArray ba_sign(APIConfig::calcHMACSha256(api_config.api_key_private.toLatin1(), hmac_msg.toLatin1()));
 
     m_reqObj->addReqHeader(QString("X-BAPI-API-KEY"), api_config.api_key);
     m_reqObj->addReqHeader(QString("X-BAPI-TIMESTAMP"), QString::number(ts));
     m_reqObj->addReqHeader(QString("X-BAPI-SIGN"), QString(ba_sign.toHex()));
     m_reqObj->addReqHeader(QString("X-BAPI-RECV-WINDOW"), QString::number(api_config.req_delay));
-    m_reqObj->setUri(req_data.fullUri());
+    m_reqObj->setUri(req_data->fullUri());
 }
-void BB_CentralWidget::slotSendReq(const BB_APIReqParams &req_data)
+void BB_CentralWidget::slotSendReq(const BB_APIReqParams *req_data)
 {
-    emit signalMsg(QString("\n Start request [%1] ...").arg(req_data.name));
-    if (req_data.invalid())
-    {
-        emit signalError("request data is invalid");
-        return;
-    }
-    if (requesterBuzy())
-    {
-        emit signalError("Requester object is buzy.");
-        return;
-    }
+    if (!req_data) {emit signalError("request data is NULL"); return;}
+    emit signalMsg(QString("\n Start request [%1] ...").arg(req_data->name));
+    if (req_data->invalid()) {emit signalError("request data is invalid"); return;}
+    if (requesterBuzy()) {emit signalError("Requester object is buzy."); return;}
 
-
-    m_userSign = req_data.req_type;
+    m_userSign = req_data->req_type;
     prepareReq(req_data);
     emit signalMsg(QString("URL: %1").arg(m_reqObj->fullUrl()));
     emit signalEnableControls(false);
 
-    qDebug()<<req_data.toStr();
-    m_reqObj->start(req_data.metod);
-
+    qDebug()<<req_data->toStr();
+    m_reqObj->start(req_data->metod);
 }
 void BB_CentralWidget::slotEnableControls(bool b)
 {
@@ -215,22 +208,8 @@ bool BB_CentralWidget::requesterBuzy() const
 }
 void BB_CentralWidget::updateDataPage()
 {
-    switch (w_stack->currentIndex())
-    {
-        case 2:
-        {
-            BB_PositionsPage *page = qobject_cast<BB_PositionsPage*>(w_stack->currentWidget());
-            if (page) page->updateDataPage();
-            break;
-        }
-        case 3:
-        {
-            BB_HistoryPage *page = qobject_cast<BB_HistoryPage*>(w_stack->currentWidget());
-            if (page) page->updateDataPage();
-            break;
-        }
-        default: break;
-    }
+    BB_BasePage *page = qobject_cast<BB_BasePage*>(w_stack->currentWidget());
+    if (page) page->updateDataPage(true);
 }
 
 

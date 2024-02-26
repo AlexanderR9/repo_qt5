@@ -34,8 +34,8 @@ void ApiReqPreparer::prepareHeaders(const QString &src)
 }
 void ApiReqPreparer::prepare(QString src, const PlaceOrderData *req_data)
 {
-    prepareHeaders(src);
     qDebug("ApiReqPreparer::prepare");
+    prepareHeaders(src);
 
     if (src.contains("OperationsService")) prepareReqOperations(src);
     else if (src.contains("BondBy")) prepareReqBondBy();
@@ -46,10 +46,10 @@ void ApiReqPreparer::prepare(QString src, const PlaceOrderData *req_data)
     else if (src.contains("MarketDataService")) prepareReqMarket(src);
     else if (src.contains("OrdersService")) prepareReqOrders(req_data);
 
-    qDebug("ApiReqPreparer::prepare 1");
+    //qDebug("ApiReqPreparer::prepare 1");
     QString furl = m_reqObj->fullUrl();
     emit signalMsg(QString("URL:   %1 \n").arg(m_reqObj->fullUrl()));
-    qDebug("ApiReqPreparer::prepare 2");
+    qDebug("preparing finished!");
 }
 void ApiReqPreparer::prepareReqOrders(const PlaceOrderData *req_data)
 {
@@ -62,17 +62,27 @@ void ApiReqPreparer::prepareReqOrders(const PlaceOrderData *req_data)
         m_reqObj->addMetaData("err", QString::number(hreWrongReqParams));
         return;
     }
+
+    //check has clone uids
+    QString need_uid(req_data->uid);
+    if (api_commonSettings.hasCloneUid(need_uid) && api_commonSettings.isHasCloneBond(need_uid))
+    {
+        need_uid = api_commonSettings.getLastCloneUidByOrig(req_data->uid);
+        emit signalMsg(QString("HAS CLONE UID: [%1] => [%2]").arg(req_data->uid).arg(need_uid));
+    }
+
+    //prepare trade operation
     if (req_data->isCancel())
     {
         QString key_id = (req_data->isStop() ? "stopOrderId" : "orderId");
-        m_reqObj->addMetaData(key_id, req_data->uid);
+        m_reqObj->addMetaData(key_id, need_uid);
     }
     else if (!req_data->isStop())
     {
         m_reqObj->addMetaData("quantity", QString::number(req_data->lots));
         m_reqObj->addMetaData("direction", QString("ORDER_DIRECTION_%1").arg(req_data->kind.toUpper()));
         m_reqObj->addMetaData("orderType", "ORDER_TYPE_LIMIT");
-        m_reqObj->addMetaData("instrumentId", req_data->uid);
+        m_reqObj->addMetaData("instrumentId", need_uid);
 
         QJsonObject price_obj;
         InstrumentBase::floatToJVBlock(req_data->price, price_obj);
@@ -82,7 +92,7 @@ void ApiReqPreparer::prepareReqOrders(const PlaceOrderData *req_data)
     {
         m_reqObj->addMetaData("quantity", QString::number(req_data->lots));
         m_reqObj->addMetaData("direction", QString("STOP_ORDER_DIRECTION_%1").arg(req_data->kind.toUpper()));
-        m_reqObj->addMetaData("instrumentId", req_data->uid);
+        m_reqObj->addMetaData("instrumentId", need_uid);
         m_reqObj->addMetaData("expirationType", "STOP_ORDER_EXPIRATION_TYPE_GOOD_TILL_CANCEL");
 
         if (req_data->is_stop == 1) m_reqObj->addMetaData("stopOrderType", "STOP_ORDER_TYPE_TAKE_PROFIT");

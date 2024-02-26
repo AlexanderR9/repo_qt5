@@ -1,7 +1,7 @@
 #ifndef BB_HISTORYPAGE_H
 #define BB_HISTORYPAGE_H
 
-#include "lsimplewidget.h"
+#include "bb_basepage.h"
 
 
 class LTableWidgetBox;
@@ -10,7 +10,7 @@ class QJsonObject;
 
 
 //BB_HistoryPage
-class BB_HistoryPage : public LSimpleWidget
+class BB_HistoryPage : public BB_BasePage
 {
     Q_OBJECT
 public:
@@ -20,7 +20,7 @@ public:
     QString iconPath() const {return QString(":/icons/images/ball_gray.svg");}
     QString caption() const {return QString("History");}
 
-    void updateDataPage();
+    void updateDataPage(bool force = false);
 
 protected:
     LTableWidgetBox     *m_table;
@@ -30,9 +30,6 @@ protected:
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);
-
-signals:
-    void signalSendReq(const BB_APIReqParams&);
 
 };
 

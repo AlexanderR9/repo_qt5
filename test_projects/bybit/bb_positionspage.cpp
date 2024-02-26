@@ -3,6 +3,7 @@
 #include "lhttp_types.h"
 #include "ltable.h"
 #include "apiconfig.h"
+#include "bb_apistruct.h"
 
 #include <QSplitter>
 #include <QDebug>
@@ -11,24 +12,30 @@
 #include <QJsonObject>
 #include <QTableWidget>
 
-#define API_POS_URI             QString("v5/position/list")
-#define API_ORDERS_URI          QString("v5/order/realtime")
-
+#define API_POS_URI                 QString("v5/position/list")
+#define API_ORDERS_URI              QString("v5/order/realtime")
+#define MIN_UPDATING_INTERVAL       30 //secs
 #define TRADE_TYPE_COL              2
 #define FREEZED_SUM_COL             4
 
 
-
 //BB_PositionsPage
 BB_PositionsPage::BB_PositionsPage(QWidget *parent)
-    :LSimpleWidget(parent, 20),
-      m_table(NULL),
-      m_orderTable(NULL),
-      cur_stage(0)
+    :BB_BasePage(parent, 20, rtPositions),
+    m_table(NULL),
+    m_orderTable(NULL)
 {
     setObjectName("positions_page");
     init();
 
+    m_reqData->params.insert("category", "linear");
+    m_reqData->params.insert("settleCoin", "USDT");
+
+}
+void BB_PositionsPage::clearTables()
+{
+    m_table->removeAllRows();
+    m_orderTable->removeAllRows();
 }
 void BB_PositionsPage::init()
 {
@@ -71,42 +78,18 @@ QStringList BB_PositionsPage::tableHeaders(QString type) const
     else if (type.contains("order")) list << "Order type";
     return list;
 }
-void BB_PositionsPage::updateDataPage()
+void BB_PositionsPage::updateDataPage(bool force)
 {
-    BB_APIReqParams req_data(QString("GET_POSITIONS"), hrmGet);
-    switch (cur_stage)
-    {
-        case 0:
-        {
-            cur_stage = rtPositions;
-            req_data.uri = API_POS_URI;
-            break;
-        }
-        case rtPositions:
-        {
-            cur_stage = rtOrders;
-            req_data.name = QString("GET_PLACED_ORDERS");
-            req_data.uri = API_ORDERS_URI;
-            break;
-        }
-        default:
-        {
-            cur_stage = 0;
-            return;
-        }
-    }
+    if (!updateTimeOver(MIN_UPDATING_INTERVAL, force)) return;
 
-    qDebug("BB_PositionsPage::updateDataPage()");
-    req_data.params.insert("category", "linear");
-    req_data.params.insert("settleCoin", "USDT");
-    req_data.params.insert("limit", QString::number(api_config.req_limit_pos));
-    req_data.req_type = cur_stage;
-
-    emit signalSendReq(req_data);
+    clearTables();
+    m_reqData->uri = API_POS_URI;
+    m_reqData->req_type = rtPositions;
+    sendRequest(api_config.req_limit_pos);
 }
 void BB_PositionsPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 {
-    qDebug()<<QString("BB_ChartPage::slotJsonReply req_type=%1").arg(req_type);
+    BB_BasePage::slotJsonReply(req_type, j_obj);
     if (req_type != rtPositions && req_type != rtOrders) return;
 
     const QJsonValue &jv = j_obj.value("result");
@@ -116,14 +99,20 @@ void BB_PositionsPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
     const QJsonArray &j_arr = j_list.toArray();
     if (j_arr.isEmpty())  {emit signalError("BB_PositionsPage: j_arr QJsonArray is empty"); return;}
 
-    if (req_type == rtPositions) fillPosTable(j_arr);
-    else if (req_type == rtOrders) fillOrdersTable(j_arr);
+    if (req_type == rtPositions)
+    {
+        fillPosTable(j_arr);
 
-    updateDataPage();
+        //next request (orders)
+        m_reqData->uri = API_ORDERS_URI;
+        m_reqData->req_type = rtOrders;
+        sendRequest(api_config.req_limit_pos);
+    }
+    else if (req_type == rtOrders) fillOrdersTable(j_arr);
 }
 void BB_PositionsPage::fillPosTable(const QJsonArray &j_arr)
 {
-    qDebug("BB_PositionsPage::fillPosTable");
+    //qDebug("BB_PositionsPage::fillPosTable");
     m_table->removeAllRows();
     for (int i=0; i<j_arr.count(); i++)
     {
@@ -156,11 +145,10 @@ void BB_PositionsPage::fillPosTable(const QJsonArray &j_arr)
     }
     m_table->resizeByContents();
     m_table->searchExec();
-
 }
 void BB_PositionsPage::fillOrdersTable(const QJsonArray &j_arr)
 {
-    qDebug("BB_PositionsPage::fillOrdersTable");
+    //qDebug("BB_PositionsPage::fillOrdersTable");
     m_orderTable->removeAllRows();
     for (int i=0; i<j_arr.count(); i++)
     {
@@ -179,17 +167,45 @@ void BB_PositionsPage::fillOrdersTable(const QJsonArray &j_arr)
             s_freezed = QString::number(freezed, 'f', (freezed < 0.1) ? 3 : 2);
         }
 
-
         QStringList row_data;
         row_data << j_el.value("symbol").toString() << j_el.value("qty").toString() << j_el.value("side").toString().toUpper();
         row_data << j_el.value("price").toString() << s_freezed;
         row_data << o_type;
         LTable::addTableRow(m_orderTable->table(), row_data);
-
     }
+
     m_orderTable->resizeByContents();
     m_orderTable->searchExec();
+}
+void BB_PositionsPage::slotGetPosState(BB_BagState &state)
+{
+    state.n_pos = m_table->table()->rowCount();
+    state.n_order = m_orderTable->table()->rowCount();
+    state.freezed_pos = 0;
+    state.freezed_order = 0;
+    state.pos_result = 0;
 
+    //check pos table
+    if (state.n_pos > 0)
+    {
+        QTableWidget *t = m_table->table();
+        for (int i=0; i<state.n_pos; i++)
+        {
+            state.freezed_pos += t->item(i, FREEZED_SUM_COL)->text().toFloat();
+            state.pos_result += t->item(i, t->columnCount()-1)->text().toFloat();
+        }
+    }
+
+    //check order table
+    if (state.n_order > 0)
+    {
+        QTableWidget *t = m_orderTable->table();
+        for (int i=0; i<state.n_order; i++)
+        {
+            QString s(t->item(i, FREEZED_SUM_COL)->text().trimmed());
+            if (s != "-") state.freezed_order += s.toFloat();
+        }
+    }
 }
 
 

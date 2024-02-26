@@ -336,7 +336,6 @@ void APIReqPage::standardRequest(const QString &src, const PlaceOrderData *req_d
 {
     qDebug()<<QString("APIReqPage::standardRequest  src[%1]  req_data[%2]").arg(src).arg(req_data?"TRUE":"NULL");
     m_reqPreparer->prepare(src, req_data);
-    qDebug("1");
     if (m_reqPreparer->invalidReq())
     {
         qDebug("req is FAULT");
@@ -348,7 +347,7 @@ void APIReqPage::standardRequest(const QString &src, const PlaceOrderData *req_d
     }
     else
     {
-        qDebug("req is OK");
+        qDebug("req was prepared OK!");
         printHeaders();
         emit signalMsg("request started ....");
         toDebugReqMetadata();

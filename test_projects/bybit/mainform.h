@@ -3,12 +3,8 @@
 
 #include "lmainwidget.h"
 
-//#include <QColor>
-
 class LProtocolBox;
 class QSplitter;
-//class LTableWidgetBox;
-//class LSearch;
 class BB_CentralWidget;
 
 // MainForm
@@ -40,7 +36,6 @@ protected slots:
     void slotError(const QString&);
     void slotMsg(const QString&);
     void slotAppSettingsChanged(QStringList);
-
 
 private:
     int expandLevel() const;

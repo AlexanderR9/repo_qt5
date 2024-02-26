@@ -35,29 +35,27 @@ MainForm::MainForm(QWidget *parent)
     m_centralWidget(NULL)
 {
     setObjectName("bybit_mainwindow");
-    qDebug("MainForm::MainFormMainForm()");
-
     api_config.loadTickers();
 }
 void MainForm::initActions()
 {
-    addAction(LMainWidget::atStart);
-    addAction(LMainWidget::atLoadData);
-    addAction(LMainWidget::atRight);
-    addAction(LMainWidget::atRedo);
+    addAction(LMainWidget::atRefresh);
+    //addAction(LMainWidget::atLoadData);
+    addAction(LMainWidget::atClear);
+    //addAction(LMainWidget::atRight);
+    //addAction(LMainWidget::atRedo);
 
     addToolBarSeparator();
-    addAction(LMainWidget::atClear);
     addAction(LMainWidget::atSettings);
     addAction(LMainWidget::atExit);
 
-    this->setActionTooltip(atRedo, "remove carriage return symbols and rewrite file1");
+    //this->setActionTooltip(atRedo, "remove carriage return symbols and rewrite file1");
 }
 void MainForm::slotAction(int type)
 {
     switch (type)
     {
-        case LMainWidget::atStart: {actStart(); break;}
+        case LMainWidget::atRefresh: {actStart(); break;}
         case LMainWidget::atSettings: {actCommonSettings(); break;}
         case LMainWidget::atClear: {m_protocol->clearProtocol(); break;}
         default: break;
@@ -69,10 +67,7 @@ void MainForm::actStart()
     m_protocol->addText("Run updatating data of page .......", LProtocolBox::ttFile);
 
     if (m_centralWidget) m_centralWidget->updateDataPage();
-
-    //m_protocol->addText("finished!");
 }
-
 void MainForm::initWidgets()
 {
     qDebug("MainForm::initWidgets()");

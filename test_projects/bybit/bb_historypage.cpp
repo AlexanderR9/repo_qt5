@@ -19,7 +19,7 @@
 
 //BB_HistoryPage
 BB_HistoryPage::BB_HistoryPage(QWidget *parent)
-    :LSimpleWidget(parent, 20),
+    :BB_BasePage(parent, 20, rtHistory),
       m_table(NULL)
 {
     setObjectName("history_page");
@@ -49,13 +49,15 @@ QStringList BB_HistoryPage::tableHeaders() const
 }
 void BB_HistoryPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 {
-    qDebug()<<QString("BB_ChartPage::slotJsonReply req_type=%1").arg(req_type);
-    if (req_type != rtPositions && req_type != rtOrders) return;
+    BB_BasePage::slotJsonReply(req_type, j_obj);
+
+//    qDebug()<<QString("BB_ChartPage::slotJsonReply req_type=%1").arg(req_type);
+  //  if (req_type != rtPositions && req_type != rtOrders) return;
 
 }
-void BB_HistoryPage::updateDataPage()
+void BB_HistoryPage::updateDataPage(bool force)
 {
-    BB_APIReqParams req_data(QString("GET_HISTORY"), hrmGet);
+    //BB_APIReqParams req_data(QString("GET_HISTORY"), hrmGet);
     /*
     switch (cur_stage)
     {
@@ -78,7 +80,7 @@ void BB_HistoryPage::updateDataPage()
             return;
         }
     }
-    */
+
 
     qDebug("BB_HistoryPage::updateDataPage()");
     req_data.uri = API_ORDERS_URI;
@@ -90,6 +92,7 @@ void BB_HistoryPage::updateDataPage()
     req_data.req_type = rtHistory;
 
     emit signalSendReq(req_data);
+    */
 }
 
 

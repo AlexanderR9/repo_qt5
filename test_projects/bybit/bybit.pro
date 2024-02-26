@@ -35,7 +35,8 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/bb_apistruct.h \
         $$PWD/bb_positionspage.h \
         $$PWD/bb_historypage.h \
-        $$PWD/bb_bagstatepage.h
+        $$PWD/bb_bagstatepage.h \
+        $$PWD/bb_basepage.h
 
 
 SOURCES += $$PWD/main.cpp \
@@ -47,6 +48,7 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/bb_apistruct.cpp \
         $$PWD/bb_positionspage.cpp \
         $$PWD/bb_historypage.cpp \
-        $$PWD/bb_bagstatepage.cpp
+        $$PWD/bb_bagstatepage.cpp \
+        $$PWD/bb_basepage.cpp
 
 

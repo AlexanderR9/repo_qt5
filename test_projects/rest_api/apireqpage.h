@@ -74,7 +74,7 @@ protected slots:
     void slotReqFinished(int);
 
 public slots:
-    void slotTrySendOrderReq(const PlaceOrderData&); //попытка выполнить операцию c ордером: buy/sell/cancel
+    void slotTrySendOrderReq(const PlaceOrderData&); //попытка выполнить торговую операцию: buy/sell/cancel
 
 signals:
     void signalFinished(int);

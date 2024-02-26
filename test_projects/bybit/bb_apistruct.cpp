@@ -36,7 +36,28 @@ QString BB_APIReqParams::toStr() const
     s = QString("%1 validity[%2]").arg(s).arg(invalid()?"FAULT":"OK");
     return s;
 }
+QString BB_APIReqParams::strReqTypeByType(int t, QString s_extra)
+{
+    QString s;
+    switch (t)
+    {
+        case rtCandles:     {s = "GET_CANDLES"; break;}
+        case rtPositions:   {s = "GET_POSITIONS"; break;}
+        case rtOrders:      {s = "GET_ORDERS"; break;}
+        case rtHistory:     {s = "GET_HISTORY"; break;}
+        default: return "???";
+    }
+    return s_extra.isEmpty() ? s : QString("%1(%2)").arg(s).arg(s_extra);
+}
 
+
+//////////BB_BagState/////////////
+float BB_BagState::sumFreezed() const
+{
+    float sum = freezed_order + freezed_pos;
+    if (sum < 0) return -1;
+    return sum;
+}
 
 
 

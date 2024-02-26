@@ -25,8 +25,26 @@ struct BB_APIReqParams
     QString paramsLine() const; //params => str_line(key=value&...)
     QString toStr() const;
 
+    static QString strReqTypeByType(int, QString = "");
+
 
 };
 
+//обобщенная информация о текущем состоянии торгового портфеля
+struct BB_BagState
+{
+    BB_BagState() {reset();}
+
+    float freezed_pos;
+    float freezed_order;
+    float balance; //total sum on the balance of trading bill
+    float pos_result; //current result by all opened positions
+    quint16 n_pos;
+    quint16 n_order;
+
+    void reset() {freezed_pos = freezed_order = balance = -1; pos_result = 0; n_pos = n_order = 0;}
+    float sumFreezed() const;
+
+};
 
 #endif // BB_APISTRUCT_H

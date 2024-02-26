@@ -66,10 +66,11 @@ struct API_CommonSettings
     };
     struct UidClone
     {
-        UidClone() :uid(QString()), ticker(QString()) {clones.clear();}
+        UidClone() :uid(QString()), ticker(QString()), is_bond(false) {clones.clear();}
         QString uid;
         QString ticker;
         QStringList clones; //clones of uids
+        bool is_bond;
         bool invalid() const {return (uid.isEmpty() || clones.isEmpty());}
         void parseXmlNode(const QDomNode&);
     };
@@ -108,6 +109,9 @@ struct API_CommonSettings
 
     bool isCloneUid(const QString&) const;
     QString getOrigUidByClone(const QString&) const;
+    bool hasCloneUid(const QString&) const;
+    QString getLastCloneUidByOrig(const QString&) const;
+    bool isHasCloneBond(const QString&) const;
 
 };
 
