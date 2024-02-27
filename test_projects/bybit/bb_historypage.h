@@ -7,6 +7,7 @@
 class LTableWidgetBox;
 struct BB_APIReqParams;
 class QJsonObject;
+class QJsonArray;
 
 
 //BB_HistoryPage
@@ -23,10 +24,11 @@ public:
     void updateDataPage(bool force = false);
 
 protected:
-    LTableWidgetBox     *m_table;
+    LSearchTableWidgetBox     *m_table;
 
     void init();
     QStringList tableHeaders() const;
+    void fillOrdersTable(const QJsonArray&);
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);

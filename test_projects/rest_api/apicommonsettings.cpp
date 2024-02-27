@@ -299,11 +299,11 @@ QString API_CommonSettings::getLastCloneUidByOrig(const QString &orig_uid) const
             if (v.uid == orig_uid)
             {
                 if (!v.clones.isEmpty()) return v.clones.last();
+                break;
             }
-            break;
         }
     }
-    return QString();
+    return orig_uid;
 }
 
 

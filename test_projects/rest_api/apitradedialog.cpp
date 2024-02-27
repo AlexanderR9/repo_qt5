@@ -97,19 +97,26 @@ void APITradeDialog::fillLots()
 
     if (m_data.maxLot_ps > 0)
     {
-        int l = 1;
-        int d = 0;
-        while (d < m_data.maxLot_ps)
+        int max_steps = m_data.maxLot_ps/m_data.in_lot;
+        int k = ((max_steps<20) ? 1 : 5);
+        int l = 0;
+        while (l < max_steps)
         {
+            l += k;
+            if (l >= max_steps)
+            {
+                l = max_steps;
+                sw->comboBox->addItem(QString::number(l));
+                break;
+            }
             sw->comboBox->addItem(QString::number(l));
-            d += m_data.in_lot;
-            l++;
         }
     }
     else
     {
         for (int i=1; i<=5; i++) sw->comboBox->addItem(QString::number(i));
-        for (int i=1; i<=5; i++) sw->comboBox->addItem(QString::number(i*10));
+        for (int i=2; i<=6; i++) sw->comboBox->addItem(QString::number(i*5));
+        for (int i=4; i<=10; i++) sw->comboBox->addItem(QString::number(i*10));
         if (api_commonSettings.t_dialog.lots_index < 0 || api_commonSettings.t_dialog.lots_index >= sw->comboBox->count())
             sw->comboBox->setCurrentIndex(1);
         else sw->comboBox->setCurrentIndex(api_commonSettings.t_dialog.lots_index);

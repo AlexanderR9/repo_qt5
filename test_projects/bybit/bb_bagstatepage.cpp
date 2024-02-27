@@ -92,8 +92,8 @@ void BB_BagStatePage::updateTable()
     t->item(row, 0)->setText(QString("%1/%2").arg(QString::number(m_state.freezed_pos, 'f', 1)).arg(QString::number(m_state.freezed_order, 'f', 1))); row++;
     t->item(row, 0)->setText(QString::number(m_state.sumFreezed(), 'f', 1)); row++;
     t->item(row, 0)->setText(QString::number(m_state.pos_result, 'f', 1));
-    if (m_state.pos_result < 0) t->item(row, 0)->setTextColor(Qt::red);
-    else if (m_state.pos_result < 0) t->item(row, 0)->setTextColor(Qt::blue);
+    if (m_state.pos_result < -0.5) t->item(row, 0)->setTextColor(Qt::red);
+    else if (m_state.pos_result > 0.5) t->item(row, 0)->setTextColor(Qt::blue);
     else t->item(row, 0)->setTextColor(Qt::gray);
 
 }

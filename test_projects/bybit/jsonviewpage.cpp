@@ -5,6 +5,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonValue>
+#include <QDebug>
 
 
 //JSONViewPage
@@ -26,6 +27,7 @@ void JSONViewPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 }
 void JSONViewPage::setExpandLevel(int a)
 {
+    qDebug()<<QString("JSONViewPage::setExpandLevel %1").arg(a);
     m_replyBox->setExpandLevel(a);
 }
 void JSONViewPage::initWidgets()

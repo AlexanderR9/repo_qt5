@@ -3,6 +3,7 @@
 
 #include <QDir>
 #include <QChar>
+#include <QDateTime>
 #include <QDebug>
 #include <QCryptographicHash>
 
@@ -75,6 +76,19 @@ QByteArray APIConfig::calcHMACSha256(QByteArray key, QByteArray baseString)
      part.append(baseString);
      total.append(QCryptographicHash::hash(part, metod));
      return QCryptographicHash::hash(total, metod);
+}
+qint64 APIConfig::toTimeStamp(quint16 d, quint16 m, quint16 y)
+{
+    if (y < 2023 || y > 2024) return -1;
+    QDate date(y, m, d);
+    if (!date.isValid()) return -1;
+    return (QDateTime(date).toUTC().toMSecsSinceEpoch());
+}
+QString APIConfig::fromTimeStamp(qint64 ts, QString mask)
+{
+    QDateTime dt;
+    dt.setMSecsSinceEpoch(ts);
+    return dt.toString(mask);
 }
 
 

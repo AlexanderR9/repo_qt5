@@ -24,7 +24,6 @@ BB_PositionsPage::BB_PositionsPage(QWidget *parent)
     :BB_BasePage(parent, 20, rtPositions),
     m_table(NULL),
     m_orderTable(NULL)
-    //m_orderCursor(1)
 {
     setObjectName("positions_page");
     init();
@@ -60,6 +59,14 @@ void BB_PositionsPage::init()
     m_orderTable->setObjectName("order_table");
     m_orderTable->setTitle("Placed orders");
     initTable(m_orderTable);
+
+    m_orderTable->addSortingData(0, LSearchTableWidgetBox::sdtString);
+    m_orderTable->addSortingData(1, LSearchTableWidgetBox::sdtNumeric);
+    m_orderTable->addSortingData(2, LSearchTableWidgetBox::sdtString);
+    m_orderTable->addSortingData(4, LSearchTableWidgetBox::sdtNumeric);
+    m_orderTable->addSortingData(5, LSearchTableWidgetBox::sdtString);
+    m_orderTable->sortingOn();
+
 }
 void BB_PositionsPage::initTable(LSearchTableWidgetBox *t)
 {
@@ -128,7 +135,6 @@ void BB_PositionsPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 }
 void BB_PositionsPage::fillPosTable(const QJsonArray &j_arr)
 {
-    //qDebug("BB_PositionsPage::fillPosTable");
     m_table->removeAllRows();
     for (int i=0; i<j_arr.count(); i++)
     {
@@ -164,8 +170,6 @@ void BB_PositionsPage::fillPosTable(const QJsonArray &j_arr)
 }
 void BB_PositionsPage::fillOrdersTable(const QJsonArray &j_arr)
 {
-    //qDebug("BB_PositionsPage::fillOrdersTable");
-    //m_orderTable->removeAllRows();
     for (int i=0; i<j_arr.count(); i++)
     {
         QJsonObject j_el = j_arr.at(i).toObject();

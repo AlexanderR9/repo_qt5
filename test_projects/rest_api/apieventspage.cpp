@@ -220,6 +220,8 @@ void APIEventsPage::addRowRecord(const EventOperation &rec, const QPair<QString,
     LTable::addTableRow(m_tableBox->table(), row_data);
     int l_row = m_tableBox->table()->rowCount() - 1;
     if (rec.amount < 0) m_tableBox->table()->item(l_row, AMOUNT_COL)->setTextColor(Qt::darkRed);
+
+    if (rec.date.date() == QDate::currentDate()) row_color = QColor("#00FFFF");
     LTable::setTableRowColor(m_tableBox->table(), l_row, row_color);
 
     //kind operation

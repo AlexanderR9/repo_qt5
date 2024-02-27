@@ -199,7 +199,7 @@ void BB_CentralWidget::slotEnableControls(bool b)
 }
 void BB_CentralWidget::setExpandLevel(int l)
 {
-    JSONViewPage *j_page = qobject_cast<JSONViewPage*>(w_stack->widget(1));
+    JSONViewPage *j_page = qobject_cast<JSONViewPage*>(w_stack->widget(0));
     if (j_page) j_page->setExpandLevel(l);
 }
 bool BB_CentralWidget::requesterBuzy() const
