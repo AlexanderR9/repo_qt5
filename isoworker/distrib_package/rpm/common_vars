@@ -2,14 +2,16 @@
 
 # user vars
 PWD_DIR=$(pwd)
-PROG_DIR=$PWD_DIR/../..
+REPO_DIR=$PWD_DIR/../../..
 PROG_NAME=isoworker
+PROG_DIR=$REPO_DIR/$PROG_NAME
 MY_LIBS_DIR=libs
 QT_VER=5
 QT_NAME=qt$QT_VER
 
 #константа
 BUILD_DATA_FOLDER=rpmbuild_data
+
 
 
 # common funcs
