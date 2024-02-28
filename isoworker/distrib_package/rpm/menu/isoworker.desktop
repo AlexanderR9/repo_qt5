@@ -1,0 +1,11 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Maker of ISO images
+Description=CDRW/ISO utility
+Exec=/opt/Roman-Group/isoworker-qt5/start
+Terminal=0
+Type=Application
+Icon=isoworker.png
+StartupNotify=true
+Categories=System
+

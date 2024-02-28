@@ -1,0 +1,96 @@
+#!/bin/bash
+
+#include common_vars
+. common_vars
+
+
+#оперделение значений версии и релиза из spec файла
+RPM_HOME=`rpm --showrc | grep ' _topdir' | perl -e  "\\\$_ = <STDIN> ; s/^.* _topdir[ \t]+([^ \t].*)\\\$/\\\$1/ ; print \"\\\$_\";"`
+PROG_VER=`grep "^Version:" $PROG_NAME.spec.in| perl -e  "\\\$_ = <STDIN> ; s/^Version:[ \t]+([^ \t]*)[ \t]*/\\\$1/ ; print \"\\\$_\";"`
+PROG_RELEASE=`grep "^Release:" $PROG_NAME.spec.in| perl -e  "\\\$_ = <STDIN> ; s/^Release:[ \t]+([^ \t]*)[ \t]*/\\\$1/ ; print \"\\\$_\";"`
+VENDOR_NAME=`grep "^Vendor:" $PROG_NAME.spec.in| perl -e  "\\\$_ = <STDIN> ; s/^Vendor:[ \t]+([^ \t]*)[ \t]*/\\\$1/ ; print \"\\\$_\";"`
+SPEC_DIR=`pwd`
+
+#source tar file for rpm building
+TAR_FILE=$PROG_NAME-$QT_NAME-$PROG_VER-$PROG_RELEASE.tar.gz
+
+#выхлоп значений переменных (для информации)
+echo "Starting RPM build package!!"
+echo "--------------------------------"
+echo "QT_DIR: $QTDIR"
+echo "RPM_HOME: $RPM_HOME"
+echo "SPEC_DIR: $SPEC_DIR"
+echo "VENDOR_NAME: $VENDOR_NAME"
+echo "PROG_NAME: $PROG_NAME"
+echo "PROG_VER: $PROG_VER"
+echo "PROG_RELEASE: $PROG_RELEASE"
+echo "TARGET TAR_FILE: $TAR_FILE"
+echo "--------------------------------"
+echo ""
+sleep 3
+
+#подготовка отдельной папки со всеми необходимыми данными для создания rpm пакета (рядом с makedistr)
+echo "PREPARE DATA FOR PACKAGING ............"
+if [ -d $BUILD_DATA_FOLDER ]; then
+    echo "removing old dir ($BUILD_DATA_FOLDER)...."
+    rm -rf $BUILD_DATA_FOLDER
+    sleep 0.5
+fi
+
+echo "create building dir: $BUILD_DATA_FOLDER"
+mkdir $BUILD_DATA_FOLDER
+cd $BUILD_DATA_FOLDER
+echo "copy project dir: $PROG_NAME"
+cp -r $PROG_DIR .
+mv start_distr start
+echo "copy Qt$QT_VER libs and plugins dir"
+cp -r $QTDIR/lib .
+mv lib $QT_NAME"lib"
+cp -r $QTDIR/plugins .
+cp -r $QT_PLUGIN_PATH/imageformats .
+echo "copy my libs dir"
+cp -r $PROG_DIR/$MY_LIBS_DIR .
+echo "copy menu dir"
+cp -r ../menu .
+echo ""
+sleep 1
+
+#упаковка папки со всеми необходимыми данными в файл-источник (tar.gz) для выполнения сценария spec файла
+echo "PACKAGE TAR SOURCE FOR RPMBUILD ............"
+sleep 0.5
+cd $SPEC_DIR
+echo "create tar.gz file"
+tar -czvf $RPM_HOME/SOURCES/$TAR_FILE $BUILD_DATA_FOLDER
+echo "remove old data: $BUILD_DATA_FOLDER"
+sleep 0.5
+rm -rf $BUILD_DATA_FOLDER
+echo "done."
+echo ""
+sleep 1
+
+
+#запуск утилиты rpmbuild с заданным входным файлом .spec.in (создание rpm пакета)
+echo "Try run [rpmbuild] command for specfile: $PROG_NAME.spec.in"
+cd $SPEC_DIR
+#rpmbuild -ba --clean --target i686 $PROG_NAME.spec.in
+rpmbuild -bb --clean $PROG_NAME.spec.in
+
+#проверка результата выполнения сценария создания rpm пакета (rpmbuild)
+RR_CODE=$?
+if [ $RR_CODE -ne 0 ]; then 
+    echo ""
+    echo "WARNING: RPM building breaked, result code: $RR_CODE"
+    exit -1;
+fi
+echo "RPM building done!"
+echo ""
+sleep 1
+
+
+echo "FINISHED ALL!!!"
+sleep 1
+exit $?
+
+
+
+

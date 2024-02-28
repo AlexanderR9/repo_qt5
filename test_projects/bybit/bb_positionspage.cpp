@@ -84,7 +84,7 @@ QStringList BB_PositionsPage::tableHeaders(QString type) const
     QStringList list;
     list << "Ticker" << "Volume" << "Action" << "Open price" << "Freezed sum";
     if (type.contains("pos")) list << "Leverage" << "Current price" << "Result";
-    else if (type.contains("order")) list << "Order type";
+    else if (type.contains("order")) list << "Order type" << "Status";
     return list;
 }
 void BB_PositionsPage::updateDataPage(bool force)
@@ -189,7 +189,7 @@ void BB_PositionsPage::fillOrdersTable(const QJsonArray &j_arr)
         QStringList row_data;
         row_data << j_el.value("symbol").toString() << j_el.value("qty").toString() << j_el.value("side").toString().toUpper();
         row_data << j_el.value("price").toString() << s_freezed;
-        row_data << o_type;
+        row_data << o_type << j_el.value("orderStatus").toString();
         LTable::addTableRow(m_orderTable->table(), row_data);
     }
 

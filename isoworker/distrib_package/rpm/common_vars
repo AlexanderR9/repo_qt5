@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# user vars
+PWD_DIR=$(pwd)
+PROG_DIR=$PWD_DIR/../..
+PROG_NAME=isoworker
+MY_LIBS_DIR=libs
+QT_VER=5
+QT_NAME=qt$QT_VER
+
+#константа
+BUILD_DATA_FOLDER=rpmbuild_data
+
+
+# common funcs
+#export_lpath()
+#{
+#    export LD_LIBRARY_PATH=$PROG_PATH/lib:$LD_LIBRARY_PATH
+#}
+

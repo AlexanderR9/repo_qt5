@@ -1,0 +1,112 @@
+
+#user vars (free)
+%define user_name 	roman
+%define base_name 	isoworker
+%define qt_name 	qt5
+%define build_dir 	rpmbuild_data
+%define my_libs_dir 	libs
+%define my_qtlibs_dir 	%{qt_name}lib
+
+#зарезервированные переменные сборки RPM
+Version: 	1.0.1
+Release: 	5
+Summary: 	Maker ISO files by you data and burning CD.
+License: 	Free
+Vendor: 	Roman-Group
+Group: 		Applications
+Name: 		%{base_name}-%{qt_name}
+Source0: 	%{name}-%{version}-%{release}.tar.gz 
+
+#Описание пакета (может состоять из нескольких строк)
+%description
+Make ISO images.
+Copy CD.
+Burnung CD.
+Erasing CD.
+Calc MD5 of CD.
+
+#распаковка tar.gz файла-источника в папку сборки: ~/RPM/BUILD/%{build_dir}
+%prep
+%setup -n %{build_dir}
+
+#указать, что сделать в папке сборки, т.е. ~/RPM/BUILD/%{build_dir}
+%build
+cd %{base_name}
+make clean
+make distclean
+qmake
+make -j2
+cd ..
+
+#указать, что сделать при установке созданного пакета rpm
+%install
+%define target_dir %{buildroot}/opt/%{vendor}/%{name}
+echo run install section ...
+rm -rf %{buildroot}
+mkdir -p %{buildroot}
+mkdir -p %{buildroot}/opt
+mkdir -p %{buildroot}/opt/%{vendor}
+mkdir -p %{target_dir}
+install %{base_name}/%{base_name} %{target_dir}
+install %{base_name}/start %{target_dir}
+
+#copy my libs
+mkdir -p %{target_dir}/lib
+%define libname base
+cp -d %{my_libs_dir}/%{libname}/build/libl%{libname}.so %{my_libs_dir}/%{libname}/build/libl%{libname}.so.*[0-9] %{target_dir}/lib
+%define libname process
+cp -d %{my_libs_dir}/%{libname}/build/libl%{libname}.so %{my_libs_dir}/%{libname}/build/libl%{libname}.so.*[0-9] %{target_dir}/lib
+
+#copy qt libs
+%define libname libQt5Core
+cp -d %{my_qtlibs_dir}/%{libname}.so %{my_qtlibs_dir}/%{libname}.so.*[0-9] %{target_dir}/lib
+%define libname libQt5Gui
+cp -d %{my_qtlibs_dir}/%{libname}.so %{my_qtlibs_dir}/%{libname}.so.*[0-9] %{target_dir}/lib
+%define libname libQt5Network
+cp -d %{my_qtlibs_dir}/%{libname}.so %{my_qtlibs_dir}/%{libname}.so.*[0-9] %{target_dir}/lib
+%define libname libQt5Widgets
+cp -d %{my_qtlibs_dir}/%{libname}.so %{my_qtlibs_dir}/%{libname}.so.*[0-9] %{target_dir}/lib
+%define libname libQt5Test
+cp -d %{my_qtlibs_dir}/%{libname}.so %{my_qtlibs_dir}/%{libname}.so.*[0-9] %{target_dir}/lib
+%define libname libQt5DBus
+cp -d %{my_qtlibs_dir}/%{libname}.so %{my_qtlibs_dir}/%{libname}.so.*[0-9] %{target_dir}/lib
+%define libname libQt5Svg
+cp -d %{my_qtlibs_dir}/%{libname}.so %{my_qtlibs_dir}/%{libname}.so.*[0-9] %{target_dir}/lib
+%define libname libQt5Xml
+cp -d %{my_qtlibs_dir}/%{libname}.so %{my_qtlibs_dir}/%{libname}.so.*[0-9] %{target_dir}/lib
+%define libname libQt5XcbQpa
+cp -d %{my_qtlibs_dir}/%{libname}.so %{my_qtlibs_dir}/%{libname}.so.*[0-9] %{target_dir}/lib
+
+#copy qt plugins
+cp -r plugins/platforms %{target_dir}
+cp -r imageformats %{target_dir}
+
+#create runtime folder (need for qt5 applications)
+mkdir -p %{buildroot}/tmp/runtime
+        
+#install menu icons
+install -D menu/%{base_name}.desktop %{buildroot}/%{_datadir}/applications/%{base_name}.desktop
+install -D menu/%{base_name}.png %{buildroot}/%{_datadir}/pixmaps/%{base_name}.png
+
+%files
+#reinit target_dir var
+%define target_dir /opt/%{vendor}/%{name} 
+%defattr(-,root,root,-)
+
+#registering dir list
+%attr(755,%{user_name},%{user_name}) %dir %{target_dir}
+%attr(755,%{user_name},%{user_name}) %dir /tmp/runtime
+%dir %{target_dir}/lib
+%dir %{target_dir}/platforms
+%dir %{target_dir}/imageformats
+
+#registering file list
+%{target_dir}/%{base_name}
+%attr(755,%{user_name},%{user_name}) %{target_dir}/start
+%{target_dir}/lib/lib*
+%{target_dir}/platforms/lib*
+%{target_dir}/imageformats/lib*
+%attr(644,root,root) %{_datadir}/applications/%{base_name}.desktop
+%attr(644,root,root) %{_datadir}/pixmaps/%{base_name}.png
+
+
