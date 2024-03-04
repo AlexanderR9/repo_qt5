@@ -45,13 +45,13 @@ override_dh_clean:
 	cd ..; if [ -f *.changes ]; then rm *.changes; fi
 	cd ..; if [ -f *.buildinfo ]; then rm *.buildinfo; fi
 	cd ..; if [ -f *.build ]; then rm *.build; fi
-	sleep 10
+	sleep 1
 
 
 #configure
 override_dh_auto_configure:
 	echo '-----------------START auto_configure--------------------------'
-	cd $(SRC_DIR) && ./full_clear
+#	cd $(SRC_DIR) && ./full_clear
 	sleep $(DELAY)
 
 #qmake and make for src
@@ -71,7 +71,7 @@ override_dh_auto_install:
 	cd $(PACK_PATH); mkdir lib icon imageformats platforms	
 #copy app files
 	install $(SRC_DIR)/isoworker $(PACK_PATH)/
-	install $(SRC_DIR)/start $(PACK_PATH)/
+	install src/start $(PACK_PATH)/
 	install $(MENU_DIR)/isoworker.png $(PACK_PATH)/icon/
 	install $(MENU_DIR)/isoworker.desktop $(USRAPP_DIR)/
 
