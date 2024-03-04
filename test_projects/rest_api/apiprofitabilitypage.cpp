@@ -55,12 +55,9 @@ void APIProfitabilityPage::slotTableClicked(QTableWidgetItem *item)
 {
     if (!item) return;
     int row = item->row();
-    qDebug()<<QString("APIProfitabilityPage::slotTableClicked row=%1").arg(row);
-
     QList<int> sel_list(LTable::selectedRows(m_tableBox->table()));
     if (sel_list.contains(row))
     {
-        qDebug("sel_list.contains(row)");
         QString ticker = m_tableBox->table()->item(row, TICKER_COL)->text().trimmed();
         emit signalUpdateInfoBox(ticker);
     }
@@ -106,7 +103,6 @@ void APIProfitabilityPage::slotResizeTimer()
 }
 void APIProfitabilityPage::slotContextMenu(QPoint p)
 {
-   // qDebug()<<QString("APIProfitabilityPage::slotContextMenu  %1/%2").arg(p.x()).arg(p.y());
     QTableWidget *t = m_tableBox->table();
     if (LTable::selectedRows(t).count() != 1) return;
 
@@ -124,7 +120,6 @@ void APIProfitabilityPage::slotBuyOrder()
     m_buyData.reset();
     QTableWidget *t = m_tableBox->table();
     int row = LTable::selectedRows(t).first();
-  //  qDebug()<<QString("APIProfitabilityPage::slotBuyOrder()  sel row %1").arg(row);
     m_buyData.uid = t->item(row, 1)->data(Qt::UserRole).toString();
     m_buyData.kind = "buy";
     QString p_name = QString("%1 / %2").arg(t->item(row, NAME_COL)->text()).arg(t->item(row, TICKER_COL)->text());
@@ -141,7 +136,6 @@ void APIProfitabilityPage::slotBuyOrder()
     d.exec();
     if (!d.isApply())
     {
-        //qDebug()<<QString("APIProfitabilityPage::slotBuyOrder() operation was canceled");
         emit signalMsg("operation was canceled!");
         return;
     }
@@ -185,7 +179,6 @@ float APIProfitabilityPage::curAccumulatedCoupon(int row) const
 void APIProfitabilityPage::slotRecalcProfitability(const BondDesc &bond_rec, float price)
 {
     if (bond_rec.invalid() || price <= 0) return;
-    //qDebug()<<QString("APIProfitabilityPage::slotRecalcProfitability  [%1]").arg(bond_rec.isin);
 
     const BCoupon *c_rec = NULL;
     emit signalGetCouponRec(bond_rec.figi, c_rec);
@@ -236,6 +229,8 @@ void APIProfitabilityPage::syncTableData(const BondDesc &bond_rec, const QString
 
     if (bond_rec.nominal < 900)
         t->item(row, PRICE_COL)->setTextColor("#8B0000");
+    if (bond_rec.daysToFinish() < 30)
+        LTable::setTableRowColor(t, row, QString("#FFEFD5"));
 
     m_tick++;
     sortByProfitability(row, v_month);
@@ -258,7 +253,6 @@ void APIProfitabilityPage::sortByProfitability(int row, float value)
         {
             if (value > s_price.left(pos).trimmed().toFloat())
             {
-                //qDebug()<<QString("need replace: i=%1, vprof=%2").arg(i).arg(s_price.left(pos).trimmed().toFloat());
                 LTable::shiftTableRow(t, row, i-row);
                 break;
             }
@@ -293,7 +287,6 @@ void AssetInfoWidget::init()
     QStringList headers;
     headers << "Date" << "Operation" << "Count" << "Result";
     LTable::setTableHeaders(historyTable, headers);
-
 }
 void AssetInfoWidget::refreshTable()
 {
@@ -314,7 +307,6 @@ void AssetInfoWidget::slotRunUpdate(const QString &ts)
 {
     QString ticker(ts.trimmed());
 
-    //qDebug()<<QString("AssetInfoWidget::slotRunUpdate  ticker=%1").arg(ticker);
     QString risk;
     emit signalGetBondRiskByTicker(ticker, risk);
     updateRisk(risk);

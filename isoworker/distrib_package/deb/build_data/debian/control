@@ -1,0 +1,12 @@
+Source: isoworker-qt5
+Section: utils
+Priority: optional
+Maintainer: Alexander Romanenko <kosha355@gmail.com>
+Build-Depends: debhelper (>= 9)
+
+Package: isoworker-qt5
+Provides: isoworker-qt5
+Architecture: amd64
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: ISO maker program, and CD recorder (Qt5)
+

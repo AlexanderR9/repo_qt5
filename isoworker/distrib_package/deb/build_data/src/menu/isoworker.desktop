@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=ISO worker
+Terminal=false
+Type=Application
+Exec=/opt/Roman-Group/Qt5/isoworker/start
+Icon=/opt/Roman-Group/Qt5/isoworker/icon/isoworker.png
+Categories=GNOME;GTK;Utility

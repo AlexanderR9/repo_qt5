@@ -1,0 +1,125 @@
+#!/usr/bin/make -f
+
+#---------- USER VARS --------------------
+#USER=roman
+#GROUP=$(USER)
+DEBDIR=isoworker-qt5
+VENDOR=Roman-Group
+PACK=isoworker
+DELAY=1.5
+
+QMAKE_CMD=$(HOME)/qt/bin/qmake
+QTLIB_DIR=$(HOME)/qt/lib
+PLUGINS_DIR=$(HOME)/qt/plugins
+MYLIB_DIR=src/libs
+SRC_DIR=src/isoworker
+MENU_DIR=src/menu
+PACK_PATH=debian/$(DEBDIR)/opt/$(VENDOR)/Qt5/$(PACK)
+USRAPP_DIR=debian/$(DEBDIR)/usr/share/applications
+PACKLIB_DIR=$(PACK_PATH)/lib
+
+%:
+	dh $@
+
+############################################
+#	RULES SECTION CODE
+############################################
+
+#remove old generation data
+override_dh_auto_clean:
+	echo '-----------------START dh_auto_clean --------------------------'
+	if [ -d debian/.debhelper ]; then rm -rf debian/.debhelper; fi
+	if [ -d debian/$(DEBDIR) ]; then rm -rf debian/$(DEBDIR); fi
+	if [ -f debian/$(DEBDIR).debhelper.log ]; then rm debian/$(DEBDIR).debhelper.log; fi
+	if [ -f debian/$(DEBDIR).substvars ]; then rm debian/$(DEBDIR).substvars; fi
+	if [ -f debian/files ]; then rm debian/files; fi
+	dh_auto_clean
+	sleep 2
+
+#dh_clean
+override_dh_clean:
+	echo '-----------------START dh_clean section --------------------------'
+	dh_clean
+	cd ..; if [ -f *.deb ]; then rm *.deb; fi
+	cd ..; if [ -f *.ddeb ]; then rm *.ddeb; fi
+	cd ..; if [ -f *.changes ]; then rm *.changes; fi
+	cd ..; if [ -f *.buildinfo ]; then rm *.buildinfo; fi
+	cd ..; if [ -f *.build ]; then rm *.build; fi
+	sleep 10
+
+
+#configure
+override_dh_auto_configure:
+	echo '-----------------START auto_configure--------------------------'
+	cd $(SRC_DIR) && ./full_clear
+	sleep $(DELAY)
+
+#qmake and make for src
+override_dh_auto_build:
+	echo '-----------------START BUILDING--------------------------'
+	pwd
+	cd $(SRC_DIR); $(QMAKE_CMD); make -j4
+	sleep $(DELAY)
+
+#installing on target OS
+override_dh_auto_install:
+	echo '-----------------START INSTALL --------------------------'
+#	pwd
+#create dirs
+	mkdir -p $(PACK_PATH)
+	mkdir -p $(USRAPP_DIR)
+	cd $(PACK_PATH); mkdir lib icon imageformats platforms	
+#copy app files
+	install $(SRC_DIR)/isoworker $(PACK_PATH)/
+	install $(SRC_DIR)/start $(PACK_PATH)/
+	install $(MENU_DIR)/isoworker.png $(PACK_PATH)/icon/
+	install $(MENU_DIR)/isoworker.desktop $(USRAPP_DIR)/
+
+#copy my libs
+	cp -d $(MYLIB_DIR)/base/build/liblbase.so $(MYLIB_DIR)/base/build/liblbase.so.*[0-9] $(PACKLIB_DIR)/
+	cp -d $(MYLIB_DIR)/process/build/liblprocess.so $(MYLIB_DIR)/process/build/liblprocess.so.*[0-9] $(PACKLIB_DIR)/
+
+#copy qt5 libs
+	cp -d $(QTLIB_DIR)/libQt5Widgets.so $(QTLIB_DIR)/libQt5Widgets.so.*[0-9] $(PACKLIB_DIR)/
+	cp -d $(QTLIB_DIR)/libQt5Core.so $(QTLIB_DIR)/libQt5Core.so.*[0-9] $(PACKLIB_DIR)/
+	cp -d $(QTLIB_DIR)/libQt5Gui.so $(QTLIB_DIR)/libQt5Gui.so.*[0-9] $(PACKLIB_DIR)/
+	cp -d $(QTLIB_DIR)/libQt5Test.so $(QTLIB_DIR)/libQt5Test.so.*[0-9] $(PACKLIB_DIR)/
+	cp -d $(QTLIB_DIR)/libQt5Svg.so $(QTLIB_DIR)/libQt5Svg.so.*[0-9] $(PACKLIB_DIR)/
+	cp -d $(QTLIB_DIR)/libQt5DBus.so $(QTLIB_DIR)/libQt5DBus.so.*[0-9] $(PACKLIB_DIR)/
+	cp -d $(QTLIB_DIR)/libQt5Xml.so $(QTLIB_DIR)/libQt5Xml.so.*[0-9] $(PACKLIB_DIR)/
+	cp -d $(QTLIB_DIR)/libQt5XcbQpa.so $(QTLIB_DIR)/libQt5XcbQpa.so.*[0-9] $(PACKLIB_DIR)/
+#	-- syslib
+	cp -d $(QTLIB_DIR)/libicui18n.so $(QTLIB_DIR)/libicui18n.so.*[0-9] $(PACKLIB_DIR)/
+	cp -d $(QTLIB_DIR)/libicuuc.so $(QTLIB_DIR)/libicuuc.so.*[0-9] $(PACKLIB_DIR)/
+	cp -d $(QTLIB_DIR)/libicudata.so $(QTLIB_DIR)/libicudata.so.*[0-9] $(PACKLIB_DIR)/
+
+#copy plugins
+	install $(PLUGINS_DIR)/platforms/libqxcb.so $(PACK_PATH)/platforms/
+	install $(PLUGINS_DIR)/imageformats/libqsvg.so $(PACK_PATH)/imageformats/
+	sleep $(DELAY)
+
+override_dh_fixperms:
+	dh_fixperms
+	chmod go-w $(PACK_PATH)
+	chmod go+rx $(PACK_PATH)
+	chmod go-w $(PACK_PATH)/start
+	chmod go+rx $(PACK_PATH)/start
+	chmod go-wx $(USRAPP_DIR)/isoworker.desktop
+	chmod go+r $(USRAPP_DIR)/isoworker.desktop
+#	chown $(USER):$(GROUP) $(PACK_PATH)
+#	chown $(USER):$(GROUP) $(PACK_PATH)/start
+
+#try get depending packets    		
+override_dh_shlibdeps:
+	echo '-----------------START dh_shlibdeps section --------------------------'
+	dh_shlibdeps -l $(shell pwd)/$(PACKLIB_DIR)
+	sleep $(DELAY)
+
+#dh_builddeb (finishig stage)
+override_dh_builddeb:
+	echo '-----------------START dh_builddeb section --------------------------'
+	dh_builddeb
+#	dh_clean
+	echo '-----------------END dh_builddeb section --------------------------'
+
+
