@@ -360,7 +360,10 @@ void MainForm::slotAppSettingsChanged(QStringList keys)
     QString key = QString("log_max_size");
     if (keys.contains(key))
     {
-        int n = lCommonSettings.paramValue(key).toInt();
+        bool ok;
+        int n = lCommonSettings.paramValue(key).toInt(&ok);
+        if (!ok || n < 200) n = 500;
+
         LogPage *page = qobject_cast<LogPage*>(m_pages.value(BasePage::ptLog));
         if (!page)
         {
