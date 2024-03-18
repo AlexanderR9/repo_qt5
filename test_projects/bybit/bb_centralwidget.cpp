@@ -48,12 +48,15 @@ void BB_CentralWidget::slotPageChanged(int i)
 }
 void BB_CentralWidget::slotPageActivated(int i)
 {
-    //int page_kind = qobject_cast<const LSimpleWidget*>(w_stack->widget(i))->userSign();
-   // qDebug()<<QString("slotPageActivated  page_sign=%1").arg(page_kind);
+    qDebug("BB_CentralWidget::slotPageActivated");
     if (i < 0 || i >= pageCount()) return;
 
     BB_BasePage *page = qobject_cast<BB_BasePage*>(w_stack->widget(i));
-    if (page) page->updateDataPage(false);
+    if (page)
+    {
+        signalPageChanged(page->userSign());
+        page->updateDataPage(false);
+    }
 }
 int BB_CentralWidget::pageCount() const
 {
@@ -134,9 +137,13 @@ void BB_CentralWidget::load(QSettings &settings)
         if (w) w->load(settings);
     }
 
-    int cp = settings.value(QString("%1/current_page").arg(objectName()), 0).toInt();
+    //int cp = settings.value(QString("%1/current_page").arg(objectName()), 0).toInt();
     //w_list->listWidget()->setCurrentRow(cp);
     w_list->listWidget()->setCurrentRow(0);
+
+    BB_BasePage *page = qobject_cast<BB_BasePage*>(w_stack->currentWidget());
+    if (page) signalPageChanged(page->userSign());
+
 }
 void BB_CentralWidget::save(QSettings &settings)
 {
@@ -189,7 +196,7 @@ void BB_CentralWidget::slotSendReq(const BB_APIReqParams *req_data)
     emit signalMsg(QString("URL: %1").arg(m_reqObj->fullUrl()));
     emit signalEnableControls(false);
 
-    qDebug()<<req_data->toStr();
+   // qDebug()<<req_data->toStr();
     m_reqObj->start(req_data->metod);
 }
 void BB_CentralWidget::slotEnableControls(bool b)
@@ -212,5 +219,14 @@ void BB_CentralWidget::updateDataPage()
     BB_BasePage *page = qobject_cast<BB_BasePage*>(w_stack->currentWidget());
     if (page) page->updateDataPage(true);
 }
-
+void BB_CentralWidget::actAdd()
+{
+    BB_ChartPage *page = qobject_cast<BB_ChartPage*>(w_stack->currentWidget());
+    if (page) page->addFavorToken();
+}
+void BB_CentralWidget::actRemove()
+{
+    BB_ChartPage *page = qobject_cast<BB_ChartPage*>(w_stack->currentWidget());
+    if (page) page->removeFavorToken();
+}
 

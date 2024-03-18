@@ -164,7 +164,12 @@ public:
     void setSelectionColor(QString background_color, QString text_color = "#000000");
     void setBaseColor(QString background_color, QString text_color = "#000000");
     void addItem(QString text, QString icon_path = QString());
+    void removeItemByValue(QString text);
     void setSelectionMode(int, int); //params: SelectionBehavior, SelectionMode
+    void clearSelection();
+    QStringList selectedValues() const;
+    QList<int> selectedRows() const;
+    bool valueContain(const QString&) const;
 
 protected:
     QListWidget    *m_listWidget;

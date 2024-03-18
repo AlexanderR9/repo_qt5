@@ -36,6 +36,7 @@ protected slots:
     void slotError(const QString&);
     void slotMsg(const QString&);
     void slotAppSettingsChanged(QStringList);
+    void slotActionsApdate(int);
 
 private:
     int expandLevel() const;

@@ -9,6 +9,7 @@
 #include "ltable.h"
 #include "bb_centralwidget.h"
 #include "apiconfig.h"
+#include "bb_apistruct.h"
 
 #include <QDebug>
 #include <QDir>
@@ -42,8 +43,8 @@ void MainForm::initActions()
     addAction(LMainWidget::atRefresh);
     //addAction(LMainWidget::atLoadData);
     addAction(LMainWidget::atClear);
-    //addAction(LMainWidget::atRight);
-    //addAction(LMainWidget::atRedo);
+    addAction(LMainWidget::atAdd);
+    addAction(LMainWidget::atRemove);
 
     addToolBarSeparator();
     addAction(LMainWidget::atSettings);
@@ -58,6 +59,33 @@ void MainForm::slotAction(int type)
         case LMainWidget::atRefresh: {actStart(); break;}
         case LMainWidget::atSettings: {actCommonSettings(); break;}
         case LMainWidget::atClear: {m_protocol->clearProtocol(); break;}
+        case LMainWidget::atAdd: {m_centralWidget->actAdd(); break;}
+        case LMainWidget::atRemove: {m_centralWidget->actRemove(); break;}
+
+        default: break;
+    }
+}
+void MainForm::slotActionsApdate(int p_type)
+{
+    switch(p_type)
+    {
+        case rtCandles:
+        {
+            getAction(atAdd)->setVisible(true);
+            getAction(atRemove)->setVisible(true);
+            break;
+        }
+        //rtPositions, rtOrders, rtHistory, rtBag
+        case rtPositions:
+        case rtOrders:
+        case rtHistory:
+        case rtBag:
+        case rtJsonView:
+        {
+            getAction(atAdd)->setVisible(false);
+            getAction(atRemove)->setVisible(false);
+            break;
+        }
         default: break;
     }
 }
@@ -81,6 +109,7 @@ void MainForm::initWidgets()
 
     connect(m_centralWidget, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_centralWidget, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
+    connect(m_centralWidget, SIGNAL(signalPageChanged(int)), this, SLOT(slotActionsApdate(int)));
 
 }
 void MainForm::initCommonSettings()
@@ -142,6 +171,7 @@ void MainForm::save()
     settings.setValue(QString("%1/v_splitter/state").arg(objectName()), v_splitter->saveState());
 
     m_centralWidget->save(settings);
+    api_config.saveFavorTickers();
 }
 void MainForm::load()
 {

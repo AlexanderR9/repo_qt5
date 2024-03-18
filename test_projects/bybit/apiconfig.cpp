@@ -26,6 +26,24 @@ void APIConfig::loadTickers()
     QString fname(QString("%1%2tickers.txt").arg(appDataPath()).arg(QDir::separator()));
     QString err = LFile::readFileSL(fname, tickers);
     if (!err.isEmpty()) qWarning()<<QString("APIConfig::loadTickers() WARNING - %1").arg(err);
+
+    fname = QString("%1%2ftickers.txt").arg(appDataPath()).arg(QDir::separator());
+    err = LFile::readFileSL(fname, favor_tickers);
+    if (!err.isEmpty()) qWarning()<<QString("APIConfig::loadTickers() WARNING - %1").arg(err);
+}
+void APIConfig::saveFavorTickers()
+{
+    if (favor_tickers.isEmpty()) return;
+
+    favor_tickers.sort();
+    QString fname(QString("%1%2ftickers.txt").arg(appDataPath()).arg(QDir::separator()));
+    //qDebug()<<QString("saveFavorTickers [%1]").arg(fname);
+    if (LFile::dirExists(appDataPath()))
+    {
+        QString err = LFile::writeFileSL(fname, favor_tickers);
+        if (!err.isEmpty()) qWarning()<<QString("APIConfig::loadTickers() WARNING - %1").arg(err);
+    }
+    else qWarning()<<QString("APIConfig::saveFavorTickers() WARNING - invalid path: [%1]").arg(fname);
 }
 void APIConfig::setApiKeys(QString key1, QString key2)
 {
@@ -59,7 +77,7 @@ QByteArray APIConfig::calcHMACSha256(QByteArray key, QByteArray baseString)
     int blockSize = 64; // HMAC-SHA-1 block size, defined in SHA-1 standard
     if (key.length() > blockSize) // if key is longer than block size (64), reduce key length with SHA-1 compression
     {
-        qDebug("key.length() > blockSize");
+        //qDebug("key.length() > blockSize");
         key = QCryptographicHash::hash(key, metod);
     }
 

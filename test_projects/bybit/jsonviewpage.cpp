@@ -1,4 +1,5 @@
 #include "jsonviewpage.h"
+#include "bb_apistruct.h"
 
 #include <QTreeWidget>
 #include <QSplitter>
@@ -10,7 +11,7 @@
 
 //JSONViewPage
 JSONViewPage::JSONViewPage(QWidget *parent)
-    :BB_BasePage(parent, 20),
+    :BB_BasePage(parent, 20, rtJsonView),
       m_replyBox(NULL)
 {
     setObjectName("json_view_page");

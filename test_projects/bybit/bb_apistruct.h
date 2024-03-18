@@ -4,7 +4,7 @@
 #include <QMap>
 
 //типы страниц пользовательского интерфейса
-enum BB_ReqType {rtCandles = 181, rtPositions, rtOrders, rtHistory, rtBag};
+enum BB_ReqType {rtCandles = 181, rtPositions, rtOrders, rtHistory, rtBag, rtJsonView};
 
 
 //необходимые данные для формирования запроса перед отправкой

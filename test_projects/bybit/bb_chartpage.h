@@ -8,6 +8,9 @@ class LChartWidget;
 struct BB_APIReqParams;
 class QJsonObject;
 class QPointF;
+class LSearch;
+class QLabel;
+class QLineEdit;
 
 
 //BB_ChartPage
@@ -22,19 +25,28 @@ public:
     QString caption() const {return QString("Chart");}
 
     void updateDataPage(bool) {}
+    void addFavorToken();
+    void removeFavorToken();
 
 protected:
     LListWidgetBox  *w_listAll;
     LListWidgetBox  *w_listFavor;
     LChartWidget    *w_chart;
+    LSearch         *m_searchObj; //common
+    LSearch         *m_searchObj_F; //favor
+    QLineEdit       *m_searchEdit;
+    QLabel          *m_searchLabel;
+    QLabel          *m_searchLabel_F;
 
     void init();
+    void initSearch();
     void loadTickers();
     void initChart();
     void repaintChart(const QList<QPointF>&);
 
 protected slots:
     void slotTickerChanged(int);
+    void slotListClicked();
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);

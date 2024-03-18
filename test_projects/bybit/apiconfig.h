@@ -22,6 +22,7 @@ struct APIConfig
 
     Candle candle;
     QStringList tickers;
+    QStringList favor_tickers;
     QString api_key;
     QString api_key_private;
     quint16 req_delay;
@@ -34,6 +35,7 @@ struct APIConfig
     static QString fromTimeStamp(qint64, QString mask = QString("dd.MM.yyyy (hh:mm)")); //вернет временную метку в строком формате (UTC)
 
     void loadTickers();
+    void saveFavorTickers();
     void setApiKeys(QString, QString);
 
 };

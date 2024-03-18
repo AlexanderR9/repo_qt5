@@ -10,6 +10,7 @@
 #include <QTableWidget>
 #include <QTabWidget>
 #include <QListWidget>
+#include <QListWidgetItem>
 #include <QHeaderView>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
@@ -359,6 +360,22 @@ void LListWidgetBox::addItem(QString text, QString icon_path)
     else l_item = new QListWidgetItem(QIcon(icon_path), text);
     m_listWidget->addItem(l_item);
 }
+void LListWidgetBox::removeItemByValue(QString text)
+{
+    if (m_listWidget)
+    {
+        for (int i=0; i<m_listWidget->count(); i++)
+        {
+            if (m_listWidget->item(i)->text() == text)
+            {
+                QListWidgetItem *item = m_listWidget->takeItem(i);
+                delete item;
+                item = NULL;
+                break;
+            }
+        }
+    }
+}
 void LListWidgetBox::setSelectionMode(int behavior, int mode)
 {
     if (m_listWidget)
@@ -367,6 +384,44 @@ void LListWidgetBox::setSelectionMode(int behavior, int mode)
         m_listWidget->setSelectionMode(QAbstractItemView::SelectionMode(mode));
         m_listWidget->update();
     }
+}
+void LListWidgetBox::clearSelection()
+{
+    if (m_listWidget)
+    {
+        m_listWidget->clearSelection();
+        m_listWidget->clearFocus();
+    }
+}
+QStringList LListWidgetBox::selectedValues() const
+{
+    QStringList list;
+    if (m_listWidget)
+    {
+        QList<QListWidgetItem*> i_list(m_listWidget->selectedItems());
+        foreach (const QListWidgetItem *v, i_list)
+            if (v) list << v->text();
+    }
+    return list;
+}
+QList<int> LListWidgetBox::selectedRows() const
+{
+    QList<int> list;
+    if (m_listWidget)
+    {
+        for (int i=0; i<m_listWidget->count(); i++)
+            if (m_listWidget->isItemSelected(m_listWidget->item(i))) list << i;
+    }
+    return list;
+}
+bool LListWidgetBox::valueContain(const QString &s) const
+{
+    if (m_listWidget)
+    {
+        for (int i=0; i<m_listWidget->count(); i++)
+            if (m_listWidget->item(i)->text() == s) return true;
+    }
+    return false;
 }
 
 

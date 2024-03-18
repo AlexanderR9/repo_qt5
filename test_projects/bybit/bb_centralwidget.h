@@ -26,6 +26,8 @@ public:
     bool requesterBuzy() const;
     void updateDataPage();
 
+    void actAdd();
+    void actRemove();
 
 protected:
     LListWidgetBox      *w_list;
@@ -51,6 +53,7 @@ public slots:
 signals:
     void signalEnableControls(bool);
     void signalJsonReply(int, const QJsonObject&);
+    void signalPageChanged(int);
 
 private:
     QString hmacSha1(QByteArray, QByteArray) const;
