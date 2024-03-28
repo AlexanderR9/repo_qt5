@@ -302,6 +302,18 @@ void LSearchTableWidgetBox::searchReset()
     m_searchEdit->clear();
     searchExec();
 }
+void LSearchTableWidgetBox::searchEditHide()
+{
+    if (m_searchEdit)
+    {
+        layout()->removeWidget(m_searchEdit);
+        m_searchEdit->hide();
+    }
+}
+void LSearchTableWidgetBox::setSearchEdit(const QLineEdit *edit)
+{
+    if (m_searchObj) m_searchObj->setSearchEdit(edit);
+}
 
 
 //LListWidgetBox

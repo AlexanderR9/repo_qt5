@@ -133,6 +133,8 @@ public:
     virtual void searchExec();
     virtual void searchReset();
     virtual void setTextLabel(const QString&);
+    virtual void searchEditHide();
+    virtual void setSearchEdit(const QLineEdit*);
 
 protected:
     LSearch     *m_searchObj;

@@ -1,9 +1,10 @@
- #ifndef LPROTOCOL_H
- #define LPROTOCOL_H
+#ifndef LPROTOCOL_H
+#define LPROTOCOL_H
 
- #include <QTextEdit>
- #include <QGroupBox>
+#include <QGroupBox>
 
+class QTextEdit;
+class QTimer;
 
 
 ///////////LProtocolBox/////////////////////
@@ -17,14 +18,20 @@ public:
     virtual ~LProtocolBox() {}
 
     void addText(QString s, int t = 0);
+    void setMaxLines(int);
+    void clearProtocol();
+    void addSpace();
 
-    inline void clearProtocol() {m_protocol->clear();}
-    inline void addSpace() {m_protocol->append(QString());}
+    qint64 currentLineCount() const;
 
 protected:
     QTextEdit           *m_protocol;
+    QTimer              *m_checkSizeTimer;
     bool                m_needTime;
+    int                 m_maxLines; //максимальное количество строк
 
+protected slots:
+    void slotCheckMaxLines();
 
 };
 

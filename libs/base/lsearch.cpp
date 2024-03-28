@@ -23,6 +23,15 @@ LSearch::LSearch(const QLineEdit *edit, QObject *parent)
     connect(m_edit, SIGNAL(textChanged(const QString&)), this, SLOT(slotSearch(const QString&)));
 
 }
+void LSearch::setSearchEdit(const QLineEdit *edit)
+{
+    disconnect(m_edit, SIGNAL(textChanged(const QString&)), this, SLOT(slotSearch(const QString&)));
+    m_edit = NULL;
+    if (!edit) return;
+
+    m_edit = edit;
+    connect(m_edit, SIGNAL(textChanged(const QString&)), this, SLOT(slotSearch(const QString&)));
+}
 void LSearch::setDelay(int v)
 {
     m_timeout = false;

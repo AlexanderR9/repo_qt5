@@ -21,7 +21,7 @@ BB_BasePage::BB_BasePage(QWidget *parent, int t, int user_type)
 void BB_BasePage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 {
     Q_UNUSED(j_obj);
-    qDebug()<<QString("SLOT JsonReply: req_type=%1  page: [%2]").arg(req_type).arg(objectName());
+    //qDebug()<<QString("SLOT JsonReply: req_type=%1  page: [%2]").arg(req_type).arg(objectName());
 
 }
 void BB_BasePage::reset()

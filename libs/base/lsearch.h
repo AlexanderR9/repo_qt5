@@ -35,6 +35,7 @@ public:
     void addList(QListWidget *lw, QLabel *l = NULL, QString s = QString());
     void updateText();
     void setDelay(int);
+    void setSearchEdit(const QLineEdit*);
 
     inline void setColIndex(int i) {m_colIndex = i;}
 

@@ -33,9 +33,11 @@ protected:
     void fillPosTable(const QJsonArray&);
     void fillOrdersTable(const QJsonArray&);
     void clearTables(); //remove all rows
+    void checkAdjacent();
 
 private:
     void initTable(LSearchTableWidgetBox*);
+    QString getTimePoint(const QJsonObject&, bool&) const;
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);
