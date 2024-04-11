@@ -8,7 +8,8 @@
 //BB_BasePage
 BB_BasePage::BB_BasePage(QWidget *parent, int t, int user_type)
     :LSimpleWidget(parent, t),
-      m_reqData(NULL)
+      m_reqData(NULL),
+      m_minUpdatingInterval(120)
 {
     m_userSign = user_type;
     setObjectName("bb_base_page");

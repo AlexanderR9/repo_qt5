@@ -2,6 +2,7 @@
 #define BB_APISTRUCT_H
 
 #include <QMap>
+#include <QDateTime>
 
 //типы страниц пользовательского интерфейса
 enum BB_ReqType {rtCandles = 181, rtPositions, rtOrders, rtHistory, rtBag, rtJsonView};
@@ -47,5 +48,37 @@ struct BB_BagState
     float sumFreezed() const;
 
 };
+
+
+//history elements
+struct BB_HistoryPos
+{
+
+    QString uid;
+    QString ticker;
+    QDateTime closed_time;
+    quint8 leverage;
+    float open_price;
+    float closed_price;
+    float total_result; //окончательный результат после вычета всех коммисий
+    float lot_size;
+    QString action; //long or short
+    QString exec_type;
+    QString order_type;
+
+};
+struct BB_HistoryOrder
+{
+    QString uid;
+    QString ticker;
+    QDateTime create_time;
+    QString action; //buy or sell
+    float lot_size;
+    float price;
+    QString type;
+    QString status;
+
+};
+
 
 #endif // BB_APISTRUCT_H

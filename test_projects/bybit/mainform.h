@@ -40,6 +40,7 @@ protected slots:
 
 private:
     int expandLevel() const;
+    quint16 pageUpdatingInterval() const;
 
 };
 

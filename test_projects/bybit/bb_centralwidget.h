@@ -23,6 +23,7 @@ public:
     virtual void load(QSettings&);
     virtual void save(QSettings&);
     void setExpandLevel(int);
+    void setUpdatingInterval(quint16);
     bool requesterBuzy() const;
     void updateDataPage();
 

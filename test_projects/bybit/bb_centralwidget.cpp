@@ -204,6 +204,14 @@ void BB_CentralWidget::slotEnableControls(bool b)
     w_list->setEnabled(b);
     w_stack->setEnabled(b);
 }
+void BB_CentralWidget::setUpdatingInterval(quint16 secs)
+{
+    for (int i=0; i<w_stack->count(); i++)
+    {
+        BB_BasePage *w = qobject_cast<BB_BasePage*>(w_stack->widget(i));
+        if (w) w->setMinUpdatingInterval(secs);
+    }
+}
 void BB_CentralWidget::setExpandLevel(int l)
 {
     JSONViewPage *j_page = qobject_cast<JSONViewPage*>(w_stack->widget(0));

@@ -154,6 +154,12 @@ void MainForm::initCommonSettings()
     combo_list << "25" << "50" << "100" << "200" << "300" << "500";
     lCommonSettings.setComboList(key, combo_list);
 
+    key = QString("page_updating_interval");
+    lCommonSettings.addParam(QString("Min page updating interval"), LSimpleDialog::sdtIntCombo, key);
+    combo_list.clear();
+    combo_list << "15" << "30" << "60" << "120" << "300" << "600" << "1800";
+    lCommonSettings.setComboList(key, combo_list);
+    lCommonSettings.setDefValue(key, combo_list.at(2));
 }
 void MainForm::slotError(const QString &text)
 {
@@ -183,6 +189,7 @@ void MainForm::load()
 
     m_centralWidget->load(settings);
     m_centralWidget->setExpandLevel(expandLevel());
+    m_centralWidget->setUpdatingInterval(pageUpdatingInterval());
 
     //restore apiconfig
     QString apikey1(lCommonSettings.paramValue("apikey").toString());
@@ -200,6 +207,7 @@ void MainForm::slotAppSettingsChanged(QStringList list)
     if (list.contains("req_delay")) api_config.req_delay = lCommonSettings.paramValue("req_delay").toInt();
     if (list.contains("view_expand")) m_centralWidget->setExpandLevel(expandLevel());
     if (list.contains("limit_pos")) api_config.req_limit_pos = lCommonSettings.paramValue("limit_pos").toInt();
+    if (list.contains("page_updating_interval")) m_centralWidget->setUpdatingInterval(pageUpdatingInterval());
 }
 
 //private
@@ -207,3 +215,8 @@ int MainForm::expandLevel() const
 {
     return lCommonSettings.paramValue("view_expand").toInt();
 }
+quint16 MainForm::pageUpdatingInterval() const
+{
+    return lCommonSettings.paramValue("page_updating_interval").toInt();
+}
+

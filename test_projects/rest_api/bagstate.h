@@ -24,7 +24,7 @@ struct BagPosition
 
     void reset() {uid.clear(); count = 0; average_price = current_price = -1; paper_type.clear(); finish_date=QDate();}
     bool invalid() const {return (uid.isEmpty() || count == 0);}
-    QString strPrice() const {return QString("%1 / %2").arg(QString::number(average_price, 'f', 1)).arg(QString::number(current_price, 'f', 1));}
+    QString strPrice() const;// {return QString("%1 / %2").arg(QString::number(average_price, 'f', 1)).arg(QString::number(current_price, 'f', 1));}
     float curProfit() const {return (float(count)*(current_price - average_price));}
     QString strProfit() const {return QString::number(curProfit(), 'f', 1);}
     float margin() const {return (count*average_price);}

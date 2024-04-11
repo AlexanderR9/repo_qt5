@@ -188,4 +188,13 @@ void BagState::sortPositions()
 }
 
 
-
+// BagPosition
+QString BagPosition::strPrice() const
+{
+    int precision = 1;
+    if (current_price < 1) precision = 3;
+    else if (current_price < 50) precision = 2;
+    QString s_avg = QString::number(average_price, 'f', precision);
+    QString s_cur = QString::number(current_price, 'f', precision);
+    return QString("%1 / %2").arg(s_avg).arg(s_cur);
+}

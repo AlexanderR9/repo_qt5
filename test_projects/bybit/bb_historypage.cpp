@@ -202,6 +202,7 @@ void BB_HistoryPage::prepareOrdersReq()
     m_reqData->params.insert("settleCoin", "USDT");
     m_reqData->params.insert("startTime", QString::number(ts1));
     if (ts2 > 0) m_reqData->params.insert("endTime", QString::number(ts2));
+    else m_reqData->params.remove("endTime");
     m_reqData->params.insert("cursor", QString::number(0));
     h_stage = hsWaitOrders;
 }
