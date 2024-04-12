@@ -4,6 +4,8 @@
 #include <QMap>
 #include <QDateTime>
 
+class QJsonObject;
+
 //типы страниц пользовательского интерфейса
 enum BB_ReqType {rtCandles = 181, rtPositions, rtOrders, rtHistory, rtBag, rtJsonView};
 
@@ -53,6 +55,7 @@ struct BB_BagState
 //history elements
 struct BB_HistoryPos
 {
+    BB_HistoryPos() {reset();}
 
     QString uid;
     QString ticker;
@@ -65,6 +68,13 @@ struct BB_HistoryPos
     QString action; //long or short
     QString exec_type;
     QString order_type;
+
+
+    void reset();
+    QString toStr() const;
+    void fromJson(const QJsonObject&);
+    void fromFileLine(const QString&);
+    QStringList toTableRowData() const;
 
 };
 struct BB_HistoryOrder

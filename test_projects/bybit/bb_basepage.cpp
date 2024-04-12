@@ -38,11 +38,11 @@ void BB_BasePage::sendRequest(int limit, QString name_extra)
 
     emit signalSendReq(m_reqData);
 }
-bool BB_BasePage::updateTimeOver(bool force)
+bool BB_BasePage::updateTimeOver(bool forcibly)
 {
     QTime ct = QTime::currentTime();
     if (minUpdatingInterval() < 3) return false;
-    if (!m_updateTime.isValid() || force) {m_updateTime = ct; return true;}
+    if (!m_updateTime.isValid() || forcibly) {m_updateTime = ct; return true;}
     if (m_updateTime.secsTo(ct) > minUpdatingInterval()) {m_updateTime = ct; return true;}
     return false;
 }

@@ -330,7 +330,6 @@ void BB_HistoryPage::fillPosTable(const QJsonArray &j_arr)
         if (j_el.isEmpty()) {qWarning()<<QString("BB_PositionsPage::fillOrdersTable WARNING j_el is empty (index=%1)").arg(i); break;}
 
         QStringList row_data;
-        //row_data << APIConfig::fromTimeStamp(j_el.value("createdTime").toString().toLong());
         row_data << APIConfig::fromTimeStamp(j_el.value("updatedTime").toString().toLong());
         row_data << j_el.value("symbol").toString();
 
@@ -338,9 +337,6 @@ void BB_HistoryPage::fillPosTable(const QJsonArray &j_arr)
         if (act == "SELL") act = "LONG";
         else if (act == "BUY") act = "SHORT";
         row_data << act;
-
-        //row_data << j_el.value("side").toString().trimmed().toUpper();
-
         row_data << j_el.value("qty").toString();
 
         float p1 = j_el.value("avgEntryPrice").toString().toFloat();

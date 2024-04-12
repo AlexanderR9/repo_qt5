@@ -2,7 +2,10 @@
 #include "lhttp_types.h"
 
 #include <QStringList>
+#include <QJsonValue>
+#include <QJsonObject>
 
+//BB_APIReqParams
 QString BB_APIReqParams::fullUri() const
 {
     QString s;
@@ -61,4 +64,38 @@ float BB_BagState::sumFreezed() const
 }
 
 
+// BB_HistoryPos
+void BB_HistoryPos::reset()
+{
+    closed_time = QDateTime();
+    leverage = 0;
+
+    uid.clear();
+    ticker.clear();
+    action.clear();
+    exec_type.clear();
+    order_type.clear();
+
+    open_price = closed_price = total_result = -1;
+    lot_size = 0;
+}
+QString BB_HistoryPos::toStr() const
+{
+    QString s;
+    return s;
+}
+void BB_HistoryPos::fromJson(const QJsonObject &j_obj)
+{
+    if (j_obj.isEmpty()) return;
+
+}
+void BB_HistoryPos::fromFileLine(const QString &fline)
+{
+
+}
+QStringList BB_HistoryPos::toTableRowData() const
+{
+    QStringList list;
+    return list;
+}
 

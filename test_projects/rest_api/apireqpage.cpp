@@ -561,13 +561,15 @@ void APIReqPage::saveBondsFile()
             emit signalError(QString("APIReqPage::saveBondsFile() - %1").arg(err));
         }
     }
-
-    if (cur_data.isEmpty())
-        LFile::writeFile(fname, "BOND INFO: \n");
+    if (cur_data.isEmpty()) LFile::writeFile(fname, "BOND INFO: \n");
 
     const LHttpApiReplyData& r = m_reqObj->lastReply();
     const QJsonArray &j_arr = r.data.constBegin().value().toArray();
-    if (j_arr.isEmpty()) return;
+    if (j_arr.isEmpty())
+    {
+        emit signalError(QString("APIReqPage::saveBondsFile() - QJsonArray is empty"));
+        return;
+    }
 
     //find last rec number
     QStringList cur_list(LString::trimSplitList(cur_data));
@@ -575,7 +577,7 @@ void APIReqPage::saveBondsFile()
     quint16 rec_number = 9999;
     int pos = last_s.left(6).indexOf(".");
     if (pos > 0) rec_number = last_s.left(pos).toUInt() + 1;
-    qDebug()<<QString("cur data list %1, next rec number %2").arg(cur_list.count()).arg(rec_number);
+    qDebug()<<QString("cur data list size %1, next rec number %2").arg(cur_list.count()).arg(rec_number);
 
     //write new records to bonds-file
     int n = j_arr.count();
@@ -583,14 +585,32 @@ void APIReqPage::saveBondsFile()
     for (int i=0; i<n; i++)
     {
         BondDesc bond(j_arr.at(i));
-        if (bond.invalid()) {qWarning() << QString("APIReqPage::saveBondsFile() WARNING - bond invalid [%1]").arg(bond.toStr()); continue;}
-        if (cur_data.contains(bond.uid)) continue;
+        if (bond.invalid()) {qWarning() << QString("WARNING: INVALID BOND  [%1]").arg(bond.toStr()); continue;}
+        if (cur_data.contains(bond.uid)) continue; //такая запись уже присутствует в файле
 
+        //qDebug()<<QString("add new bond [%1]").arg(bond.toStr());
+        bool has_isin = false;
+        foreach (const QString &fline, cur_list) //проверка на предмет совпадения isin новой записи и тех что уже есть в файле
+        {
+            if (fline.contains(bond.isin))
+            {
+                emit signalMsg(QString("ISIN: [%1] already exists,  pos[%2]").arg(bond.isin).arg(fline.left(4)));
+                emit signalMsg(QString("FLINE: [%1]").arg(fline));
+                emit signalMsg(QString("NEW RECORD: [%1]").arg(bond.toStr()));
+                emit signalMsg(QString());
 
-        qDebug()<<QString("add new bond [%1]").arg(bond.toStr());
-        LFile::appendFile(fname, QString("%1.  %2 \n").arg(rec_number).arg(bond.toStr()));
-        rec_number++;
-        n_new++;
+                has_isin = true;
+                break;
+                qDebug()<<QString("coincidence isin: ").toUpper()<<fline<<"\n";
+            }
+        }
+
+        if (!has_isin)
+        {
+            LFile::appendFile(fname, QString("%1.  %2 \n").arg(rec_number).arg(bond.toStr()));
+            rec_number++;
+            n_new++;
+        }
     }
     emit signalMsg(QString("saved file of bonds list (size %1/%2)").arg(n).arg(n_new));
 }

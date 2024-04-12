@@ -91,13 +91,15 @@ QStringList BB_PositionsPage::tableHeaders(QString type) const
     else if (type.contains("order")) list << "Order type";// << "Status";
     return list;
 }
-void BB_PositionsPage::updateDataPage(bool force)
+void BB_PositionsPage::updateDataPage(bool forcibly)
 {
-    if (!updateTimeOver(force)) return;
+    if (!updateTimeOver(forcibly)) return;
 
     clearTables();
     m_reqData->uri = API_POS_URI;
     m_reqData->req_type = rtPositions;
+    m_reqData->params.insert("cursor", QString::number(0));
+
     sendRequest(api_config.req_limit_pos);
 }
 void BB_PositionsPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
@@ -110,34 +112,49 @@ void BB_PositionsPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
     const QJsonValue &j_list = jv.toObject().value("list");
     if (j_list.isNull()) {emit signalError("BB_PositionsPage: list QJsonValue not found"); return;}
     const QJsonArray &j_arr = j_list.toArray();
-    if (j_arr.isEmpty())  {checkAdjacent(); emit signalError("BB_PositionsPage: j_arr QJsonArray is empty"); return;}
+    if (j_arr.isEmpty())  {checkAdjacent(req_type); emit signalError("BB_PositionsPage: j_arr QJsonArray is empty");}
 
+    qDebug()<<QString("slotJsonReply  req_type=%1").arg(req_type);
+    QString next_cursor;
     if (req_type == rtPositions)
     {
+        qDebug("rtPositions");
         fillPosTable(j_arr);
-        //return;
 
-        //next request (orders: first page)
-        m_reqData->uri = API_ORDERS_URI;
-        m_reqData->req_type = rtOrders;
-        m_reqData->params.insert("cursor", QString::number(0));
-        sendRequest(MAX_ORDERS_PAGE);
+        //next request (orders: next page)
+        next_cursor = jv.toObject().value("nextPageCursor").toString().trimmed();
+        if (!next_cursor.isEmpty())
+        {
+            qDebug()<<QString("nextPageCursor: [%1]").arg(next_cursor);
+            m_reqData->params.insert("cursor", next_cursor);
+            sendRequest(api_config.req_limit_pos);
+        }
+        else
+        {
+            qDebug("switch to rtOrders req");
+            //request for (orders: first page)
+            m_reqData->uri = API_ORDERS_URI;
+            m_reqData->req_type = rtOrders;
+            m_reqData->params.insert("cursor", QString::number(0));
+            sendRequest(MAX_ORDERS_PAGE);
+        }
     }
     else if (req_type == rtOrders)
     {
+        qDebug("rtOrders");
+
         //qDebug()<<QString("getted part of orders, size=%1").arg(j_arr.count());
         fillOrdersTable(j_arr);
         //return;
 
         //next request (orders: next page)
-        QString next_cursor = jv.toObject().value("nextPageCursor").toString().trimmed();
+        next_cursor = jv.toObject().value("nextPageCursor").toString().trimmed();
         if (!next_cursor.isEmpty())
         {
-            //qDebug()<<QString("nextPageCursor: [%1]").arg(next_cursor);
+            qDebug()<<QString("nextPageCursor: [%1]").arg(next_cursor);
             m_reqData->params.insert("cursor", next_cursor);
             sendRequest(MAX_ORDERS_PAGE);
         }
-        //else checkAdjacent();
     }
 }
 QString BB_PositionsPage::getTimePoint(const QJsonObject &j_el, bool &days_over) const
@@ -153,8 +170,10 @@ QString BB_PositionsPage::getTimePoint(const QJsonObject &j_el, bool &days_over)
 }
 void BB_PositionsPage::fillPosTable(const QJsonArray &j_arr)
 {
+    if (j_arr.isEmpty()) return;
+
     QTableWidget *t = m_table->table();
-    m_table->removeAllRows();
+    //m_table->removeAllRows();
     for (int i=0; i<j_arr.count(); i++)
     {
         QJsonObject j_el = j_arr.at(i).toObject();
@@ -189,6 +208,8 @@ void BB_PositionsPage::fillPosTable(const QJsonArray &j_arr)
 }
 void BB_PositionsPage::fillOrdersTable(const QJsonArray &j_arr)
 {
+    if (j_arr.isEmpty()) return;
+
     QTableWidget *t = m_orderTable->table();
     for (int i=0; i<j_arr.count(); i++)
     {
@@ -253,8 +274,10 @@ void BB_PositionsPage::slotGetPosState(BB_BagState &state)
         }
     }
 }
-void BB_PositionsPage::checkAdjacent()
+void BB_PositionsPage::checkAdjacent(int req_type)
 {
+    if (req_type != rtOrders) return;
+
     int n = m_table->table()->rowCount();
     for (int i=0; i<n; i++)
     {

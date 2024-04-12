@@ -33,7 +33,7 @@ protected:
     void fillPosTable(const QJsonArray&);
     void fillOrdersTable(const QJsonArray&);
     void clearTables(); //remove all rows
-    void checkAdjacent();
+    void checkAdjacent(int);
 
 private:
     void initTable(LSearchTableWidgetBox*);
