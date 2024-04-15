@@ -30,12 +30,19 @@ void APIConfig::loadTickers()
     fname = QString("%1%2ftickers.txt").arg(appDataPath()).arg(QDir::separator());
     err = LFile::readFileSL(fname, favor_tickers);
     if (!err.isEmpty()) qWarning()<<QString("APIConfig::loadTickers() WARNING - %1").arg(err);
+
+    int n = favor_tickers.count();
+    for (int i=n-1; i>=0; i--)
+        if (favor_tickers.at(i).trimmed().isEmpty())
+            favor_tickers.removeAt(i);
+
 }
 void APIConfig::saveFavorTickers()
 {
     if (favor_tickers.isEmpty()) return;
 
-    favor_tickers.sort();
+    favor_tickers.sort();    
+
     QString fname(QString("%1%2ftickers.txt").arg(appDataPath()).arg(QDir::separator()));
     //qDebug()<<QString("saveFavorTickers [%1]").arg(fname);
     if (LFile::dirExists(appDataPath()))

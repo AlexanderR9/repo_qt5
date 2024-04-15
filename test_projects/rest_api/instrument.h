@@ -263,6 +263,7 @@ struct PlaceOrderData
     bool isBuy() const {return (kind == "buy");}
     bool isSell() const {return (kind == "sell");}
     bool isStop() const {return (is_stop == 1 || is_stop == 2);}
+    QString toStr() const;
 
 };
 

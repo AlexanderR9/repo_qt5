@@ -29,6 +29,9 @@ struct BB_APIReqParams
     QString toStr() const;
 
     static QString strReqTypeByType(int, QString = "");
+    static QString userDateMask() {return QString("dd.MM.yyyy");}
+    static QString userTimeMask() {return QString("hh:mm:ss");}
+    static QString userDateTimeMask() {return QString("dd.MM.yyyy  (hh:mm)");}
 
 
 };
@@ -53,40 +56,78 @@ struct BB_BagState
 
 
 //history elements
-struct BB_HistoryPos
+struct BB_HistoryRecordBase
+{
+    BB_HistoryRecordBase() {reset();}
+
+     // 6 base fields
+    QString uid;
+    QString ticker;
+    QString action; //buy or sell (order),  long or short (pos)
+    float lot_size;
+    QString type;
+    QString status;
+
+    virtual void reset();
+    virtual bool invalid() const {return (uid.isEmpty() || ticker.isEmpty() || action.isEmpty() || lot_size < 0);}
+    virtual void fromFileLine(const QString&);
+
+    virtual QString toFileLine() const = 0;
+    virtual void fromJson(const QJsonObject&) = 0;
+    virtual QStringList toTableRowData() const = 0;
+    virtual quint8 filedsCount() const = 0;
+    virtual void parseSplitedFileLine(const QStringList&) = 0;
+
+};
+struct BB_HistoryPos : public BB_HistoryRecordBase
 {
     BB_HistoryPos() {reset();}
 
-    QString uid;
-    QString ticker;
+    // 6 fields else
     QDateTime closed_time;
     quint8 leverage;
     float open_price;
     float closed_price;
     float total_result; //окончательный результат после вычета всех коммисий
-    float lot_size;
-    QString action; //long or short
-    QString exec_type;
-    QString order_type;
+    //QString trigger;
 
+    inline float dPrice() const {return (closed_price - open_price);}
+    inline bool isLong() const {return (action.toLower() == "long");}
+    inline bool isShort() const {return (action.toLower() == "short");}
+    static QStringList tableHeaders();
 
     void reset();
-    QString toStr() const;
+    QString toFileLine() const;
     void fromJson(const QJsonObject&);
-    void fromFileLine(const QString&);
     QStringList toTableRowData() const;
+    quint8 filedsCount() const {return 11;}
+    void parseSplitedFileLine(const QStringList&);
+    QString priceInfo() const;
+    float paidFee() const;
+
 
 };
-struct BB_HistoryOrder
+struct BB_HistoryOrder : public BB_HistoryRecordBase
 {
-    QString uid;
-    QString ticker;
+    BB_HistoryOrder() {reset();}
+
     QDateTime create_time;
-    QString action; //buy or sell
-    float lot_size;
     float price;
-    QString type;
-    QString status;
+    bool is_leverage;
+
+    static QStringList tableHeaders();
+
+    inline bool isSell() const {return (action.toLower() == "sell");}
+    inline bool isBuy() const {return (action.toLower() == "buy");}
+    inline bool isLimit() const {return (type.toLower() == "limit");}
+    inline bool isStop() const  {return (type.toLower() == "takeprofit" || type.toLower() == "stoploss");}
+
+    void reset();
+    QString toFileLine() const;
+    quint8 filedsCount() const {return 9;}
+    void parseSplitedFileLine(const QStringList&);
+    QStringList toTableRowData() const;
+    void fromJson(const QJsonObject&);
 
 };
 

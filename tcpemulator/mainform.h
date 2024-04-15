@@ -55,6 +55,7 @@ protected:
     void sendPack();
     void updateStatusWidget();
     void updateButtonsState();
+    void receivedPackToProtolol(const QByteArray&);
 
 
 protected slots:
@@ -68,10 +69,9 @@ protected slots:
 
 private:
     bool autoSendPack() const;
-    int floatRecsCount() const;
-    int discreteRecsCount() const;
     int byteOrder() const;
-    quint16 qualSig() const;
+    int shineHeaderSize() const; //количетво байт подсвечиваемого заголовка принятого пакета, -1 - заголовок не подсвечивать
+    qint16 outLinePack() const; //количетво байт в одной строке принятого пакета при выводе его в протокол
 
 
 };

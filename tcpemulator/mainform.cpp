@@ -4,12 +4,11 @@
 #include "lfile.h"
 #include "lstatic.h"
 #include "lfile.h"
+#include "lstring.h"
 #include "tcpclientobj.h"
 #include "tcpserverobj.h"
-//#include "dtsstructs.h"
 #include "tcpstatuswidget.h"
 
-#include <ctime>
 
 #include <QDebug>
 #include <QDir>
@@ -74,21 +73,44 @@ void MainForm::initTcpObjects()
 }
 void MainForm::slotServerPackReceived(const QByteArray &ba)
 {
-    qDebug("MainForm::slotServerPackReceived");
-    //ba_header.clear();
-    //ba_header.append(ba);
-    slotMsg(LStatic::baToStr(ba, 12));
+    //qDebug("MainForm::slotServerPackReceived");
+    receivedPackToProtolol(ba);
+    m_protocol->addSpace();
 
 }
 void MainForm::slotClientPackReceived(const QByteArray &ba)
 {
-    qDebug("MainForm::slotClientPackReceived");
-    slotMsg(LStatic::baToStr(ba, 12));
+   // qDebug("MainForm::slotClientPackReceived");
+    receivedPackToProtolol(ba);
+    m_protocol->addSpace();
 }
+void MainForm::receivedPackToProtolol(const QByteArray &pack)
+{
+    if (pack.isEmpty())
+    {
+        slotError("received packed is empty");
+        return;
+    }
+
+    int hs = shineHeaderSize();
+    if (hs > 0)
+    {
+        if (pack.size() < hs) hs = pack.size();
+
+        m_protocol->addText(QString("PACKET HEADER: %1 bytes").arg(hs), LProtocolBox::ttData);
+        slotMsg(LStatic::baToStr(pack.left(hs), outLinePack()));
+        m_protocol->addText(LString::symbolString(QChar('-'), 100), LProtocolBox::ttData);
+        if (pack.size() > hs)
+            slotMsg(LStatic::baToStr(pack.right(pack.size()-hs), outLinePack()));
+    }
+    else slotMsg(LStatic::baToStr(pack, outLinePack()));
+}
+
 void MainForm::initActions()
 {
     addAction(LMainWidget::atStart);
     addAction(LMainWidget::atStop);
+    addAction(LMainWidget::atClear);
     addAction(LMainWidget::atSendMsg);
     addAction(LMainWidget::atSettings);
     addAction(LMainWidget::atExit);
@@ -101,6 +123,7 @@ void MainForm::slotAction(int type)
         case LMainWidget::atStart: {start(); break;}
         case LMainWidget::atStop: {stop(); break;}
         case LMainWidget::atSendMsg: {sendPack(); break;}
+        case LMainWidget::atClear: {m_protocol->clearProtocol(); break;}
         default: break;
     }
 }
@@ -113,20 +136,6 @@ void MainForm::initWidgets()
     addWidget(m_statusWidget, 1, 0, 1, 1);
 
     updateButtonsState();
-
-    /*
-    QGroupBox *view_box = NULL;
-    v_splitter = new QSplitter(Qt::Vertical, this);
-    h_splitter = new QSplitter(Qt::Horizontal, this);
-    v_splitter->addWidget(html_box);
-    v_splitter->addWidget(m_protocol);
-    h_splitter->addWidget(v_splitter);
-
-    if (view_box)
-        h_splitter->addWidget(view_box);
-
-    addWidget(h_splitter, 0, 0);
-    */
 }
 void MainForm::initCommonSettings()
 {
@@ -142,10 +151,6 @@ void MainForm::initCommonSettings()
     lCommonSettings.addParam(QString("Port"), LSimpleDialog::sdtIntLine, key);
     lCommonSettings.setDefValue(key, QString("12345"));
 
-    key = QString("qual");
-    lCommonSettings.addParam(QString("Quality of signals"), LSimpleDialog::sdtIntLine, key);
-    lCommonSettings.setDefValue(key, QString("48"));
-
     key = QString("mode");
     lCommonSettings.addParam(QString("Emulator mode"), LSimpleDialog::sdtStringCombo, key);
     combo_list.clear();
@@ -156,20 +161,25 @@ void MainForm::initCommonSettings()
     lCommonSettings.addParam(QString("Auto send packet"), LSimpleDialog::sdtBool, key);
     lCommonSettings.setDefValue(key, true);
 
-    key = QString("f_recs");
-    lCommonSettings.addParam(QString("Records count of group (float)"), LSimpleDialog::sdtIntLine, key);
-    lCommonSettings.setDefValue(key, QString("374"));
-
-    key = QString("d_recs");
-    lCommonSettings.addParam(QString("Records count of group (discrete)"), LSimpleDialog::sdtIntLine, key);
-    lCommonSettings.setDefValue(key, QString("93"));
-
     key = QString("byteorder");
     lCommonSettings.addParam(QString("DataStream bytes order"), LSimpleDialog::sdtStringCombo, key);
     combo_list.clear();
     combo_list << "BigEndian" << "LitleEndian";
     lCommonSettings.setComboList(key, combo_list);
     lCommonSettings.setDefValue(key, QString("LitleEndian"));
+
+    key = QString("shine_header");
+    lCommonSettings.addParam(QString("Need shine header, bytes size"), LSimpleDialog::sdtIntCombo, key);
+    combo_list.clear();
+    combo_list << "-1" << "16" << "20" << "24" << "32" << "36" << "40" << "48" << "64";
+    lCommonSettings.setComboList(key, combo_list);
+
+    key = QString("out_line_size");
+    lCommonSettings.addParam(QString("Need shine header, bytes size"), LSimpleDialog::sdtIntCombo, key);
+    combo_list.clear();
+    for (int i=1; i<=16; i++) combo_list << QString::number(i*4);
+    lCommonSettings.setComboList(key, combo_list);
+
 
 
 }
@@ -207,7 +217,6 @@ void MainForm::updateStatusWidget()
     if (isClient()) m_statusWidget->setTextMode("CLIENT");
     else if (isServer()) m_statusWidget->setTextMode("SERVER");
     else m_statusWidget->setTextMode("INVALID MODE!!!");
-
 }
 void MainForm::updateButtonsState()
 {
@@ -288,37 +297,25 @@ bool MainForm::autoSendPack() const
 {
     return lCommonSettings.paramValue("autosendpack").toBool();
 }
-int MainForm::floatRecsCount() const
-{
-    return lCommonSettings.paramValue("f_recs").toInt();
-}
-int MainForm::discreteRecsCount() const
-{
-    return lCommonSettings.paramValue("d_recs").toInt();
-}
 int MainForm::byteOrder() const
 {
     if (lCommonSettings.paramValue("byteorder").toString().toLower().contains("big")) return QDataStream::BigEndian;
     return QDataStream::LittleEndian;
 }
-quint16 MainForm::qualSig() const
+int MainForm::shineHeaderSize() const
 {
-    return lCommonSettings.paramValue("qual").toUInt();
+    return lCommonSettings.paramValue("shine_header").toInt();
+}
+qint16 MainForm::outLinePack() const
+{
+    return lCommonSettings.paramValue("out_line_size").toUInt();
 }
 void MainForm::sendPack()
 {
     if (isServer() && m_server->hasConnectedClients())
     {
-        /*
         QByteArray ba;
-        prepareFloatPacket(ba);
-        if (!ba.isEmpty())
-            m_server->trySendPacketToClient(1, ba);
-
-        prepareDiscretePacket(ba);
-        if (!ba.isEmpty())
-            m_server->trySendPacketToClient(1, ba);
-            */
+        // to do prepare BA
 
     }
     if (isClient() && m_client->isConnected())

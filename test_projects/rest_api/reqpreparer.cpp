@@ -56,6 +56,9 @@ void ApiReqPreparer::prepareReqOrders(const PlaceOrderData *req_data)
     m_reqObj->addMetaData("accountId", QString::number(api_commonSettings.user_id));
     if (!req_data) return;
 
+    qDebug()<<QString("Try trade request....");
+    qDebug()<<req_data->toStr();
+
     if (req_data->invalid())
     {
         emit signalError("ApiReqPreparer: req data is invalid for ORDER_REQUEST");

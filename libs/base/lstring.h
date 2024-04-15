@@ -51,11 +51,13 @@ public:
     //исходная строка не меняется.
     static QStringList trimSplitList(const QString&, QString split_symbol = "\n", bool remove_empty_line = true);
 
-
     //удаляет в строке все длинные пробелы и заменяет их на одиночные, предварительно пробелы с краев обрезаются.
     //если remove_tabs = true то все табуляции заменяются одиночные пробелы.
     //исходная строка не меняется.
     static QString removeLongSpaces(const QString&, bool remove_tabs = true);
+
+    //возвращает строку состоящую из N одинаковых символов
+    static QString symbolString(QChar c, quint16 N = 50) {return QString(N, c);}
 
 };
 

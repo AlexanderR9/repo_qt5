@@ -27,9 +27,7 @@ unix:!macx: LIBS += -L$$PWD/../libs/tcp/build/ -lltcp
 
 
 # Input
-HEADERS += $$PWD/mainform.h \
-	    $$PWD/dtsstructs.h
-	    
+HEADERS += $$PWD/mainform.h
 
 SOURCES += $$PWD/main.cpp \
 	$$PWD/mainform.cpp

@@ -2,6 +2,7 @@
 #define BB_HISTORYPAGE_H
 
 #include "bb_basepage.h"
+#include "bb_apistruct.h"
 
 
 class LTableWidgetBox;
@@ -11,6 +12,7 @@ class QJsonArray;
 class QLineEdit;
 class QComboBox;
 class QJsonValue;
+
 
 
 //BB_HistoryPage
@@ -38,6 +40,9 @@ protected:
     QLineEdit                 *m_startDateEdit;
     QComboBox                 *m_historyDaysCombo;
     int h_stage;
+    QList<BB_HistoryPos>        m_posList;
+    QList<BB_HistoryOrder>      m_orderList;
+
 
     void init();
     void initOrdersTable();
@@ -53,6 +58,11 @@ protected:
     void waitOrders(const QJsonObject&);
     void waitPos(const QJsonObject&);
     void finished();
+    void loadContainers(); //load m_posList, m_orderList from files by start program
+    void checkReceivedRecord(const BB_HistoryRecordBase&); //if not this rec, that need add to file
+    bool hasPos(const QString&) const;
+    bool hasOrder(const QString&) const;
+    void addToFile(const BB_HistoryRecordBase&, QString);
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);

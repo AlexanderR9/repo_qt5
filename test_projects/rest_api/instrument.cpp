@@ -60,12 +60,25 @@ float InstrumentBase::floatFromJVBlock(const QJsonValue &jv_block)
         else f_units = -1;
 
         float f_nano = 0;
+        int nano_index = -1;
         const QJsonValue &jv_nano = f_obj.value("nano");
-        if (jv_nano.isString()) f_nano = jv_nano.toString().toFloat();
-        else if (jv_nano.isDouble()) f_nano = jv_nano.toDouble();
+        if (jv_nano.isString())
+        {
+            f_nano = jv_nano.toString().toFloat();
+            //qDebug()<<QString("STRING NANO: %1 / %2").arg(jv_nano.toString()).arg(f_nano);
+        }
+        else if (jv_nano.isDouble())
+        {
+            f_nano = jv_nano.toDouble();
+            QString s_nano = QString::number(f_nano, 'f', 1);
+            nano_index = s_nano.indexOf(QChar('.'));
+            if (nano_index < 0) nano_index = s_nano.indexOf(QChar(','));
+            //qDebug()<<QString("DOUBLE NANO: %1 / %2  nano_index=%3").arg(jv_nano.toString()).arg(f_nano).arg(nano_index);
+        }
         else f_nano = -9999;
 
-        while (qAbs(f_nano) > 0.99) f_nano /= double(10);
+        while (qAbs(f_nano) > 0.99) f_nano /= float(10);
+        if (nano_index == 8) f_nano /= float(10);
         f = f_units + f_nano;
     }
     return f;
@@ -76,7 +89,7 @@ void InstrumentBase::floatToJVBlock(float p, QJsonObject &j_obj)
     if (i_units > p) i_units--;
     int i_nano = QString::number(p, 'f', 2).right(2).toInt();
 
-    qDebug()<<QString("InstrumentBase::floatToJVBlock  i_units=%1   i_nano=%2  need_price=%3").arg(i_units).arg(i_nano).arg(QString::number(p, 'f', 2));
+    //qDebug()<<QString("InstrumentBase::floatToJVBlock  i_units=%1   i_nano=%2  need_price=%3").arg(i_units).arg(i_nano).arg(QString::number(p, 'f', 2));
     j_obj["units"] = QString::number(i_units);
     j_obj["nano"] = 10000000*i_nano;
 }
@@ -638,5 +651,13 @@ bool PlaceOrderData::invalid() const
     if (uid.isEmpty()) return true;
     if (!isCancel()) return (price<=0 || lots<1);
     return false;
+}
+QString PlaceOrderData::toStr() const
+{
+    QString s("PlaceOrderData: ");
+    s = QString("%1 KIND[%2]  IS_STOP[%3]").arg(s).arg(kind).arg(is_stop?"yes":"no");
+    s = QString("%1  price=%2  lot_size=%3").arg(s).arg(QString::number(price, 'f', 2)).arg(lots);
+    if (nominal > 0) s.append(QString("  nominal=%1").arg(nominal));
+    return s;
 }
 
