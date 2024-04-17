@@ -63,6 +63,9 @@ protected:
     bool hasPos(const QString&) const;
     bool hasOrder(const QString&) const;
     void addToFile(const BB_HistoryRecordBase&, QString);
+    void insertPos(const BB_HistoryPos&);
+    void insertOrder(const BB_HistoryOrder&);
+    void loadTablesByContainers(); //by start program once
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);

@@ -122,7 +122,7 @@ void BB_HistoryPage::loadContainers()
                 BB_HistoryPos pos;
                 pos.fromFileLine(v);
                 if (pos.invalid()) qWarning()<<QString("loadContainers() WARNING - invalid pos from line [%1]").arg(v);
-                else m_posList.append(pos);
+                else insertPos(pos);
             }
         }
         else emit signalError(err);
@@ -143,13 +143,47 @@ void BB_HistoryPage::loadContainers()
                 BB_HistoryOrder order;
                 order.fromFileLine(v);
                 if (order.invalid()) qWarning()<<QString("loadContainers() WARNING - invalid pos from line [%1]").arg(v);
-                else m_orderList.append(order);
+                else insertOrder(order);
             }
         }
         else emit signalError(err);
     }
     else emit signalError(QString("pos file [%1] not found").arg(fname));
 }
+void BB_HistoryPage::insertPos(const BB_HistoryPos &pos)
+{
+    if (hasPos(pos.uid)) {qWarning()<<QString("insertPos() WARNING - uid [%1] already exists").arg(pos.uid); return;}
+    if (m_posList.isEmpty()) {m_posList.append(pos); return;}
+
+    int n = m_posList.count();
+    for (int i=0; i<n; i++)
+    {
+        if (pos.closed_time > m_posList.at(i).closed_time)
+        {
+            m_posList.insert(i, pos);
+            return;
+        }
+    }
+    m_posList.append(pos);
+}
+void BB_HistoryPage::insertOrder(const BB_HistoryOrder &order)
+{
+    if (hasOrder(order.uid)) {qWarning()<<QString("insertOrder() WARNING - uid [%1] already exists").arg(order.uid); return;}
+    if (m_orderList.isEmpty()) {m_orderList.append(order); return;}
+
+    int n = m_orderList.count();
+    for (int i=0; i<n; i++)
+    {
+        if (order.create_time > m_orderList.at(i).create_time)
+        {
+            m_orderList.insert(i, order);
+            return;
+        }
+    }
+    m_orderList.append(order);
+}
+
+
 void BB_HistoryPage::init()
 {
     initOrdersTable();
@@ -336,6 +370,13 @@ void BB_HistoryPage::waitOrders(const QJsonObject &jresult_obj)
 }
 void BB_HistoryPage::updateDataPage(bool force)
 {
+    if (!force)
+    {
+        if (m_tablePos->table()->rowCount() == 0 && m_tableOrders->table()->rowCount() == 0)
+            loadTablesByContainers();
+        return;
+    }
+
     if (!updateTimeOver(force)) return;
 
     qDebug("Start BB_HistoryPage::updateDataPage");
@@ -377,6 +418,8 @@ void BB_HistoryPage::fillOrdersTable(const QJsonArray &j_arr)
             qWarning()<<QString("WARNING: invalid order from j_el: ")<<order.toFileLine();
             continue;
         }
+        //if (hasOrder(order.uid)) continue;
+
         LTable::addTableRow(t, order.toTableRowData());
         checkReceivedRecord(order);
 
@@ -429,6 +472,7 @@ void BB_HistoryPage::fillPosTable(const QJsonArray &j_arr)
             qWarning()<<QString("WARNING: invalid pos from j_el: ")<<pos.toFileLine();
             continue;
         }
+        //if (hasPos(pos.uid)) continue;
 
 
         /*
@@ -505,4 +549,33 @@ void BB_HistoryPage::save(QSettings &settings)
     BB_BasePage::save(settings);
     settings.setValue(QString("%1/startDate").arg(objectName()), m_startDateEdit->text());
     settings.setValue(QString("%1/historyDaysIndex").arg(objectName()), m_historyDaysCombo->currentIndex());
+}
+void BB_HistoryPage::loadTablesByContainers()
+{
+    //load positions
+    QTableWidget *t = m_tablePos->table();
+    for (int i=0; i<m_posList.count(); i++)
+    {
+        const BB_HistoryPos &pos = m_posList.at(i);
+        LTable::addTableRow(t, pos.toTableRowData());
+
+        if (pos.total_result < -0.1) t->item(i, PROFIT_COL)->setTextColor("#AA0000");
+        else if (pos.total_result > 1.1) t->item(i, PROFIT_COL)->setTextColor("#0000DD");
+        if (pos.paidFee() < -0.1) t->item(i, COMMISION_COL)->setTextColor("#AA0000");
+        else if (pos.paidFee() > 0.1) t->item(i, COMMISION_COL)->setTextColor("#0000DD");
+        if (pos.isShort()) t->item(i, ACTION_COL)->setTextColor("#FF8C00");
+        else if (pos.isLong()) t->item(i, ACTION_COL)->setTextColor("#005500");
+        else t->item(i, ACTION_COL)->setTextColor(Qt::red);
+    }
+    m_tablePos->searchExec();
+
+    //load orders
+    t = m_tableOrders->table();
+    for (int i=0; i<m_orderList.count(); i++)
+    {
+        const BB_HistoryOrder &order = m_orderList.at(i);
+        LTable::addTableRow(t, order.toTableRowData());
+    }
+    m_tableOrders->searchExec();
+
 }

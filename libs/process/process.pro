@@ -22,10 +22,12 @@ unix:!macx: LIBS += -L$$PWD/../base/build/ -llbase
 
 # Input
 HEADERS += $$PWD/processobj.h \
-	$$PWD/process_global.h
+	$$PWD/process_global.h \
+        $$PWD/lthread.h
 
 
-SOURCES += $$PWD/processobj.cpp
+SOURCES += $$PWD/processobj.cpp \
+        $$PWD/lthread.cpp
 
 
 
