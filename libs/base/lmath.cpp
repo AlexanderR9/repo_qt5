@@ -3,7 +3,8 @@
 #include "lstatic.h"
 #include "qdebug.h"
 
-
+#include <QTime>
+#include <QDebug>
 
 /////////////////////////////////
 int LMath::rndInt(uint a, uint b)
@@ -12,9 +13,38 @@ int LMath::rndInt(uint a, uint b)
     if (a > b) return -1;
     return (a + qrand()%(b-a+1));
 }
+float LMath::rndFloat(float a, float b)
+{
+    if (a == b) return a;
+    if (a > b) return -1;
+    return (a + rnd()*(b-a));
+
+
+    /*
+    float df = b-a;
+    float result = a + rnd()*df;
+    qDebug()<<QString("a=%1,  b=%2,  df=%3,  result=%4").arg(a).arg(b).arg(df).arg(result);
+    return result;
+    */
+}
 double LMath::rnd()
 {
-    return double(rndInt(0, 99))/100;
+    return double(rndInt(0, 9999))/10000;
+}
+void LMath::rndReset()
+{
+    qsrand(QTime::currentTime().msec());
+}
+bool LMath::probabilityOk(float p)
+{
+    // RAND_MAX == 2 147 483 647
+    if (p > 0)
+    {
+        p /= float(100);
+        float rnd_limit = p*float(RAND_MAX);
+        return (qrand() < rnd_limit);
+    }
+    return false;
 }
 bool LMath::factorOk(double k)
 {
