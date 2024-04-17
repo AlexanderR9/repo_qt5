@@ -33,7 +33,6 @@ struct BB_APIReqParams
     static QString userTimeMask() {return QString("hh:mm:ss");}
     static QString userDateTimeMask() {return QString("dd.MM.yyyy  (hh:mm)");}
 
-
 };
 
 //обобщенная информация о текущем состоянии торгового портфеля
@@ -51,9 +50,22 @@ struct BB_BagState
 
     void reset() {freezed_pos = freezed_order = -1; balance = balance_free = 0; pos_result = 0; n_pos = n_order = 0;}
     float sumFreezed() const;
-
 };
 
+
+//сводная информация по истории операций
+struct BB_HistoryState
+{
+    BB_HistoryState() {reset();}
+
+    quint16 closed_pos;
+    quint16 closed_orders;
+    quint16 canceled_orders;
+    float paid_commission;
+    float total_pnl;
+
+    void reset();
+};
 
 //history elements
 struct BB_HistoryRecordBase
@@ -121,6 +133,7 @@ struct BB_HistoryOrder : public BB_HistoryRecordBase
     inline bool isBuy() const {return (action.toLower() == "buy");}
     inline bool isLimit() const {return (type.toLower() == "limit");}
     inline bool isStop() const  {return (type.toLower() == "takeprofit" || type.toLower() == "stoploss");}
+    inline bool isCancelled() const {return (status.toLower() == "cancelled");}
 
     void reset();
     QString toFileLine() const;

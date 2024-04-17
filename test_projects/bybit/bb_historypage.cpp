@@ -275,6 +275,22 @@ void BB_HistoryPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 
     goExchange(jv.toObject());
 }
+void BB_HistoryPage::slotGetHistoryState(BB_HistoryState &hs)
+{
+    qDebug("BB_HistoryPage::slotGetHistoryState");
+    hs.reset();
+    hs.closed_pos = m_posList.count();
+    hs.closed_orders = m_orderList.count();
+
+    foreach (const BB_HistoryOrder &order, m_orderList)
+        if (order.isCancelled()) hs.canceled_orders++;
+
+    foreach (const BB_HistoryPos &pos, m_posList)
+    {
+        hs.paid_commission += pos.paidFee();
+        hs.total_pnl += pos.total_result;
+    }
+}
 void BB_HistoryPage::goExchange(const QJsonObject &jresult_obj)
 {
     switch (h_stage)
@@ -418,48 +434,14 @@ void BB_HistoryPage::fillOrdersTable(const QJsonArray &j_arr)
             qWarning()<<QString("WARNING: invalid order from j_el: ")<<order.toFileLine();
             continue;
         }
-        //if (hasOrder(order.uid)) continue;
 
         LTable::addTableRow(t, order.toTableRowData());
         checkReceivedRecord(order);
-
-
-        /*
-        QStringList row_data;
-        row_data << APIConfig::fromTimeStamp(j_el.value("createdTime").toString().toLong());
-        row_data << j_el.value("symbol").toString();
-        row_data << j_el.value("side").toString().trimmed().toUpper();
-        row_data << j_el.value("qty").toString();
-
-        QString o_type = j_el.value("stopOrderType").toString().toUpper().trimmed();
-        if (o_type.isEmpty()) o_type = j_el.value("orderType").toString().toUpper().trimmed();
-        row_data << o_type;
-
-        QString s_price("-");
-        if (o_type == "LIMIT")
-        {
-            float p = j_el.value("price").toString().toFloat();
-            s_price = QString::number(p, 'f', 2);
-        }
-        else if (o_type == "TAKEPROFIT" || o_type == "STOPLOSS")
-        {
-            float p = j_el.value("triggerPrice").toString().toFloat();
-            s_price = QString::number(p, 'f', 2);
-        }
-        row_data << s_price;
-        row_data << j_el.value("orderStatus").toString();
-
-        LTable::addTableRow(t, row_data);
-        QString s_id = j_el.value("orderId").toString();
-        t->item(i, 0)->setData(Qt::UserRole, s_id);
-        //qDebug()<<s_id;
-        */
     }
 }
 void BB_HistoryPage::fillPosTable(const QJsonArray &j_arr)
 {
     QTableWidget *t = m_tablePos->table();
-    //qDebug()<<QString("fillPosTable  arr_size=%1").arg(j_arr.count());
     for (int i=0; i<j_arr.count(); i++)
     {
         QJsonObject j_el = j_arr.at(i).toObject();
@@ -472,41 +454,6 @@ void BB_HistoryPage::fillPosTable(const QJsonArray &j_arr)
             qWarning()<<QString("WARNING: invalid pos from j_el: ")<<pos.toFileLine();
             continue;
         }
-        //if (hasPos(pos.uid)) continue;
-
-
-        /*
-
-        QStringList row_data;
-        row_data << APIConfig::fromTimeStamp(j_el.value("updatedTime").toString().toLong());
-        row_data << j_el.value("symbol").toString();
-
-        QString act(j_el.value("side").toString().trimmed().toUpper());
-        if (act == "SELL") act = "LONG";
-        else if (act == "BUY") act = "SHORT";
-        row_data << act;
-        row_data << j_el.value("qty").toString();
-
-        float p1 = j_el.value("avgEntryPrice").toString().toFloat();
-        float p2 = j_el.value("avgExitPrice").toString().toFloat();
-        float deviation = -1;
-        if (act == "LONG") deviation = float(100)*(p2-p1)/p1;
-        else if (act == "SHORT") deviation = float(100)*(p1-p2)/p1;
-
-        row_data << QString("%1 / %2 (%3%)").arg(QString::number(p1, 'f', 2)).arg(QString::number(p2, 'f', 2)).arg(QString::number(deviation, 'f', 1));
-        float profit = j_el.value("closedPnl").toString().toFloat();
-
-        float lot_size = j_el.value("qty").toString().toFloat();
-        float cm = -1;
-        if (act == "LONG") cm = profit - lot_size*(p2-p1);
-        else if (act == "SHORT") cm = profit - lot_size*(p1-p2);
-
-        row_data << QString::number(cm, 'f', 4);
-        row_data << QString::number(profit, 'f', 3);
-        row_data << j_el.value("execType").toString();
-        row_data << j_el.value("orderType").toString();
-        row_data << j_el.value("leverage").toString();
-        */
 
         LTable::addTableRow(t, pos.toTableRowData());
 
@@ -519,10 +466,6 @@ void BB_HistoryPage::fillPosTable(const QJsonArray &j_arr)
         if (pos.isShort()) t->item(i, ACTION_COL)->setTextColor("#FF8C00");
         else if (pos.isLong()) t->item(i, ACTION_COL)->setTextColor("#005500");
         else t->item(i, ACTION_COL)->setTextColor(Qt::red);
-
-        //QString s_id = j_el.value("orderId").toString();
-        //t->item(i, 0)->setData(Qt::UserRole, s_id);
-        //qDebug()<<s_id;
 
         checkReceivedRecord(pos);
     }

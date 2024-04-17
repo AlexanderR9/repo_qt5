@@ -14,7 +14,8 @@
 //BB_BagStatePage
 BB_BagStatePage::BB_BagStatePage(QWidget *parent)
     :BB_BasePage(parent, 20, rtBag),
-      m_table(NULL)
+      m_table(NULL),
+      m_historyTable(NULL)
 {
     setObjectName("bag_state_page");
     init();
@@ -25,6 +26,16 @@ BB_BagStatePage::BB_BagStatePage(QWidget *parent)
 
 }
 void BB_BagStatePage::init()
+{
+    initBagTable();
+    initHistoryTable();
+
+    h_splitter->addWidget(m_table);
+    h_splitter->addWidget(m_historyTable);
+    m_table->resizeByContents();
+    m_historyTable->resizeByContents();
+}
+void BB_BagStatePage::initBagTable()
 {
     m_table = new LTableWidgetBox(this);
     m_table->setObjectName("bag_table");
@@ -41,8 +52,24 @@ void BB_BagStatePage::init()
     for (int i=0; i<m_table->table()->rowCount(); i++)
         LTable::createTableItem(m_table->table(), i, 0, "-");
 
-    h_splitter->addWidget(m_table);
-    m_table->resizeByContents();
+}
+void BB_BagStatePage::initHistoryTable()
+{
+    m_historyTable = new LTableWidgetBox(this);
+    m_historyTable->setObjectName("history_table");
+    m_historyTable->setTitle("History state");
+    m_historyTable->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
+
+    QStringList headers;
+    headers.append("Value");
+    m_historyTable->setHeaderLabels(headers);
+
+    headers.clear();
+    headers << "Closed positions" << "Closed orders total/canceled" << "Paid commission" << "Total PnL";
+    m_historyTable->setHeaderLabels(headers, Qt::Vertical);
+    for (int i=0; i<m_historyTable->table()->rowCount(); i++)
+        LTable::createTableItem(m_historyTable->table(), i, 0, "-");
+
 }
 void BB_BagStatePage::updateDataPage(bool force)
 {
@@ -55,9 +82,13 @@ void BB_BagStatePage::updateDataPage(bool force)
     else
     {
         emit signalGetPosState(m_state);
-        updateTable();
+        updateBagTable();
         m_table->resizeByContents();
     }
+
+    emit signalGetHistoryState(m_historyState);
+    updateHistoryTable();
+    m_historyTable->resizeByContents();
 }
 void BB_BagStatePage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 {
@@ -79,10 +110,23 @@ void BB_BagStatePage::slotJsonReply(int req_type, const QJsonObject &j_obj)
     m_state.balance = j_wallet.value("totalEquity").toString().toFloat();
     m_state.balance_free = j_wallet.value("totalAvailableBalance").toString().toFloat();
 
-    updateTable();
+    updateBagTable();
     m_table->resizeByContents();
 }
-void BB_BagStatePage::updateTable()
+void BB_BagStatePage::updateHistoryTable()
+{
+    QTableWidget *t = m_historyTable->table();
+    int row = 0;
+    t->item(row, 0)->setText(QString::number(m_historyState.closed_pos)); row++;
+    t->item(row, 0)->setText(QString("%1/%2").arg(QString::number(m_historyState.closed_orders)).arg(QString::number(m_historyState.canceled_orders))); row++;
+    t->item(row, 0)->setText(QString::number(m_historyState.paid_commission, 'f', 1)); row++;
+    if (m_historyState.paid_commission < -0.5) t->item(row-1, 0)->setTextColor(Qt::red);
+
+    t->item(row, 0)->setText(QString::number(m_historyState.total_pnl, 'f', 1)); row++;
+    if (m_historyState.total_pnl < -0.5) t->item(row-1, 0)->setTextColor(Qt::red);
+    else if (m_historyState.total_pnl > 5) t->item(row-1, 0)->setTextColor(Qt::blue);
+}
+void BB_BagStatePage::updateBagTable()
 {
     QTableWidget *t = m_table->table();
     int row = 0;

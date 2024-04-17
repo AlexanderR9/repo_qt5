@@ -69,6 +69,7 @@ protected:
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);
+    void slotGetHistoryState(BB_HistoryState&);
 
 private:
     void getTSRange(qint64 &ts1, qint64 &ts2);

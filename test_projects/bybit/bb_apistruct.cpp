@@ -68,6 +68,13 @@ float BB_BagState::sumFreezed() const
     return sum;
 }
 
+// BB_HistoryState
+void BB_HistoryState::reset()
+{
+    closed_pos = closed_orders = canceled_orders = 0;
+    paid_commission = total_pnl = 0;
+}
+
 
 //BB_HistoryRecordBase
 void BB_HistoryRecordBase::reset()

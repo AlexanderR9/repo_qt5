@@ -80,6 +80,7 @@ void BB_CentralWidget::createPages()
     BB_BagStatePage *bs_page = new BB_BagStatePage(this);
     w_stack->addWidget(bs_page);
     connect(bs_page, SIGNAL(signalGetPosState(BB_BagState&)), pos_page, SLOT(slotGetPosState(BB_BagState&)));
+    connect(bs_page, SIGNAL(signalGetHistoryState(BB_HistoryState&)), h_page, SLOT(slotGetHistoryState(BB_HistoryState&)));
 
 
     for (int i=0; i<w_stack->count(); i++)

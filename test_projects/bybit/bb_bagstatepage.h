@@ -15,6 +15,7 @@ public:
 
     QString iconPath() const {return QString(":/icons/images/bag.svg");}
     QString caption() const {return QString("Bag state");}
+    //virtual void load(QSettings&) {}
 
     void updateDataPage(bool force = false);
 
@@ -22,14 +23,22 @@ protected:
     LTableWidgetBox     *m_table;
     BB_BagState          m_state;
 
+    LTableWidgetBox     *m_historyTable;
+    BB_HistoryState      m_historyState;
+
     void init();
-    void updateTable();
+    void initBagTable();
+    void initHistoryTable();
+
+    void updateBagTable();
+    void updateHistoryTable();
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);
 
 signals:
     void signalGetPosState(BB_BagState&);
+    void signalGetHistoryState(BB_HistoryState&);
 
 };
 
