@@ -119,7 +119,7 @@ void BB_BagStatePage::updateHistoryTable()
     int row = 0;
     t->item(row, 0)->setText(QString::number(m_historyState.closed_pos)); row++;
     t->item(row, 0)->setText(QString("%1/%2").arg(QString::number(m_historyState.closed_orders)).arg(QString::number(m_historyState.canceled_orders))); row++;
-    t->item(row, 0)->setText(QString::number(m_historyState.paid_commission, 'f', 1)); row++;
+    t->item(row, 0)->setText(QString::number(m_historyState.paid_commission, 'f', 3)); row++;
     if (m_historyState.paid_commission < -0.5) t->item(row-1, 0)->setTextColor(Qt::red);
 
     t->item(row, 0)->setText(QString::number(m_historyState.total_pnl, 'f', 1)); row++;

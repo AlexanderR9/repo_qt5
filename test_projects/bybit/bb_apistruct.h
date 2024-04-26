@@ -7,7 +7,7 @@
 class QJsonObject;
 
 //типы страниц пользовательского интерфейса
-enum BB_ReqType {rtCandles = 181, rtPositions, rtOrders, rtHistory, rtBag, rtJsonView};
+enum BB_ReqType {rtCandles = 181, rtPositions, rtOrders, rtHistory, rtBag, rtJsonView, rtFundRate};
 
 
 //необходимые данные для формирования запроса перед отправкой

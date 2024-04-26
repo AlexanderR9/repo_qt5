@@ -75,11 +75,11 @@ void MainForm::slotActionsApdate(int p_type)
             getAction(atRemove)->setVisible(true);
             break;
         }
-        //rtPositions, rtOrders, rtHistory, rtBag
         case rtPositions:
         case rtOrders:
         case rtHistory:
         case rtBag:
+        case rtFundRate:
         case rtJsonView:
         {
             getAction(atAdd)->setVisible(false);

@@ -82,6 +82,8 @@ void BB_CentralWidget::createPages()
     connect(bs_page, SIGNAL(signalGetPosState(BB_BagState&)), pos_page, SLOT(slotGetPosState(BB_BagState&)));
     connect(bs_page, SIGNAL(signalGetHistoryState(BB_HistoryState&)), h_page, SLOT(slotGetHistoryState(BB_HistoryState&)));
 
+    BB_FundRatePage *fr_page = new BB_FundRatePage(this);
+    w_stack->addWidget(fr_page);
 
     for (int i=0; i<w_stack->count(); i++)
     {
@@ -192,6 +194,7 @@ void BB_CentralWidget::slotSendReq(const BB_APIReqParams *req_data)
     if (req_data->invalid()) {emit signalError("request data is invalid"); return;}
     if (requesterBuzy()) {emit signalError("Requester object is buzy."); return;}
 
+    qDebug()<<QString("BB_CentralWidget::slotSendReq req_type=%1").arg(req_data->req_type);
     m_userSign = req_data->req_type;
     prepareReq(req_data);
     emit signalMsg(QString("URL: %1").arg(m_reqObj->fullUrl()));

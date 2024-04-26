@@ -54,6 +54,7 @@ QString BB_APIReqParams::strReqTypeByType(int t, QString s_extra)
         case rtOrders:      {s = "GET_ORDERS"; break;}
         case rtHistory:     {s = "GET_HISTORY"; break;}
         case rtBag:         {s = "GET_WALLET"; break;}
+        case rtFundRate:    {s = "GET_FUND_RATES"; break;}
         default: return "???";
     }
     return s_extra.isEmpty() ? s : QString("%1(%2)").arg(s).arg(s_extra);
