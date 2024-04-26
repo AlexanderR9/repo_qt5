@@ -15,7 +15,8 @@
 BB_BagStatePage::BB_BagStatePage(QWidget *parent)
     :BB_BasePage(parent, 20, rtBag),
       m_table(NULL),
-      m_historyTable(NULL)
+      m_historyTable(NULL),
+      m_stage(-1)
 {
     setObjectName("bag_state_page");
     init();
@@ -47,7 +48,8 @@ void BB_BagStatePage::initBagTable()
     m_table->setHeaderLabels(headers);
 
     headers.clear();
-    headers << "Wallet (total/free)" << "Positions" << "Orders" << "Freezed sum (pos/order)" << "Freezed sum (total)" << "Current result (opened pos)";
+    headers << "Fund wallet" <<  "Unified wallet (total/free)" << "Positions" << "Orders";
+    headers << "Freezed sum (pos/order)" << "Freezed sum (total)" << "Current result (opened pos)";
     m_table->setHeaderLabels(headers, Qt::Vertical);
     for (int i=0; i<m_table->table()->rowCount(); i++)
         LTable::createTableItem(m_table->table(), i, 0, "-");
@@ -71,8 +73,16 @@ void BB_BagStatePage::initHistoryTable()
         LTable::createTableItem(m_historyTable->table(), i, 0, "-");
 
 }
-void BB_BagStatePage::updateDataPage(bool force)
+void BB_BagStatePage::updateDataPage(bool forcibly)
 {
+    if (!updateTimeOver(forcibly)) return;
+
+    m_stage = bsGetUnified;
+    goExchange();
+
+    /*
+    switch
+
     if (updateTimeOver(force))
     {
         m_state.reset();
@@ -89,10 +99,10 @@ void BB_BagStatePage::updateDataPage(bool force)
     emit signalGetHistoryState(m_historyState);
     updateHistoryTable();
     m_historyTable->resizeByContents();
+    */
 }
 void BB_BagStatePage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 {
-    BB_BasePage::slotJsonReply(req_type, j_obj);
     if (req_type != m_userSign) return;
 
     const QJsonValue &jv = j_obj.value("result");
@@ -107,11 +117,22 @@ void BB_BagStatePage::slotJsonReply(int req_type, const QJsonObject &j_obj)
     if (j_arr_coin.isEmpty())  {emit signalError("BB_BagStatePage: j_arr_coin QJsonArray is empty"); return;}
 
     QJsonObject j_wallet = j_arr.at(0).toObject();
-    m_state.balance = j_wallet.value("totalEquity").toString().toFloat();
-    m_state.balance_free = j_wallet.value("totalAvailableBalance").toString().toFloat();
+    if (m_stage == bsGetUnified)
+    {
+        m_state.balance = j_wallet.value("totalEquity").toString().toFloat();
+        m_state.balance_free = j_wallet.value("totalAvailableBalance").toString().toFloat();
+        //m_stage = bsGetFund;
+        m_stage = bsFinished;
+    }
+    else if (m_stage == bsGetFund)
+    {
+        m_state.fund_balance = j_wallet.value("totalEquity").toString().toFloat();
+        m_stage = bsFinished;
+    }
 
     updateBagTable();
     m_table->resizeByContents();
+    goExchange();
 }
 void BB_BagStatePage::updateHistoryTable()
 {
@@ -130,6 +151,7 @@ void BB_BagStatePage::updateBagTable()
 {
     QTableWidget *t = m_table->table();
     int row = 0;
+    t->item(row, 0)->setText(QString::number(m_state.fund_balance, 'f', 1)); row++;
     t->item(row, 0)->setText(QString("%1/%2").arg(QString::number(m_state.balance, 'f', 1)).arg(QString::number(m_state.balance_free, 'f', 1))); row++;
     t->item(row, 0)->setText(QString::number(m_state.n_pos)); row++;
     t->item(row, 0)->setText(QString::number(m_state.n_order)); row++;
@@ -139,6 +161,48 @@ void BB_BagStatePage::updateBagTable()
     if (m_state.pos_result < -0.5) t->item(row, 0)->setTextColor(Qt::red);
     else if (m_state.pos_result > 0.5) t->item(row, 0)->setTextColor(Qt::blue);
     else t->item(row, 0)->setTextColor(Qt::gray);
+}
+void BB_BagStatePage::goExchange()
+{
+    switch (m_stage)
+    {
+        case bsGetUnified:
+        {
+            getUnifiedState();
+            break;
+        }
+        case bsGetFund:
+        {
+            getFundState();
+            break;
+        }
+        case bsFinished:
+        {
+            getHistoryInfo();
+            break;
+        }
+        default: break;
+    }
+}
+void BB_BagStatePage::getUnifiedState()
+{
+    m_reqData->params.insert("accountType", "UNIFIED");
+    //m_reqData->uri = API_WALLET_URI;
+    sendRequest(-1, "UNIFIED");
+}
+void BB_BagStatePage::getFundState()
+{
+    m_reqData->params.insert("accountType", "CONTRACT");
+    //m_reqData->uri = API_WALLET_URI;
+    sendRequest(-1, "CONTRACT");
+}
+void BB_BagStatePage::getHistoryInfo()
+{
+    emit signalGetPosState(m_state);
+    updateBagTable();
 
+    emit signalGetHistoryState(m_historyState);
+    updateHistoryTable();
+    m_historyTable->resizeByContents();
 }
 

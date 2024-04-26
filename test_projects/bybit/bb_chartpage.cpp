@@ -74,7 +74,6 @@ void BB_ChartPage::requestByTicker(QString ticker)
 }
 void BB_ChartPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 {
-    BB_BasePage::slotJsonReply(req_type, j_obj);
     if (req_type != userSign()) return;
     qDebug()<<QString("BB_ChartPage::slotJsonReply  req_type=%1").arg(userSign());
 

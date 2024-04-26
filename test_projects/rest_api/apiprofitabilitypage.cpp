@@ -230,7 +230,10 @@ void APIProfitabilityPage::syncTableData(const BondDesc &bond_rec, const QString
     if (bond_rec.nominal < 900)
         t->item(row, PRICE_COL)->setTextColor("#8B0000");
     if (bond_rec.daysToFinish() < 30)
+        LTable::setTableRowColor(t, row, QString("#FFD0DB"));
+    else if (bond_rec.daysToFinish() < 70)
         LTable::setTableRowColor(t, row, QString("#FFEFD5"));
+
 
     m_tick++;
     sortByProfitability(row, v_month);

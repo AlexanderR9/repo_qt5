@@ -30,7 +30,7 @@ protected:
     virtual int minUpdatingInterval() const {return m_minUpdatingInterval;}
 
 public slots:
-    virtual void slotJsonReply(int, const QJsonObject&);
+    virtual void slotJsonReply(int, const QJsonObject&) = 0;
 
 signals:
     void signalSendReq(const BB_APIReqParams*);

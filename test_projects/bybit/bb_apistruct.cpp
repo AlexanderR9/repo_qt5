@@ -51,6 +51,8 @@ QString BB_APIReqParams::strReqTypeByType(int t, QString s_extra)
     {
         case rtCandles:     {s = "GET_CANDLES"; break;}
         case rtPositions:   {s = "GET_POSITIONS"; break;}
+        case rtSpotAssets:  {s = "GET_SPOT_ASSETS"; break;}
+        case rtSportOrders: {s = "GET_SPOT_ORDERS"; break;}
         case rtOrders:      {s = "GET_ORDERS"; break;}
         case rtHistory:     {s = "GET_HISTORY"; break;}
         case rtBag:         {s = "GET_WALLET"; break;}
@@ -59,7 +61,6 @@ QString BB_APIReqParams::strReqTypeByType(int t, QString s_extra)
     }
     return s_extra.isEmpty() ? s : QString("%1(%2)").arg(s).arg(s_extra);
 }
-
 
 //////////BB_BagState/////////////
 float BB_BagState::sumFreezed() const

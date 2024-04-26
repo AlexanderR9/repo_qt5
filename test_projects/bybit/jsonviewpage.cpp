@@ -19,8 +19,6 @@ JSONViewPage::JSONViewPage(QWidget *parent)
 }
 void JSONViewPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 {
-    BB_BasePage::slotJsonReply(req_type, j_obj);
-
     m_replyBox->loadJSON(j_obj, "JSON struct");
     m_replyBox->expandLevel();
     m_replyBox->resizeByContents();

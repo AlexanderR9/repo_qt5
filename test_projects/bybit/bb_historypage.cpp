@@ -243,7 +243,6 @@ void BB_HistoryPage::initFilterBox()
     for (int i=1; i<=10; i++) m_historyDaysCombo->addItem(QString::number(i*30));
     lay_row++;
 
-
     g_lay->addItem(new QSpacerItem(1,1, QSizePolicy::Preferred, QSizePolicy::Expanding), lay_row,0);
     m_tableOrders->setSearchEdit(search_edit);
     m_tablePos->setSearchEdit(search_edit);
@@ -265,7 +264,6 @@ QStringList BB_HistoryPage::tableHeaders(QString obj_name) const
 }
 void BB_HistoryPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 {
-    BB_BasePage::slotJsonReply(req_type, j_obj);
     if (req_type != m_userSign) return;
 
     const QJsonValue &jv = j_obj.value("result");
@@ -277,7 +275,6 @@ void BB_HistoryPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 }
 void BB_HistoryPage::slotGetHistoryState(BB_HistoryState &hs)
 {
-    qDebug("BB_HistoryPage::slotGetHistoryState");
     hs.reset();
     hs.closed_pos = m_posList.count();
     hs.closed_orders = m_orderList.count();
@@ -308,19 +305,16 @@ void BB_HistoryPage::goExchange(const QJsonObject &jresult_obj)
 }
 void BB_HistoryPage::preparePosReq()
 {
-    //qDebug("BB_HistoryPage::preparePosReq()");
     m_reqData->uri.clear();
     viewTablesUpdate();
 
     m_reqData->uri = API_PL_URI;
     m_reqData->params.remove("settleCoin");
     m_reqData->params.insert("cursor", QString::number(0));
-    //m_reqData->params.insert("symbol", "USDT");
     h_stage = hsWaitPos;
 }
 void BB_HistoryPage::prepareOrdersReq()
 {
-    //qDebug("BB_HistoryPage::prepareOrdersReq()");
     m_reqData->uri.clear();
     qint64 ts1, ts2;
     getTSRange(ts1, ts2);
@@ -337,14 +331,12 @@ void BB_HistoryPage::prepareOrdersReq()
 }
 void BB_HistoryPage::finished()
 {
-    //qDebug("BB_HistoryPage::finished()");
     emit signalMsg("#######################FINISHED!#############################");
     m_reqData->uri.clear();
     viewTablesUpdate();
 }
 void BB_HistoryPage::waitPos(const QJsonObject &jresult_obj)
 {
-    //qDebug("BB_HistoryPage::waitPos()");
     const QJsonArray &j_arr = jresult_obj.value("list").toArray();
     if (j_arr.isEmpty())
     {
@@ -353,19 +345,15 @@ void BB_HistoryPage::waitPos(const QJsonObject &jresult_obj)
         goExchange(jresult_obj);
         return;
     }
-
-    fillPosTable(j_arr);
-    //h_stage = hsFinished;    goExchange(jresult_obj);    return; //for test
+    else fillPosTable(j_arr);
 
     //next request (pos: next page)
     QString next_cursor = jresult_obj.value("nextPageCursor").toString().trimmed();
-    //qDebug()<<QString("nextPageCursor: [%1]").arg(next_cursor);
     m_reqData->params.insert("cursor", next_cursor);
     sendRequest(MAX_ORDERS_PAGE);
 }
 void BB_HistoryPage::waitOrders(const QJsonObject &jresult_obj)
 {
-    //qDebug("BB_HistoryPage::waitOrders()");
     const QJsonArray &j_arr = jresult_obj.value("list").toArray();
     if (j_arr.isEmpty())
     {
@@ -376,11 +364,9 @@ void BB_HistoryPage::waitOrders(const QJsonObject &jresult_obj)
     }
 
     fillOrdersTable(j_arr);
-    //return;
 
     //next request (orders: next page)
     QString next_cursor = jresult_obj.value("nextPageCursor").toString().trimmed();
-   // qDebug()<<QString("nextPageCursor: [%1]").arg(next_cursor);
     m_reqData->params.insert("cursor", next_cursor);
     sendRequest(MAX_ORDERS_PAGE);
 }
@@ -395,7 +381,6 @@ void BB_HistoryPage::updateDataPage(bool force)
 
     if (!updateTimeOver(force)) return;
 
-    qDebug("Start BB_HistoryPage::updateDataPage");
     m_tablePos->removeAllRows();
     m_tableOrders->removeAllRows();
     h_stage = hsGetOrders;
@@ -421,7 +406,6 @@ void BB_HistoryPage::getTSRange(qint64 &ts1, qint64 &ts2)
 void BB_HistoryPage::fillOrdersTable(const QJsonArray &j_arr)
 {
     QTableWidget *t = m_tableOrders->table();
-   // qDebug()<<QString("fillOrdersTable  arr_size=%1").arg(j_arr.count());
     for (int i=0; i<j_arr.count(); i++)
     {
         QJsonObject j_el = j_arr.at(i).toObject();
@@ -461,8 +445,6 @@ void BB_HistoryPage::fillPosTable(const QJsonArray &j_arr)
         else if (pos.total_result > 1.1) t->item(i, PROFIT_COL)->setTextColor("#0000DD");
         if (pos.paidFee() < -0.1) t->item(i, COMMISION_COL)->setTextColor("#AA0000");
         else if (pos.paidFee() > 0.1) t->item(i, COMMISION_COL)->setTextColor("#0000DD");
-        //if (deviation < -5) t->item(i, DEVIATION_COL)->setTextColor("#AA0000");
-        //else if (deviation > 20) t->item(i, DEVIATION_COL)->setTextColor("#0000DD");
         if (pos.isShort()) t->item(i, ACTION_COL)->setTextColor("#FF8C00");
         else if (pos.isLong()) t->item(i, ACTION_COL)->setTextColor("#005500");
         else t->item(i, ACTION_COL)->setTextColor(Qt::red);
@@ -470,7 +452,6 @@ void BB_HistoryPage::fillPosTable(const QJsonArray &j_arr)
         checkReceivedRecord(pos);
     }
 }
-
 void BB_HistoryPage::viewTablesUpdate()
 {
     m_tableOrders->resizeByContents();
@@ -520,5 +501,4 @@ void BB_HistoryPage::loadTablesByContainers()
         LTable::addTableRow(t, order.toTableRowData());
     }
     m_tableOrders->searchExec();
-
 }

@@ -7,7 +7,8 @@
 class QJsonObject;
 
 //типы страниц пользовательского интерфейса
-enum BB_ReqType {rtCandles = 181, rtPositions, rtOrders, rtHistory, rtBag, rtJsonView, rtFundRate};
+enum BB_ReqType {rtCandles = 181, rtPositions, rtSpotAssets, rtSportOrders, rtOrders, rtHistory,
+                 rtBag, rtJsonView, rtFundRate};
 
 
 //необходимые данные для формирования запроса перед отправкой
@@ -47,8 +48,9 @@ struct BB_BagState
     float pos_result; //current result by all opened positions
     quint16 n_pos;
     quint16 n_order;
+    float fund_balance;
 
-    void reset() {freezed_pos = freezed_order = -1; balance = balance_free = 0; pos_result = 0; n_pos = n_order = 0;}
+    void reset() {freezed_pos = freezed_order = -1; balance = balance_free = fund_balance = 0; pos_result = 0; n_pos = n_order = 0;}
     float sumFreezed() const;
 };
 

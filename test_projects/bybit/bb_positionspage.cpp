@@ -14,6 +14,9 @@
 
 #define API_POS_URI                 QString("v5/position/list")
 #define API_ORDERS_URI              QString("v5/order/realtime")
+#define API_SPOT_ASSET_URI          QString("v5/account/wallet-balance")
+
+
 #define TRADE_TYPE_COL              3
 #define FREEZED_SUM_COL             5
 #define MAX_ORDERS_PAGE             50
@@ -84,7 +87,7 @@ void BB_PositionsPage::initTable(LSearchTableWidgetBox *t)
 }
 QStringList BB_PositionsPage::tableHeaders(QString type) const
 {
-    qDebug()<<QString("t_type=%1").arg(type);
+    //qDebug()<<QString("t_type=%1").arg(type);
     QStringList list;
     list << "Date" << "Ticker" << "Volume" << "Action" << "Open price" << "Freezed sum";
     if (type.contains("pos")) list << "Leverage" << "Current price" << "Result";
@@ -104,7 +107,6 @@ void BB_PositionsPage::updateDataPage(bool forcibly)
 }
 void BB_PositionsPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 {
-    BB_BasePage::slotJsonReply(req_type, j_obj);
     if (req_type != rtPositions && req_type != rtOrders) return;
 
     const QJsonValue &jv = j_obj.value("result");
@@ -114,25 +116,20 @@ void BB_PositionsPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
     const QJsonArray &j_arr = j_list.toArray();
     if (j_arr.isEmpty())  {checkAdjacent(req_type); emit signalError("BB_PositionsPage: j_arr QJsonArray is empty");}
 
-    qDebug()<<QString("slotJsonReply  req_type=%1").arg(req_type);
     QString next_cursor;
     if (req_type == rtPositions)
     {
-        qDebug("rtPositions");
         fillPosTable(j_arr);
 
         //next request (orders: next page)
         next_cursor = jv.toObject().value("nextPageCursor").toString().trimmed();
         if (!next_cursor.isEmpty())
         {
-            qDebug()<<QString("nextPageCursor: [%1]").arg(next_cursor);
             m_reqData->params.insert("cursor", next_cursor);
             sendRequest(api_config.req_limit_pos);
         }
-        else
-        {
-            qDebug("switch to rtOrders req");
-            //request for (orders: first page)
+        else //request for (orders: first page)
+        {            
             m_reqData->uri = API_ORDERS_URI;
             m_reqData->req_type = rtOrders;
             m_reqData->params.insert("cursor", QString::number(0));
@@ -141,17 +138,12 @@ void BB_PositionsPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
     }
     else if (req_type == rtOrders)
     {
-        qDebug("rtOrders");
-
-        //qDebug()<<QString("getted part of orders, size=%1").arg(j_arr.count());
         fillOrdersTable(j_arr);
-        //return;
 
         //next request (orders: next page)
         next_cursor = jv.toObject().value("nextPageCursor").toString().trimmed();
         if (!next_cursor.isEmpty())
         {
-            qDebug()<<QString("nextPageCursor: [%1]").arg(next_cursor);
             m_reqData->params.insert("cursor", next_cursor);
             sendRequest(MAX_ORDERS_PAGE);
         }
@@ -173,7 +165,6 @@ void BB_PositionsPage::fillPosTable(const QJsonArray &j_arr)
     if (j_arr.isEmpty()) return;
 
     QTableWidget *t = m_table->table();
-    //m_table->removeAllRows();
     for (int i=0; i<j_arr.count(); i++)
     {
         QJsonObject j_el = j_arr.at(i).toObject();
@@ -233,7 +224,6 @@ void BB_PositionsPage::fillOrdersTable(const QJsonArray &j_arr)
         bool days_over = false;
         row_data << getTimePoint(j_el, days_over);
         row_data << j_el.value("symbol").toString() << j_el.value("qty").toString() << j_el.value("side").toString().toUpper();
-        //row_data << s_price << s_freezed;
         row_data << j_el.value("price").toString() << s_freezed;
         row_data << o_type;// << j_el.value("orderStatus").toString();
         LTable::addTableRow(t, row_data);
@@ -287,7 +277,6 @@ void BB_PositionsPage::checkAdjacent(int req_type)
         for (k=0; k<m_orderTable->table()->rowCount(); k++)
             if (m_orderTable->table()->item(k, TICKER_COL)->text() == ticker) {has_ticker = true; break;}
         if (!has_ticker) LTable::setTableRowColor(m_table->table(), i, NOT_ADJACENT_POS);
-        //else qDebug()<<QString("%1 found in orders, row %2").arg(ticker).arg(k);
     }
 
     n = m_orderTable->table()->rowCount();
@@ -299,8 +288,107 @@ void BB_PositionsPage::checkAdjacent(int req_type)
         for (k=0; k<m_table->table()->rowCount(); k++)
             if (m_table->table()->item(k, TICKER_COL)->text() == ticker) {has_ticker = true; break;}
         if (!has_ticker) LTable::setTableRowColor(m_orderTable->table(), i, Qt::lightGray);
-        //else qDebug()<<QString("%1 found in orders, row %2").arg(ticker).arg(k);
     }
 }
 
+//BB_SpotPositionsPage
+BB_SpotPositionsPage::BB_SpotPositionsPage(QWidget *parent)
+    :BB_PositionsPage(parent)
+{
+    setObjectName("spot_positions_page");
+    reinitWidgets();
+
+    m_userSign = rtSpotAssets;
+    m_reqData->params.clear();
+}
+void BB_SpotPositionsPage::reinitWidgets()
+{
+    QStringList list;
+    list << "Ticker" << "Volume" << "Available" << "USD size" << "Price (1ps)";
+
+    m_table->setHeaderLabels(list);
+    m_table->resizeByContents();
+
+    m_table->setTitle("Wallet assets");
+}
+void BB_SpotPositionsPage::updateDataPage(bool forcibly)
+{
+    if (!updateTimeOver(forcibly)) return;
+
+    clearTables();
+
+    m_reqData->params.clear();
+    m_reqData->uri = API_SPOT_ASSET_URI;
+    m_reqData->req_type = rtSpotAssets;
+    m_reqData->params.insert("accountType", "UNIFIED");
+
+    sendRequest();
+}
+void BB_SpotPositionsPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
+{
+    if (req_type != rtSpotAssets && req_type != rtSportOrders) return;
+    qDebug("BB_SpotPositionsPage::slotJsonReply");
+
+    const QJsonValue &jv = j_obj.value("result");
+    if (jv.isNull()) {emit signalError("BB_SpotPositionsPage: result QJsonValue not found"); return;}
+    const QJsonValue &j_list = jv.toObject().value("list");
+    if (j_list.isNull()) {emit signalError("BB_SpotPositionsPage: list QJsonValue not found"); return;}
+    const QJsonArray &j_arr = j_list.toArray();
+    if (j_arr.isEmpty())  {emit signalError("BB_SpotPositionsPage: j_arr QJsonArray is empty");}
+
+    if (req_type == rtSpotAssets)
+    {
+        fillPosTable(j_arr);
+        getSpotOrders();
+    }
+    else if (req_type == rtSportOrders)
+    {
+        fillOrdersTable(j_arr);
+    }
+}
+void BB_SpotPositionsPage::getSpotOrders()
+{
+    m_reqData->params.clear();
+    m_reqData->uri = API_ORDERS_URI;
+    m_reqData->req_type = rtSportOrders;
+    m_reqData->params.insert("category", "spot");
+    m_reqData->params.insert("settleCoin", "USDT");
+
+    sendRequest(MAX_ORDERS_PAGE);
+}
+void BB_SpotPositionsPage::fillPosTable(const QJsonArray &j_arr)
+{
+    if (j_arr.isEmpty()) {qWarning()<<QString("BB_SpotPositionsPage::fillTable WARNING j_arr is empty"); return;}
+    const QJsonArray &j_arr_assets = j_arr.first().toObject().value("coin").toArray();
+    if (j_arr_assets.isEmpty())  {emit signalError("BB_SpotPositionsPage: j_arr_assets QJsonArray is empty");}
+
+    QTableWidget *t = m_table->table();
+    for (int i=0; i<j_arr_assets.count(); i++)
+    {
+        QJsonObject j_el = j_arr_assets.at(i).toObject();
+        if (j_el.isEmpty()) {qWarning()<<QString("BB_SpotPositionsPage::fillTable WARNING j_el is empty (index=%1)").arg(i); break;}
+
+        QStringList row_data;
+        float size = j_el.value("walletBalance").toString().toFloat();
+        float avail = j_el.value("availableToWithdraw").toString().toFloat();
+        float usd =  j_el.value("usdValue").toString().toFloat();
+
+        row_data << j_el.value("coin").toString();
+        row_data << QString::number(size, 'f', 2);
+        row_data << QString::number(avail, 'f', 2);
+        row_data << QString::number(usd, 'f', 1);
+        row_data << QString::number(usd/size, 'f', 3);
+
+        LTable::addTableRow(t, row_data);
+
+        if (size != avail) t->item(i, 2)->setTextColor("#AA0000");
+    }
+
+    m_table->resizeByContents();
+    m_table->searchExec();
+}
+void BB_SpotPositionsPage::fillOrdersTable(const QJsonArray &j_arr)
+{
+    BB_PositionsPage::fillOrdersTable(j_arr);
+}
 

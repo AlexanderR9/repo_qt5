@@ -48,7 +48,7 @@ void BB_CentralWidget::slotPageChanged(int i)
 }
 void BB_CentralWidget::slotPageActivated(int i)
 {
-    qDebug("BB_CentralWidget::slotPageActivated");
+    //qDebug("BB_CentralWidget::slotPageActivated");
     if (i < 0 || i >= pageCount()) return;
 
     BB_BasePage *page = qobject_cast<BB_BasePage*>(w_stack->widget(i));
@@ -73,6 +73,9 @@ void BB_CentralWidget::createPages()
 
     BB_PositionsPage *pos_page = new BB_PositionsPage(this);
     w_stack->addWidget(pos_page);
+
+    BB_SpotPositionsPage *sport_pos_page = new BB_SpotPositionsPage(this);
+    w_stack->addWidget(sport_pos_page);
 
     BB_HistoryPage *h_page = new BB_HistoryPage(this);
     w_stack->addWidget(h_page);

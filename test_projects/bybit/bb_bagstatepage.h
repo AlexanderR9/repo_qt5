@@ -10,6 +10,8 @@ class BB_BagStatePage : public BB_BasePage
 {
     Q_OBJECT
 public:
+    enum BStage {bsGetUnified = 175, bsGetFund, bsFinished};
+
     BB_BagStatePage(QWidget*);
     virtual ~BB_BagStatePage() {}
 
@@ -22,6 +24,7 @@ public:
 protected:
     LTableWidgetBox     *m_table;
     BB_BagState          m_state;
+    int                  m_stage;
 
     LTableWidgetBox     *m_historyTable;
     BB_HistoryState      m_historyState;
@@ -32,6 +35,10 @@ protected:
 
     void updateBagTable();
     void updateHistoryTable();
+    void goExchange();
+    void getUnifiedState();
+    void getFundState();
+    void getHistoryInfo();
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);

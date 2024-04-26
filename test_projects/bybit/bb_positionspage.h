@@ -22,7 +22,7 @@ public:
     QString iconPath() const {return QString(":/icons/images/ball_green.svg");}
     QString caption() const {return QString("Positions");}
 
-    void updateDataPage(bool force = false);
+    virtual void updateDataPage(bool force = false);
 
 protected:
     LSearchTableWidgetBox     *m_table;
@@ -30,8 +30,8 @@ protected:
 
     void init();
     QStringList tableHeaders(QString) const;
-    void fillPosTable(const QJsonArray&);
-    void fillOrdersTable(const QJsonArray&);
+    virtual void fillPosTable(const QJsonArray&);
+    virtual void fillOrdersTable(const QJsonArray&);
     void clearTables(); //remove all rows
     void checkAdjacent(int);
 
@@ -40,11 +40,38 @@ private:
     QString getTimePoint(const QJsonObject&, bool&) const;
 
 public slots:
-    void slotJsonReply(int, const QJsonObject&);
+    virtual  void slotJsonReply(int, const QJsonObject&);
     void slotGetPosState(BB_BagState&);
 
 };
 
+
+//BB_SpotPositionsPage
+class BB_SpotPositionsPage : public BB_PositionsPage
+{
+    Q_OBJECT
+public:
+    BB_SpotPositionsPage(QWidget*);
+    virtual ~BB_SpotPositionsPage() {}
+
+    QString iconPath() const {return QString(":/icons/images/ball_yellow.svg");}
+    QString caption() const {return QString("Positions (SPOT)");}
+
+    virtual void updateDataPage(bool force = false);
+
+
+protected:
+    virtual void fillPosTable(const QJsonArray&);
+    virtual void fillOrdersTable(const QJsonArray&);
+
+    void reinitWidgets();
+    void getSpotOrders();
+
+public slots:
+    virtual void slotJsonReply(int, const QJsonObject&);
+
+
+};
 
 
 
