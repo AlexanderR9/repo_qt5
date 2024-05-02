@@ -23,10 +23,6 @@
 //Поскольку создание/отмена заказа является асинхронным, данные, возвращаемые из этой конечной точки, могут задерживаться.
 #define API_ORDERS_URI      QString("v5/order/history")
 
-//Записи выполнения запросов пользователей, отсортированные по execTime в порядке убывания.
-//Однако для классического спота они сортируются по execId в порядке убывания.
-#define API_EXEC_ORDERS_URI      QString("v5/execution/list")
-
 //Запросить закрытые записи о прибылях и убытках пользователя
 #define API_PL_URI          QString("v5/position/closed-pnl")
 
@@ -374,15 +370,14 @@ void BB_HistoryPage::updateDataPage(bool force)
 {
     if (!force)
     {
-        if (m_tablePos->table()->rowCount() == 0 && m_tableOrders->table()->rowCount() == 0)
-            loadTablesByContainers();
+        loadTablesByContainers();
         return;
     }
 
     if (!updateTimeOver(force)) return;
 
-    m_tablePos->removeAllRows();
-    m_tableOrders->removeAllRows();
+    if (m_tablePos) m_tablePos->removeAllRows();
+    if (m_tableOrders) m_tableOrders->removeAllRows();
     h_stage = hsGetOrders;
     goExchange(QJsonObject());
 }
@@ -454,10 +449,16 @@ void BB_HistoryPage::fillPosTable(const QJsonArray &j_arr)
 }
 void BB_HistoryPage::viewTablesUpdate()
 {
-    m_tableOrders->resizeByContents();
-    m_tableOrders->searchExec();
-    m_tablePos->resizeByContents();
-    m_tablePos->searchExec();
+    if (m_tableOrders)
+    {
+        m_tableOrders->resizeByContents();
+        m_tableOrders->searchExec();
+    }
+    if (m_tablePos)
+    {
+        m_tablePos->resizeByContents();
+        m_tablePos->searchExec();
+    }
 }
 void BB_HistoryPage::load(QSettings &settings)
 {
@@ -476,6 +477,8 @@ void BB_HistoryPage::save(QSettings &settings)
 }
 void BB_HistoryPage::loadTablesByContainers()
 {
+    if (m_tablePos->table()->rowCount() > 0 || m_tableOrders->table()->rowCount() > 0) return;
+
     //load positions
     QTableWidget *t = m_tablePos->table();
     for (int i=0; i<m_posList.count(); i++)

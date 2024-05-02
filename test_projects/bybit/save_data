@@ -1,0 +1,22 @@
+#!/bin/bash
+
+
+TARGET_DIR="data"
+CUR_DATE=$(date +%d%m%y)
+TAR_FILE="bb_data_${CUR_DATE}.tar.gz"
+DELAY=1.8
+
+echo "Saving data folder [$TARGET_DIR] .........."
+echo "TAR_FILE: $TAR_FILE"
+sleep $DELAY
+
+echo -e " \n try taring file ..........";
+sleep $DELAY
+tar -czvf $TAR_FILE $TARGET_DIR
+
+echo "done!"
+sleep $DELAY
+
+
+
+exit 0;

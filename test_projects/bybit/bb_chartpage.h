@@ -24,7 +24,7 @@ public:
     QString iconPath() const {return QString(":/icons/images/chart.svg");}
     QString caption() const {return QString("Chart");}
 
-    void updateDataPage(bool) {}
+    void updateDataPage(bool);
     void addFavorToken();
     void removeFavorToken();
     QString selectedTicker() const;

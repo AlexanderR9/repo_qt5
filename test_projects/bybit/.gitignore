@@ -8,5 +8,6 @@ bybit
 full_clear
 data
 save
+*.tar.gz
 
 

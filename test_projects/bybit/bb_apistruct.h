@@ -7,7 +7,7 @@
 class QJsonObject;
 
 //типы страниц пользовательского интерфейса
-enum BB_ReqType {rtCandles = 181, rtPositions, rtSpotAssets, rtSportOrders, rtOrders, rtHistory,
+enum BB_ReqType {rtCandles = 181, rtPositions, rtSpotAssets, rtSportOrders, rtOrders, rtHistory, rtSpotHistory,
                  rtBag, rtJsonView, rtFundRate};
 
 
@@ -144,6 +144,32 @@ struct BB_HistoryOrder : public BB_HistoryRecordBase
     QStringList toTableRowData() const;
     void fromJson(const QJsonObject&);
 
+};
+struct BB_HistorySpot : public BB_HistoryRecordBase
+{
+    BB_HistorySpot() {reset();}
+
+    QDateTime triger_time;
+    float price;
+    float fee; //абсолютное значение
+    QString fee_ticker;
+
+
+    inline bool isSell() const {return (action.toLower() == "sell");}
+    inline bool isBuy() const {return (action.toLower() == "buy");}
+
+    float pFee() const; //коммисия в процентах
+    float usdSize() const; //deal size for USDT
+    QString resultDeal() const;
+
+    void reset();
+    QString toFileLine() const;
+    quint8 filedsCount() const {return 10;}
+    void parseSplitedFileLine(const QStringList&);
+    QStringList toTableRowData() const;
+    void fromJson(const QJsonObject&);
+
+    static QStringList tableHeaders();
 };
 
 

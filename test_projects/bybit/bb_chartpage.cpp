@@ -51,6 +51,14 @@ BB_ChartPage::BB_ChartPage(QWidget *parent)
     connect(w_listFavor->listWidget(), SIGNAL(clicked(QModelIndex)), this, SLOT(slotTickerChanged()));
 
 }
+void BB_ChartPage::updateDataPage(bool forcibly)
+{
+    if (!forcibly) return;
+
+    QString ticker = selectedTicker();
+    if (ticker.length() < 2) emit signalError(QString("invalid ticker: %1").arg(ticker));
+    else requestByTicker(ticker.append("USDT"));
+}
 void BB_ChartPage::slotTickerChanged()
 {
     QListWidget *lw = qobject_cast<QListWidget*>(sender());
@@ -69,13 +77,11 @@ void BB_ChartPage::requestByTicker(QString ticker)
 {
     m_reqData->params.insert("symbol", ticker);
     m_reqData->params.insert("interval", api_config.candle.size);
-    qDebug()<<QString("BB_ChartPage: send req by ticker %1").arg(ticker);
     sendRequest(api_config.candle.number, ticker);
 }
 void BB_ChartPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 {
     if (req_type != userSign()) return;
-    qDebug()<<QString("BB_ChartPage::slotJsonReply  req_type=%1").arg(userSign());
 
     w_chart->clearChartPoints();
 
@@ -92,15 +98,12 @@ void BB_ChartPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 }
 void BB_ChartPage::fillPoints(QList<QPointF> &points, const QJsonArray &j_arr)
 {
-    qDebug("BB_ChartPage::fillPoints");
-
     bool ok;
     points.clear();
     for (int i=0; i<j_arr.count(); i++)
     {
         const QJsonArray &j_el = j_arr.at(i).toArray();
         if (j_el.isEmpty()) {emit signalError(QString("BB_ChartPage: j_el QJsonArray is empty, i=%1").arg(i)); return;}
-        //qDebug()<<QString("j_el.count(%1)  %2").arg(i).arg(j_el.count());
 
         float a = j_el.at(4).toString().toFloat(&ok);
         if (!ok) {emit signalError(QString("BB_ChartPage: invalid convert QJsonValue(%1) to float , i=%2").arg(j_el.at(4).toString()).arg(i)); return;}
@@ -193,7 +196,6 @@ void BB_ChartPage::initChart()
 }
 void BB_ChartPage::loadTickers()
 {
-    //qDebug()<<QString("api_config.tickers %1").arg(api_config.tickers.count());
     foreach (const QString &v, api_config.tickers)
         if (!v.trimmed().isEmpty()) w_listAll->addItem(v);
 
@@ -201,24 +203,6 @@ void BB_ChartPage::loadTickers()
     foreach (const QString &v, api_config.favor_tickers)
         if (!v.trimmed().isEmpty()) w_listFavor->addItem(v);
 }
-
-/*
-void BB_ChartPage::slotListClicked()
-{
-    //qDebug()<<sender()->objectName();
-    if (sender()->objectName().contains("all"))
-    {
-        //qDebug("slotListClicked all");
-        w_listFavor->clearSelection();
-    }
-    else
-    {
-        //qDebug("slotListClicked favor");
-        w_listAll->clearSelection();
-    }
-}
-*/
-
 void BB_ChartPage::addFavorToken()
 {
     QStringList list(w_listAll->selectedValues());
@@ -296,10 +280,8 @@ void BB_FundRatePage::reinitSearchObj()
     const QObjectList &childs = h_splitter->children();
     foreach (QObject *v, childs)
     {
-        qDebug()<<QString("child obj [%1]").arg(v->objectName());
         if (v->objectName() == "frame_obj")
         {
-            qDebug("find frame_obj!!!");
             qobject_cast<QFrame*>(v)->layout()->removeWidget(m_searchEdit);
             delete m_searchEdit;
             m_searchEdit = NULL;
@@ -324,12 +306,10 @@ void BB_FundRatePage::requestByTicker(QString ticker)
     ts = APIConfig::toTimeStamp(date.day(), date.month(), date.year());
     m_reqData->params.insert("startTime", QString::number(ts));
 
-    qDebug()<<QString("BB_FundRatePage: send req by ticker %1, limit=%2").arg(ticker).arg(api_config.req_limit_pos);
     sendRequest(500, ticker);
 }
 void BB_FundRatePage::fillPoints(QList<QPointF> &points, const QJsonArray &j_arr)
 {
-    qDebug("BB_FundRatePage::fillPoints");
     bool ok;
     points.clear();
     for (int i=0; i<j_arr.count(); i++)
@@ -345,8 +325,6 @@ void BB_FundRatePage::fillPoints(QList<QPointF> &points, const QJsonArray &j_arr
         qint64 dt = qint64(s_a.toDouble(&ok));
         if (!ok) {emit signalError(QString("BB_FundRatePage: invalid convert QJsonValue(%1) to int64 , i=%2").arg(s_a).arg(i)); break;}
 
-        //qDebug()<<QString("POINT: %1 / %2").arg(a).arg(dt);
-
         points.append(QPointF(QDateTime::fromMSecsSinceEpoch(dt).toSecsSinceEpoch(), a*100));
     }
 }
@@ -358,7 +336,6 @@ QDate BB_FundRatePage::endDate() const
         QDate d = QDate::fromString(s, APIConfig::userDateMask());
         if (d.isValid()) return d;
     }
-    qDebug()<<QString("endDate invalid string: [%1]").arg(s);
     return QDate::currentDate();
 }
 

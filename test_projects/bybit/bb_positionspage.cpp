@@ -87,7 +87,6 @@ void BB_PositionsPage::initTable(LSearchTableWidgetBox *t)
 }
 QStringList BB_PositionsPage::tableHeaders(QString type) const
 {
-    //qDebug()<<QString("t_type=%1").arg(type);
     QStringList list;
     list << "Date" << "Ticker" << "Volume" << "Action" << "Open price" << "Freezed sum";
     if (type.contains("pos")) list << "Leverage" << "Current price" << "Result";
@@ -308,7 +307,6 @@ void BB_SpotPositionsPage::reinitWidgets()
 
     m_table->setHeaderLabels(list);
     m_table->resizeByContents();
-
     m_table->setTitle("Wallet assets");
 }
 void BB_SpotPositionsPage::updateDataPage(bool forcibly)
@@ -327,7 +325,6 @@ void BB_SpotPositionsPage::updateDataPage(bool forcibly)
 void BB_SpotPositionsPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 {
     if (req_type != rtSpotAssets && req_type != rtSportOrders) return;
-    qDebug("BB_SpotPositionsPage::slotJsonReply");
 
     const QJsonValue &jv = j_obj.value("result");
     if (jv.isNull()) {emit signalError("BB_SpotPositionsPage: result QJsonValue not found"); return;}

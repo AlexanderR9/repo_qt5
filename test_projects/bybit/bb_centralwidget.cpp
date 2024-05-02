@@ -7,6 +7,7 @@
 #include "apiconfig.h"
 #include "bb_positionspage.h"
 #include "bb_historypage.h"
+#include "bb_spothistorypage.h"
 #include "bb_bagstatepage.h"
 
 #include <QStackedWidget>
@@ -79,6 +80,9 @@ void BB_CentralWidget::createPages()
 
     BB_HistoryPage *h_page = new BB_HistoryPage(this);
     w_stack->addWidget(h_page);
+
+    BB_SpotHistoryPage *sh_page = new BB_SpotHistoryPage(this);
+    w_stack->addWidget(sh_page);
 
     BB_BagStatePage *bs_page = new BB_BagStatePage(this);
     w_stack->addWidget(bs_page);

@@ -52,27 +52,28 @@ protected:
     void fillOrdersTable(const QJsonArray&);
     void fillPosTable(const QJsonArray&);
     void viewTablesUpdate(); //exec after each new request and research
-    void goExchange(const QJsonObject &jresult_obj);
     void prepareOrdersReq();
     void preparePosReq();
     void waitOrders(const QJsonObject&);
     void waitPos(const QJsonObject&);
     void finished();
-    void loadContainers(); //load m_posList, m_orderList from files by start program
     void checkReceivedRecord(const BB_HistoryRecordBase&); //if not this rec, that need add to file
     bool hasPos(const QString&) const;
     bool hasOrder(const QString&) const;
     void addToFile(const BB_HistoryRecordBase&, QString);
     void insertPos(const BB_HistoryPos&);
     void insertOrder(const BB_HistoryOrder&);
-    void loadTablesByContainers(); //by start program once
+
+    virtual void loadTablesByContainers(); //by start program once
+    virtual void loadContainers(); //load m_posList, m_orderList from files by start program
+    virtual void goExchange(const QJsonObject &jresult_obj);
+
+    void getTSRange(qint64 &ts1, qint64 &ts2);
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);
     void slotGetHistoryState(BB_HistoryState&);
 
-private:
-    void getTSRange(qint64 &ts1, qint64 &ts2);
 
 };
 
