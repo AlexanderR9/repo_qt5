@@ -20,7 +20,7 @@ class BB_HistoryPage : public BB_BasePage
 {
     Q_OBJECT
 public:
-    enum HStage {hsGetOrders = 75, hsWaitOrders, hsGetPos, hsWaitPos, hsFinished};
+    enum HStage {hsGetOrders = 75, hsGetNextOrders, hsWaitOrders, hsGetPos, hsWaitPos, hsFinished};
 
     BB_HistoryPage(QWidget*);
     virtual ~BB_HistoryPage() {}

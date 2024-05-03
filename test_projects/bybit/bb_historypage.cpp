@@ -178,8 +178,6 @@ void BB_HistoryPage::insertOrder(const BB_HistoryOrder &order)
     }
     m_orderList.append(order);
 }
-
-
 void BB_HistoryPage::init()
 {
     initOrdersTable();
@@ -211,6 +209,13 @@ void BB_HistoryPage::initPosTable()
     m_tablePos->setHeaderLabels(BB_HistoryPos::tableHeaders());
     m_tablePos->resizeByContents();
     m_tablePos->searchEditHide();
+
+    m_tablePos->addSortingData(1, LSearchTableWidgetBox::sdtString);
+    m_tablePos->addSortingData(2, LSearchTableWidgetBox::sdtString);
+    m_tablePos->addSortingData(3, LSearchTableWidgetBox::sdtNumeric);
+    m_tablePos->addSortingData(4, LSearchTableWidgetBox::sdtNumeric);
+    m_tablePos->sortingOn();
+
 }
 void BB_HistoryPage::initFilterBox()
 {
@@ -286,6 +291,8 @@ void BB_HistoryPage::slotGetHistoryState(BB_HistoryState &hs)
 }
 void BB_HistoryPage::goExchange(const QJsonObject &jresult_obj)
 {
+    qDebug()<<QString("BB_HistoryPage::goExchange  h_stage=%1").arg(h_stage);
+
     switch (h_stage)
     {
         case hsGetOrders: {prepareOrdersReq(); break;}

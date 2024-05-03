@@ -3,12 +3,14 @@
 #include "lstring.h"
 #include "apiconfig.h"
 
+
+#include <QtMath>
 #include <QStringList>
 #include <QJsonValue>
 #include <QJsonObject>
 #include <QDebug>
 
-#define PRICE_PRECISION     4
+#define PRICE_PRECISION     6
 #define USDT_SYMBOL         QString("USDT")
 
 //BB_APIReqParams
@@ -56,6 +58,7 @@ QString BB_APIReqParams::strReqTypeByType(int t, QString s_extra)
         case rtSportOrders: {s = "GET_SPOT_ORDERS"; break;}
         case rtOrders:      {s = "GET_ORDERS"; break;}
         case rtHistory:     {s = "GET_HISTORY"; break;}
+        case rtSpotHistory: {s = "GET_SPOT_HISTORY"; break;}
         case rtBag:         {s = "GET_WALLET"; break;}
         case rtFundRate:    {s = "GET_FUND_RATES"; break;}
         default: return "???";
@@ -117,6 +120,20 @@ void BB_HistoryRecordBase::fromFileLine(const QString &line)
         status = list.last();
     }
 }
+quint8 BB_HistoryRecordBase::precisionByValue(float v, quint8 max_prec) const
+{
+    if (v > 9) return 1;
+
+    quint8 prec = 1;
+    while (prec < max_prec)
+    {
+        float a = v*(pow(10, prec));
+        prec++;
+        if (a == qFloor(a)) break;
+    }
+    return prec;
+}
+
 
 // BB_HistoryPos
 void BB_HistoryPos::reset()
@@ -354,8 +371,8 @@ QStringList BB_HistorySpot::toTableRowData() const
 {
     QStringList list;
     list.append(triger_time.toString(BB_APIReqParams::userDateTimeMask()));
-    list << ticker << action << QString::number(price, 'f', 2) << QString::number(lot_size, 'f', 2);
-    list << QString("%1 (%2%)").arg(QString::number(fee, 'f', 3)).arg(QString::number(pFee(), 'f', 2));
+    list << ticker << action << QString::number(price, 'f', precisionByValue(price)) << QString::number(lot_size, 'f', precisionByValue(lot_size));
+    list << QString("%1 (%2%)").arg(QString::number(fee, 'f', precisionByValue(fee))).arg(QString::number(pFee(), 'f', precisionByValue(pFee())));
     list << fee_ticker;
     list << type << QString::number(usdSize(), 'f', 1) << resultDeal();
     return list;
@@ -395,6 +412,7 @@ QString BB_HistorySpot::resultDeal() const
     float r = lot_size;
     if (isBuy()) r = lot_size - fee;
     else if (isSell()) r = usdSize() - fee;
-    return QString::number(r, 'f', 2);
+
+    return QString::number(r, 'f', precisionByValue(r, 4));
 }
 

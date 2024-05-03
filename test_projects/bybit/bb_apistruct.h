@@ -92,6 +92,9 @@ struct BB_HistoryRecordBase
     virtual quint8 filedsCount() const = 0;
     virtual void parseSplitedFileLine(const QStringList&) = 0;
 
+protected:
+    quint8 precisionByValue(float, quint8 max_prec = 6) const;
+
 };
 struct BB_HistoryPos : public BB_HistoryRecordBase
 {
