@@ -130,7 +130,7 @@ void APITradeDialog::fillDeviations()
     qint8 sign = 1;
     if (m_data.downKind()) sign = -1;
     for (int i=1; i<=20; i++) sw->comboBox->addItem(QString::number(float(sign*0.2*i), 'f', 1));
-    for (int i=1; i<=15; i++) sw->comboBox->addItem(QString::number(float(sign*(4+2*i)), 'f', 1));
+    for (int i=1; i<=20; i++) sw->comboBox->addItem(QString::number(float(sign*(4+0.5*i)), 'f', 1));
     for (int i=0; i<=2; i++) sw->comboBox->addItem(QString::number(float(sign*(50+20*i)), 'f', 1));
     if (api_commonSettings.t_dialog.deviation_index < 0) sw->comboBox->setCurrentIndex(10);
     else sw->comboBox->setCurrentIndex(api_commonSettings.t_dialog.deviation_index);

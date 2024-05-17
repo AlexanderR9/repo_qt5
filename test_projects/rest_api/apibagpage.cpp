@@ -32,7 +32,6 @@ APIBagPage::APIBagPage(QWidget *parent)
     m_userSign = aptBag;
     m_orderData.reset();
 
-
     m_bag = new BagState(this);
     m_tableBox->setHeaderLabels(m_bag->tableHeaders());
     m_tableBox->setTitle("Positions");
@@ -45,7 +44,6 @@ APIBagPage::APIBagPage(QWidget *parent)
     connect(m_bag, SIGNAL(signalBagUpdate()), this, SLOT(slotBagUpdate()));
     connect(m_tableBox->table(), SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu(QPoint)));
     connect(m_bag, SIGNAL(signalGetBondEndDateByUID(const QString&, QDate&)), this, SIGNAL(signalGetBondEndDateByUID(const QString&, QDate&)));
-
 }
 void APIBagPage::slotContextMenu(QPoint p)
 {
@@ -96,7 +94,6 @@ void APIBagPage::initFilterBox()
     addGeneralEdit(QString("Full cost of papers"), l_row);
     addGeneralEdit(QString("Current profit"), l_row);
 
-
     QSpacerItem *spcr = new QSpacerItem(10, 10, QSizePolicy::Maximum);
     g_lay->addItem(spcr, l_row, 0, 2, 2);
 }
@@ -112,7 +109,6 @@ void APIBagPage::addGeneralEdit(QString caption, int& row)
         edit->setObjectName(QString("%1_edit").arg(caption));
         g_lay->addWidget(edit, row, 1);
         row++;
-        //qDebug()<<edit->objectName();
     }
     else qWarning(" APIBagPage::addGeneralEdit WARNING - grid layout is NULL");
 }
@@ -157,13 +153,13 @@ void APIBagPage::slotBagUpdate()
 }
 void APIBagPage::reloadPosTable()
 {
+    qDebug()<<QString("APIBagPage::reloadPosTable() posCount=%1").arg(m_bag->posCount());
     resetPage();
     if (!m_bag->hasPositions())
     {
         emit signalMsg(QString("Bag positions list is empty!"));
         return;
     }
-    else qDebug()<<QString("APIBagPage: m_bag->posCount() %2").arg(m_bag->posCount());
 
     //fill table
     for (quint16 i=0; i<m_bag->posCount(); i++)
@@ -185,7 +181,6 @@ void APIBagPage::addPosition(const BagPosition &pos)
 {
     QTableWidget *t = m_tableBox->table();
 
-    //qDebug()<< pos.uid;
     QStringList p_info;
     p_info << pos.paper_type << pos.uid;
     emit signalGetPaperInfo(p_info);
@@ -239,6 +234,17 @@ void APIBagPage::updateCellsColors(int l_row, const BagPosition &pos)
         if (to_complete <= 0) LTable::setTableTextRowColor(t, l_row, QColor("#C0C0C0"));
         else if (to_complete < 20) t->item(l_row, TO_COMPLETE_COL)->setTextColor(QColor("#0000CD"));
         else if (to_complete > 180) t->item(l_row, TO_COMPLETE_COL)->setTextColor(QColor("#D2691E"));
+    }
+}
+void APIBagPage::slotSetBagStocks(QStringList &list)
+{
+    list.clear();
+    QTableWidget *t = m_tableBox->table();
+    for (int i=0; i<t->rowCount(); i++)
+    {
+        QString p_type = t->item(i, PAPER_TYPE_COL)->text().trimmed();
+        if (p_type.toLower() == "share")
+            list.append(t->item(i, TICKER_COL)->text().trimmed());
     }
 }
 void APIBagPage::slotGetPaperCountByTicker(const QString &ticker, int &n_papers, float &cur_profit)
@@ -361,7 +367,6 @@ void APIBagPage::prepareOrderData(TradeOperationData &t_data, int max_p)
 ////////////////ORDERS SLOTS/////////////////////////
 void APIBagPage::slotBuyOrder()
 {
-    qDebug("APIBagPage::slotBuyOrder()");
     QTableWidget *t = m_tableBox->table();
     int row = LTable::selectedRows(t).first();
     m_orderData.uid = t->item(row, 1)->data(Qt::UserRole).toString();
@@ -376,7 +381,6 @@ void APIBagPage::slotBuyOrder()
 }
 void APIBagPage::slotSellOrder()
 {
-    qDebug("APIBagPage::slotSellOrder()");
     QTableWidget *t = m_tableBox->table();
     int row = LTable::selectedRows(t).first();
     m_orderData.uid = t->item(row, 1)->data(Qt::UserRole).toString();
@@ -388,36 +392,9 @@ void APIBagPage::slotSellOrder()
 
     //send order
     tryPlaceOrder(t_data);
-
-/*
-    //prepare dialog
-    TradeOperationData t_data(totSellLimit);
-    t_data.company = QString("%1 / %2").arg(t->item(row, NAME_COL)->text()).arg(t->item(row, TICKER_COL)->text());
-    t_data.paper_type = t->item(row, PAPER_TYPE_COL)->text();
-    if (t_data.isBond())
-    {
-        bool ok;
-        int d = t->item(row, TO_COMPLETE_COL)->text().toInt(&ok);
-        if (!ok || d < 3)
-        {
-            emit signalError(QString("invalid finish data for bond (%1)").arg(t_data.company));
-            return;
-        }
-        t_data.finish_date = QString("%1 (%2)").arg(QDate::currentDate().addDays(d).toString(InstrumentBase::userDateMask())).arg(d);
-    }
-    else emit signalGetLotSize(m_orderData.uid, t_data.in_lot);
-    t_data.price = getCurrentPrice(row);
-    t_data.lots = 1;
-    t_data.maxLot_ps = paperCount(row);
-
-    //send order
-    tryPlaceOrder(t_data);
-    */
-
 }
 void APIBagPage::slotSetTakeProfit()
 {
-    qDebug("APIBagPage::slotSetTakeProfit()");
     QTableWidget *t = m_tableBox->table();
     int row = LTable::selectedRows(t).first();
     m_orderData.uid = t->item(row, 1)->data(Qt::UserRole).toString();
@@ -433,7 +410,6 @@ void APIBagPage::slotSetTakeProfit()
 }
 void APIBagPage::slotSetStopLoss()
 {
-    qDebug("APIBagPage::slotSetStopLoss()");
     QTableWidget *t = m_tableBox->table();
     int row = LTable::selectedRows(t).first();
     m_orderData.uid = t->item(row, 1)->data(Qt::UserRole).toString();

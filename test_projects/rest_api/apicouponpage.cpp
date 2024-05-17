@@ -15,8 +15,8 @@
 
 #define DAY_SIZE_LIMIT_HIGH         0.4
 #define DAY_SIZE_LIMIT_LOW          0.2
-#define DIV_YIELD_LIMIT_HIGH        2.5
-#define DIV_YIELD_LIMIT_LOW         0.4
+#define DIV_YIELD_LIMIT_HIGH        6.5
+#define DIV_YIELD_LIMIT_LOW         4.4
 
 
 
@@ -99,6 +99,20 @@ APIDivPage::APIDivPage(QWidget *parent)
     m_tableBox->setHeaderLabels(headers);
     m_tableBox->setTitle("Calendar");
 }
+void APIDivPage::getBagContains()
+{
+    QStringList list;
+    emit signalGetBagStocks(list);
+    if (list.isEmpty()) {emit signalMsg("Bag has not stocks"); return;}
+
+    QTableWidget *t = m_tableBox->table();
+    for (int i=0; i<t->rowCount(); i++)
+    {
+        QString ticker = t->item(i, FIGI_COL+1)->text().trimmed();
+        if (list.contains(ticker))
+            LTable::setTableRowColor(t, i, "#98FB98");
+    }
+}
 QString APIDivPage::dataFile() const
 {
     return CycleWorker::divsFile();
@@ -147,6 +161,7 @@ void APICouponPageAbstract::clearData()
 }
 void APICouponPageAbstract::loadData()
 {
+    qDebug()<<QString("APICouponPageAbstract::loadData()  page[%1]").arg(objectName());
     clearData();
     emit signalMsg(QString("OPEN FILE: %1").arg(dataFile()));
 

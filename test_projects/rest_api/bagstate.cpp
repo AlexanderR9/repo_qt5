@@ -24,7 +24,7 @@ QStringList BagState::tableHeaders() const
 }
 void BagState::slotLoadPositions(const QJsonObject &j_obj)
 {
-   // qDebug("BagState::slotLoadPositions");
+    qDebug("BagState::slotLoadPositions");
     m_positions.clear();
     if (j_obj.isEmpty()) return;
     QStringList keys(j_obj.keys());

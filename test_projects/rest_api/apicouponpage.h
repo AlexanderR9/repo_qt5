@@ -76,11 +76,15 @@ public:
 
     QString iconPath() const {return QString(":/icons/images/r_scale.svg");}
     QString caption() const {return QString("Div calendar");}
+    void getBagContains(); //получить список тикеров, которые есть в портфеле на данный момент
 
 protected:
     QString dataFile() const;
     void createRecord(CouponRecordAbstract*&, const QString&);
     void addRowRecord(const CouponRecordAbstract*, const QPair<QString, QString>&, const QString&);
+
+signals:
+    void signalGetBagStocks(QStringList&);
 
 };
 

@@ -372,7 +372,7 @@ QStringList BB_HistorySpot::toTableRowData() const
     QStringList list;
     list.append(triger_time.toString(BB_APIReqParams::userDateTimeMask()));
     list << ticker << action << QString::number(price, 'f', precisionByValue(price)) << QString::number(lot_size, 'f', precisionByValue(lot_size));
-    list << QString("%1 (%2%)").arg(QString::number(fee, 'f', precisionByValue(fee))).arg(QString::number(pFee(), 'f', precisionByValue(pFee())));
+    list << QString("%1 (%2%)").arg(QString::number(fee, 'f', precisionByValue(fee))).arg(QString::number(pFee(), 'f', 2));
     list << fee_ticker;
     list << type << QString::number(usdSize(), 'f', 1) << resultDeal();
     return list;

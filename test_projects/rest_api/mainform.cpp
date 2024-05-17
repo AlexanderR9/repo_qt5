@@ -120,6 +120,7 @@ void MainForm::initPages()
     connect(bag_page, SIGNAL(signalGetBondNominalByUID(const QString&, float&)), bond_page, SLOT(slotGetBondNominalByUID(const QString&, float&)));
     connect(bag_page, SIGNAL(signalGetBondEndDateByUID(const QString&, QDate&)), bond_page, SLOT(slotGetBondEndDateByUID(const QString&, QDate&)));
     connect(orders_page, SIGNAL(signalSendOrdersInfoToBag(const QMap<QString, QString>&)), bag_page, SLOT(slotUpdateOrdersInfo(const QMap<QString, QString>&)));
+    connect(d_page, SIGNAL(signalGetBagStocks(QStringList&)), bag_page, SLOT(slotSetBagStocks(QStringList&)));
 
     //for asset info box
     connect(profit_page, SIGNAL(signalGetBondRiskByTicker(const QString&, QString&)), bond_page, SLOT(slotGetBondRiskByTicker(const QString&, QString&)));
@@ -470,6 +471,10 @@ void MainForm::slotAutoStart()
         enableActions(true);
         slotMsg("Auto start finished!");
         m_autoStartMakerFinished = true;
+
+        APIDivPage *div_page = qobject_cast<APIDivPage*>(m_pages.value(aptDiv));
+        if (div_page) div_page->getBagContains();
+
         return;
     }
 

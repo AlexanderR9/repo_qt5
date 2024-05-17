@@ -46,6 +46,7 @@ protected slots:
 public slots:
     void slotUpdateOrdersInfo(const QMap<QString, QString>&);
     void slotGetPaperCountByTicker(const QString&, int&, float&);
+    void slotSetBagStocks(QStringList&);
 
 signals:
     void signalLoadPositions(const QJsonObject&);
