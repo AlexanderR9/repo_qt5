@@ -43,7 +43,9 @@ BB_HistoryPage::BB_HistoryPage(QWidget *parent)
     m_tablePos(NULL),
     m_startDateEdit(NULL),
     m_historyDaysCombo(NULL),
-    h_stage(-1)
+    h_stage(-1),
+    m_startDate(QDate()),
+    m_polledDays(-1)
 {
     setObjectName("history_page");
     init();
@@ -161,6 +163,10 @@ void BB_HistoryPage::insertPos(const BB_HistoryPos &pos)
         }
     }
     m_posList.append(pos);
+}
+int BB_HistoryPage::needPollDays() const
+{
+    return m_historyDaysCombo->currentText().toInt();
 }
 void BB_HistoryPage::insertOrder(const BB_HistoryOrder &order)
 {
@@ -291,6 +297,7 @@ void BB_HistoryPage::slotGetHistoryState(BB_HistoryState &hs)
 }
 void BB_HistoryPage::goExchange(const QJsonObject &jresult_obj)
 {
+    qDebug("");
     qDebug()<<QString("BB_HistoryPage::goExchange  h_stage=%1").arg(h_stage);
 
     switch (h_stage)
@@ -309,19 +316,29 @@ void BB_HistoryPage::goExchange(const QJsonObject &jresult_obj)
 void BB_HistoryPage::preparePosReq()
 {
     m_reqData->uri.clear();
-    viewTablesUpdate();
+    //viewTablesUpdate();
+    qint64 ts1, ts2;
+    getTSNextInterval(ts1, ts2);
+    if (ts1 < 0) {emit signalError("getting time range"); return;}
+
 
     m_reqData->uri = API_PL_URI;
     m_reqData->params.remove("settleCoin");
-    m_reqData->params.insert("cursor", QString::number(0));
+    m_reqData->params.insert("startTime", QString::number(ts1));
+    if (ts2 > 0) m_reqData->params.insert("endTime", QString::number(ts2));
+    else m_reqData->params.remove("endTime");
+
+    //m_reqData->params.insert("cursor", QString::number(0));
     h_stage = hsWaitPos;
 }
 void BB_HistoryPage::prepareOrdersReq()
 {
+    qDebug()<<QString("BB_HistoryPage::prepareOrdersReq()");
     m_reqData->uri.clear();
+
     qint64 ts1, ts2;
-    getTSRange(ts1, ts2);
-    if (ts1 < 0) return;
+    getTSNextInterval(ts1, ts2);
+    if (ts1 < 0) {emit signalError("getting time range"); return;}
 
     m_reqData->uri = API_ORDERS_URI;
     m_reqData->params.insert("category", "linear");
@@ -338,9 +355,34 @@ void BB_HistoryPage::finished()
     m_reqData->uri.clear();
     viewTablesUpdate();
 }
+void BB_HistoryPage::nextTSRequest()
+{
+    qint64 ts1, ts2;
+    getTSNextInterval(ts1, ts2);
+    m_reqData->params.insert("startTime", QString::number(ts1));
+    if (ts2 > 0) m_reqData->params.insert("endTime", QString::number(ts2));
+    else m_reqData->params.remove("endTime");
+
+    sendRequest(MAX_ORDERS_PAGE);
+}
 void BB_HistoryPage::waitPos(const QJsonObject &jresult_obj)
 {
     const QJsonArray &j_arr = jresult_obj.value("list").toArray();
+    qDebug()<<QString("BB_HistoryPage::waitPos  j_arr %1, m_polledDays=%2").arg(j_arr.count()).arg(m_polledDays);
+    if (j_arr.count() >= MAX_ORDERS_PAGE)
+        signalError(QString("BB_HistoryPage::waitPos:  j_arr size over MAX_ORDERS_PAGE(%1)").arg(MAX_ORDERS_PAGE));
+
+    fillPosTable(j_arr);
+    if (m_polledDays < 0 || m_polledDays > needPollDays())
+    {
+        emit signalMsg("getting positions finished");
+        h_stage = hsFinished;
+        goExchange(jresult_obj);
+    }
+    else nextTSRequest();
+
+
+    /*
     if (j_arr.isEmpty())
     {
         emit signalMsg("getting position finished");
@@ -354,24 +396,33 @@ void BB_HistoryPage::waitPos(const QJsonObject &jresult_obj)
     QString next_cursor = jresult_obj.value("nextPageCursor").toString().trimmed();
     m_reqData->params.insert("cursor", next_cursor);
     sendRequest(MAX_ORDERS_PAGE);
+    */
 }
 void BB_HistoryPage::waitOrders(const QJsonObject &jresult_obj)
 {
     const QJsonArray &j_arr = jresult_obj.value("list").toArray();
-    if (j_arr.isEmpty())
+    qDebug()<<QString("BB_HistoryPage::waitOrders  j_arr %1, m_polledDays=%2").arg(j_arr.count()).arg(m_polledDays);
+    if (j_arr.count() >= MAX_ORDERS_PAGE)
+        signalError(QString("BB_HistoryPage::waitOrders:  j_arr size over MAX_ORDERS_PAGE(%1)").arg(MAX_ORDERS_PAGE));
+
+    fillOrdersTable(j_arr);
+    if (m_polledDays < 0 || m_polledDays > needPollDays())
     {
         emit signalMsg("getting orders finished");
         h_stage = hsGetPos;
+        m_polledDays = 0;
         goExchange(jresult_obj);
-        return;
     }
+    else nextTSRequest();
 
-    fillOrdersTable(j_arr);
-
-    //next request (orders: next page)
-    QString next_cursor = jresult_obj.value("nextPageCursor").toString().trimmed();
-    m_reqData->params.insert("cursor", next_cursor);
+    /*
+    qint64 ts1, ts2;
+    getTSNextInterval(ts1, ts2);
+    m_reqData->params.insert("startTime", QString::number(ts1));
+    if (ts2 > 0) m_reqData->params.insert("endTime", QString::number(ts2));
+    else m_reqData->params.remove("endTime");
     sendRequest(MAX_ORDERS_PAGE);
+    */
 }
 void BB_HistoryPage::updateDataPage(bool force)
 {
@@ -386,8 +437,40 @@ void BB_HistoryPage::updateDataPage(bool force)
     if (m_tablePos) m_tablePos->removeAllRows();
     if (m_tableOrders) m_tableOrders->removeAllRows();
     h_stage = hsGetOrders;
+
+
+    m_polledDays = -1;
+    m_startDate = QDate::fromString(m_startDateEdit->text().trimmed(), APIConfig::userDateMask());
+    if (!m_startDate.isValid())
+    {
+        emit signalError(QString("BB_HistoryPage: invalid start date"));
+        return;
+    }
+    else m_polledDays = 0;
+
+    qDebug("\n\n\n\n\n\n");
     goExchange(QJsonObject());
 }
+void BB_HistoryPage::getTSNextInterval(qint64 &ts1, qint64 &ts2)
+{
+    ts1 = ts2 = -1;
+    if (m_polledDays < 0) return;
+
+    QDate cur_d(QDate::currentDate());
+
+    QDate d1 = m_startDate;
+    if (m_polledDays > 0) d1 = m_startDate.addDays(m_polledDays);
+    ts1 = APIConfig::toTimeStamp(d1.day(), d1.month(), d1.year());
+    m_polledDays += daysSeparator();
+
+    QDate d2 = d1.addDays(daysSeparator());
+    qDebug()<<QString("BB_SpotHistoryPage::getTSNextInterval  %1 / %2").arg(d1.toString(APIConfig::userDateMask())).
+              arg((d2 >= cur_d) ? "-1" : d2.toString(APIConfig::userDateMask()));
+
+    if (d2 >= cur_d) m_polledDays = -1;
+    else ts2 = APIConfig::toTimeStamp(d2.day(), d2.month(), d2.year());
+}
+/*
 void BB_HistoryPage::getTSRange(qint64 &ts1, qint64 &ts2)
 {
     ts1 = ts2 = -1;
@@ -405,8 +488,11 @@ void BB_HistoryPage::getTSRange(qint64 &ts1, qint64 &ts2)
     if (dd <= 7) ts2 = APIConfig::toTimeStamp(end_date.day(), end_date.month(), end_date.year());
     emit signalMsg(QString("HISTORY INTERVAL: [%1 - %2]").arg(start_date.toString(APIConfig::userDateMask())).arg(end_date.toString(APIConfig::userDateMask())));
 }
+*/
 void BB_HistoryPage::fillOrdersTable(const QJsonArray &j_arr)
 {
+    if (j_arr.isEmpty()) return;
+
     QTableWidget *t = m_tableOrders->table();
     for (int i=0; i<j_arr.count(); i++)
     {

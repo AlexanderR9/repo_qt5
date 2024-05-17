@@ -18,12 +18,13 @@ public:
 
 protected:
     QList<BB_HistorySpot>   m_spotOrders;
-    QDate   m_startDate;
-    int     m_polledDays;
+    //QDate   m_startDate;
+    //int     m_polledDays;
 
     virtual void loadTablesByContainers(); //by start program once
     virtual void goExchange(const QJsonObject &jresult_obj);
     virtual void loadContainers(); //load m_posList, m_orderList from files by start program
+    virtual quint8 daysSeparator() const {return 6;}
 
     void sendOrdersReq();
     void sendNextOrdersReq();
@@ -33,8 +34,8 @@ protected:
 
     void reinitWidgets();
     void fillTable(const QJsonArray&);
-    int needPollDays() const;
-    void getTSNextInterval(qint64&, qint64&);
+    //int needPollDays() const;
+    //void getTSNextInterval(qint64&, qint64&);
     void updateLastRowColors(const BB_HistorySpot&);
 
 

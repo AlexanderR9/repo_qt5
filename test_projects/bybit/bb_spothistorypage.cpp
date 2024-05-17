@@ -16,7 +16,7 @@
 #define ACTION_COL                  2
 #define FEE_TICKER_COL              6
 #define REQ_LIMIT_RECORDS           100
-#define DAYS_SEPARATOR              6
+//#define DAYS_SEPARATOR              6
 #define RESULT_COL                  9
 
 
@@ -30,9 +30,9 @@
 
 //BB_SpotHistoryPage
 BB_SpotHistoryPage::BB_SpotHistoryPage(QWidget *parent)
-    :BB_HistoryPage(parent),
-    m_startDate(QDate()),
-    m_polledDays(-1)
+    :BB_HistoryPage(parent)
+    //m_startDate(QDate()),
+    //m_polledDays(-1)
 {
     setObjectName("spot_history_page");
     reinitWidgets();
@@ -160,10 +160,12 @@ void BB_SpotHistoryPage::reinitWidgets()
 
     viewTablesUpdate();
 }
+/*
 int BB_SpotHistoryPage::needPollDays() const
 {
     return m_historyDaysCombo->currentText().toInt();
 }
+*/
 void BB_SpotHistoryPage::goExchange(const QJsonObject &jresult_obj)
 {
     //qDebug()<<QString("BB_SpotHistoryPage::goExchange  h_stage=%1").arg(h_stage);
@@ -223,7 +225,6 @@ void BB_SpotHistoryPage::sendNextOrdersReq()
 }
 void BB_SpotHistoryPage::parseOrders(const QJsonObject &jresult_obj)
 {
-    //h_stage = hsFinished;
   //  qDebug()<<QString("received response for spot history");
     const QJsonArray &j_arr = jresult_obj.value("list").toArray();
     if (j_arr.isEmpty())
@@ -239,8 +240,8 @@ void BB_SpotHistoryPage::parseOrders(const QJsonObject &jresult_obj)
     if (m_polledDays >= needPollDays()) h_stage = hsFinished;
     else h_stage = hsGetNextOrders;
     goExchange(QJsonObject());
-
 }
+/*
 void BB_SpotHistoryPage::getTSNextInterval(qint64 &ts1, qint64 &ts2)
 {
     ts1 = ts2 = -1;
@@ -251,13 +252,14 @@ void BB_SpotHistoryPage::getTSNextInterval(qint64 &ts1, qint64 &ts2)
     QDate d1 = m_startDate;
     if (m_polledDays > 0) d1 = m_startDate.addDays(m_polledDays);
     ts1 = APIConfig::toTimeStamp(d1.day(), d1.month(), d1.year());
-    m_polledDays += DAYS_SEPARATOR;
+    m_polledDays += daysSeparator();
 
-    QDate d2 = d1.addDays(DAYS_SEPARATOR);
+    QDate d2 = d1.addDays(daysSeparator());
     qDebug()<<QString("BB_SpotHistoryPage::getTSNextInterval  %1 / %2").arg(d1.toString(APIConfig::userDateMask())).
               arg((d2 >= cur_d) ? "-1" : d2.toString(APIConfig::userDateMask()));
 
     if (d2 >= cur_d) m_polledDays = -1;
     else ts2 = APIConfig::toTimeStamp(d2.day(), d2.month(), d2.year());
 }
+*/
 

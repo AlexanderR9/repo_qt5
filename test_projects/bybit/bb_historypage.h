@@ -43,6 +43,8 @@ protected:
     QList<BB_HistoryPos>        m_posList;
     QList<BB_HistoryOrder>      m_orderList;
 
+    QDate   m_startDate;
+    int     m_polledDays;
 
     void init();
     void initOrdersTable();
@@ -63,12 +65,16 @@ protected:
     void addToFile(const BB_HistoryRecordBase&, QString);
     void insertPos(const BB_HistoryPos&);
     void insertOrder(const BB_HistoryOrder&);
+    int needPollDays() const;
+    void getTSNextInterval(qint64&, qint64&);
+    void nextTSRequest();
 
     virtual void loadTablesByContainers(); //by start program once
     virtual void loadContainers(); //load m_posList, m_orderList from files by start program
     virtual void goExchange(const QJsonObject &jresult_obj);
+    virtual quint8 daysSeparator() const {return 4;}
 
-    void getTSRange(qint64 &ts1, qint64 &ts2);
+    //void getTSRange(qint64 &ts1, qint64 &ts2);
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);
