@@ -20,6 +20,7 @@
 #define PRICES_COL                  2
 #define TIME_COL                    1
 #define DEVIATION_COUNT             7
+#define DEVIATION_PRECISION         1
 
 
 //BB_PricesPage
@@ -46,11 +47,18 @@ void BB_PricesPage::init()
     m_monitTable->vHeaderHide();
     m_monitTable->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
 
+    //headers
     QStringList list;
     list << "Ticker" << "Update time" << "Price";
-    list << "1d" << "3d" << "1W" << "1M" << "3M" << "6M" << "12M";
+    list << "1d, %" << "3d, %" << "1W, %" << "1M, %" << "3M, %" << "6M, %" << "12M, %";
     m_monitTable->setHeaderLabels(list);
-    //m_monitTable->resizeByContents();
+
+    //sorting
+    m_monitTable->addSortingData(0, LSearchTableWidgetBox::sdtString);
+    for (int j=2; j<m_monitTable->table()->columnCount(); j++)
+        m_monitTable->addSortingData(j, LSearchTableWidgetBox::sdtNumeric);
+    m_monitTable->sortingOn();
+
 
     h_splitter->addWidget(m_monitTable);
 }
@@ -101,7 +109,8 @@ void BB_PricesPage::updateTableDeviations()
     bool ok = false;
     QTableWidget *t = m_monitTable->table();
     qint64 t_cur = QDateTime::currentDateTime().toSecsSinceEpoch();
-    qDebug()<<QString("updateTableDeviations  t_cur=%1").arg(t_cur);
+    //qDebug()<<QString("updateTableDeviations  t_cur=%1").arg(t_cur);
+
 
     for (int i=0; i<t->rowCount(); i++)
     {
@@ -113,25 +122,67 @@ void BB_PricesPage::updateTableDeviations()
         float p = t->item(i, PRICES_COL)->text().toFloat(&ok);
         if (!ok || p <= 0) {updateTableDeviationsRow(i, deviations); continue;}
 
-        //qDebug()<<QString("BB_PricesPage::updateTableDeviations()  ticker=%1  price=%2").arg(ticker).arg(p);
         j = 0;
 
         //calc for 1 day
         float d = m_container.getDeviation(ticker, p, t_cur, quint16(dd1D));
-        //qDebug()<<QString("BB_PricesPage::updateTableDeviations()  ticker=%1  price=%2 deviation=%3").arg(ticker).arg(p).arg(d);
-        if (d > -9998) deviations[j] = QString::number(d, 'f', 2);
+        if (d > -9998) deviations[j] = QString::number(d, 'f', DEVIATION_PRECISION);
         j++;
 
+        //calc for 3 day
+        d = m_container.getDeviation(ticker, p, t_cur, quint16(dd3D));
+        if (d > -9998) deviations[j] = QString::number(d, 'f', DEVIATION_PRECISION);
+        j++;
+
+        //calc for 1 week
+        d = m_container.getDeviation(ticker, p, t_cur, quint16(dd1W));
+        if (d > -9998) deviations[j] = QString::number(d, 'f', DEVIATION_PRECISION);
+        j++;
+
+        //calc for 1 month
+        d = m_container.getDeviation(ticker, p, t_cur, quint16(dd1M));
+        if (d > -9998) deviations[j] = QString::number(d, 'f', DEVIATION_PRECISION);
+        j++;
+
+        //calc for 3 month
+        d = m_container.getDeviation(ticker, p, t_cur, quint16(dd3M));
+        if (d > -9998) deviations[j] = QString::number(d, 'f', DEVIATION_PRECISION);
+        j++;
+
+        //calc for 6 month
+        d = m_container.getDeviation(ticker, p, t_cur, quint16(dd6M));
+        if (d > -9998) deviations[j] = QString::number(d, 'f', DEVIATION_PRECISION);
+        j++;
+
+        //calc for 12 month
+        d = m_container.getDeviation(ticker, p, t_cur, quint16(dd12M));
+        if (d > -9998) deviations[j] = QString::number(d, 'f', DEVIATION_PRECISION);
+        j++;
 
         updateTableDeviationsRow(i, deviations);
     }
 }
 void BB_PricesPage::updateTableDeviationsRow(int row, const QStringList &list)
 {
+    bool ok = false;
     QTableWidget *t = m_monitTable->table();
     int f_col = t->columnCount() - DEVIATION_COUNT;
     for (int j=0; j<DEVIATION_COUNT; j++)
+    {
         t->item(row, j+f_col)->setText(list.at(j));
+        if (list.at(j).contains("?"))
+        {
+            t->item(row, j+f_col)->setTextColor(Qt::lightGray);
+            continue;
+        }
+
+//        t->item(row, j+f_col)->setText(QString("%1 %").arg(list.at(j)));
+        float dp = list.at(j).toFloat(&ok);
+        if (!ok) t->item(row, j+f_col)->setTextColor("#DEB887");
+        else if (dp > 5) t->item(row, j+f_col)->setTextColor("#0000CD");
+        else if (dp < -5) t->item(row, j+f_col)->setTextColor(Qt::darkRed);
+        else t->item(row, j+f_col)->setTextColor(Qt::black);
+    }
 }
 void BB_PricesPage::updateTablePrices(const QMap<QString, float> &map)
 {
@@ -148,6 +199,7 @@ void BB_PricesPage::updateTablePrices(const QMap<QString, float> &map)
 
             t->item(i, PRICES_COL)->setText(QString::number(p, 'f', prec));
             t->item(i, TIME_COL)->setText(LTime::strCurrentDateTime());
+            t->item(i, PRICES_COL)->setTextColor("#008B8B");
         }
     }
 }
@@ -166,7 +218,7 @@ void BB_PricesPage::loadTickers()
 }
 void BB_PricesPage::loadContainer()
 {
-    qDebug("BB_PricesPage::loadContainer()");
+    //qDebug("BB_PricesPage::loadContainer()");
     m_container.reset();
 
     QString fname(QString("%1%2%3").arg(APIConfig::appDataPath()).arg(QDir::separator()).arg(BB_PricesContainer::priceFile()));

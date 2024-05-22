@@ -4,6 +4,7 @@
 #include "lhttp_types.h"
 #include "bb_apistruct.h"
 #include "lsearch.h"
+#include "lfile.h"
 
 
 #include <QSplitter>
@@ -18,12 +19,15 @@
 #include <QLineEdit>
 #include <QLabel>
 #include <QFrame>
+#include <QDir>
 #include <QVBoxLayout>
 
 
 
 #define API_CHART_URI           QString("v5/market/mark-price-kline")
 #define API_FUND_RATE_URI       QString("v5/market/funding/history")
+#define WRITE_TO_FILE           false //если этот флаг взведен то цены будут писаться в файл prices.txt (временная мера для сбора данных)
+
 
 //BB_ChartPage
 BB_ChartPage::BB_ChartPage(QWidget *parent)
@@ -95,6 +99,34 @@ void BB_ChartPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
     QList<QPointF> points;
     fillPoints(points, j_arr);
     repaintChart(points);
+
+    if (WRITE_TO_FILE) writePricesFile(selectedTicker().trimmed(), points);
+}
+void BB_ChartPage::writePricesFile(QString ticker, const QList<QPointF> &points)
+{
+
+    qDebug()<<QString("writePricesFile ticker=%1, points %2").arg(ticker).arg(points.count());
+    if (ticker.length() < 2) return;
+
+    //prepare data
+    QString fdata(QString("\n\n"));
+    int ls = 5;
+    foreach (const QPointF &p, points)
+    {
+        ls--;
+        BB_PricesContainer::PricePoint pp(ticker, p.y(), qint64(p.x()));
+        fdata.append(pp.toFileElement());
+        fdata.append(QChar(' '));
+        if (ls < 0) {fdata.append(QChar('\n')); ls = 5;}
+    }
+    fdata.append(QChar('\n'));
+
+
+    //append file
+    QString fname(QString("%1%2%3").arg(APIConfig::appDataPath()).arg(QDir::separator()).arg(BB_PricesContainer::priceFile()));
+    QString err = LFile::appendFile(fname, fdata);
+    if (!err.isEmpty()) signalError(err);
+    else signalMsg(QString("File prices(%1) was appended OK!").arg(ticker));
 }
 void BB_ChartPage::fillPoints(QList<QPointF> &points, const QJsonArray &j_arr)
 {

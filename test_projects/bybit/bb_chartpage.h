@@ -54,6 +54,9 @@ protected slots:
 public slots:
     virtual void slotJsonReply(int, const QJsonObject&);
 
+private:
+    void writePricesFile(QString, const QList<QPointF>&);
+
 };
 
 //BB_FundRatePage

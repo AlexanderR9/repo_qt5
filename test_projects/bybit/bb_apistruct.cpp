@@ -436,7 +436,7 @@ void BB_PricesContainer::reloadPrices(const QString &f_data)
 void BB_PricesContainer::addPricePoint(const QString &ticker, const float &price, const qint64 &t_cur)
 {
     int pos = lastPriceByTicker(ticker);
-    qDebug()<<QString("addPricePoint: %1, price=%2, t_cur=%3,  pos=%4").arg(ticker).arg(price).arg(t_cur).arg(pos);
+    //qDebug()<<QString("addPricePoint: %1, price=%2, t_cur=%3,  pos=%4").arg(ticker).arg(price).arg(t_cur).arg(pos);
     if (pos < 0)
     {
         PricePoint pp(ticker, price, t_cur);
@@ -465,16 +465,14 @@ void BB_PricesContainer::toFileData(QString &s)
 {
     s.clear();
     quint8 line_size = 9;
-
     for (quint32 i=0; i<size(); i++)
     {
         const BB_PricesContainer::PricePoint &pp = data.at(i);
-        QString s_point = QString("[%1 / %2 / %3]").arg(pp.ticker).arg(QString::number(pp.price, 'f', PRICE_PRECISION)).arg(pp.time);
-        s.append(s_point);
+        //QString s_point = QString("[%1 / %2 / %3]").arg(pp.ticker).arg(QString::number(pp.price, 'f', PRICE_PRECISION)).arg(pp.time);
+        s.append(pp.toFileElement());
         s.append(QString("  "));
         if ((i+1)%line_size == 0) s.append(QString("\n"));
     }
-
     s.append(QString("\n"));
 }
 void BB_PricesContainer::parsePricePoint(QString mid_s)
@@ -493,7 +491,7 @@ void BB_PricesContainer::parsePricePoint(QString mid_s)
     if (!ok || pp.time <= 0) {qWarning()<<QString("parsePricePoint WARNING invalid time (%1)").arg(list.at(2)); return;}
 
     data.append(pp);
-    qDebug()<<pp.toStr();
+//    qDebug()<<pp.toStr();
 
 }
 float BB_PricesContainer::getDeviation(const QString &ticker, float cur_price, const qint64 &cur_t, quint16 days) const
@@ -507,15 +505,15 @@ float BB_PricesContainer::getDeviation(const QString &ticker, float cur_price, c
 }
 float BB_PricesContainer::getNearPriceByDate(const QString &ticker, qint64 t) const
 {
-    if (ticker == "ADA") qDebug()<<QString("getNearPriceByDate  t=%1").arg(t);
+   // if (ticker == "ADA") qDebug()<<QString("getNearPriceByDate  t=%1").arg(t);
     float p = -1;
     qint64 t_point = -1;
     foreach (const PricePoint &pp, data)
     {
-        if (ticker == "ADA") qDebug()<<QString("   data_ticker=%1  ").arg(pp.ticker)<<pp.toStr();
+       // if (ticker == "ADA") qDebug()<<QString("   data_ticker=%1  ").arg(pp.ticker)<<pp.toStr();
         if (pp.ticker != ticker) continue;
         if (pp.time > t) {continue;}
-        if (ticker == "ADA") qDebug()<<QString("getNearPriceByDate  %1").arg(pp.toStr());
+       // if (ticker == "ADA") qDebug()<<QString("getNearPriceByDate  %1").arg(pp.toStr());
 
         if (t_point < 0) {t_point = pp.time; p = pp.price;}
         else if (pp.time > t_point)  {t_point = pp.time; p = pp.price;}

@@ -192,6 +192,8 @@ struct BB_PricesContainer
 
         void reset() {ticker.clear(); price = 0; time = -1;}
         QString toStr() const {return QString("PricePoint (%1):  price[%2]  time[%3]").arg(ticker).arg(price).arg(time);}
+        QString toFileElement() const {return QString("[%1 / %2 / %3]").arg(ticker).arg(QString::number(price, 'f', 5)).arg(time);}
+
     };
 
     QList<PricePoint> data;
