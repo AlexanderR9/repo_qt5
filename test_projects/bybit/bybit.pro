@@ -37,7 +37,8 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/bb_historypage.h \
         $$PWD/bb_bagstatepage.h \
         $$PWD/bb_basepage.h \
-        $$PWD/bb_spothistorypage.h
+        $$PWD/bb_spothistorypage.h \
+        $$PWD/bb_pricespage.h
 
 
 SOURCES += $$PWD/main.cpp \
@@ -51,6 +52,7 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/bb_historypage.cpp \
         $$PWD/bb_bagstatepage.cpp \
         $$PWD/bb_basepage.cpp \
-        $$PWD/bb_spothistorypage.cpp
+        $$PWD/bb_spothistorypage.cpp \
+        $$PWD/bb_pricespage.cpp
 
 

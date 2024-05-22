@@ -8,7 +8,7 @@ class QJsonObject;
 
 //типы страниц пользовательского интерфейса
 enum BB_ReqType {rtCandles = 181, rtPositions, rtSpotAssets, rtSportOrders, rtOrders, rtHistory, rtSpotHistory,
-                 rtBag, rtJsonView, rtFundRate};
+                 rtBag, rtJsonView, rtFundRate, rtPrices};
 
 
 //необходимые данные для формирования запроса перед отправкой
@@ -173,6 +173,53 @@ struct BB_HistorySpot : public BB_HistoryRecordBase
     void fromJson(const QJsonObject&);
 
     static QStringList tableHeaders();
+};
+
+//контейнер для хранения всех цен по всем избранным инструментам.
+//добавление идет не раньше чем через час.
+struct BB_PricesContainer
+{
+    BB_PricesContainer() {reset();}
+
+    struct PricePoint
+    {
+        PricePoint() {reset();}
+        PricePoint(const QString &s, float p, const qint64 &t) :ticker(s), price(p), time(t) {}
+
+        QString ticker;
+        float price;
+        qint64 time;
+
+        void reset() {ticker.clear(); price = 0; time = -1;}
+        QString toStr() const {return QString("PricePoint (%1):  price[%2]  time[%3]").arg(ticker).arg(price).arg(time);}
+    };
+
+    QList<PricePoint> data;
+    inline quint32 size() const {return data.count();}
+
+    static QString priceFile() {return QString("prices.txt");} //file data
+    static quint32 minIntervalPrices() {return 3600;} //secs, min interval between neighbors points
+
+    void reset() {data.clear();}
+    void reloadPrices(const QString&); //load container pirces from file_data
+    void addPricePoint(const QString&, const float&, const qint64&); //try add price for ticker
+    int lastPriceByTicker(const QString&) const; //индекс самой свежей цены по указанному тикеру, или -1
+    void toFileData(QString&);
+
+    //получить отклонение цены от указанной в %, за указанное количество дней.
+    //в случае отсутствия необходимых данных для расчет этой величины вернет -9999.
+    //параметры: ticker, cur_price, cur_time, days_count.
+    float getDeviation(const QString&, float, const qint64&, quint16) const;
+
+    //вернет цену ближайшую к указанной дате, но не позднее ее.
+    //в случае отсутствия необходимых данных вернет -1.
+    //параметры: ticker, datetime
+    float getNearPriceByDate(const QString&, qint64) const;
+
+
+private:
+    void parsePricePoint(QString);
+
 };
 
 

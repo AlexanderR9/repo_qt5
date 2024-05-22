@@ -9,6 +9,7 @@
 #include "bb_historypage.h"
 #include "bb_spothistorypage.h"
 #include "bb_bagstatepage.h"
+#include "bb_pricespage.h"
 
 #include <QStackedWidget>
 #include <QSplitter>
@@ -91,6 +92,10 @@ void BB_CentralWidget::createPages()
 
     BB_FundRatePage *fr_page = new BB_FundRatePage(this);
     w_stack->addWidget(fr_page);
+
+    BB_PricesPage *price_page = new BB_PricesPage(this);
+    w_stack->addWidget(price_page);
+
 
     for (int i=0; i<w_stack->count(); i++)
     {

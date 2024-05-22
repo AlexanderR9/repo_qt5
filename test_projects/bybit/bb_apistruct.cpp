@@ -9,6 +9,7 @@
 #include <QJsonValue>
 #include <QJsonObject>
 #include <QDebug>
+#include <QDateTime>
 
 #define PRICE_PRECISION     6
 #define USDT_SYMBOL         QString("USDT")
@@ -54,6 +55,7 @@ QString BB_APIReqParams::strReqTypeByType(int t, QString s_extra)
     {
         case rtCandles:     {s = "GET_CANDLES"; break;}
         case rtPositions:   {s = "GET_POSITIONS"; break;}
+        case rtPrices:      {s = "GET_PRICES"; break;}
         case rtSpotAssets:  {s = "GET_SPOT_ASSETS"; break;}
         case rtSportOrders: {s = "GET_SPOT_ORDERS"; break;}
         case rtOrders:      {s = "GET_ORDERS"; break;}
@@ -414,5 +416,110 @@ QString BB_HistorySpot::resultDeal() const
     else if (isSell()) r = usdSize() - fee;
 
     return QString::number(r, 'f', precisionByValue(r, 4));
+}
+
+// BB_PricesContainer
+void BB_PricesContainer::reloadPrices(const QString &f_data)
+{
+    int pos = 0;
+    while (2 > 1)
+    {
+        int p_start = f_data.indexOf(QChar('['), pos);
+        int p_end = f_data.indexOf(QChar(']'), pos);
+        if (p_start < 0 || p_end < 0 || p_end <= p_start) break;
+
+        pos = p_end+1;
+        QString mid_s = f_data.mid(p_start+1, p_end-p_start-1);
+        parsePricePoint(mid_s);
+    }
+}
+void BB_PricesContainer::addPricePoint(const QString &ticker, const float &price, const qint64 &t_cur)
+{
+    int pos = lastPriceByTicker(ticker);
+    qDebug()<<QString("addPricePoint: %1, price=%2, t_cur=%3,  pos=%4").arg(ticker).arg(price).arg(t_cur).arg(pos);
+    if (pos < 0)
+    {
+        PricePoint pp(ticker, price, t_cur);
+        data.append(pp);
+    }
+    else if ((t_cur - data.at(pos).time) > minIntervalPrices())
+    {
+        PricePoint pp(ticker, price, t_cur);
+        data.append(pp);
+    }
+}
+int BB_PricesContainer::lastPriceByTicker(const QString &ticker) const
+{
+    int index = -1;
+    qint64 t = -1;
+    for (int i=0; i<int(size()); i++)
+    {
+        const BB_PricesContainer::PricePoint &pp = data.at(i);
+        if (pp.ticker != ticker) continue;
+        if (t < 0) {index = i; t = pp.time; continue;}
+        if (pp.time > t) {index = i; t = pp.time;}
+    }
+    return index;
+}
+void BB_PricesContainer::toFileData(QString &s)
+{
+    s.clear();
+    quint8 line_size = 9;
+
+    for (quint32 i=0; i<size(); i++)
+    {
+        const BB_PricesContainer::PricePoint &pp = data.at(i);
+        QString s_point = QString("[%1 / %2 / %3]").arg(pp.ticker).arg(QString::number(pp.price, 'f', PRICE_PRECISION)).arg(pp.time);
+        s.append(s_point);
+        s.append(QString("  "));
+        if ((i+1)%line_size == 0) s.append(QString("\n"));
+    }
+
+    s.append(QString("\n"));
+}
+void BB_PricesContainer::parsePricePoint(QString mid_s)
+{
+    //qDebug()<<QString("mid_s: %1").arg(mid_s);
+    QStringList list = LString::trimSplitList(mid_s, QString("/"));
+    if (list.count() != 3) return;
+
+    PricePoint pp;
+    pp.ticker = list.at(0);
+
+    bool ok;
+    pp.price = list.at(1).toFloat(&ok);
+    if (!ok || pp.price <= 0) {qWarning()<<QString("parsePricePoint WARNING invalid price (%1)").arg(list.at(1)); return;}
+    pp.time = list.at(2).toLong(&ok);
+    if (!ok || pp.time <= 0) {qWarning()<<QString("parsePricePoint WARNING invalid time (%1)").arg(list.at(2)); return;}
+
+    data.append(pp);
+    qDebug()<<pp.toStr();
+
+}
+float BB_PricesContainer::getDeviation(const QString &ticker, float cur_price, const qint64 &cur_t, quint16 days) const
+{
+    float deviation = -9999;
+    QDateTime dt = QDateTime::fromSecsSinceEpoch(cur_t).addDays(-1*days);
+    float p_date = getNearPriceByDate(ticker, dt.toSecsSinceEpoch());
+    //qDebug()<<QString("p_date=%1").arg(p_date);
+    if (p_date > 0) deviation = float(100)*(cur_price - p_date)/p_date;
+    return deviation;
+}
+float BB_PricesContainer::getNearPriceByDate(const QString &ticker, qint64 t) const
+{
+    if (ticker == "ADA") qDebug()<<QString("getNearPriceByDate  t=%1").arg(t);
+    float p = -1;
+    qint64 t_point = -1;
+    foreach (const PricePoint &pp, data)
+    {
+        if (ticker == "ADA") qDebug()<<QString("   data_ticker=%1  ").arg(pp.ticker)<<pp.toStr();
+        if (pp.ticker != ticker) continue;
+        if (pp.time > t) {continue;}
+        if (ticker == "ADA") qDebug()<<QString("getNearPriceByDate  %1").arg(pp.toStr());
+
+        if (t_point < 0) {t_point = pp.time; p = pp.price;}
+        else if (pp.time > t_point)  {t_point = pp.time; p = pp.price;}
+    }
+    return p;
 }
 
