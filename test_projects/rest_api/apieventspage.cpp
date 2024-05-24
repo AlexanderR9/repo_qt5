@@ -163,6 +163,7 @@ void APIEventsPage::slotLoadEvents(const QJsonObject &j_obj)
 
     sortByDate();
     reloadTableByData();
+    findUnknownUID();
     recalcStat();
 
     m_kindFilterControl->setCurrentIndex(3); //default filter by [!COMMISION]
@@ -175,6 +176,31 @@ void APIEventsPage::checkCloneUid(EventOperation &e)
         QString orig_uid = api_commonSettings.getOrigUidByClone(e.uid).trimmed();
         if (orig_uid.isEmpty()) qWarning()<<QString("APIEventsPage::checkCloneUid WARNING orig_uid is empty by clone [%1]").arg(e.uid);
         else e.uid = orig_uid;
+    }
+}
+void APIEventsPage::findUnknownUID()
+{
+    if (m_events.isEmpty()) return;
+
+    QStringList uids;
+    QTableWidget *t = m_tableBox->table();
+    for (int i=0; i<t->rowCount(); i++)
+    {
+        if (t->item(i, TICKER_COL)->text() == "---")
+        {
+            QString s_kind = t->item(i, KIND_COL)->text();
+            if (s_kind != "OUT" && s_kind != "INPUT" && s_kind != "TAX")
+            {
+                uids << t->item(i, 0)->data(Qt::UserRole).toString();
+                LTable::setTableRowColor(t, i, Qt::red);
+            }
+        }
+    }
+
+    if (!uids.isEmpty())
+    {
+        emit signalError(QString("APIEventsPage: finded %1 unknown UID events").arg(uids.count()));
+        foreach (const QString &v, uids) emit signalError(v);
     }
 }
 void APIEventsPage::reloadTableByData()
@@ -213,21 +239,24 @@ void APIEventsPage::reloadTableByData()
 }
 void APIEventsPage::addRowRecord(const EventOperation &rec, const QPair<QString, QString> &info, QColor row_color)
 {
+
     QStringList row_data(rec.toTableRowData());
     row_data.insert(1, info.second);
     row_data.insert(1, info.first);
 
-    LTable::addTableRow(m_tableBox->table(), row_data);
-    int l_row = m_tableBox->table()->rowCount() - 1;
-    if (rec.amount < 0) m_tableBox->table()->item(l_row, AMOUNT_COL)->setTextColor(Qt::darkRed);
+    QTableWidget *t = m_tableBox->table();
+    LTable::addTableRow(t, row_data);
+    int l_row = t->rowCount() - 1;
+    if (rec.amount < 0) t->item(l_row, AMOUNT_COL)->setTextColor(Qt::darkRed);
 
     if (rec.date.date() == QDate::currentDate()) row_color = QColor("#00FFFF");
-    LTable::setTableRowColor(m_tableBox->table(), l_row, row_color);
+    LTable::setTableRowColor(t, l_row, row_color);
 
     //kind operation
     if (rec.strKind().toLower().trimmed() == "sell")
-        m_tableBox->table()->item(l_row, KIND_COL)->setTextColor(QColor("#8B0000"));
+        t->item(l_row, KIND_COL)->setTextColor(QColor("#8B0000"));
 
+    t->item(l_row, 0)->setData(Qt::UserRole, rec.uid);
 }
 void APIEventsPage::load(QSettings &settings)
 {
