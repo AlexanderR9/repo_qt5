@@ -22,9 +22,10 @@
 #define PAPER_TYPE_COL      3
 #define DATE_COL            5
 #define COUPON_COL          8
-#define KKS_COL             2
+#define COMPANY_COL         1
 #define N_COL               6
 #define TICKER_COL          2
+
 
 
 #define COLOR_DAY_EVEN      QString("#FFFFF2")
@@ -182,7 +183,9 @@ void APIEventsPage::findUnknownUID()
 {
     if (m_events.isEmpty()) return;
 
-    QStringList uids;
+    QStringList umknown_uids;
+    QStringList orig_uids;
+
     QTableWidget *t = m_tableBox->table();
     for (int i=0; i<t->rowCount(); i++)
     {
@@ -191,16 +194,33 @@ void APIEventsPage::findUnknownUID()
             QString s_kind = t->item(i, KIND_COL)->text();
             if (s_kind != "OUT" && s_kind != "INPUT" && s_kind != "TAX")
             {
-                uids << t->item(i, 0)->data(Qt::UserRole).toString();
+                umknown_uids << t->item(i, 0)->data(Qt::UserRole).toString();
                 LTable::setTableRowColor(t, i, Qt::red);
+
+                QString s_orig = "???";
+                QString s_date = t->item(i, DATE_COL)->text();
+                QString s_sum = t->item(i, AMOUNT_COL)->text();
+
+                for (int j=0; j<t->rowCount(); j++)
+                {
+                    if (j == i) continue;
+                    if (t->item(j, KIND_COL)->text() != s_kind) continue;
+                    if (t->item(j, DATE_COL)->text() != s_date) continue;
+                    if (t->item(j, AMOUNT_COL)->text() != s_sum) continue;
+                    s_orig = t->item(j, 0)->data(Qt::UserRole).toString();
+                    s_orig += QString(" / %1 / %2").arg(t->item(j, TICKER_COL)->text()).arg(t->item(j, COMPANY_COL)->text());
+                    break;
+                }
+                orig_uids.append(s_orig);
             }
         }
     }
 
-    if (!uids.isEmpty())
+    if (!umknown_uids.isEmpty())
     {
-        emit signalError(QString("APIEventsPage: finded %1 unknown UID events").arg(uids.count()));
-        foreach (const QString &v, uids) emit signalError(v);
+        emit signalError(QString("APIEventsPage: finded %1 unknown UID events").arg(umknown_uids.count()));
+        for (int i=0; i<umknown_uids.count(); i++)
+            emit signalError(QString("%1 : [%2]").arg(umknown_uids.at(i)).arg(orig_uids.at(i)));
     }
 }
 void APIEventsPage::reloadTableByData()
@@ -528,8 +548,8 @@ void APIEventsPage::recalcPaperResult()
             n_ps += t->item(i, N_COL)->text().toUInt();
 
 
-        if (kks.isEmpty()) {kks = t->item(i, KKS_COL)->text().trimmed(); continue;}
-        if (kks != t->item(i, KKS_COL)->text()) return;
+        if (kks.isEmpty()) {kks = t->item(i, TICKER_COL)->text().trimmed(); continue;}
+        if (kks != t->item(i, TICKER_COL)->text()) return;
     }
     if (result == 0) return;
 
