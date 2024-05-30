@@ -53,7 +53,9 @@ QString BB_APIReqParams::strReqTypeByType(int t, QString s_extra)
     QString s;
     switch (t)
     {
+        case rtShadows:
         case rtCandles:     {s = "GET_CANDLES"; break;}
+
         case rtPositions:   {s = "GET_POSITIONS"; break;}
         case rtPrices:      {s = "GET_PRICES"; break;}
         case rtSpotAssets:  {s = "GET_SPOT_ASSETS"; break;}
@@ -63,6 +65,7 @@ QString BB_APIReqParams::strReqTypeByType(int t, QString s_extra)
         case rtSpotHistory: {s = "GET_SPOT_HISTORY"; break;}
         case rtBag:         {s = "GET_WALLET"; break;}
         case rtFundRate:    {s = "GET_FUND_RATES"; break;}
+
         default: return "???";
     }
     return s_extra.isEmpty() ? s : QString("%1(%2)").arg(s).arg(s_extra);

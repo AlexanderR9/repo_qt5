@@ -10,6 +10,7 @@
 #include "bb_spothistorypage.h"
 #include "bb_bagstatepage.h"
 #include "bb_pricespage.h"
+#include "bb_shadowexplorer.h"
 
 #include <QStackedWidget>
 #include <QSplitter>
@@ -96,6 +97,8 @@ void BB_CentralWidget::createPages()
     BB_PricesPage *price_page = new BB_PricesPage(this);
     w_stack->addWidget(price_page);
 
+    BB_ShadowExplorer *shadow_page = new BB_ShadowExplorer(this);
+    w_stack->addWidget(shadow_page);
 
     for (int i=0; i<w_stack->count(); i++)
     {

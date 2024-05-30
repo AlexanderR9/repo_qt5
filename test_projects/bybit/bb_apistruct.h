@@ -8,7 +8,7 @@ class QJsonObject;
 
 //типы страниц пользовательского интерфейса
 enum BB_ReqType {rtCandles = 181, rtPositions, rtSpotAssets, rtSportOrders, rtOrders, rtHistory, rtSpotHistory,
-                 rtBag, rtJsonView, rtFundRate, rtPrices};
+                 rtBag, rtJsonView, rtFundRate, rtPrices, rtShadows};
 
 
 //необходимые данные для формирования запроса перед отправкой
