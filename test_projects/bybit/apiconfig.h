@@ -16,6 +16,7 @@ struct APIConfig
         int number;
         QString size;
         void reset() {number = 100; size="D";}
+        QString toStr() const {return QString("CANDLE_SETTINGS: number=%1  size=[%2]").arg(number).arg(size);}
     };
 
     void reset();

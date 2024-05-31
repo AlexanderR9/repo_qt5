@@ -225,4 +225,26 @@ private:
 };
 
 
+//информация по одной свече некого инструмента
+struct BB_Bar
+{
+    BB_Bar() {reset();}
+
+    qint64 start_time;
+    float p_open;
+    float p_close;
+    float p_high;
+    float p_low;
+
+    void reset() {start_time=-1; p_open=p_close=p_high=p_low=0;}
+    bool invalid() const;
+
+    bool isUp() const {return (p_close > p_open);}
+    bool isDown() const {return (p_close < p_open);}
+    float overShadow() const {return (p_high - p_open);}
+    float underShadow() const {return (p_open - p_low);}
+
+};
+
+
 #endif // BB_APISTRUCT_H

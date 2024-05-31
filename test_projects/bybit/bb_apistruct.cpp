@@ -524,3 +524,17 @@ float BB_PricesContainer::getNearPriceByDate(const QString &ticker, qint64 t) co
     return p;
 }
 
+//BB_Bar
+bool BB_Bar::invalid() const
+{
+    if (start_time <= 0) return true;
+    return !(p_open>0 && p_close>0 && p_high>0 && p_low>0);
+}
+
+
+
+
+
+
+
+
