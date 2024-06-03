@@ -8,6 +8,10 @@
 class QTableWidgetItem;
 class QJsonArray;
 class QJsonObject;
+class QLineEdit;
+class QTimer;
+
+
 
 //ShadowPrivotData
 struct ShadowPrivotData
@@ -58,7 +62,10 @@ protected:
     LTableWidgetBox     *m_tickerTable;
     LTableWidgetBox     *m_pivotTable;
     LTableWidgetBox     *m_resultTable;
+    QLineEdit           *m_testStateEdit;
+    QTimer              *m_timer;
     ShadowPrivotData    m_pivotData; // for current selected ticker
+    quint16             t_tick;
 
     void init();
     void initTickersTable();
@@ -73,10 +80,12 @@ protected:
     void updatePivotTable();
     void updateTickerRow();
     void updateResultTable();
+    void prepareReq(QString&);
 
 
 protected slots:
     void slotTickerChanged(QTableWidgetItem*);
+    void slotTimer();
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);

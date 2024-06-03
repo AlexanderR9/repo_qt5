@@ -22,8 +22,9 @@ struct BB_APIReqParams
     int metod;
     QString uri;
     QMap<QString, QString> params;
+    bool is_running;
 
-    void reset() {name="?"; uri.clear(); params.clear(); metod=-1; req_type=-1;}
+    void reset() {name="?"; uri.clear(); params.clear(); metod=-1; req_type=-1; is_running=false;}
     bool invalid() const;
     QString fullUri() const; //uri?params
     QString paramsLine() const; //params => str_line(key=value&...)

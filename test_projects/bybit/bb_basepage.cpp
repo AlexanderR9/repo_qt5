@@ -29,6 +29,7 @@ void BB_BasePage::sendRequest(int limit, QString name_extra)
         m_reqData->params.insert("limit", QString::number(limit));
 
     m_reqData->name = BB_APIReqParams::strReqTypeByType(m_reqData->req_type, name_extra);
+    m_reqData->is_running = true;
 
     emit signalSendReq(m_reqData);
 }

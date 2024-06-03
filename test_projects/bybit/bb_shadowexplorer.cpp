@@ -12,9 +12,11 @@
 #include <QSplitter>
 #include <QLineEdit>
 #include <QLayout>
+#include <QTimer>
 
 
 #define API_KLINE_URI           QString("v5/market/mark-price-kline")
+#define T_INTERVAL              3500
 
 
 
@@ -23,7 +25,10 @@ BB_ShadowExplorer::BB_ShadowExplorer(QWidget *parent)
     :BB_BasePage(parent, 32, rtShadows),
       m_tickerTable(NULL),
       m_pivotTable(NULL),
-      m_resultTable(NULL)
+      m_resultTable(NULL),
+      m_testStateEdit(NULL),
+      m_timer(NULL),
+      t_tick(0)
 {
     setObjectName("shadows_page");
     init();
@@ -34,7 +39,12 @@ BB_ShadowExplorer::BB_ShadowExplorer(QWidget *parent)
     m_reqData->params.insert("category", "linear");
     m_reqData->uri = API_KLINE_URI;
 
+    m_timer = new QTimer(this);
+    m_timer->setInterval(T_INTERVAL);
+    m_timer->stop();
+
     connect(m_tickerTable->table(), SIGNAL(itemClicked(QTableWidgetItem*)), this, SLOT(slotTickerChanged(QTableWidgetItem*)));
+    connect(m_timer, SIGNAL(timeout()), this, SLOT(slotTimer()));
 
 }
 void BB_ShadowExplorer::slotTickerChanged(QTableWidgetItem *item)
@@ -42,11 +52,47 @@ void BB_ShadowExplorer::slotTickerChanged(QTableWidgetItem *item)
     resetPrivotData();
     if (!item) return;
 
-    //qDebug()<<QString("slotTickerChanged  ticker=%1").arg(item->text());
+    m_testStateEdit->setText("---");
+
+    qDebug()<<QString("slotTickerChanged  ticker=%1").arg(item->text());
     if (api_config.favor_tickers.contains(item->text()))
     {
         m_pivotTable->table()->item(0, 0)->setText(item->text());
-        updateDataPage(true);
+        //updateDataPage(true);
+
+        QString ticker;
+        prepareReq(ticker);
+        if (!ticker.isEmpty())
+            sendRequest(api_config.candle.number, ticker);
+    }
+}
+void BB_ShadowExplorer::slotTimer()
+{
+    qDebug("BB_ShadowExplorer::slotTimer()");
+    if (m_reqData->is_running) {qDebug("WARNING: is_running now"); return;}
+
+    resetPrivotData();
+    m_tickerTable->table()->selectRow(t_tick);
+    m_pivotTable->table()->item(0, 0)->setText(m_tickerTable->table()->item(t_tick, 0)->text());
+
+
+    //check finish
+    t_tick++;
+    if (t_tick >= api_config.favor_tickers.count())
+    {
+        m_testStateEdit->setText("FINISHED!");
+        m_timer->stop();
+        m_tickerTable->setEnabled(true);
+    }
+    else
+    {
+        m_testStateEdit->setText(QString("AUTO TESTING STATE: %1/%2").arg(t_tick).arg(api_config.favor_tickers.count()));
+        qDebug()<<QString("selected ticker %1").arg(selectedTicker());
+        QString ticker;
+        prepareReq(ticker);
+        if (!ticker.isEmpty())
+            sendRequest(api_config.candle.number, ticker);
+
     }
 }
 void BB_ShadowExplorer::resetPrivotData()
@@ -87,6 +133,10 @@ void BB_ShadowExplorer::initTickersTable()
     m_tickerTable->setHeaderLabels(headers);
     m_tickerTable->resizeByContents();
 
+    m_tickerTable->addSortingData(2, LSearchTableWidgetBox::sdtNumeric);
+    m_tickerTable->addSortingData(3, LSearchTableWidgetBox::sdtNumeric);
+    m_tickerTable->sortingOn();
+
 }
 void BB_ShadowExplorer::initPivotTable()
 {
@@ -106,8 +156,10 @@ void BB_ShadowExplorer::initPivotTable()
     m_pivotTable->setHeaderLabels(headers, Qt::Vertical);
     m_pivotTable->resizeByContents();
 
-    QLineEdit *edit = new QLineEdit(this);
-    m_pivotTable->layout()->addWidget(edit);
+    m_testStateEdit = new QLineEdit(this);
+    m_testStateEdit->setReadOnly(true);
+    m_pivotTable->layout()->addWidget(m_testStateEdit);
+    m_testStateEdit->setText("AUTO TESTING STATE:");
 
 }
 void BB_ShadowExplorer::initResultTable()
@@ -140,19 +192,33 @@ void BB_ShadowExplorer::loadTickers()
 void BB_ShadowExplorer::updateDataPage(bool forcibly)
 {
     if (!forcibly) return;
+    if (m_timer->isActive()) return;
 
-    QString ticker = selectedTicker();
+    m_testStateEdit->setText(QString("AUTO TESTING STATE: 0/%1").arg(api_config.favor_tickers.count()));
+    t_tick = 0;
+    m_tickerTable->setEnabled(false);
+    m_timer->start();
+
+    qDebug()<<"BB_ShadowExplorer::updateDataPage   "<<api_config.candle.toStr();
+    //QString ticker;
+    //prepareReq(ticker);
+    //if (!ticker.isEmpty())
+      //  sendRequest(api_config.candle.number, ticker);
+}
+void BB_ShadowExplorer::prepareReq(QString &ticker)
+{
+    ticker = selectedTicker();
     if (ticker.length() < 2)
     {
         emit signalError(QString("invalid ticker: %1").arg(ticker));
+        m_reqData->params.insert("symbol", "err");
+        ticker.clear();
         return;
     }
 
     ticker.append("USDT");
     m_reqData->params.insert("symbol", ticker);
     m_reqData->params.insert("interval", api_config.candle.size);
-    //qDebug()<<api_config.candle.toStr();
-    sendRequest(api_config.candle.number, ticker);
 }
 QString BB_ShadowExplorer::selectedTicker() const
 {
@@ -167,6 +233,7 @@ int BB_ShadowExplorer::selectedRow() const
 void BB_ShadowExplorer::slotJsonReply(int req_type, const QJsonObject &j_obj)
 {
     if (req_type != userSign()) return;
+    m_reqData->is_running = false;
 
     //w_chart->clearChartPoints();
 
