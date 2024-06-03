@@ -55,6 +55,7 @@ signals:
     void signalEnableControls(bool);
     void signalJsonReply(int, const QJsonObject&);
     void signalPageChanged(int);
+    void signalGetShadowLimitSize(float&);
 
 private:
     QString hmacSha1(QByteArray, QByteArray) const;

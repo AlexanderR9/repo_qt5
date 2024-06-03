@@ -16,6 +16,8 @@ struct ShadowPrivotData
 
     QList<BB_Bar> bars;
     float volatility_factor; //максимальный кеф изменения цены max/min
+    float limit_shadow_size; //пользовательская настройка, %
+    float testing_result; //total result (%) of testing
 
     float minPrice() const;
     float maxPrice() const;
@@ -25,7 +27,6 @@ struct ShadowPrivotData
     float minShadowSize(bool over) const;
     float maxShadowSize(bool over) const;
 
-
     void reset();
     void addBar(const QJsonArray&);
     QString strTimeSpan() const;
@@ -33,7 +34,8 @@ struct ShadowPrivotData
     QString strMinMaxPrice() const;
     QString strAverageShadows() const;
     QString strMinMaxShadows(bool over) const;
-
+    QString strHasLimitCandles(bool over) const;
+    QStringList candleResult(int, int&);
 
 
 };
@@ -55,9 +57,14 @@ public:
 protected:
     LTableWidgetBox     *m_tickerTable;
     LTableWidgetBox     *m_pivotTable;
+    LTableWidgetBox     *m_resultTable;
     ShadowPrivotData    m_pivotData; // for current selected ticker
 
     void init();
+    void initTickersTable();
+    void initPivotTable();
+    void initResultTable();
+
     void loadTickers();
     void resetPrivotData();
     QString selectedTicker() const;
@@ -65,6 +72,8 @@ protected:
     void receivedData(const QJsonArray&);
     void updatePivotTable();
     void updateTickerRow();
+    void updateResultTable();
+
 
 protected slots:
     void slotTickerChanged(QTableWidgetItem*);
@@ -72,6 +81,8 @@ protected slots:
 public slots:
     void slotJsonReply(int, const QJsonObject&);
 
+signals:
+    void signalGetLimitSize(float&);
 
 };
 

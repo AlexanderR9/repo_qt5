@@ -243,6 +243,8 @@ struct BB_Bar
     bool isDown() const {return (p_close < p_open);}
     float overShadow() const {return (p_high - p_open);}
     float underShadow() const {return (p_open - p_low);}
+    float overShadow_p(float cur_price) const {return (float(100)*overShadow()/cur_price);}
+    float underShadow_p(float cur_price) const {return (float(100)*underShadow()/cur_price);}
 
 };
 

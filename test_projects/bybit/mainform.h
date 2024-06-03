@@ -37,10 +37,12 @@ protected slots:
     void slotMsg(const QString&);
     void slotAppSettingsChanged(QStringList);
     void slotActionsApdate(int);
+    void slotSetShadowLimitSize(float&);
 
 private:
     int expandLevel() const;
     quint16 pageUpdatingInterval() const;
+    float shadowSize() const;
 
 };
 

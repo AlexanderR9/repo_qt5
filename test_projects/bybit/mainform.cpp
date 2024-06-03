@@ -65,6 +65,10 @@ void MainForm::slotAction(int type)
         default: break;
     }
 }
+void MainForm::slotSetShadowLimitSize(float &a)
+{
+    a = shadowSize();
+}
 void MainForm::slotActionsApdate(int p_type)
 {
     switch(p_type)
@@ -110,6 +114,7 @@ void MainForm::initWidgets()
     connect(m_centralWidget, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_centralWidget, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
     connect(m_centralWidget, SIGNAL(signalPageChanged(int)), this, SLOT(slotActionsApdate(int)));
+    connect(m_centralWidget, SIGNAL(signalGetShadowLimitSize(float&)), this, SLOT(slotSetShadowLimitSize(float&)));
 
 }
 void MainForm::initCommonSettings()
@@ -160,6 +165,15 @@ void MainForm::initCommonSettings()
     combo_list << "15" << "30" << "60" << "120" << "300" << "600" << "1800";
     lCommonSettings.setComboList(key, combo_list);
     lCommonSettings.setDefValue(key, combo_list.at(2));
+
+    key = QString("shadow_size");
+    lCommonSettings.addParam(QString("Limit shadow size, %"), LSimpleDialog::sdtDoubleCombo, key, 1);
+    combo_list.clear();
+    for (int i=0; i<20; i++) combo_list << QString::number(float(i+1)*0.2, 'f', 1);
+    lCommonSettings.setComboList(key, combo_list);
+    lCommonSettings.setDefValue(key, combo_list.at(5));
+
+
 }
 void MainForm::slotError(const QString &text)
 {
@@ -218,5 +232,9 @@ int MainForm::expandLevel() const
 quint16 MainForm::pageUpdatingInterval() const
 {
     return lCommonSettings.paramValue("page_updating_interval").toInt();
+}
+float MainForm::shadowSize() const
+{
+    return lCommonSettings.paramValue("shadow_size").toFloat();
 }
 

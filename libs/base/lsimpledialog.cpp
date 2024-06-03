@@ -430,7 +430,6 @@ void LSimpleDialog::setComboList(QString key, const QVariantList &combo_data, QV
     if (!sw->comboBox) return;
 
     sw->comboBox->clear();
-
     int n_data = combo_data.count();
     if (n_data < 2) return;
 
@@ -440,37 +439,36 @@ void LSimpleDialog::setComboList(QString key, const QVariantList &combo_data, QV
     QString s_value;
     for (int i=0; i<n_data; i++)
     {
-	const QVariant &value = combo_data.at(i);
-	s_value = value.toString();
-	switch (sw->data_type)
-	{
-	    case sdtIntCombo:
-	    {
-		int v = value.toInt(&ok);	
-		if (!ok) 
-		{
-		    qWarning()<<QString("LSimpleDialog::setComboList  ERR convert int value (%1),  result !ok").arg(value.toString()); 
-		    return;
-		}
-		s_value = QString::number(v);
-		break;
-	    }
-	    case sdtDoubleCombo: 
-	    {
-		double v = value.toDouble(&ok);	
-		if (!ok) 
-		{
-		    qWarning()<<QString("LSimpleDialog::setComboList  ERR convert double value (%1),  result !ok").arg(value.toString()); 
-		    return;
-		}
-		s_value = QString::number(v, 'f', sw->precision);
-		break;
-	    }
-	    default: break;	
-	}
-	s_list.append(s_value);
+        const QVariant &value = combo_data.at(i);
+        s_value = value.toString();
+        switch (sw->data_type)
+        {
+            case sdtIntCombo:
+            {
+                int v = value.toInt(&ok);
+                if (!ok)
+                {
+                    qWarning()<<QString("LSimpleDialog::setComboList  ERR convert int value (%1),  result !ok").arg(value.toString());
+                    return;
+                }
+                s_value = QString::number(v);
+                break;
+            }
+            case sdtDoubleCombo:
+            {
+                double v = value.toDouble(&ok);
+                if (!ok)
+                {
+                    qWarning()<<QString("LSimpleDialog::setComboList  ERR convert double value (%1),  result !ok").arg(value.toString());
+                    return;
+                }
+                s_value = QString::number(v, 'f', sw->precision);
+                break;
+            }
+            default: break;
+        }
+        s_list.append(s_value);
     }
-
     if (s_list.isEmpty()) return;
 
 

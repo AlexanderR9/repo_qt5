@@ -10,6 +10,8 @@
 #include <QTableWidgetItem>
 #include <QDebug>
 #include <QSplitter>
+#include <QLineEdit>
+#include <QLayout>
 
 
 #define API_KLINE_URI           QString("v5/market/mark-price-kline")
@@ -18,15 +20,15 @@
 
 //BB_ShadowExplorer
 BB_ShadowExplorer::BB_ShadowExplorer(QWidget *parent)
-    :BB_BasePage(parent, 20, rtShadows),
+    :BB_BasePage(parent, 32, rtShadows),
       m_tickerTable(NULL),
-      m_pivotTable(NULL)
+      m_pivotTable(NULL),
+      m_resultTable(NULL)
 {
     setObjectName("shadows_page");
     init();
     loadTickers();
 
-    m_tickerTable->resizeByContents();
     resetPrivotData();
 
     m_reqData->params.insert("category", "linear");
@@ -40,7 +42,7 @@ void BB_ShadowExplorer::slotTickerChanged(QTableWidgetItem *item)
     resetPrivotData();
     if (!item) return;
 
-    qDebug()<<QString("slotTickerChanged  ticker=%1").arg(item->text());
+    //qDebug()<<QString("slotTickerChanged  ticker=%1").arg(item->text());
     if (api_config.favor_tickers.contains(item->text()))
     {
         m_pivotTable->table()->item(0, 0)->setText(item->text());
@@ -56,8 +58,21 @@ void BB_ShadowExplorer::resetPrivotData()
         LTable::createTableItem(m_pivotTable->table(), i, 0, "-");
 
     m_pivotTable->resizeByContents();
+
+    m_resultTable->removeAllRows();
+    m_resultTable->resizeByContents();
 }
 void BB_ShadowExplorer::init()
+{
+    initTickersTable();
+    initPivotTable();
+    initResultTable();
+
+    h_splitter->addWidget(m_pivotTable);
+    v_splitter->addWidget(m_tickerTable);
+    v_splitter->addWidget(m_resultTable);
+}
+void BB_ShadowExplorer::initTickersTable()
 {
     //ticker table
     m_tickerTable = new LTableWidgetBox(this);
@@ -68,10 +83,13 @@ void BB_ShadowExplorer::init()
 
     //headers
     QStringList headers;
-    headers << "Ticker" <<  "Last price" << "RSI, %";
+    headers << "Ticker" <<  "Last price" << "RSI, %" << "Testing result";
     m_tickerTable->setHeaderLabels(headers);
-    h_splitter->addWidget(m_tickerTable);
+    m_tickerTable->resizeByContents();
 
+}
+void BB_ShadowExplorer::initPivotTable()
+{
     //ticker table
     m_pivotTable = new LTableWidgetBox(this);
     m_pivotTable->setObjectName("pivot_table");
@@ -79,13 +97,31 @@ void BB_ShadowExplorer::init()
     m_pivotTable->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::NoSelection);
     m_pivotTable->setHeaderLabels(QStringList()<<"Value");
 
-    headers.clear();
+    QStringList headers;
     headers << "Ticker" <<  "Period" << "Candles count" << "Time interval" << "Prices span";
     headers << "Min/Max price" << "Current RSI, %" << "Average shadow size (over/under)";
     headers << "Max over shadow size" << "Max under shadow size";
+    headers << "User limit size, %" << "Has over limit shadow candles" << "Has under limit shadow candles";
+    headers << "Testing total result";
     m_pivotTable->setHeaderLabels(headers, Qt::Vertical);
-    h_splitter->addWidget(m_pivotTable);
+    m_pivotTable->resizeByContents();
 
+    QLineEdit *edit = new QLineEdit(this);
+    m_pivotTable->layout()->addWidget(edit);
+
+}
+void BB_ShadowExplorer::initResultTable()
+{
+    m_resultTable = new LTableWidgetBox(this);
+    m_resultTable->setObjectName("result_table");
+    m_resultTable->setTitle("Testing result");
+    m_resultTable->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
+
+    //headers
+    QStringList headers;
+    headers << "Open price" <<  "Previos shadows (over/under)" << "Candle result, %" << "Total result";
+    m_resultTable->setHeaderLabels(headers);
+    m_resultTable->resizeByContents();
 }
 void BB_ShadowExplorer::loadTickers()
 {
@@ -96,9 +132,10 @@ void BB_ShadowExplorer::loadTickers()
     foreach (const QString &v, api_config.favor_tickers)
     {
         QStringList row_data;
-        row_data << v << "---" << "-1";
+        row_data << v << "---" << "-1" << "0.0%";
         LTable::addTableRow(t, row_data);
     }
+    m_tickerTable->resizeByContents();
 }
 void BB_ShadowExplorer::updateDataPage(bool forcibly)
 {
@@ -114,7 +151,7 @@ void BB_ShadowExplorer::updateDataPage(bool forcibly)
     ticker.append("USDT");
     m_reqData->params.insert("symbol", ticker);
     m_reqData->params.insert("interval", api_config.candle.size);
-    qDebug()<<api_config.candle.toStr();
+    //qDebug()<<api_config.candle.toStr();
     sendRequest(api_config.candle.number, ticker);
 }
 QString BB_ShadowExplorer::selectedTicker() const
@@ -141,22 +178,19 @@ void BB_ShadowExplorer::slotJsonReply(int req_type, const QJsonObject &j_obj)
     if (j_arr.isEmpty())  {emit signalError("BB_ShadowExplorer: j_arr QJsonArray is empty"); return;}
 
 
+    emit signalGetLimitSize(m_pivotData.limit_shadow_size);
+
     receivedData(j_arr);
-    m_pivotTable->resizeByContents();
-    m_tickerTable->resizeByContents();
 
-    /*
-    QList<QPointF> points;
-    fillPoints(points, j_arr);
-    repaintChart(points);
+    updateResultTable();
+    updatePivotTable();
+    updateTickerRow();
 
-    if (WRITE_TO_FILE) writePricesFile(selectedTicker().trimmed(), points);
-    */
 }
 void BB_ShadowExplorer::receivedData(const QJsonArray &j_arr)
 {
 
-    qDebug()<<QString("BB_ShadowExplorer::recivedData  size %1").arg(j_arr.count());
+    //qDebug()<<QString("BB_ShadowExplorer::recivedData  size %1").arg(j_arr.count());
     if (j_arr.count() < 10)
     {
         emit signalError(QString("BB_ShadowExplorer: j_arr size too small(%1)").arg(j_arr.count()));
@@ -170,10 +204,6 @@ void BB_ShadowExplorer::receivedData(const QJsonArray &j_arr)
 
         m_pivotData.addBar(j_el);
     }
-
-    updatePivotTable();
-    updateTickerRow();
-
 }
 void BB_ShadowExplorer::updateTickerRow()
 {
@@ -183,8 +213,9 @@ void BB_ShadowExplorer::updateTickerRow()
     QTableWidget *t = m_tickerTable->table();
     t->item(row, 1)->setText(QString::number(m_pivotData.bars.last().p_close, 'f', 3));
     t->item(row, 2)->setText(QString::number(m_pivotData.currentRsi(), 'f', 1));
+    t->item(row, 3)->setText(QString("%1%").arg(QString::number(m_pivotData.testing_result, 'f', 1)));
 
-
+    m_tickerTable->resizeByContents();
 }
 void BB_ShadowExplorer::updatePivotTable()
 {
@@ -199,8 +230,30 @@ void BB_ShadowExplorer::updatePivotTable()
     t->item(i, 0)->setText(m_pivotData.strAverageShadows()); i++;
     t->item(i, 0)->setText(m_pivotData.strMinMaxShadows(true)); i++;
     t->item(i, 0)->setText(m_pivotData.strMinMaxShadows(false)); i++;
+    t->item(i, 0)->setText(QString::number(m_pivotData.limit_shadow_size, 'f', 1)); i++;
+    t->item(i, 0)->setText(m_pivotData.strHasLimitCandles(true)); i++;
+    t->item(i, 0)->setText(m_pivotData.strHasLimitCandles(false)); i++;
+    t->item(i, 0)->setText(QString("%1%").arg(QString::number(m_pivotData.testing_result, 'f', 1))); i++;
 
+    m_pivotTable->resizeByContents();
+}
+void BB_ShadowExplorer::updateResultTable()
+{
+    int n_ok = 0;
+    QTableWidget *t = m_resultTable->table();
+    for (int i=0; i<m_pivotData.bars.count(); i++)
+    {
+        QStringList row_data(m_pivotData.candleResult(i, n_ok));
+        LTable::addTableRow(t, row_data);
 
+        QString s_res = row_data.at(2).trimmed();
+        QTableWidgetItem *res_item = t->item(i, t->columnCount()-2);
+        if (s_res.contains("OK")) res_item->setTextColor(Qt::darkGreen);
+        else if (s_res == "none") res_item->setTextColor("#FF8C00");
+        else if (s_res.contains("+")) res_item->setTextColor("#87CEEB");
+        else res_item->setTextColor(Qt::darkRed);
+    }
+    m_resultTable->resizeByContents();
 }
 
 
@@ -209,6 +262,8 @@ void ShadowPrivotData::reset()
 {
     bars.clear();
     volatility_factor = -1;
+    limit_shadow_size = -1;
+    testing_result = 0;
 }
 void ShadowPrivotData::addBar(const QJsonArray &b_arr)
 {
@@ -358,6 +413,23 @@ QString ShadowPrivotData::strMinMaxShadows(bool over) const
     //s = QString("%1 / %2 (%3%) ").arg(s).arg(QString::number(sh_size, 'f', prec)).arg(QString::number(d*100, 'f', 1));
     return s;
 }
+QString ShadowPrivotData::strHasLimitCandles(bool over) const
+{
+    QString s("---");
+    if (bars.isEmpty()) return s;
+
+    int n = 0;
+    float cp = bars.last().p_open;
+    foreach (const BB_Bar &v, bars)
+    {
+        if (over && (v.overShadow_p(cp) > limit_shadow_size)) n++;
+        if (!over && (v.underShadow_p(cp) > limit_shadow_size)) n++;
+    }
+
+    float t = float(n)/float(bars.count());
+    s = QString("%1 (%2%)").arg(n).arg(QString::number(t*100, 'f', 1));
+    return s;
+}
 float ShadowPrivotData::minShadowSize(bool over) const
 {
     float a = -1;
@@ -389,6 +461,52 @@ float ShadowPrivotData::maxShadowSize(bool over) const
         }
     }
     return a;
+}
+QStringList ShadowPrivotData::candleResult(int i, int &n_ok)
+{
+    QStringList list;
+    list << "-" << "-" << "-" << "-";
+    if (i < 0 || i >= bars.count()) return list;
+
+    const BB_Bar &bar = bars.at(i);
+    float cp = bars.last().p_open;
+    quint8 prec = (bar.p_open < 1.5 ? 3 : 2);
+    list[0] = QString::number(bar.p_open, 'f', prec);
+    if (i==0) return list;
+
+    const BB_Bar &bar_prev = bars.at(i-1);
+    float over = bar_prev.overShadow_p(cp);
+    float under = bar_prev.underShadow_p(cp);
+    list[1] = QString("%1% / %2%").arg(QString::number(over, 'f', 1)).arg(QString::number(under, 'f', 1));
+
+    if (over >= limit_shadow_size && under >= limit_shadow_size)
+    {
+        n_ok++;
+        testing_result += (2*limit_shadow_size);
+        list[2] = QString("OK (%1ps)").arg(n_ok);
+        return list;
+    }
+    if (over < limit_shadow_size && under < limit_shadow_size)
+    {
+        list[2] = QString("none");
+        return list;
+    }
+
+
+    float result = 0;
+    if (over < limit_shadow_size) result = bar.p_open - bar_prev.p_open;
+    if (under < limit_shadow_size) result = bar_prev.p_open - bar.p_open;
+    result = float(100)*result/cp;
+    float result2 = result + limit_shadow_size;
+    testing_result += result2;
+
+    list[2] = QString::number(result, 'f', 1);
+    if (result2 > 0) list[2].append(QString(" (+%1)").arg(QString::number(result2, 'f', 1)));
+    else  list[2].append(QString(" (%1)").arg(QString::number(result2, 'f', 1)));
+
+    list[3] = QString("%1%").arg(QString::number(testing_result, 'f', 1));
+
+    return list;
 }
 
 

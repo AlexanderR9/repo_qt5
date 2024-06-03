@@ -99,6 +99,8 @@ void BB_CentralWidget::createPages()
 
     BB_ShadowExplorer *shadow_page = new BB_ShadowExplorer(this);
     w_stack->addWidget(shadow_page);
+    connect(shadow_page, SIGNAL(signalGetLimitSize(float&)), this, SIGNAL(signalGetShadowLimitSize(float&)));
+
 
     for (int i=0; i<w_stack->count(); i++)
     {

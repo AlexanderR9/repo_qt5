@@ -100,13 +100,15 @@ void LCommonSettingsBase::setComboList(QString key, const QStringList &list)
     if (key.trimmed().isEmpty()) return;
 
     for (int i=0; i<params.count(); i++)
-	if (params.at(i).key == key)
-	{
-	    params[i].combo_list.clear();
-	    for (int j=0; j<list.count(); j++)
-		params[i].combo_list.append(QVariant(list.at(j)));
-	    return;
-	}
+    {
+        if (params.at(i).key == key)
+        {
+            params[i].combo_list.clear();
+            for (int j=0; j<list.count(); j++)
+                params[i].combo_list.append(QVariant(list.at(j)));
+            return;
+        }
+    }
 }
 void LCommonSettingsBase::setDefValuesToNullParams()
 {
