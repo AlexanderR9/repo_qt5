@@ -21,7 +21,10 @@ struct ShadowPrivotData
     QList<BB_Bar> bars;
     float volatility_factor; //максимальный кеф изменения цены max/min
     float limit_shadow_size; //пользовательская настройка, %
+    float limit_stoploss; //пользовательская настройка, %
     float testing_result; //total result (%) of testing
+    quint16 n_ok;
+    QList<float> candle_points; //last result candle points
 
     float minPrice() const;
     float maxPrice() const;
@@ -39,8 +42,9 @@ struct ShadowPrivotData
     QString strAverageShadows() const;
     QString strMinMaxShadows(bool over) const;
     QString strHasLimitCandles(bool over) const;
-    QStringList candleResult(int, int&);
-
+    QStringList candleResult(int);
+    QString strN_ok() const;
+    QString strCandlePoints() const;
 
 };
 
@@ -57,6 +61,9 @@ public:
     QString caption() const {return QString("Shadow explorer");}
 
     void updateDataPage(bool forcibly = false);
+    void stopTimer();
+    void loadTestingData();
+    void showChart();
 
 protected:
     LTableWidgetBox     *m_tickerTable;
@@ -81,7 +88,14 @@ protected:
     void updateTickerRow();
     void updateResultTable();
     void prepareReq(QString&);
+    void loadTestingData(const QString&, QTableWidget*);
+    QList<QPointF> getPointsByTicker(const QString&, const QStringList&) const;
 
+private:
+    QString monitFile() const;
+    QString dataPointsFile() const;
+    void addLastToFile();
+    void addLastPointsToFile(int row);
 
 protected slots:
     void slotTickerChanged(QTableWidgetItem*);
@@ -92,6 +106,7 @@ public slots:
 
 signals:
     void signalGetLimitSize(float&);
+    void signalGetStopLoss(float&);
 
 };
 

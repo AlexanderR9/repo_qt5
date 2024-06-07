@@ -38,11 +38,13 @@ protected slots:
     void slotAppSettingsChanged(QStringList);
     void slotActionsApdate(int);
     void slotSetShadowLimitSize(float&);
+    void slotSetStopLoss(float&);
 
 private:
     int expandLevel() const;
     quint16 pageUpdatingInterval() const;
     float shadowSize() const;
+    float stopLoss() const;
 
 };
 

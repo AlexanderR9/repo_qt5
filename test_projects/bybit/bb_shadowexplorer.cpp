@@ -2,6 +2,9 @@
 #include "apiconfig.h"
 #include "lhttp_types.h"
 #include "ltable.h"
+#include "lfile.h"
+#include "lstring.h"
+#include "lchart.h"
 
 #include <QJsonArray>
 #include <QJsonValue>
@@ -13,6 +16,7 @@
 #include <QLineEdit>
 #include <QLayout>
 #include <QTimer>
+#include <QDir>
 
 
 #define API_KLINE_URI           QString("v5/market/mark-price-kline")
@@ -71,29 +75,33 @@ void BB_ShadowExplorer::slotTimer()
     qDebug("BB_ShadowExplorer::slotTimer()");
     if (m_reqData->is_running) {qDebug("WARNING: is_running now"); return;}
 
-    resetPrivotData();
-    m_tickerTable->table()->selectRow(t_tick);
-    m_pivotTable->table()->item(0, 0)->setText(m_tickerTable->table()->item(t_tick, 0)->text());
-
-
     //check finish
     t_tick++;
-    if (t_tick >= api_config.favor_tickers.count())
+    if (t_tick > api_config.favor_tickers.count())
     {
-        m_testStateEdit->setText("FINISHED!");
-        m_timer->stop();
-        m_tickerTable->setEnabled(true);
+        stopTimer();
+        return;
     }
-    else
-    {
-        m_testStateEdit->setText(QString("AUTO TESTING STATE: %1/%2").arg(t_tick).arg(api_config.favor_tickers.count()));
-        qDebug()<<QString("selected ticker %1").arg(selectedTicker());
-        QString ticker;
-        prepareReq(ticker);
-        if (!ticker.isEmpty())
-            sendRequest(api_config.candle.number, ticker);
 
-    }
+    int j = t_tick - 1;
+    resetPrivotData();
+    m_tickerTable->table()->selectRow(j);
+    m_pivotTable->table()->item(0, 0)->setText(m_tickerTable->table()->item(j, 0)->text());
+
+
+    m_testStateEdit->setText(QString("AUTO TESTING STATE: %1/%2").arg(t_tick).arg(api_config.favor_tickers.count()));
+    qDebug()<<QString("selected ticker %1").arg(selectedTicker());
+    QString ticker;
+    prepareReq(ticker);
+    if (!ticker.isEmpty())
+        sendRequest(api_config.candle.number, ticker);
+
+}
+void BB_ShadowExplorer::stopTimer()
+{
+    m_testStateEdit->setText("FINISHED!");
+    m_timer->stop();
+    m_tickerTable->setEnabled(true);
 }
 void BB_ShadowExplorer::resetPrivotData()
 {
@@ -129,10 +137,11 @@ void BB_ShadowExplorer::initTickersTable()
 
     //headers
     QStringList headers;
-    headers << "Ticker" <<  "Last price" << "RSI, %" << "Testing result";
+    headers << "Ticker" <<  "Last price" << "RSI, %" << "Testing result" << "N_OK";
     m_tickerTable->setHeaderLabels(headers);
     m_tickerTable->resizeByContents();
 
+    m_tickerTable->addSortingData(0, LSearchTableWidgetBox::sdtString);
     m_tickerTable->addSortingData(2, LSearchTableWidgetBox::sdtNumeric);
     m_tickerTable->addSortingData(3, LSearchTableWidgetBox::sdtNumeric);
     m_tickerTable->sortingOn();
@@ -184,7 +193,7 @@ void BB_ShadowExplorer::loadTickers()
     foreach (const QString &v, api_config.favor_tickers)
     {
         QStringList row_data;
-        row_data << v << "---" << "-1" << "0.0%";
+        row_data << v << "---" << "-1" << "0.0%" << "0";
         LTable::addTableRow(t, row_data);
     }
     m_tickerTable->resizeByContents();
@@ -195,15 +204,13 @@ void BB_ShadowExplorer::updateDataPage(bool forcibly)
     if (m_timer->isActive()) return;
 
     m_testStateEdit->setText(QString("AUTO TESTING STATE: 0/%1").arg(api_config.favor_tickers.count()));
+
+    int row = selectedRow();
     t_tick = 0;
+    if (row > 0) t_tick = row;
     m_tickerTable->setEnabled(false);
     m_timer->start();
-
-    qDebug()<<"BB_ShadowExplorer::updateDataPage   "<<api_config.candle.toStr();
-    //QString ticker;
-    //prepareReq(ticker);
-    //if (!ticker.isEmpty())
-      //  sendRequest(api_config.candle.number, ticker);
+    //qDebug()<<"BB_ShadowExplorer::updateDataPage   "<<api_config.candle.toStr();
 }
 void BB_ShadowExplorer::prepareReq(QString &ticker)
 {
@@ -235,8 +242,6 @@ void BB_ShadowExplorer::slotJsonReply(int req_type, const QJsonObject &j_obj)
     if (req_type != userSign()) return;
     m_reqData->is_running = false;
 
-    //w_chart->clearChartPoints();
-
     const QJsonValue &jv = j_obj.value("result");
     if (jv.isNull()) {emit signalError("BB_ShadowExplorer: result QJsonValue not found"); return;}
     const QJsonValue &j_list = jv.toObject().value("list");
@@ -246,13 +251,14 @@ void BB_ShadowExplorer::slotJsonReply(int req_type, const QJsonObject &j_obj)
 
 
     emit signalGetLimitSize(m_pivotData.limit_shadow_size);
-
+    emit signalGetStopLoss(m_pivotData.limit_stoploss);
     receivedData(j_arr);
 
     updateResultTable();
     updatePivotTable();
     updateTickerRow();
 
+    if (t_tick == api_config.favor_tickers.count()) stopTimer();
 }
 void BB_ShadowExplorer::receivedData(const QJsonArray &j_arr)
 {
@@ -281,8 +287,17 @@ void BB_ShadowExplorer::updateTickerRow()
     t->item(row, 1)->setText(QString::number(m_pivotData.bars.last().p_close, 'f', 3));
     t->item(row, 2)->setText(QString::number(m_pivotData.currentRsi(), 'f', 1));
     t->item(row, 3)->setText(QString("%1%").arg(QString::number(m_pivotData.testing_result, 'f', 1)));
+    t->item(row, 4)->setText(m_pivotData.strN_ok());
+
+    if (m_pivotData.testing_result < 0) t->item(row, 3)->setTextColor(Qt::red);
+    else if (m_pivotData.testing_result > 100) t->item(row, 3)->setTextColor(Qt::blue);
+    else if (m_pivotData.testing_result < 30) t->item(row, 3)->setTextColor(Qt::gray);
+    else t->item(row, 3)->setTextColor(Qt::black);
+
 
     m_tickerTable->resizeByContents();
+
+    if (m_timer->isActive()) addLastToFile();
 }
 void BB_ShadowExplorer::updatePivotTable()
 {
@@ -306,21 +321,208 @@ void BB_ShadowExplorer::updatePivotTable()
 }
 void BB_ShadowExplorer::updateResultTable()
 {
-    int n_ok = 0;
     QTableWidget *t = m_resultTable->table();
     for (int i=0; i<m_pivotData.bars.count(); i++)
     {
-        QStringList row_data(m_pivotData.candleResult(i, n_ok));
+        QStringList row_data(m_pivotData.candleResult(i));
         LTable::addTableRow(t, row_data);
 
         QString s_res = row_data.at(2).trimmed();
         QTableWidgetItem *res_item = t->item(i, t->columnCount()-2);
         if (s_res.contains("OK")) res_item->setTextColor(Qt::darkGreen);
         else if (s_res == "none") res_item->setTextColor("#FF8C00");
+        else if (s_res == "STOP") res_item->setTextColor("#800000");
         else if (s_res.contains("+")) res_item->setTextColor("#87CEEB");
         else res_item->setTextColor(Qt::darkRed);
     }
     m_resultTable->resizeByContents();
+}
+QString BB_ShadowExplorer::monitFile() const
+{
+    QString fname("shadow_test");
+    fname = QString("%1_%2_%3").arg(fname).arg(api_config.candle.size).arg(api_config.candle.number);
+    fname = QString("%1_%2.txt").arg(fname).arg(m_pivotData.limit_shadow_size);
+    return QString("%1%2%3").arg(APIConfig::appShadowDataPath()).arg(QDir::separator()).arg(fname);
+}
+QString BB_ShadowExplorer::dataPointsFile() const
+{
+    QString fname("candle_points");
+    fname = QString("%1_%2_%3").arg(fname).arg(api_config.candle.size).arg(api_config.candle.number);
+    fname = QString("%1_%2.txt").arg(fname).arg(m_pivotData.limit_shadow_size);
+    return QString("%1%2%3").arg(APIConfig::appShadowDataPath()).arg(QDir::separator()).arg(fname);
+}
+void BB_ShadowExplorer::addLastToFile()
+{
+    QTableWidget *t = m_tickerTable->table();
+    int row = selectedRow();
+    if (row < 0) return;
+
+    QString fdata = QString("%1 / %2").arg(t->item(row, 0)->text()).arg(t->item(row, 3)->text());
+    fdata = QString("%1 / %2").arg(fdata).arg(m_pivotData.strN_ok());
+    fdata.append("\n");
+
+
+    QString err;
+    if (row > 0) err = LFile::appendFile(monitFile(), fdata);
+    else err = LFile::writeFile(monitFile(), fdata);
+
+    if (!err.isEmpty()) signalError(err);
+    else signalMsg("Add shadow result to file OK!");
+
+    addLastPointsToFile(row);
+}
+void BB_ShadowExplorer::addLastPointsToFile(int row)
+{
+    QString ticker = m_tickerTable->table()->item(row, 0)->text();
+    QString fdata = QString("%1 / %2").arg(ticker).arg(m_pivotData.strCandlePoints());
+    fdata.append("\n");
+
+    QString err;
+    if (row > 0) err = LFile::appendFile(dataPointsFile(), fdata);
+    else err = LFile::writeFile(dataPointsFile(), fdata);
+
+    if (!err.isEmpty()) signalError(err);
+    else signalMsg("Add candle points to file OK!");
+}
+void BB_ShadowExplorer::loadTestingData()
+{
+    QString fname = LFile::shortFileName(monitFile());
+    fname = LString::strTrimRight(fname, 8);
+
+    QStringList f_list;
+    QString err = LFile::dirFiles(APIConfig::appShadowDataPath(), f_list);
+    if (!err.isEmpty()) {emit signalError(err); return;}
+
+
+    QTableWidget *t = m_tickerTable->table();
+    for (int i=0; i<t->rowCount(); i++)
+    {
+        t->item(i, 3)->setText(QString());
+        t->item(i, 4)->setText(QString());
+    }
+
+
+    foreach (const QString &v, f_list)
+    {
+        if (v.contains(fname))
+        {
+            qDebug()<<v;
+            loadTestingData(v, t);
+        }
+    }
+    m_tickerTable->resizeByContents();
+}
+void BB_ShadowExplorer::loadTestingData(const QString &fname, QTableWidget *t)
+{
+    QStringList fdata;
+    QString err = LFile::readFileSL(fname, fdata);
+    if (!err.isEmpty()) {emit signalError(err); return;}
+
+    foreach (const QString &v, fdata)
+    {
+        if (v.trimmed().isEmpty()) continue;
+        QStringList list = LString::trimSplitList(v.trimmed(), "/");
+        if (list.count() != 3) continue;
+
+        for (int i=0; i<t->rowCount(); i++)
+        {
+            if (t->item(i, 0)->text() == list.first())
+            {
+                QString i_text = t->item(i, 3)->text().trimmed();
+                if (i_text.isEmpty()) i_text = list.at(1);
+                else i_text = QString("%1 / %2").arg(i_text).arg(list.at(1));
+                t->item(i, 3)->setText(i_text);
+
+                i_text = t->item(i, 4)->text().trimmed();
+                if (i_text.isEmpty()) i_text = list.at(2);
+                else i_text = QString("%1 / %2").arg(i_text).arg(list.at(2));
+                t->item(i, 4)->setText(i_text);
+            }
+        }
+    }
+}
+void BB_ShadowExplorer::showChart()
+{
+    QList<int> rows(LTable::selectedRows(m_tickerTable->table()));
+    if (rows.isEmpty()) {emit signalError("You must selelect one or several tickers"); return;}
+
+    emit signalGetLimitSize(m_pivotData.limit_shadow_size);
+
+    QStringList fdata;
+    QString err = LFile::readFileSL(dataPointsFile(), fdata);
+    if (!err.isEmpty()) {signalError(err); return;}
+
+
+    QStringList tickers;
+    for (int i=0; i<rows.count(); i++)
+        tickers.append(m_tickerTable->table()->item(i, 0)->text());
+
+    //init charts
+    LChartDialog d(this);
+    d.resize(1600, 800);
+    d.setAxisFixedMinMax(0, api_config.candle.number+10, -20, m_pivotData.limit_shadow_size*4);
+
+    LChartParams cp_zero;
+    cp_zero.lineColor = Qt::red;
+    cp_zero.points.append(QPointF(0, 0));
+    cp_zero.points.append(QPointF(api_config.candle.number+1, 0));
+    d.addChart(cp_zero);
+
+    QList<QColor> c_list;
+    c_list.append(Qt::gray);
+    c_list << QColor("#FFFF00") << QColor("#FF00FF") << QColor("#1E90FF");
+    foreach (const QString &v, tickers)
+    {
+        if (c_list.isEmpty()) break;
+
+        LChartParams cp;
+        cp.lineColor = c_list.takeFirst();
+        cp.points.append(getPointsByTicker(v, fdata));
+        if (!cp.points.isEmpty()) d.addChart(cp);
+    }
+
+
+    /*
+    if (!m_pivotData.candle_points.isEmpty())
+    {
+        LChartParams cp_zero;
+        cp_zero.lineColor = Qt::gray;
+        for (int i=0; i<m_pivotData.candle_points.count(); i++)
+            cp_zero.points.append(QPointF(i+1, m_pivotData.candle_points.at(i)));
+        d.addChart(cp_zero);
+    }
+    */
+
+    //paint charts
+    d.updateChart();
+    d.exec();
+}
+QList<QPointF> BB_ShadowExplorer::getPointsByTicker(const QString &ticker, const QStringList &fdata) const
+{
+    QList<QPointF> points;
+    if (ticker.isEmpty() || fdata.isEmpty()) return points;
+
+    bool ok;
+    foreach (const QString &v, fdata)
+    {
+        if (v.indexOf(ticker) == 0)
+        {
+            QStringList list = LString::trimSplitList(v, "/");
+            if (list.count() == 2)
+            {
+                QString s = LString::strBetweenStr(list.at(1), "[", "]");
+                QStringList s_values = LString::trimSplitList(s, ";");
+                for (int i=0; i<s_values.count(); i++)
+                {
+                    float y = s_values.at(i).toFloat(&ok);
+                    if (!ok) y = -1;
+                    points.append(QPointF(i+1, y));
+                }
+            }
+            break;
+        }
+    }
+    return points;
 }
 
 
@@ -330,7 +532,10 @@ void ShadowPrivotData::reset()
     bars.clear();
     volatility_factor = -1;
     limit_shadow_size = -1;
+    limit_stoploss = -1;
     testing_result = 0;
+    n_ok = 0;
+    candle_points.clear();
 }
 void ShadowPrivotData::addBar(const QJsonArray &b_arr)
 {
@@ -529,7 +734,7 @@ float ShadowPrivotData::maxShadowSize(bool over) const
     }
     return a;
 }
-QStringList ShadowPrivotData::candleResult(int i, int &n_ok)
+QStringList ShadowPrivotData::candleResult(int i)
 {
     QStringList list;
     list << "-" << "-" << "-" << "-";
@@ -546,17 +751,36 @@ QStringList ShadowPrivotData::candleResult(int i, int &n_ok)
     float under = bar_prev.underShadow_p(cp);
     list[1] = QString("%1% / %2%").arg(QString::number(over, 'f', 1)).arg(QString::number(under, 'f', 1));
 
+
+
+    //check shadows
     if (over >= limit_shadow_size && under >= limit_shadow_size)
     {
         n_ok++;
-        testing_result += (2*limit_shadow_size);
+        candle_points.append(2*limit_shadow_size);
+        testing_result += candle_points.last();
         list[2] = QString("OK (%1ps)").arg(n_ok);
+        list[3] = QString("%1%").arg(QString::number(testing_result, 'f', 1));
         return list;
     }
     if (over < limit_shadow_size && under < limit_shadow_size)
     {
         list[2] = QString("none");
+        candle_points.append(0);
         return list;
+    }
+
+    //check stoploss
+    if (limit_stoploss > 0)
+    {
+        if (over >= limit_stoploss || under >= limit_stoploss)
+        {
+            candle_points.append(limit_shadow_size-limit_stoploss);
+            testing_result += candle_points.last();
+            list[2] = QString("STOP");
+            list[3] = QString("%1%").arg(QString::number(testing_result, 'f', 1));
+            return list;
+        }
     }
 
 
@@ -566,14 +790,38 @@ QStringList ShadowPrivotData::candleResult(int i, int &n_ok)
     result = float(100)*result/cp;
     float result2 = result + limit_shadow_size;
     testing_result += result2;
+    candle_points.append(result2);
 
     list[2] = QString::number(result, 'f', 1);
     if (result2 > 0) list[2].append(QString(" (+%1)").arg(QString::number(result2, 'f', 1)));
     else  list[2].append(QString(" (%1)").arg(QString::number(result2, 'f', 1)));
-
     list[3] = QString("%1%").arg(QString::number(testing_result, 'f', 1));
+    if (candle_points.last() < -9)
+        qDebug()<<QString("LOW_POINT: i=%1,  point(%2)").arg(i).arg(candle_points.last());
 
     return list;
+}
+QString ShadowPrivotData::strN_ok() const
+{
+    QString s("---");
+    if (bars.isEmpty()) return s;
+    float f = float(100*n_ok)/float(bars.count());
+    s = QString("%1 (%2%)").arg(n_ok).arg(QString::number(f, 'f', 1));
+    return s;
+}
+QString ShadowPrivotData::strCandlePoints() const
+{
+    QString s("[---]");
+    if (candle_points.isEmpty()) return s;
+
+    s = "[";
+    for (int i=0; i<candle_points.count(); i++)
+    {
+        if (i == 0) s.append(QString::number(candle_points.at(i), 'f', 1));
+        else s = QString("%1; %2").arg(s).arg(QString::number(candle_points.at(i), 'f', 1));
+    }
+    s.append("]");
+    return s;
 }
 
 

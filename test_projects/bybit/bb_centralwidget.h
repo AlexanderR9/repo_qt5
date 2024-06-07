@@ -29,6 +29,10 @@ public:
 
     void actAdd();
     void actRemove();
+    void actStop();
+    void actLoadData();
+    void actChart();
+
 
 protected:
     LListWidgetBox      *w_list;
@@ -56,6 +60,7 @@ signals:
     void signalJsonReply(int, const QJsonObject&);
     void signalPageChanged(int);
     void signalGetShadowLimitSize(float&);
+    void signalGetStopLoss(float&);
 
 private:
     QString hmacSha1(QByteArray, QByteArray) const;

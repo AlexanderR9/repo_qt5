@@ -21,6 +21,10 @@ QString APIConfig::appDataPath()
 {
     return QString("%1%2data").arg(LFile::appPath()).arg(QDir::separator());
 }
+QString APIConfig::appShadowDataPath()
+{
+    return QString("%1%2shadow").arg(APIConfig::appDataPath()).arg(QDir::separator());
+}
 void APIConfig::loadTickers()
 {
     QString fname(QString("%1%2tickers.txt").arg(appDataPath()).arg(QDir::separator()));

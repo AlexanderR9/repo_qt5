@@ -100,6 +100,7 @@ void BB_CentralWidget::createPages()
     BB_ShadowExplorer *shadow_page = new BB_ShadowExplorer(this);
     w_stack->addWidget(shadow_page);
     connect(shadow_page, SIGNAL(signalGetLimitSize(float&)), this, SIGNAL(signalGetShadowLimitSize(float&)));
+    connect(shadow_page, SIGNAL(signalGetStopLoss(float&)), this, SIGNAL(signalGetStopLoss(float&)));
 
 
     for (int i=0; i<w_stack->count(); i++)
@@ -257,5 +258,20 @@ void BB_CentralWidget::actRemove()
 {
     BB_ChartPage *page = qobject_cast<BB_ChartPage*>(w_stack->currentWidget());
     if (page) page->removeFavorToken();
+}
+void BB_CentralWidget::actStop()
+{
+    BB_ShadowExplorer *page = qobject_cast<BB_ShadowExplorer*>(w_stack->currentWidget());
+    if (page) page->stopTimer();
+}
+void BB_CentralWidget::actLoadData()
+{
+    BB_ShadowExplorer *page = qobject_cast<BB_ShadowExplorer*>(w_stack->currentWidget());
+    if (page) page->loadTestingData();
+}
+void BB_CentralWidget::actChart()
+{
+    BB_ShadowExplorer *page = qobject_cast<BB_ShadowExplorer*>(w_stack->currentWidget());
+    if (page) page->showChart();
 }
 

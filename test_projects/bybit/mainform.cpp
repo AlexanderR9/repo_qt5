@@ -45,6 +45,9 @@ void MainForm::initActions()
     addAction(LMainWidget::atClear);
     addAction(LMainWidget::atAdd);
     addAction(LMainWidget::atRemove);
+    addAction(LMainWidget::atStop);
+    addAction(LMainWidget::atLoadData);
+    addAction(LMainWidget::atChart);
 
     addToolBarSeparator();
     addAction(LMainWidget::atSettings);
@@ -61,6 +64,9 @@ void MainForm::slotAction(int type)
         case LMainWidget::atClear: {m_protocol->clearProtocol(); break;}
         case LMainWidget::atAdd: {m_centralWidget->actAdd(); break;}
         case LMainWidget::atRemove: {m_centralWidget->actRemove(); break;}
+        case LMainWidget::atStop: {m_centralWidget->actStop(); break;}
+        case LMainWidget::atLoadData: {m_centralWidget->actLoadData(); break;}
+        case LMainWidget::atChart: {m_centralWidget->actChart(); break;}
 
         default: break;
     }
@@ -68,6 +74,10 @@ void MainForm::slotAction(int type)
 void MainForm::slotSetShadowLimitSize(float &a)
 {
     a = shadowSize();
+}
+void MainForm::slotSetStopLoss(float &a)
+{
+    a = stopLoss();
 }
 void MainForm::slotActionsApdate(int p_type)
 {
@@ -77,17 +87,34 @@ void MainForm::slotActionsApdate(int p_type)
         {
             getAction(atAdd)->setVisible(true);
             getAction(atRemove)->setVisible(true);
+            getAction(atStop)->setVisible(false);
+            getAction(atLoadData)->setVisible(false);
+            getAction(atChart)->setVisible(false);
+            break;
+        }
+        case rtShadows:
+        {
+            getAction(atStop)->setVisible(true);
+            getAction(atAdd)->setVisible(false);
+            getAction(atRemove)->setVisible(false);
+            getAction(atLoadData)->setVisible(true);
+            getAction(atChart)->setVisible(true);
             break;
         }
         case rtPositions:
         case rtOrders:
         case rtHistory:
+        case rtSpotHistory:
         case rtBag:
         case rtFundRate:
         case rtJsonView:
+        case rtPrices:
         {
             getAction(atAdd)->setVisible(false);
             getAction(atRemove)->setVisible(false);
+            getAction(atStop)->setVisible(false);
+            getAction(atLoadData)->setVisible(false);
+            getAction(atChart)->setVisible(false);
             break;
         }
         default: break;
@@ -115,6 +142,7 @@ void MainForm::initWidgets()
     connect(m_centralWidget, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
     connect(m_centralWidget, SIGNAL(signalPageChanged(int)), this, SLOT(slotActionsApdate(int)));
     connect(m_centralWidget, SIGNAL(signalGetShadowLimitSize(float&)), this, SLOT(slotSetShadowLimitSize(float&)));
+    connect(m_centralWidget, SIGNAL(signalGetStopLoss(float&)), this, SLOT(slotSetStopLoss(float&)));
 
 }
 void MainForm::initCommonSettings()
@@ -173,6 +201,13 @@ void MainForm::initCommonSettings()
     lCommonSettings.setComboList(key, combo_list);
     lCommonSettings.setDefValue(key, combo_list.at(5));
 
+    key = QString("stop_loss");
+    lCommonSettings.addParam(QString("Stoploss size, %"), LSimpleDialog::sdtDoubleCombo, key, 1);
+    combo_list.clear();
+    combo_list << QString::number(-1);
+    for (int i=0; i<30; i++) combo_list << QString::number(2+float(i+1)*0.5, 'f', 1);
+    lCommonSettings.setComboList(key, combo_list);
+    lCommonSettings.setDefValue(key, combo_list.at(10));
 
 }
 void MainForm::slotError(const QString &text)
@@ -237,4 +272,11 @@ float MainForm::shadowSize() const
 {
     return lCommonSettings.paramValue("shadow_size").toFloat();
 }
+float MainForm::stopLoss() const
+{
+    return lCommonSettings.paramValue("stop_loss").toFloat();
+}
+
+
+
 
