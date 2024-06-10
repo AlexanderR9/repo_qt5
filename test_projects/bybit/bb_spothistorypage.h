@@ -13,26 +13,44 @@ public:
     BB_SpotHistoryPage(QWidget*);
     virtual ~BB_SpotHistoryPage() {}
 
+    virtual void load(QSettings&);
 
     QString caption() const {return QString("History (SPOT)");}
 
 protected:
-    QList<BB_HistorySpot>   m_spotOrders;
+    QList<BB_HistorySpot> m_spotOrders;
+    QList<QDate> m_loadedDates; //заполняется перед началом сценария запросов, даты уже существующих ордеров
+    bool m_needRewriteFile;
+    QLineEdit *m_amountEdit;
 
     virtual void loadTablesByContainers(); //by start program once
     virtual void goExchange(const QJsonObject &jresult_obj);
     virtual void loadContainers(); //load m_posList, m_orderList from files by start program
-    virtual quint8 daysSeparator() const {return 6;}
+    virtual quint8 daysSeparator() const {return 5;}
 
     void sendOrdersReq();
     void sendNextOrdersReq();
     void parseOrders(const QJsonObject&);
     void insertSpotEvent(const BB_HistorySpot&);
-    bool hasSpotEvent(const QString&) const;
+    bool hasSpotEvent(const BB_HistorySpot&) const;
+    void finishReqScenario();
+
+
+    //make after finish ALL requests
+    void bringTogetherEvents(); //свести в одну позиции с одинаковыми ордерами
+    void sortByExecTime(); //сортировка m_spotOrders по времени срабатывания ордеров, 1-я самая свежая запись
+    void rewriteHistoryFile(); //после окончания выполнения сценария запросов переписать файл полностью
 
     void reinitWidgets();
     void fillTable(const QJsonArray&);
     void updateLastRowColors(const BB_HistorySpot&);
+    void prepareLoadedDates();
+
+private:
+    QString hasDoubleUid() const;
+
+protected slots:
+    void slotSearched();
 
 
 };

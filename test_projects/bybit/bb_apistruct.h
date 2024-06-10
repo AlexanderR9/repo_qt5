@@ -152,8 +152,10 @@ struct BB_HistoryOrder : public BB_HistoryRecordBase
 struct BB_HistorySpot : public BB_HistoryRecordBase
 {
     BB_HistorySpot() {reset();}
+    BB_HistorySpot(const BB_HistorySpot&);
 
     QDateTime triger_time;
+    qint64 ts; //оригинальное значение JSON
     float price;
     float fee; //абсолютное значение
     QString fee_ticker;
@@ -168,7 +170,7 @@ struct BB_HistorySpot : public BB_HistoryRecordBase
 
     void reset();
     QString toFileLine() const;
-    quint8 filedsCount() const {return 10;}
+    quint8 filedsCount() const {return 11;}
     void parseSplitedFileLine(const QStringList&);
     QStringList toTableRowData() const;
     void fromJson(const QJsonObject&);

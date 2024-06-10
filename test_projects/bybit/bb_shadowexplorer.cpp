@@ -137,7 +137,7 @@ void BB_ShadowExplorer::initTickersTable()
 
     //headers
     QStringList headers;
-    headers << "Ticker" <<  "Last price" << "RSI, %" << "Testing result" << "N_OK";
+    headers << "Ticker" <<  "Last price" << "RSI, %" << "Testing result" << "N_OK" << "Max drawdown";
     m_tickerTable->setHeaderLabels(headers);
     m_tickerTable->resizeByContents();
 
@@ -161,7 +161,7 @@ void BB_ShadowExplorer::initPivotTable()
     headers << "Min/Max price" << "Current RSI, %" << "Average shadow size (over/under)";
     headers << "Max over shadow size" << "Max under shadow size";
     headers << "User limit size, %" << "Has over limit shadow candles" << "Has under limit shadow candles";
-    headers << "Testing total result";
+    headers << "Testing total result" << "Max drawdown";
     m_pivotTable->setHeaderLabels(headers, Qt::Vertical);
     m_pivotTable->resizeByContents();
 
@@ -193,7 +193,7 @@ void BB_ShadowExplorer::loadTickers()
     foreach (const QString &v, api_config.favor_tickers)
     {
         QStringList row_data;
-        row_data << v << "---" << "-1" << "0.0%" << "0";
+        row_data << v << "---" << "-1" << "0.0%" << "0" << "0%";
         LTable::addTableRow(t, row_data);
     }
     m_tickerTable->resizeByContents();
@@ -288,12 +288,15 @@ void BB_ShadowExplorer::updateTickerRow()
     t->item(row, 2)->setText(QString::number(m_pivotData.currentRsi(), 'f', 1));
     t->item(row, 3)->setText(QString("%1%").arg(QString::number(m_pivotData.testing_result, 'f', 1)));
     t->item(row, 4)->setText(m_pivotData.strN_ok());
+    t->item(row, 5)->setText(QString("%1%").arg(QString::number(m_pivotData.max_drawdown, 'f', 1)));
 
     if (m_pivotData.testing_result < 0) t->item(row, 3)->setTextColor(Qt::red);
     else if (m_pivotData.testing_result > 100) t->item(row, 3)->setTextColor(Qt::blue);
     else if (m_pivotData.testing_result < 30) t->item(row, 3)->setTextColor(Qt::gray);
     else t->item(row, 3)->setTextColor(Qt::black);
 
+    if (m_pivotData.max_drawdown < -30) t->item(row, 5)->setTextColor(Qt::red);
+    else if (m_pivotData.max_drawdown > -10) t->item(row, 5)->setTextColor(Qt::blue);
 
     m_tickerTable->resizeByContents();
 
@@ -316,6 +319,7 @@ void BB_ShadowExplorer::updatePivotTable()
     t->item(i, 0)->setText(m_pivotData.strHasLimitCandles(true)); i++;
     t->item(i, 0)->setText(m_pivotData.strHasLimitCandles(false)); i++;
     t->item(i, 0)->setText(QString("%1%").arg(QString::number(m_pivotData.testing_result, 'f', 1))); i++;
+    t->item(i, 0)->setText(QString("%1%").arg(QString::number(m_pivotData.max_drawdown, 'f', 1))); i++;
 
     m_pivotTable->resizeByContents();
 }
@@ -358,9 +362,8 @@ void BB_ShadowExplorer::addLastToFile()
     if (row < 0) return;
 
     QString fdata = QString("%1 / %2").arg(t->item(row, 0)->text()).arg(t->item(row, 3)->text());
-    fdata = QString("%1 / %2").arg(fdata).arg(m_pivotData.strN_ok());
+    fdata = QString("%1 / %2 / %3").arg(fdata).arg(m_pivotData.strN_ok()).arg(t->item(row, 5)->text());
     fdata.append("\n");
-
 
     QString err;
     if (row > 0) err = LFile::appendFile(monitFile(), fdata);
@@ -402,11 +405,13 @@ void BB_ShadowExplorer::loadTestingData()
     }
 
 
+    emit signalMsg("\n LOADING TESTING DATA...... ");
     foreach (const QString &v, f_list)
     {
         if (v.contains(fname))
         {
-            qDebug()<<v;
+            //qDebug()<<v;
+            emit signalMsg(v);
             loadTestingData(v, t);
         }
     }
@@ -453,9 +458,12 @@ void BB_ShadowExplorer::showChart()
     if (!err.isEmpty()) {signalError(err); return;}
 
 
+    QString s_title;
     QStringList tickers;
     for (int i=0; i<rows.count(); i++)
-        tickers.append(m_tickerTable->table()->item(i, 0)->text());
+    {
+        tickers.append(m_tickerTable->table()->item(rows.at(i), 0)->text());
+    }
 
     //init charts
     LChartDialog d(this);
@@ -479,6 +487,10 @@ void BB_ShadowExplorer::showChart()
         cp.lineColor = c_list.takeFirst();
         cp.points.append(getPointsByTicker(v, fdata));
         if (!cp.points.isEmpty()) d.addChart(cp);
+
+        if (s_title.isEmpty()) s_title = v;
+        else s_title = QString("%1; %2").arg(s_title).arg(v);
+
     }
 
 
@@ -495,6 +507,7 @@ void BB_ShadowExplorer::showChart()
 
     //paint charts
     d.updateChart();
+    d.setWindowTitle(QString("Shadows result for: [%1]").arg(s_title));
     d.exec();
 }
 QList<QPointF> BB_ShadowExplorer::getPointsByTicker(const QString &ticker, const QStringList &fdata) const
@@ -533,7 +546,7 @@ void ShadowPrivotData::reset()
     volatility_factor = -1;
     limit_shadow_size = -1;
     limit_stoploss = -1;
-    testing_result = 0;
+    testing_result = max_drawdown = 0;
     n_ok = 0;
     candle_points.clear();
 }
@@ -777,6 +790,7 @@ QStringList ShadowPrivotData::candleResult(int i)
         {
             candle_points.append(limit_shadow_size-limit_stoploss);
             testing_result += candle_points.last();
+            if (testing_result < max_drawdown) max_drawdown = testing_result;
             list[2] = QString("STOP");
             list[3] = QString("%1%").arg(QString::number(testing_result, 'f', 1));
             return list;
@@ -791,6 +805,7 @@ QStringList ShadowPrivotData::candleResult(int i)
     float result2 = result + limit_shadow_size;
     testing_result += result2;
     candle_points.append(result2);
+    if (testing_result < max_drawdown) max_drawdown = testing_result;
 
     list[2] = QString::number(result, 'f', 1);
     if (result2 > 0) list[2].append(QString(" (+%1)").arg(QString::number(result2, 'f', 1)));

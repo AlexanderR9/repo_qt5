@@ -323,6 +323,22 @@ void BB_HistoryOrder::fromJson(const QJsonObject &j_obj)
 
 
 // BB_HistorySpot
+BB_HistorySpot::BB_HistorySpot(const BB_HistorySpot &other)
+{
+    triger_time = other.triger_time;
+    price = other.price;
+    fee = other.fee;
+    fee_ticker = other.fee_ticker;
+    ts = other.ts;
+
+    // base
+    uid = other.uid;
+    ticker = other.ticker;
+    action = other.action;
+    lot_size = other.lot_size;
+    type = other.type;
+    status = other.status;
+}
 void BB_HistorySpot::reset()
 {
     BB_HistoryRecordBase::reset();
@@ -331,6 +347,7 @@ void BB_HistorySpot::reset()
     price = -1;
     fee = 0;
     fee_ticker.clear();
+    ts = -1;
 }
 QStringList BB_HistorySpot::tableHeaders()
 {
@@ -347,9 +364,10 @@ QString BB_HistorySpot::toFileLine() const
     s = QString("%1 / %2").arg(s).arg(QString::number(price, 'f', PRICE_PRECISION));
     s = QString("%1 / %2").arg(s).arg(QString::number(fee, 'f', PRICE_PRECISION));
     s = QString("%1 / %2").arg(s).arg(fee_ticker);
-    s = QString("%1 / %2 / EXEC").arg(s).arg(type);
+    s = QString("%1 / %2 / %3 / EXEC").arg(s).arg(type).arg(ts);
 
-    return QString("%1 \n").arg(s);
+    return s;
+    //return QString("%1 \n").arg(s);
 }
 void BB_HistorySpot::parseSplitedFileLine(const QStringList &list)
 {
@@ -371,6 +389,12 @@ void BB_HistorySpot::parseSplitedFileLine(const QStringList &list)
     }
     fee_ticker = list.at(i).trimmed(); i++;
     type = list.at(i).trimmed(); i++;
+    ts = list.at(i).trimmed().toLong(&ok); i++;
+    if (!ok)
+    {
+        ts = -2;
+        qWarning()<<QString("BB_HistorySpot::parseSplitedFileLine WARNING - invalid ts value [%1]").arg(list.at(i-1));
+    }
 }
 QStringList BB_HistorySpot::toTableRowData() const
 {
@@ -386,7 +410,8 @@ void BB_HistorySpot::fromJson(const QJsonObject &j_obj)
 {
     if (j_obj.isEmpty()) return;
 
-    triger_time.setMSecsSinceEpoch(j_obj.value("execTime").toString().toLong());
+    ts = j_obj.value("execTime").toString().toLong();
+    triger_time.setMSecsSinceEpoch(ts);
     uid = j_obj.value("orderId").toString();
     fee_ticker = j_obj.value("feeCurrency").toString();
     ticker = j_obj.value("symbol").toString();
@@ -418,7 +443,11 @@ QString BB_HistorySpot::resultDeal() const
     if (isBuy()) r = lot_size - fee;
     else if (isSell()) r = usdSize() - fee;
 
-    return QString::number(r, 'f', precisionByValue(r, 4));
+    //return QString::number(r, 'f', precisionByValue(r, 4));
+    quint8 p = 3;
+    if (r < 0.3) p = 5;
+    else if (r < 2) p = 4;
+    return QString::number(r, 'f', p);
 }
 
 // BB_PricesContainer

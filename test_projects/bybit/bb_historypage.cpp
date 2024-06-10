@@ -226,6 +226,7 @@ void BB_HistoryPage::initPosTable()
 void BB_HistoryPage::initFilterBox()
 {
     QGroupBox *filterBox = new QGroupBox(this);
+    filterBox->setObjectName("filter_box");
     filterBox->setTitle("Filter parameters");
     h_splitter->addWidget(filterBox);
 
@@ -250,7 +251,7 @@ void BB_HistoryPage::initFilterBox()
     for (int i=1; i<=10; i++) m_historyDaysCombo->addItem(QString::number(i*30));
     lay_row++;
 
-    g_lay->addItem(new QSpacerItem(1,1, QSizePolicy::Preferred, QSizePolicy::Expanding), lay_row,0);
+    g_lay->addItem(new QSpacerItem(1,1, QSizePolicy::Preferred, QSizePolicy::Expanding), lay_row+1,0);
     m_tableOrders->setSearchEdit(search_edit);
     m_tablePos->setSearchEdit(search_edit);
 }
@@ -373,30 +374,13 @@ void BB_HistoryPage::waitPos(const QJsonObject &jresult_obj)
         signalError(QString("BB_HistoryPage::waitPos:  j_arr size over MAX_ORDERS_PAGE(%1)").arg(MAX_ORDERS_PAGE));
 
     fillPosTable(j_arr);
-    if (m_polledDays < 0 || m_polledDays > needPollDays())
+    if (m_polledDays < 0 || m_polledDays >= needPollDays())
     {
         emit signalMsg("getting positions finished");
         h_stage = hsFinished;
         goExchange(jresult_obj);
     }
     else nextTSRequest();
-
-
-    /*
-    if (j_arr.isEmpty())
-    {
-        emit signalMsg("getting position finished");
-        h_stage = hsFinished;
-        goExchange(jresult_obj);
-        return;
-    }
-    else fillPosTable(j_arr);
-
-    //next request (pos: next page)
-    QString next_cursor = jresult_obj.value("nextPageCursor").toString().trimmed();
-    m_reqData->params.insert("cursor", next_cursor);
-    sendRequest(MAX_ORDERS_PAGE);
-    */
 }
 void BB_HistoryPage::waitOrders(const QJsonObject &jresult_obj)
 {
@@ -406,7 +390,7 @@ void BB_HistoryPage::waitOrders(const QJsonObject &jresult_obj)
         signalError(QString("BB_HistoryPage::waitOrders:  j_arr size over MAX_ORDERS_PAGE(%1)").arg(MAX_ORDERS_PAGE));
 
     fillOrdersTable(j_arr);
-    if (m_polledDays < 0 || m_polledDays > needPollDays())
+    if (m_polledDays < 0 || m_polledDays >= needPollDays())
     {
         emit signalMsg("getting orders finished");
         h_stage = hsGetPos;
@@ -414,15 +398,6 @@ void BB_HistoryPage::waitOrders(const QJsonObject &jresult_obj)
         goExchange(jresult_obj);
     }
     else nextTSRequest();
-
-    /*
-    qint64 ts1, ts2;
-    getTSNextInterval(ts1, ts2);
-    m_reqData->params.insert("startTime", QString::number(ts1));
-    if (ts2 > 0) m_reqData->params.insert("endTime", QString::number(ts2));
-    else m_reqData->params.remove("endTime");
-    sendRequest(MAX_ORDERS_PAGE);
-    */
 }
 void BB_HistoryPage::updateDataPage(bool force)
 {
@@ -464,31 +439,14 @@ void BB_HistoryPage::getTSNextInterval(qint64 &ts1, qint64 &ts2)
     m_polledDays += daysSeparator();
 
     QDate d2 = d1.addDays(daysSeparator());
+    if (needPollDays() < daysSeparator()) {d2 = d1.addDays(needPollDays()); m_polledDays = needPollDays();}
+
     qDebug()<<QString("BB_SpotHistoryPage::getTSNextInterval  %1 / %2").arg(d1.toString(APIConfig::userDateMask())).
               arg((d2 >= cur_d) ? "-1" : d2.toString(APIConfig::userDateMask()));
 
     if (d2 >= cur_d) m_polledDays = -1;
     else ts2 = APIConfig::toTimeStamp(d2.day(), d2.month(), d2.year());
 }
-/*
-void BB_HistoryPage::getTSRange(qint64 &ts1, qint64 &ts2)
-{
-    ts1 = ts2 = -1;
-    QDate start_date(QDate::fromString(m_startDateEdit->text().trimmed(), APIConfig::userDateMask()));
-    if (!start_date.isValid())
-    {
-        emit signalError(QString("HistoryPage: invalid start date"));
-        return;
-    }
-
-    quint8 dd = m_historyDaysCombo->currentText().toUInt();
-    QDate end_date(start_date.addDays(dd));
-
-    ts1 = APIConfig::toTimeStamp(start_date.day(), start_date.month(), start_date.year());
-    if (dd <= 7) ts2 = APIConfig::toTimeStamp(end_date.day(), end_date.month(), end_date.year());
-    emit signalMsg(QString("HISTORY INTERVAL: [%1 - %2]").arg(start_date.toString(APIConfig::userDateMask())).arg(end_date.toString(APIConfig::userDateMask())));
-}
-*/
 void BB_HistoryPage::fillOrdersTable(const QJsonArray &j_arr)
 {
     if (j_arr.isEmpty()) return;

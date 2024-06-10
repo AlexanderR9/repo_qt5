@@ -23,6 +23,7 @@ struct ShadowPrivotData
     float limit_shadow_size; //пользовательская настройка, %
     float limit_stoploss; //пользовательская настройка, %
     float testing_result; //total result (%) of testing
+    float max_drawdown;
     quint16 n_ok;
     QList<float> candle_points; //last result candle points
 
