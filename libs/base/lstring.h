@@ -59,6 +59,12 @@ public:
     //возвращает строку состоящую из N одинаковых символов
     static QString symbolString(QChar c, quint16 N = 50) {return QString(N, c);}
 
+
+    //удаляет в QStringList пустые строки
+    //если remove_spaces = true то также удаляются строки состоящие из одних пробелов.
+    static void removeEmptyStrings(QStringList&, bool remove_spaces = true);
+
+
 };
 
 

@@ -55,6 +55,9 @@ public:
     QString strPapersCost() const;
     QString strCurProfit() const;
 
+    static QString balanceFile();
+
+
 protected:
     QList<BagPosition> m_positions;
     float m_total;
@@ -67,6 +70,7 @@ protected:
     float papersCost_now() const;
     void sortPositions();
     void checkCloneUid(BagPosition&); //проверить uid инструмента в позиции на предмет клона, если это клон, то подменить его на нормальный uid из базы  активов
+    void addBalancePointToFile();
 
 public slots:
     void slotLoadPositions(const QJsonObject&);

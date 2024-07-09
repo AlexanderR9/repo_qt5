@@ -129,6 +129,17 @@ QString LString::removeLongSpaces(const QString &s, bool remove_tabs)
 
     return result;
 }
+void LString::removeEmptyStrings(QStringList &list, bool remove_spaces)
+{
+    if (list.isEmpty()) return;
 
+    int n = list.count();
+    for (int i=n-1; i>=0; i--)
+    {
+        QString s = list.at(i);
+        if (s.isEmpty()) {list.removeAt(i); continue;}
+        if (remove_spaces && s.trimmed().isEmpty()) list.removeAt(i);
+    }
+}
 
 

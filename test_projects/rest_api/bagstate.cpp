@@ -1,9 +1,12 @@
 #include "bagstate.h"
 #include "instrument.h"
 #include "apicommonsettings.h"
+#include "lfile.h"
 
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QDir>
+
 
 // BagState
 BagState::BagState(QObject *parent)
@@ -60,6 +63,7 @@ void BagState::slotLoadPortfolio(const QJsonObject &j_obj)
         if (v == "totalAmountPortfolio")
         {
             m_total = InstrumentBase::floatFromJVBlock(j_obj.value(v));
+            if (m_total > 0) addBalancePointToFile();
         }
         else if (v == "positions")
         {
@@ -183,8 +187,48 @@ void BagState::sortPositions()
     if (!mid_list.isEmpty())
         foreach (const BagPosition &v, mid_list)
             m_positions.prepend(v);
+}
+QString BagState::balanceFile()
+{
+    return QString("%1%2%3").arg(API_CommonSettings::appDataPath()).arg(QDir::separator()).arg("balance.txt");
+}
+void BagState::addBalancePointToFile()
+{
+    QDate d_cur(QDate::currentDate());
+    QString fname(BagState::balanceFile());
+    QString err;
+    QString fline = QString("%1   %2 \n").arg(d_cur.toString(InstrumentBase::userDateMask())).arg(strTotal());
 
+    if (!LFile::fileExists(fname))
+    {
+        emit signalMsg(QString("Need create balance file: %1").arg(fname));
+        err = LFile::writeFile(fname, fline);
+        if (!err.isEmpty()) {emit signalError(err); return;}
+    }
+    else
+    {
+        QStringList list;
+        QString err = LFile::readFileSL(fname, list);
+        if (!err.isEmpty()) {emit signalError(err); return;}
 
+        LString::removeEmptyStrings(list);
+        if (!list.isEmpty())
+        {
+            QString s_date = list.last().trimmed().left(InstrumentBase::userDateMask().length());
+            qDebug()<<QString("Last balance date: %1").arg(s_date);
+            QDate l_date(QDate::fromString(s_date, InstrumentBase::userDateMask()));
+            if (l_date.isValid())
+            {
+                if (d_cur == l_date)
+                {
+                    emit signalMsg(QString("Balace for date [%1] already added!").arg(s_date));
+                    return;
+                }
+            }
+        }
+        err = LFile::appendFile(fname, fline);
+        if (!err.isEmpty()) {emit signalError(err); return;}
+    }
 }
 
 

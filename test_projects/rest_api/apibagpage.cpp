@@ -41,6 +41,8 @@ APIBagPage::APIBagPage(QWidget *parent)
 
     connect(this, SIGNAL(signalLoadPortfolio(const QJsonObject&)), m_bag, SLOT(slotLoadPortfolio(const QJsonObject&)));
     connect(this, SIGNAL(signalLoadPositions(const QJsonObject&)), m_bag, SLOT(slotLoadPositions(const QJsonObject&)));
+    connect(m_bag, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
+    connect(m_bag, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_bag, SIGNAL(signalBagUpdate()), this, SLOT(slotBagUpdate()));
     connect(m_tableBox->table(), SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu(QPoint)));
     connect(m_bag, SIGNAL(signalGetBondEndDateByUID(const QString&, QDate&)), this, SIGNAL(signalGetBondEndDateByUID(const QString&, QDate&)));
