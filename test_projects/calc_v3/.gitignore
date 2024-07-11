@@ -1,0 +1,16 @@
+calc_v3.pro.user
+calc_v3.debug
+calcv3
+.qmake.stash
+moc
+obj
+ui
+Makefile
+rest_api_test
+full_clear
+data
+save
+*.tar.gz
+ui_assetinfowidget.h
+
+
