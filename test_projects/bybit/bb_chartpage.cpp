@@ -156,8 +156,17 @@ void BB_ChartPage::repaintChart(const QList<QPointF> &points)
     }
     else
     {
+        float a = 0;
+        foreach (const QPointF &p, points) a += p.y();
+        a /= points.count();
+
         w_chart->addChartPoints(points, 0);
         emit signalMsg(w_chart->strMinMax());
+
+        quint8 preq = 1;
+        if (a < 10) preq = 2;
+        if (a < 2) preq = 4;
+        w_chart->setAxisPrecision(-1, preq);
     }
     w_chart->updateAxis();
 }

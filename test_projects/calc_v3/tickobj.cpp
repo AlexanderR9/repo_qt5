@@ -60,6 +60,7 @@ void TickObj::recalc()
     //m_paramsCalc.outBinPrices();
 
     calcTokensSizes();
+    m_paramsCalc.assets_sum = m_paramsCalc.token0_size*normalizedCurPrice() + m_paramsCalc.token1_size;
 
     emit signalSendCalcResult(m_paramsCalc);
 }
@@ -139,22 +140,86 @@ void TickObj::calcTokensSizes()
     if (m_params.input_token == 0) m_paramsCalc.token0_size = m_params.input_size;
     else m_paramsCalc.token1_size = m_params.input_size;
 
-    double cp = m_params.cur_price;
-    if (cp <= m_params.range.first) return;
-    if (cp >= m_params.range.second) return;
+    double cp = normalizedCurPrice();
+    double p1 = m_params.range.first;
+    double p2 = m_params.range.second;
+    if ((cp <= p1) || (cp >= p2))
+    {
+        if (m_params.input_token == 0) m_paramsCalc.L = m_paramsCalc.token0_size*(qSqrt(p1)*qSqrt(p2)/(qSqrt(p2) - qSqrt(p1)));
+        else m_paramsCalc.L = m_paramsCalc.token1_size/(qSqrt(p2) - qSqrt(p1));
+        return;
+    }
 
     //calc for p_min > p_cur > p_max
-    double k1 = m_params.range.second/m_params.cur_price;
-    double k2 = m_params.range.first/m_params.cur_price;
+    double k1 = qSqrt(p2/cp);
+    double k2 = qSqrt(p1/cp);
     emit signalMsg(QString("k1=%1   k2=%2").arg(k1).arg(k2));
-    k1 = qSqrt(k1);
-    k2 = qSqrt(k2);
-    emit signalMsg(QString("sqrt(k1)=%1   sqrt(k2)=%2").arg(k1).arg(k2));
 
-    double ch = k1*cp*m_paramsCalc.token0_size*(k2-1);
-    m_paramsCalc.token1_size = ch/(1-k1);
+    if (m_params.input_token == 0)
+    {
+        double ch = k1*cp*m_paramsCalc.token0_size*(k2-1);
+        m_paramsCalc.token1_size = ch/(1-k1);
+    }
+    else
+    {
+        double ch = m_paramsCalc.token1_size*(1-k1);
+        m_paramsCalc.token0_size = ch/(k1*cp*(k2-1));
+    }
+
+
+    /////////////////calc liquidity////////////////////
+    double liq_0 = m_paramsCalc.token0_size*(qSqrt(cp)*qSqrt(p2)/(qSqrt(p2) - qSqrt(cp)));
+    double liq_1 = m_paramsCalc.token1_size/(qSqrt(cp) - qSqrt(p1));
+    m_paramsCalc.L = qMin(liq_0, liq_1);
+    emit signalMsg(QString("liq_0=%1  liq_1=%2").arg(QString::number(liq_0, 'f', 6)).arg(QString::number(liq_1, 'f', 6)));
+
+    //calc changing assets by deltaprice
+/*
+    double p_next = cp + m_params.delta_price;
+    double sqrt_dp = qSqrt(p_next) - qSqrt(cp);
+    double sqrt_dp_inverse = 1/qSqrt(p_next) - 1/qSqrt(cp);
+    double dx = sqrt_dp_inverse*m_paramsCalc.L;
+    double dy = sqrt_dp*m_paramsCalc.L;
+
+    emit signalMsg(QString("AFTER CHANGE PRICE: dx=%1  dy=%2  x_size=%3 y_size=%4  ").arg(QString::number(dx, 'f', 3)).
+                                 arg(QString::number(dy, 'f', 3)).arg(QString::number(m_paramsCalc.token0_size+dx, 'f', 3)).
+                   arg(QString::number(m_paramsCalc.token1_size+dy, 'f', 3)));
+*/
 }
+void TickObj::slotPriceChanged(float p_next)
+{
+    double dx = 0;
+    double dy = 0;
+    double cp = normalizedCurPrice();
 
+
+    double sqrt_dp = qSqrt(p_next) - qSqrt(cp);
+    double sqrt_dp_inverse = 1/qSqrt(p_next) - 1/qSqrt(cp);
+    if (qAbs(p_next - m_params.range.first) < 0.001)
+    {
+        dx = sqrt_dp_inverse*m_paramsCalc.L;
+        dy = -1*m_paramsCalc.token1_size;
+    }
+    else if (qAbs(p_next - m_params.range.second) < 0.001)
+    {
+        dy = sqrt_dp*m_paramsCalc.L;
+        dx = -1*m_paramsCalc.token0_size;
+    }
+    else
+    {
+        dx = sqrt_dp_inverse*m_paramsCalc.L;
+        dy = sqrt_dp*m_paramsCalc.L;
+    }
+
+    emit signalChangePriceResult(dx, dy);
+}
+double TickObj::normalizedCurPrice() const
+{
+    double cp = m_params.cur_price;
+    if (cp < m_params.range.first) cp = m_params.range.first;
+    else if (cp > m_params.range.second) cp = m_params.range.second;
+    return cp;
+}
 
 
 //////////////////////////////////////
@@ -163,6 +228,7 @@ void PoolParamsStruct::reset()
     fee_type = tst005;
     range.first=0; range.second=1;
     cur_price=-1;
+    //delta_price = 0;
     input_token=0;
     input_size=1000;
     validity = false;
@@ -173,6 +239,7 @@ void PoolParamsStruct::setData(const PoolParamsStruct &other)
     range.first = other.range.first;
     range.second = other.range.second;
     cur_price = other.cur_price;
+    //delta_price = other.delta_price;
     input_token = other.input_token;
     input_size =  other.input_size;
     validity =  other.validity;
@@ -182,7 +249,8 @@ QString PoolParamsStruct::toStr() const
 {
     QString s("PoolParams: ");
     s = QString("%1 RANGE[%2; %3]").arg(s).arg(range.first).arg(range.second);
-    s = QString("%1 CUR_PRICE[%2]  INPUT_TOKEN[%3 / %4]").arg(s).arg(cur_price).arg(input_token).arg(input_size);
+    s = QString("%1 CUR_PRICE[%2]  INPUT_TOKEN[%3 / %4]").arg(s).arg(cur_price).arg(input_token).arg(input_size);    
+    //s = QString("%1 DELTA_PRICE[%2]").arg(s).arg(delta_price);
     s = QString("%1 VALIDITY[%2]").arg(s).arg(validity?"Ok":"Err");
     return s;
 }
@@ -195,12 +263,13 @@ bool PoolParamsStruct::curPriceOutRange() const
 //////////////////////////////////////////////////
 void PoolParamsCalculated::reset()
 {
-    token0_size = token1_size = 0;
+    token0_size = token1_size = L = 0;
     tick_range.first=-1;
     tick_range.second=1;
     bin_count = 0;
     cur_bin = -1;
     range_prices.clear();
+    assets_sum = 0;
 }
 void PoolParamsCalculated::fillPrices(int t_step)
 {

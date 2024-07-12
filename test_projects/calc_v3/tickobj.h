@@ -16,6 +16,7 @@ struct PoolParamsStruct
     int fee_type;
     QPair<double, double> range; //prices range
     double cur_price;
+    //double delta_price;
     quint8 input_token; // token0 or token1
     double input_size; // for input_token
     bool validity;
@@ -35,6 +36,9 @@ struct PoolParamsCalculated
 
     double token0_size; //volatility asset, an example: ARB
     double token1_size; //stable asset
+    double assets_sum; //sum size in term token1 (stable)
+
+    double L; //user liquidity
     QPair<int, int> tick_range;
     quint16 bin_count;
     int cur_bin; //bin where cur_price or -1 if cur_price is out the range
@@ -74,8 +78,15 @@ protected:
     quint16 binCount(int, int) const;
     void calcTokensSizes();
 
+private:
+    double normalizedCurPrice() const; //if cp < min || cp > max then cp == one of range limits
+
+public slots:
+    void slotPriceChanged(float p); // new price between min/max
+
 signals:
     void signalSendCalcResult(const PoolParamsCalculated&);
+    void signalChangePriceResult(float, float);
 
 };
 
