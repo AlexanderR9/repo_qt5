@@ -54,7 +54,7 @@ APIEventsPage::APIEventsPage(QWidget *parent)
     reinitWidgets();
     initFilterBox();
 
-    connect(m_tableBox, SIGNAL(signalSearched()), this, SLOT(slotSearched()));
+    connect(m_tableBox, SIGNAL(signalSearched()), this, SLOT(slotFilter()));
 }
 void APIEventsPage::reinitWidgets()
 {
@@ -338,22 +338,55 @@ void APIEventsPage::initFilterBox()
     QSpacerItem *spcr = new QSpacerItem(10, 10, QSizePolicy::Maximum);
     g_lay->addItem(spcr, 3, 0, 2, 2);
 
-    connect(m_paperTypeFilterControl, SIGNAL(currentIndexChanged(QString)), this, SLOT(slotFilter()));
-    connect(m_kindFilterControl, SIGNAL(currentIndexChanged(QString)), this, SLOT(slotFilter()));
-    connect(m_dateFilterControl, SIGNAL(currentIndexChanged(QString)), this, SLOT(slotFilter()));
+    connect(m_paperTypeFilterControl, SIGNAL(currentIndexChanged(QString)), this, SLOT(slotSearched()));
+    connect(m_kindFilterControl, SIGNAL(currentIndexChanged(QString)), this, SLOT(slotSearched()));
+    connect(m_dateFilterControl, SIGNAL(currentIndexChanged(QString)), this, SLOT(slotSearched()));
 }
+
+/*
+bool APIEventsPage::isSatisfiesFilter(int row) const
+{
+    const QTableWidget *t = m_tableBox->table();
+    if (row < 0 || row >= t->rowCount()) return false;
+
+    bool need_hide = false;
+    paperTypeFilter(row, need_hide);
+    if (need_hide) return false;
+    kindFilter(row, need_hide);
+    if (need_hide) return false;
+    dateFilter(row, need_hide);
+    if (need_hide) return false;
+
+    return true;
+}
+*/
+void APIEventsPage::applyFilterRow(int row)
+{
+    if (row < 0 || row >= m_tableBox->table()->rowCount()) return;
+
+    bool need_hide = false;
+    paperTypeFilter(row, need_hide);
+    if (need_hide) return;
+    kindFilter(row, need_hide);
+    if (need_hide) return;
+    dateFilter(row, need_hide);
+}
+/*
 void APIEventsPage::slotFilter()
 {
     if (!sender()) return;
-    //qDebug()<<QString("slotFilter");
+    qDebug()<<QString("APIEventsPage::slotFilter()");
 
-    int n = m_tableBox->table()->rowCount();
-    if (n <= 0) return;
+    const QTableWidget *t = m_tableBox->table();
+    int n = t->rowCount();
+    if (n < 5) return;
 
     m_tableBox->searchExec();
     for (int i=0; i<n; i++)
     {
-        if (m_tableBox->table()->isRowHidden(i)) continue;
+        if (t->isRowHidden(i)) continue;
+        applyFilter(i);
+
 
         bool was_hiden = false;
         paperTypeFilter(i, was_hiden);
@@ -362,18 +395,35 @@ void APIEventsPage::slotFilter()
         if (was_hiden) continue;
         dateFilter(i, was_hiden);
         if (was_hiden) continue;
+
     }
 
     updateSearchLabel();
     recalcStat();
     recalcPaperResult();
 }
-void APIEventsPage::slotSearched()
+*/
+void APIEventsPage::slotFilter()
 {
     //qDebug("APIEventsPage::slotSearched()");
+    filterAfterSearch();
     updateSearchLabel();
     recalcStat();
     recalcPaperResult();
+}
+void APIEventsPage::slotSearched()
+{
+    if (m_tableBox)
+        m_tableBox->searchExec();
+}
+void APIEventsPage::filterAfterSearch()
+{
+    const QTableWidget *t = m_tableBox->table();
+    for (int i=0; i<t->rowCount(); i++)
+    {
+        if (t->isRowHidden(i)) continue;
+        applyFilterRow(i);
+    }
 }
 void APIEventsPage::updateSearchLabel()
 {

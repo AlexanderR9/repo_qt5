@@ -76,6 +76,9 @@ protected:
     void sortByDate();
     void checkCloneUid(EventOperation&); //проверить uid пришедшего события в ответе на предмена клона, если это клон, то подменить его на нормальный uid из базы  активов
     void findUnknownUID(); //после загрузки событий в таблицу выполнить поиск строк с пустыми тикерами (т.е. неизвестными UID) и подсветить их
+    void filterAfterSearch();
+    //bool isSatisfiesFilter(int) const; //признак того что что строка удовлетворяет всем условиям фильтра FilterBox, её нужно отображать
+    void applyFilterRow(int); //применить параметры фильтра FilterBox к указанной строке
 
 private:
     void paperTypeFilter(int, bool&);
@@ -88,7 +91,7 @@ public slots:
     void slotGetEventsHistoryByTicker(const QString&, QStringList&);
 
 protected slots:
-    void slotFilter();
+    void slotFilter();    
     void slotSearched();
 
 signals:
