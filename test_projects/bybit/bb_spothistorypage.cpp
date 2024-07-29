@@ -52,14 +52,42 @@ void BB_SpotHistoryPage::loadTablesByContainers()
     QTableWidget *t = m_tablePos->table();
     if (t->rowCount() > 0) return;
 
+    QList<int> part_indexes; //индексы элементов которые являются дополнительными частями разбитого ордера
+
     //load positions
+    QList<int> next_part_indexes;
     for (int i=0; i<m_spotOrders.count(); i++)
     {
-        const BB_HistorySpot &pos = m_spotOrders.at(i);
+        if (part_indexes.contains(i)) continue;
+
+        BB_HistorySpot pos(m_spotOrders.at(i));
+        getNextPartIndexes(pos.uid, i+1, next_part_indexes);
+        if (!next_part_indexes.isEmpty())
+        {
+            qDebug()<<QString("find next part indexes: %1").arg(next_part_indexes.count());
+            qDebug()<<QString("   BASE POS: ")<<m_spotOrders.at(i).toFileLine();
+            part_indexes.append(next_part_indexes);
+            foreach (int part_i, next_part_indexes)
+            {
+                qDebug()<<QString("   NEXT POS: ")<<m_spotOrders.at(part_i).toFileLine();
+                pos.lot_size += m_spotOrders.at(part_i).lot_size;
+                pos.fee += m_spotOrders.at(part_i).fee;
+                pos.triger_time = m_spotOrders.at(part_i).triger_time;
+            }
+        }
+
         LTable::addTableRow(t, pos.toTableRowData());
         updateLastRowColors(pos);
     }
     viewTablesUpdate();
+}
+void BB_SpotHistoryPage::getNextPartIndexes(const QString &order_id, int start_i, QList<int> &next_part_indexes)
+{
+    next_part_indexes.clear();
+    if (start_i < 0 || start_i >= m_spotOrders.count()) return;
+
+    for (int i=start_i; i<m_spotOrders.count(); i++)
+        if (m_spotOrders.at(i).uid == order_id) next_part_indexes.append(i);
 }
 void BB_SpotHistoryPage::loadContainers()
 {
@@ -105,17 +133,10 @@ void BB_SpotHistoryPage::insertSpotEvent(const BB_HistorySpot &pos)
 }
 bool BB_SpotHistoryPage::hasSpotEvent(const BB_HistorySpot &other) const
 {
-    if (m_loadedDates.contains(other.triger_time.date())) return true;
-
-    /*
-    foreach (const BB_HistoryRecordBase &v, m_spotOrders)
+    foreach (const BB_HistorySpot &v, m_spotOrders)
     {
-        if (v.uid == other.uid)
-        {
-            if ((static_cast<const BB_HistorySpot&>(v)).ts >= other.ts) return true;
-        }
+        if (v.uid == other.uid && v.part_id == other.part_id) return true;
     }
-    */
     return false;
 }
 void BB_SpotHistoryPage::fillTable(const QJsonArray &j_arr)
@@ -133,17 +154,21 @@ void BB_SpotHistoryPage::fillTable(const QJsonArray &j_arr)
             qWarning()<<QString("WARNING: invalid pos from j_el: ")<<pos.toFileLine();
             continue;
         }
+        //qDebug()<<QString("Received SPOT record: %1").arg(pos.toFileLine());
 
         LTable::addTableRow(t, pos.toTableRowData());
         updateLastRowColors(pos);
 
         if (!hasSpotEvent(pos))
         {
+         //   qDebug("   this new record");
             m_spotOrders.append(pos);
             m_needRewriteFile = true;
         }
+        //else qDebug("   this record olready exists");
     }
 }
+/*
 void BB_SpotHistoryPage::bringTogetherEvents()
 {
     while (2 > 1)
@@ -187,6 +212,7 @@ void BB_SpotHistoryPage::bringTogetherEvents()
         }
     }
 }
+*/
 void BB_SpotHistoryPage::rewriteHistoryFile()
 {
     QStringList fdata;
@@ -292,7 +318,7 @@ void BB_SpotHistoryPage::finishReqScenario()
 
     if (m_needRewriteFile)
     {
-        bringTogetherEvents();
+        //bringTogetherEvents();
         sortByExecTime();
         rewriteHistoryFile();
     }
@@ -303,7 +329,7 @@ void BB_SpotHistoryPage::sendOrdersReq()
 {
     h_stage = hsFinished;
     m_polledDays = 0;
-    prepareLoadedDates();
+    //prepareLoadedDates();
 
     m_startDate = QDate::fromString(m_startDateEdit->text().trimmed(), APIConfig::userDateMask());
     if (!m_startDate.isValid())
@@ -366,16 +392,6 @@ void BB_SpotHistoryPage::load(QSettings &settings)
     loadContainers();
 
     emit signalMsg(QString("CONTAINERS STATE: spot_events %1").arg(m_spotOrders.count()));
-}
-void BB_SpotHistoryPage::prepareLoadedDates()
-{
-    m_needRewriteFile = false;
-    m_loadedDates.clear();
-    foreach (const BB_HistorySpot &v, m_spotOrders)
-    {
-        QDate d(v.triger_time.date());
-        if (!m_loadedDates.contains(d)) m_loadedDates.append(d);
-    }
 }
 void BB_SpotHistoryPage::slotSearched()
 {

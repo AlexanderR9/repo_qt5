@@ -19,14 +19,13 @@ public:
 
 protected:
     QList<BB_HistorySpot> m_spotOrders;
-    QList<QDate> m_loadedDates; //заполняется перед началом сценария запросов, даты уже существующих ордеров
     bool m_needRewriteFile;
     QLineEdit *m_amountEdit;
 
     virtual void loadTablesByContainers(); //by start program once
     virtual void goExchange(const QJsonObject &jresult_obj);
     virtual void loadContainers(); //load m_posList, m_orderList from files by start program
-    virtual quint8 daysSeparator() const {return 5;}
+    virtual quint8 daysSeparator() const {return 6;}
 
     void sendOrdersReq();
     void sendNextOrdersReq();
@@ -37,14 +36,15 @@ protected:
 
 
     //make after finish ALL requests
-    void bringTogetherEvents(); //свести в одну позиции с одинаковыми ордерами
+    //void bringTogetherEvents(); //свести в одну позиции с одинаковыми ордерами
+    void getNextPartIndexes(const QString&, int, QList<int>&); //найти по указанному orderId, остальные части разбитого ордера и записать их индексы в контейнер
     void sortByExecTime(); //сортировка m_spotOrders по времени срабатывания ордеров, 1-я самая свежая запись
     void rewriteHistoryFile(); //после окончания выполнения сценария запросов переписать файл полностью
 
     void reinitWidgets();
     void fillTable(const QJsonArray&);
     void updateLastRowColors(const BB_HistorySpot&);
-    void prepareLoadedDates();
+    //void prepareLoadedDates();
 
 private:
     QString hasDoubleUid() const;

@@ -159,6 +159,7 @@ struct BB_HistorySpot : public BB_HistoryRecordBase
     float price;
     float fee; //абсолютное значение
     QString fee_ticker;
+    QString part_id; //нужен если ордер срабатывает частями (т.е. покупается/продается актив кусками с некоторым интервалом по времени)
 
 
     inline bool isSell() const {return (action.toLower() == "sell");}
@@ -170,7 +171,7 @@ struct BB_HistorySpot : public BB_HistoryRecordBase
 
     void reset();
     QString toFileLine() const;
-    quint8 filedsCount() const {return 11;}
+    quint8 filedsCount() const {return 12;}
     void parseSplitedFileLine(const QStringList&);
     QStringList toTableRowData() const;
     void fromJson(const QJsonObject&);

@@ -330,6 +330,7 @@ BB_HistorySpot::BB_HistorySpot(const BB_HistorySpot &other)
     fee = other.fee;
     fee_ticker = other.fee_ticker;
     ts = other.ts;
+    part_id = other.part_id;
 
     // base
     uid = other.uid;
@@ -348,6 +349,7 @@ void BB_HistorySpot::reset()
     fee = 0;
     fee_ticker.clear();
     ts = -1;
+    part_id.clear();
 }
 QStringList BB_HistorySpot::tableHeaders()
 {
@@ -364,7 +366,7 @@ QString BB_HistorySpot::toFileLine() const
     s = QString("%1 / %2").arg(s).arg(QString::number(price, 'f', PRICE_PRECISION));
     s = QString("%1 / %2").arg(s).arg(QString::number(fee, 'f', PRICE_PRECISION));
     s = QString("%1 / %2").arg(s).arg(fee_ticker);
-    s = QString("%1 / %2 / %3 / EXEC").arg(s).arg(type).arg(ts);
+    s = QString("%1 / %2 / %3 / %4 / EXEC").arg(s).arg(type).arg(part_id).arg(ts);
 
     return s;
     //return QString("%1 \n").arg(s);
@@ -389,6 +391,7 @@ void BB_HistorySpot::parseSplitedFileLine(const QStringList &list)
     }
     fee_ticker = list.at(i).trimmed(); i++;
     type = list.at(i).trimmed(); i++;
+    part_id = list.at(i).trimmed(); i++;
     ts = list.at(i).trimmed().toLong(&ok); i++;
     if (!ok)
     {
@@ -413,6 +416,7 @@ void BB_HistorySpot::fromJson(const QJsonObject &j_obj)
     ts = j_obj.value("execTime").toString().toLong();
     triger_time.setMSecsSinceEpoch(ts);
     uid = j_obj.value("orderId").toString();
+    part_id = j_obj.value("execId").toString();
     fee_ticker = j_obj.value("feeCurrency").toString();
     ticker = j_obj.value("symbol").toString();
     int pos = ticker.indexOf(USDT_SYMBOL);
