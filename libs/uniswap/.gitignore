@@ -1,0 +1,7 @@
+uniswap.pro.user
+.qmake.stash
+moc
+obj
+build
+Makefile
+full_clear

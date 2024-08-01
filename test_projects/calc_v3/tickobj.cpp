@@ -88,8 +88,6 @@ int TickObj::tickIndexByPrice(double &price)
     quint32 increaser = qPow(2, 15);
     if (price < 1.02 && price > 0.98) increaser = 1;
 
-    //if (price <= 1) return -1;
-
     int sign = (price > 1) ? 1 : -1;
 
     double calc_price = -1;
