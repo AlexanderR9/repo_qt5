@@ -1,6 +1,6 @@
-calc_v3.pro.user
-calc_v3.debug
-calcv3
+gui_calc_v3.pro.user
+gui_calc_v3.debug
+poolcalcv3
 .qmake.stash
 moc
 obj

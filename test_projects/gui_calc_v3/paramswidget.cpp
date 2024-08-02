@@ -1,5 +1,6 @@
 #include "paramswidget.h"
-#include "tickobj.h"
+#include "poolstructs.h"
+#include "calc_v3.h"
 #include "lstring.h"
 #include "lchart.h"
 
@@ -16,6 +17,8 @@ ParamsWidget::ParamsWidget(QWidget *parent)
     setupUi(this);
     setObjectName(QString("pool_params_widget"));
 
+    qDebug("ParamsWidget::ParamsWidget");
+
     init();
     initChart();
 
@@ -24,17 +27,11 @@ ParamsWidget::ParamsWidget(QWidget *parent)
 void ParamsWidget::init()
 {
     feeComboBox->clear();
-    feeComboBox->addItem(TickObj::captionByFeeType(tst001));
-    feeComboBox->addItem(TickObj::captionByFeeType(tst005));
-    feeComboBox->addItem(TickObj::captionByFeeType(tst03));
-    feeComboBox->addItem(TickObj::captionByFeeType(tst1));
-
-    //QDoubleValidator *dv = new QDoubleValidator(this);
-    //minPriceLineEdit->setValidator(dv);
-    //maxPriceLineEdit->setValidator(dv);
-    //curPriceLineEdit->setValidator(dv);
-    //sizeLineEdit->setValidator(dv);
-
+    feeComboBox->addItem(LPoolCalcObj::captionByFeeType(pfs001));
+    feeComboBox->addItem(LPoolCalcObj::captionByFeeType(pfs005));
+    feeComboBox->addItem(LPoolCalcObj::captionByFeeType(pfs025));
+    feeComboBox->addItem(LPoolCalcObj::captionByFeeType(pfs03));
+    feeComboBox->addItem(LPoolCalcObj::captionByFeeType(pfs1));
 }
 void ParamsWidget::save(QSettings &settings)
 {
@@ -80,14 +77,43 @@ void ParamsWidget::normalizateValue(QLineEdit *le)
         le->setText(s);
     }
 }
-void ParamsWidget::getParams(PoolParamsStruct &p)
+void ParamsWidget::resetCalcParams()
+{
+    token0SizeLineEdit->setText("?");
+    token1SizeLineEdit->setText("?");
+    minTickLineEdit->setText("?");
+    maxTickLineEdit->setText("?");
+    liqLineEdit->setText("?");
+    sumLineEdit->setText("?");
+}
+void ParamsWidget::updateParams(LPoolCalcObj *calc_obj)
+{
+    if (!calc_obj) return;
+    if (calc_obj->invalidState()) return;
+
+    GuiPoolResults p;
+    calc_obj->getGuiParams(p);
+    token0SizeLineEdit->setText(QString::number(p.token_sizes.first, 'f', RESULT_PRECISION));
+    token1SizeLineEdit->setText(QString::number(p.token_sizes.second, 'f', RESULT_PRECISION));
+    liqLineEdit->setText(QString::number(p.L, 'f', RESULT_PRECISION));
+    minTickLineEdit->setText(QString::number(p.tick_range.first));
+    maxTickLineEdit->setText(QString::number(p.tick_range.second));
+
+    double sum = calc_obj->assetsSum(p.cur_price);
+    sumLineEdit->setText(QString::number(sum, 'f', 1));
+
+    minPriceLineEdit->setText(QString::number(p.price_range.first, 'f', calc_obj->pricePrecision()));
+    maxPriceLineEdit->setText(QString::number(p.price_range.second, 'f', calc_obj->pricePrecision()));
+    curPriceLineEdit->setText(QString::number(p.cur_price, 'f', calc_obj->pricePrecision()));
+}
+void ParamsWidget::getParams(InputPoolParams &p)
 {
     p.reset();
     normalizateValues();
     resetChart();
 
     bool ok;
-    p.fee_type = feeComboBox->currentIndex();
+    p.fee_type = feeComboBox->currentIndex()+pfs001;
     p.input_token = inputTokenComboBox->currentIndex();
 
     p.range.first = minPriceLineEdit->text().toDouble(&ok);
@@ -113,16 +139,6 @@ void ParamsWidget::getParams(PoolParamsStruct &p)
         emit signalError(QString("invalid cur price value [%1]").arg(curPriceLineEdit->text()));
         return;
     }
-
-    /*
-    p.delta_price = dPriceLineEdit->text().toDouble(&ok);
-    if (!ok)
-    {
-        p.delta_price = 0;
-        dPriceLineEdit->setText("0.0");
-    }
-    */
-
 
     p.input_size = sizeLineEdit->text().toDouble(&ok);
     if (!ok || p.input_size<0.1)
@@ -153,8 +169,8 @@ void ParamsWidget::slotCalcResult(const PoolParamsCalculated &p)
     liqLineEdit->setText(QString::number(p.L, 'f', RESULT_PRECISION));
     minTickLineEdit->setText(QString::number(p.tick_range.first));
     maxTickLineEdit->setText(QString::number(p.tick_range.second));
-    binCountLineEdit->setText(QString("%1,  cur_bin=%2").arg(QString::number(p.bin_count)).arg(p.cur_bin));
-    sumLineEdit->setText(QString::number(p.assets_sum, 'f', RESULT_PRECISION));
+    //binCountLineEdit->setText(QString("%1,  cur_bin=%2").arg(QString::number(p.bin_count)).arg(p.cur_bin));
+    //sumLineEdit->setText(QString::number(p.assetsSum(), 'f', RESULT_PRECISION));
     curPriceNowLineEdit->setText(curPriceLineEdit->text());
     swapLineEdit->setText(QString());
 

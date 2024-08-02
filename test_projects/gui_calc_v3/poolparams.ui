@@ -265,7 +265,11 @@
        </widget>
       </item>
       <item row="8" column="1">
-       <widget class="QLineEdit" name="swapLineEdit"/>
+       <widget class="QLineEdit" name="swapLineEdit">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>

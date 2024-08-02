@@ -7,9 +7,10 @@
 
 
 class QSettings;
-struct PoolParamsStruct;
+struct InputPoolParams;
 struct PoolParamsCalculated;
 class LChartWidget;
+class LPoolCalcObj;
 
 
 //ParamsWidget
@@ -20,7 +21,9 @@ public:
     ParamsWidget(QWidget *parent = 0);
     virtual ~ParamsWidget() {}
 
-    void getParams(PoolParamsStruct&);
+    void getParams(InputPoolParams&);
+    void resetCalcParams();
+    void updateParams(LPoolCalcObj*);
 
     void save(QSettings&);
     void load(QSettings&);

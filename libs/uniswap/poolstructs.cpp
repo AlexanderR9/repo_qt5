@@ -48,25 +48,35 @@ void InputPoolParams::normalizeCurPrice()
     if (cur_price < range.first) {cur_price = range.first; input_token = 0;}
     if (cur_price > range.second) {cur_price = range.second; input_token = 1;}
 }
-
+bool InputPoolParams::curPriceIsBound() const
+{
+    if (!validity) return false;
+    if (cur_price <= range.first) return true;
+    if (cur_price >= range.second) return true;
+    return false;
+}
 
 //PoolParamsCalculated
 void PoolParamsCalculated::reset()
 {
-    token0_size = token1_size = L = -1;
-    tick_range.first=-1;
-    tick_range.second=1;
-    bin_count = 0;
-    cur_bin = -1;
+    token0_size = token1_size = L = 0;
+    tick_range.first = tick_range.second = 0;
+//    bin_count = 0;
+//    cur_bin = -1;
     range_prices.clear();
-    assets_sum = 0;
+    //assets_sum = 0;
+}
+double PoolParamsCalculated::assetsSum(const double &cp) const
+{
+    return (token0_size*cp + token1_size);
 }
 void PoolParamsCalculated::fillPrices(int t_step)
 {
     range_prices.clear();
     for (int i=tick_range.first; i<=tick_range.second; i+=t_step)
-      range_prices.insert(i, qPow(CalcV3Obj::basePips(), i));
+      range_prices.insert(i, LPoolCalcObj::tickPrice(i));
 }
+/*
 void PoolParamsCalculated::outBinPrices()
 {
     qDebug("BINS PRICES FOR WORKING RANGE");
@@ -99,7 +109,16 @@ void PoolParamsCalculated::findCurrentBin(const double &cp)
         }
     }
 }
+*/
 
 
 
+//GuiPoolResults
+void GuiPoolResults::reset()
+{
+    cur_price = L = 0;
+    token_sizes.first = token_sizes.second = 0;
+    price_range.first = price_range.second = 0;
+    tick_range.first = tick_range.second = 0;
+}
 

@@ -2,7 +2,8 @@
 #include "lcommonsettings.h"
 #include "lprotocol.h"
 #include "paramswidget.h"
-#include "tickobj.h"
+//#include "tickobj.h"
+#include "calc_v3.h"
 
 #include <QDebug>
 #include <QDir>
@@ -24,14 +25,16 @@ MainForm::MainForm(QWidget *parent)
       m_protocol(NULL),
     m_paramsWidget(NULL),
     v_splitter(NULL),
-    m_tickObj(NULL)
+    m_calcObj(NULL)
 {
     setObjectName("main_form_v3");
+    qDebug("MainForm::MainForm 1");
 
-    m_tickObj = new TickObj(this);
-    connect(m_tickObj, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
-    connect(m_tickObj, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
+    m_calcObj = new LPoolCalcObj(this);
+    connect(m_calcObj, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
+    connect(m_calcObj, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
 
+    qDebug("MainForm::MainForm");
 }
 
 void MainForm::initCommonSettings()
@@ -44,8 +47,6 @@ void MainForm::initCommonSettings()
     QString key = QString("server_api");
     lCommonSettings.addParam(QString("Server API"), LSimpleDialog::sdtString, key);
     lCommonSettings.setDefValue(key, QString("invest-public-api.tinkoff.ru"));
-
-
 }
 void MainForm::initActions()
 {
@@ -72,14 +73,19 @@ void MainForm::slotAction(int type)
 }
 void MainForm::actStart()
 {
-    PoolParamsStruct pp;
+    InputPoolParams pp;
     m_paramsWidget->getParams(pp);
+    m_paramsWidget->resetCalcParams();
     qDebug()<<pp.toStr();
     if (!pp.validity) return;
 
-    m_tickObj->setParams(pp);
-    m_tickObj->recalc();
+    m_calcObj->setPoolTokens("OP", "USDC", pp.fee_type);
+    m_calcObj->setPricesRange(pp.range.first, pp.range.second);
+    m_calcObj->setCurPrice(pp.cur_price);
+    m_calcObj->setTokenSize(pp.input_size, pp.input_token);
 
+    m_calcObj->recalc();
+    m_paramsWidget->updateParams(m_calcObj);
 }
 void MainForm::initWidgets()
 {
@@ -93,9 +99,9 @@ void MainForm::initWidgets()
 
     connect(m_paramsWidget, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_paramsWidget, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
-    connect(m_tickObj, SIGNAL(signalSendCalcResult(const PoolParamsCalculated&)), m_paramsWidget, SLOT(slotCalcResult(const PoolParamsCalculated&)));
-    connect(m_paramsWidget, SIGNAL(signalPriceChanged(float)), m_tickObj, SLOT(slotPriceChanged(float)));
-    connect(m_tickObj, SIGNAL(signalChangePriceResult(float, float)), m_paramsWidget, SLOT(slotChangePriceResult(float, float)));
+    //connect(m_tickObj, SIGNAL(signalSendCalcResult(const PoolParamsCalculated&)), m_paramsWidget, SLOT(slotCalcResult(const PoolParamsCalculated&)));
+    //connect(m_paramsWidget, SIGNAL(signalPriceChanged(float)), m_tickObj, SLOT(slotPriceChanged(float)));
+    //connect(m_tickObj, SIGNAL(signalChangePriceResult(float, float)), m_paramsWidget, SLOT(slotChangePriceResult(float, float)));
 
 }
 void MainForm::slotError(const QString &text)
@@ -110,24 +116,6 @@ void MainForm::slotMsg(const QString &text)
 void MainForm::slotAppSettingsChanged(QStringList list)
 {
     LMainWidget::slotAppSettingsChanged(list);
-    /*
-    if (list.contains("server_api") || list.contains("print_headers"))
-    {
-        APIReqPage *req_page = qobject_cast<APIReqPage*>(m_pages.value(aptReq));
-        if (req_page)
-        {
-            req_page->setServerAPI(hptHttps, serverAPI());
-            req_page->setPrintHeaders(printHeaders());
-        }
-        else slotError("req_page is NULL");
-    }
-    else if (list.contains("expand_level"))
-    {
-        APIReqPage *req_page = qobject_cast<APIReqPage*>(m_pages.value(aptReq));
-        if (req_page) req_page->setExpandLevel(expandLevel());
-        else slotError("req_page is NULL");
-    }
-    */
 }
 void MainForm::save()
 {

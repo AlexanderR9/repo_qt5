@@ -9,7 +9,8 @@ class LProtocolBox;
 class QSplitter;
 class ParamsWidget;
 class LSimpleWidget;
-class TickObj;
+//class TickObj;
+class LPoolCalcObj;
 
 
 
@@ -26,9 +27,10 @@ protected:
     LProtocolBox                *m_protocol;
     ParamsWidget                *m_paramsWidget;
     QSplitter                   *v_splitter;
-    TickObj                     *m_tickObj;
+    //TickObj                     *m_tickObj;
+    LPoolCalcObj                     *m_calcObj;
 
-    QString projectName() const {return "calc_v3";}
+    QString projectName() const {return "uni_calc_v3";}
     QString mainTitle() const {return QString("Pool calculator (Qt5)!");}
     void initActions();
     void initWidgets();
