@@ -114,8 +114,8 @@ void APITradeDialog::fillLots()
     }
     else
     {
-        for (int i=1; i<=5; i++) sw->comboBox->addItem(QString::number(i));
-        for (int i=2; i<=6; i++) sw->comboBox->addItem(QString::number(i*5));
+        for (int i=1; i<=10; i++) sw->comboBox->addItem(QString::number(i));
+        for (int i=3; i<=6; i++) sw->comboBox->addItem(QString::number(i*5));
         for (int i=4; i<=10; i++) sw->comboBox->addItem(QString::number(i*10));
         if (api_commonSettings.t_dialog.lots_index < 0 || api_commonSettings.t_dialog.lots_index >= sw->comboBox->count())
             sw->comboBox->setCurrentIndex(1);
