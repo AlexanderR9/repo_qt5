@@ -47,7 +47,7 @@ private:
     float labelPrice() const;
 
 public slots:
-    void slotCalcResult(const PoolParamsCalculated&);
+    //void slotCalcResult(const PoolParamsCalculated&);
     void slotChangePriceResult(float dx, float dy);
 
 protected slots:

@@ -3,16 +3,10 @@
 
 #include "lmainwidget.h"
 
-#include <QMap>
-
 class LProtocolBox;
 class QSplitter;
 class ParamsWidget;
-class LSimpleWidget;
-//class TickObj;
 class LPoolCalcObj;
-
-
 
 
 // MainForm
@@ -27,11 +21,11 @@ protected:
     LProtocolBox                *m_protocol;
     ParamsWidget                *m_paramsWidget;
     QSplitter                   *v_splitter;
-    //TickObj                     *m_tickObj;
-    LPoolCalcObj                     *m_calcObj;
+    LPoolCalcObj                *m_calcObj;
 
     QString projectName() const {return "uni_calc_v3";}
     QString mainTitle() const {return QString("Pool calculator (Qt5)!");}
+
     void initActions();
     void initWidgets();
     void initCommonSettings();
@@ -45,8 +39,6 @@ protected slots:
     void slotError(const QString&);
     void slotMsg(const QString&);
     void slotAppSettingsChanged(QStringList);
-
-
 
 };
 

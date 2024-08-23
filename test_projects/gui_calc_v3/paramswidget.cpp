@@ -89,7 +89,6 @@ void ParamsWidget::resetCalcParams()
 void ParamsWidget::updateParams(LPoolCalcObj *calc_obj)
 {
     if (!calc_obj) return;
-    if (calc_obj->invalidState()) return;
 
     GuiPoolResults p;
     calc_obj->getGuiParams(p);
@@ -99,12 +98,18 @@ void ParamsWidget::updateParams(LPoolCalcObj *calc_obj)
     minTickLineEdit->setText(QString::number(p.tick_range.first));
     maxTickLineEdit->setText(QString::number(p.tick_range.second));
 
+    int fee_type = feeComboBox->currentIndex()+pfs001;
+    this->binCountLineEdit->setText(QString::number(p.binCount(fee_type)));
+
     double sum = calc_obj->assetsSum(p.cur_price);
     sumLineEdit->setText(QString::number(sum, 'f', 1));
 
     minPriceLineEdit->setText(QString::number(p.price_range.first, 'f', calc_obj->pricePrecision()));
     maxPriceLineEdit->setText(QString::number(p.price_range.second, 'f', calc_obj->pricePrecision()));
     curPriceLineEdit->setText(QString::number(p.cur_price, 'f', calc_obj->pricePrecision()));
+
+    horizontalSlider->setEnabled(true);
+    activateChart();
 }
 void ParamsWidget::getParams(InputPoolParams &p)
 {
@@ -157,11 +162,9 @@ void ParamsWidget::getParams(InputPoolParams &p)
         emit signalError(QString("invalid inputt token [%1], cur_price is over the range").arg(p.input_token));
         return;
     }
-
     p.validity = true;
-    horizontalSlider->setEnabled(true);
-
 }
+/*
 void ParamsWidget::slotCalcResult(const PoolParamsCalculated &p)
 {
     token0SizeLineEdit->setText(QString::number(p.token0_size, 'f', RESULT_PRECISION));
@@ -180,6 +183,7 @@ void ParamsWidget::slotCalcResult(const PoolParamsCalculated &p)
 
     activateChart();
 }
+*/
 void ParamsWidget::slotChangePriceResult(float dx, float dy)
 {
     emit signalMsg(QString("AFTER CHANGE PRICE: dx=%1  dy=%2 ").arg(QString::number(dx, 'f', 3)).arg(QString::number(dy, 'f', 3)));

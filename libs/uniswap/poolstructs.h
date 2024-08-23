@@ -30,7 +30,6 @@ struct InputPoolParams
     bool curPriceIsBound() const; //признак того что текущая цена лежит на одно из границ диапазона
 
     QString toStr() const; //diag func
-
 };
 
 //out params for calculation
@@ -43,11 +42,13 @@ struct PoolParamsCalculated
     double L; //user added liquidity
 
     QPair<qint64, qint64> tick_range; //номера тиков границ ценового диапазона заданного пользователем
-    QMap<int, double> range_prices; //all bin_range prices, key - begin bin tick, value-price
+    QMap<int, double> bin_prices; //all bin_range prices, key - bin tick, value-price
 
     void reset();
-    void fillPrices(int);
+    void fillPrices(int fee_type); //заполняет контейнер bin_prices парами тик_корзины/соответствующая цена, в диапазоне tick_range
     double assetsSum(const double&) const; //сумма вложеных активов выраженных в единицах token1, при указанной цене
+
+    QString toStr() const; //diag func
 };
 
 //gui result after calculation
@@ -58,11 +59,12 @@ struct GuiPoolResults
     double cur_price;
     double L; //user added liquidity
 
-    QPair<double, double> token_sizes; //prices range
+    QPair<double, double> token_sizes; //token 0 and token1 sizes
     QPair<double, double> price_range; //prices range
     QPair<qint64, qint64> tick_range; //номера тиков границ ценового диапазона заданного пользователем
 
     void reset();
+    quint32 binCount(int fee_type) const;
 
 };
 

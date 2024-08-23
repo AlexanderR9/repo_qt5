@@ -26,10 +26,9 @@ void InputPoolParams::setData(const InputPoolParams &other)
 }
 QString InputPoolParams::toStr() const
 {
-    QString s("InputPoolParams: ");
-    s = QString("%1 RANGE[%2; %3]").arg(s).arg(range.first).arg(range.second);
+    QString s = QString("InputPoolParams: FEE(%1)").arg(LPoolCalcObj::captionByFeeType(fee_type));
+    s = QString("%1 PRICE_RANGE[%2; %3]").arg(s).arg(range.first).arg(range.second);
     s = QString("%1 CUR_PRICE[%2]  INPUT_TOKEN[%3 / %4]").arg(s).arg(cur_price).arg(input_token).arg(input_size);
-    //s = QString("%1 DELTA_PRICE[%2]").arg(s).arg(delta_price);
     s = QString("%1 VALIDITY[%2]").arg(s).arg(validity?"Ok":"Err");
     return s;
 }
@@ -61,55 +60,30 @@ void PoolParamsCalculated::reset()
 {
     token0_size = token1_size = L = 0;
     tick_range.first = tick_range.second = 0;
-//    bin_count = 0;
-//    cur_bin = -1;
-    range_prices.clear();
-    //assets_sum = 0;
+    bin_prices.clear();
 }
 double PoolParamsCalculated::assetsSum(const double &cp) const
 {
     return (token0_size*cp + token1_size);
 }
-void PoolParamsCalculated::fillPrices(int t_step)
+void PoolParamsCalculated::fillPrices(int fee_type)
 {
-    range_prices.clear();
+    bin_prices.clear();
+    int t_step = LPoolCalcObj::binSize(fee_type);
+    if (t_step <= 0) return;
+
     for (int i=tick_range.first; i<=tick_range.second; i+=t_step)
-      range_prices.insert(i, LPoolCalcObj::tickPrice(i));
+      bin_prices.insert(i, LPoolCalcObj::tickPrice(i));
 }
-/*
-void PoolParamsCalculated::outBinPrices()
+QString PoolParamsCalculated::toStr() const
 {
-    qDebug("BINS PRICES FOR WORKING RANGE");
-    QList<int> keys(range_prices.keys());
-    for (int i=0; i<keys.count(); i++)
-    {
-        QString s = QString("%1.  tick=%2   price=%3").arg(i).arg(keys.at(i)).arg(range_prices.value(keys.at(i)));
-        if (i == cur_bin) qDebug() << s << "  +";
-        qDebug()<<s;
-    }
+    QString s = QString("PoolParamsCalculated: tick_range(%1/%2)").arg(tick_range.first).arg(tick_range.second);
+    s = QString("%1 BINS[%2]").arg(s).arg(bin_prices.size());
+    s = QString("%1 TOKEN_SIZES[%2 / %3]").arg(s).arg(token0_size).arg(token1_size);
+    s = QString("%1 L[%2]").arg(s).arg(QString::number(L, 'f', 3));
+    return s;
 }
-void PoolParamsCalculated::findCurrentBin(const double &cp)
-{
-    if (cp <= 0 || range_prices.count() < 2)
-    {
-        cur_bin = -1;
-        return;
-    }
 
-    cur_bin = 0;
-    QList<int> keys(range_prices.keys());
-    if (cp < range_prices.first() || cp > range_prices.last()) return;
-
-    for (int i=1; i<keys.count(); i++)
-    {
-        if (range_prices.value(keys.at(i)) > cp)
-        {
-            cur_bin = i;
-            break;
-        }
-    }
-}
-*/
 
 
 
@@ -120,5 +94,11 @@ void GuiPoolResults::reset()
     token_sizes.first = token_sizes.second = 0;
     price_range.first = price_range.second = 0;
     tick_range.first = tick_range.second = 0;
+}
+quint32 GuiPoolResults::binCount(int fee_type) const
+{
+    int t_step = LPoolCalcObj::binSize(fee_type);
+    if (t_step <= 0) return -1;
+    return qAbs(tick_range.second - tick_range.first)/t_step;
 }
 

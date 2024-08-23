@@ -28,15 +28,11 @@ MainForm::MainForm(QWidget *parent)
     m_calcObj(NULL)
 {
     setObjectName("main_form_v3");
-    qDebug("MainForm::MainForm 1");
 
     m_calcObj = new LPoolCalcObj(this);
     connect(m_calcObj, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_calcObj, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
-
-    qDebug("MainForm::MainForm");
 }
-
 void MainForm::initCommonSettings()
 {
     QStringList combo_list;
@@ -51,9 +47,9 @@ void MainForm::initCommonSettings()
 void MainForm::initActions()
 {
     addAction(LMainWidget::atStart);
-    addAction(LMainWidget::atLoadData);
+    //addAction(LMainWidget::atLoadData);
     addAction(LMainWidget::atClear);
-    addAction(LMainWidget::atRefresh);
+    //addAction(LMainWidget::atRefresh);
     addAction(LMainWidget::atSettings);
     addAction(LMainWidget::atExit);
 
@@ -79,6 +75,7 @@ void MainForm::actStart()
     qDebug()<<pp.toStr();
     if (!pp.validity) return;
 
+    m_calcObj->reset();
     m_calcObj->setPoolTokens("OP", "USDC", pp.fee_type);
     m_calcObj->setPricesRange(pp.range.first, pp.range.second);
     m_calcObj->setCurPrice(pp.cur_price);
@@ -86,6 +83,8 @@ void MainForm::actStart()
 
     m_calcObj->recalc();
     m_paramsWidget->updateParams(m_calcObj);
+    slotMsg("done!");
+    m_protocol->addSpace();
 }
 void MainForm::initWidgets()
 {
@@ -99,9 +98,6 @@ void MainForm::initWidgets()
 
     connect(m_paramsWidget, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_paramsWidget, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
-    //connect(m_tickObj, SIGNAL(signalSendCalcResult(const PoolParamsCalculated&)), m_paramsWidget, SLOT(slotCalcResult(const PoolParamsCalculated&)));
-    //connect(m_paramsWidget, SIGNAL(signalPriceChanged(float)), m_tickObj, SLOT(slotPriceChanged(float)));
-    //connect(m_tickObj, SIGNAL(signalChangePriceResult(float, float)), m_paramsWidget, SLOT(slotChangePriceResult(float, float)));
 
 }
 void MainForm::slotError(const QString &text)
@@ -112,7 +108,6 @@ void MainForm::slotMsg(const QString &text)
 {
     m_protocol->addText(text, LProtocolBox::ttText);
 }
-
 void MainForm::slotAppSettingsChanged(QStringList list)
 {
     LMainWidget::slotAppSettingsChanged(list);
@@ -123,7 +118,6 @@ void MainForm::save()
 
     QSettings settings(companyName(), projectName());
     settings.setValue(QString("%1/v_splitter/state").arg(objectName()), v_splitter->saveState());
-
     if (m_paramsWidget) m_paramsWidget->save(settings);
 }
 void MainForm::load()
@@ -133,7 +127,6 @@ void MainForm::load()
     QSettings settings(companyName(), projectName());
     QByteArray ba(settings.value(QString("%1/v_splitter/state").arg(objectName()), QByteArray()).toByteArray());
     if (!ba.isEmpty()) v_splitter->restoreState(ba);
-
     if (m_paramsWidget) m_paramsWidget->load(settings);
 }
 
