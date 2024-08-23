@@ -10,14 +10,13 @@
 #define RESULT_PRECISION    3
 
 
+//ParamsWidget
 ParamsWidget::ParamsWidget(QWidget *parent)
     :QWidget(parent),
     m_chart(NULL)
 {
     setupUi(this);
     setObjectName(QString("pool_params_widget"));
-
-    qDebug("ParamsWidget::ParamsWidget");
 
     init();
     initChart();
@@ -164,26 +163,6 @@ void ParamsWidget::getParams(InputPoolParams &p)
     }
     p.validity = true;
 }
-/*
-void ParamsWidget::slotCalcResult(const PoolParamsCalculated &p)
-{
-    token0SizeLineEdit->setText(QString::number(p.token0_size, 'f', RESULT_PRECISION));
-    token1SizeLineEdit->setText(QString::number(p.token1_size, 'f', RESULT_PRECISION));
-    liqLineEdit->setText(QString::number(p.L, 'f', RESULT_PRECISION));
-    minTickLineEdit->setText(QString::number(p.tick_range.first));
-    maxTickLineEdit->setText(QString::number(p.tick_range.second));
-    //binCountLineEdit->setText(QString("%1,  cur_bin=%2").arg(QString::number(p.bin_count)).arg(p.cur_bin));
-    //sumLineEdit->setText(QString::number(p.assetsSum(), 'f', RESULT_PRECISION));
-    curPriceNowLineEdit->setText(curPriceLineEdit->text());
-    swapLineEdit->setText(QString());
-
-    updateTextColor(token0SizeLineEdit, 0);
-    updateTextColor(token1SizeLineEdit, 0);
-    updateTextColor(sumLineEdit, 0);
-
-    activateChart();
-}
-*/
 void ParamsWidget::slotChangePriceResult(float dx, float dy)
 {
     emit signalMsg(QString("AFTER CHANGE PRICE: dx=%1  dy=%2 ").arg(QString::number(dx, 'f', 3)).arg(QString::number(dy, 'f', 3)));
@@ -254,7 +233,6 @@ void ParamsWidget::updateTextColor(QWidget *w, int sign)
     }
     w->setPalette(plt);
 }
-
 float ParamsWidget::getTokenSize(const QLineEdit *le) const
 {
     if (!le) return -1;
@@ -287,14 +265,12 @@ void ParamsWidget::initChart()
     m_chart->setOnlyPoints(true);
 
     resetChart();
-
 }
 void ParamsWidget::resetChart()
 {
     m_chart->removeChart();
     m_chart->updateAxis();
     horizontalSlider->setEnabled(false);
-
 }
 void ParamsWidget::activateChart()
 {
@@ -319,9 +295,7 @@ void ParamsWidget::activateChart()
     p.points.append(QPointF(getTokenSize(token0SizeLineEdit), getTokenSize(token1SizeLineEdit)));
     m_chart->addChart(p);
     m_chart->updateAxis();
-
 }
-
 void ParamsWidget::slotPriceChanged(int t)
 {
     //qDebug()<<QString("slotPriceChanged t=%1").arg(t);
@@ -341,6 +315,7 @@ void ParamsWidget::slotPriceChanged(int t)
     s = QString("%1 (%2%3%)").arg(s).arg((a < p_start) ? "-" : "+").arg(QString::number(qAbs((a-p_start)*100)/p_start, 'f', 1));;
     curPriceNowLineEdit->setText(s);
 
+    qDebug()<<QString::number(a);
     emit signalPriceChanged(a);
 }
 void ParamsWidget::updatePriceLabel(float fp)

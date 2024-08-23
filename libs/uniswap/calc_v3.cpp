@@ -155,7 +155,32 @@ double LPoolCalcObj::assetsSum(const double &cp) const
     if (invalidState()) return -1;
     return out_params.assetsSum(cp);
 }
+void LPoolCalcObj::slotSimPriceChanged(float next_cp)
+{
+    //qDebug()<<QString("LPoolCalcObj::slotSimPriceChanged   new price %1").arg(next_cp);
+    double dx = 0; //абсолютная величина, на сколько изменится объем token0
+    double dy = 0; //абсолютная величина, на сколько изменится объем token1
+    double cp = in_params.cur_price;
 
+    double sqrt_dp = qSqrt(next_cp) - qSqrt(cp);
+    double sqrt_dp_inverse = 1/qSqrt(next_cp) - 1/qSqrt(cp);
+    if (qAbs(next_cp - in_params.range.first) < 0.001)
+    {
+        dx = sqrt_dp_inverse*out_params.L;
+        dy = -1*out_params.token1_size;
+    }
+    else if (qAbs(next_cp - in_params.range.second) < 0.001)
+    {
+        dy = sqrt_dp*out_params.L;
+        dx = -1*out_params.token0_size;
+    }
+    else
+    {
+        dx = sqrt_dp_inverse*out_params.L;
+        dy = sqrt_dp*out_params.L;
+    }
+    emit signalSimChangePriceResult(dx, dy);
+}
 
 
 // static funcs

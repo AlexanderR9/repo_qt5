@@ -47,11 +47,10 @@ private:
     float labelPrice() const;
 
 public slots:
-    //void slotCalcResult(const PoolParamsCalculated&);
     void slotChangePriceResult(float dx, float dy);
 
 protected slots:
-    void slotPriceChanged(int);
+    void slotPriceChanged(int); //выполняется когда пользователь двигает ползунок (имитация изменения цены)
 
 signals:
     void signalError(const QString&);

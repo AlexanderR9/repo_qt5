@@ -98,6 +98,8 @@ void MainForm::initWidgets()
 
     connect(m_paramsWidget, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_paramsWidget, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
+    connect(m_paramsWidget, SIGNAL(signalPriceChanged(float)), m_calcObj, SLOT(slotSimPriceChanged(float)));
+    connect(m_calcObj, SIGNAL(signalSimChangePriceResult(float, float)), m_paramsWidget, SLOT(slotChangePriceResult(float, float)));
 
 }
 void MainForm::slotError(const QString &text)
