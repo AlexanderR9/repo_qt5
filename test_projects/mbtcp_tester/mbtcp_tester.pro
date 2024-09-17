@@ -12,7 +12,7 @@ UI_DIR=ui
 
 
 QT -= gui
-QT *= network widgets
+QT *= network widgets serialbus serialport
 
 
 INCLUDEPATH += . \

@@ -4,51 +4,81 @@
 #include "lsimpleobj.h"
 
 #include <QByteArray>
+#include <QTime>
 
 
-class QModbusTcpClient;
-class LMBTCPServerBase;
-struct ComParams;
+class LMBTcpMasterBase;
+class LMBTcpSlaveBase;
+class QModbusRequest;
+
+
+//MBTcpStat
+//накопление статистики по пакетам и ошибок
+struct MBTcpStat
+{
+    MBTcpStat() {reset();}
+
+    int received;
+    int sended;
+    int received_size;
+    int sended_size;
+    QTime t_received;
+    QTime t_sended;
+    int errs;
+
+
+    void reset() {received = sended = errs = 0; received_size = sended_size = -1;}
+    static QString t_mask() {return QString("hh:mm:ss.zzz");}
+    QString receivedTime() const {return (t_received.isValid() ? t_received.toString(t_mask()) : "---");}
+    QString sendedTime() const {return (t_sended.isValid() ? t_sended.toString(t_mask()) : "---");}
+
+};
 
 
 //MBTcpObj
+//объект для установки соединения и обмена запрос-ответ (зависит от режима)
 class MBTcpObj : public LSimpleObject
 {
     Q_OBJECT
 public:
     MBTcpObj(QObject *parent = NULL);
-    virtual ~MBTcpObj() {}
+    virtual ~MBTcpObj() {reset();}
 
-    /*
-    void setPortParams(const ComParams&);
-    QString portName() const;
-    QString strDirection() const;
-    inline const QByteArray& receivedBuffer() const {return m_readedBuffer;}
-    virtual QString name() const {return QString("com_obj");}
+    void reinit(int mode); //0-master, 1-slave
 
-    void tryOpen(bool&);
-    void tryClose();
-    void tryWrite(const QByteArray&);
-    bool portOpened() const;
-    */
+    virtual QString name() const {return QString("mbtcp_obj");}
+
+    inline bool isMaster() const {return (m_master != NULL);}
+    inline bool isSlave() const {return (m_slave != NULL);}
+    inline bool deactivated() const {return (!isMaster() && !isSlave());}
+
+    void start();
+    void stop();
+    QString curMode() const;
+    bool isStarted() const;
+    void setNetworkParams(QString host, quint16 tcp_port);
+    void sendReq();
+
 
 protected:
-    QModbusTcpClient    *m_master;
-    LMBTCPServerBase    *m_slave;
+    MBTcpStat m_stat;
 
-    /*
-    QSerialPort     *m_port;
-    int              m_direction;
-    QByteArray       m_readedBuffer;
+    //может быть инициализирован только один из двух объектов
+    //если оба NULL, то утилита не работает
+    LMBTcpMasterBase    *m_master;
+    LMBTcpSlaveBase     *m_slave;
 
-    int openModeByDirection() const;
-    void timerEvent(QTimerEvent*);
-    int readyBytes() const;
+    void reset();
+    void initSlave();
+    void initMaster();
 
 protected slots:
-    void slotReadyRead();
-    void slotError();
-    */
+    void slotTimer(); //for update state
+
+signals:
+    void signalUpdateState(const QStringList&);
+    void signalFillReq(QModbusRequest&, quint8&, QString&);
+
 
 };
 

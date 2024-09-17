@@ -32,18 +32,20 @@ QStringList ExchangeStateWidget::stateTableHeaders() const
     headers.append("Connection status");
     headers.append("TCP host");
     headers.append("TCP port");
-    headers.append("Modbus device state");
+    //headers.append("Modbus device state");
     headers.append("Received time");
     headers.append("Received packet size, b");
-    headers.append("MBTCP request command");
-    headers.append("Device address ");
     headers.append("Received packets (total)");
+
+    //headers.append("MBTCP request command");
+    //headers.append("Device address ");
     headers.append("Sended time");
     headers.append("Sended packet size, b");
     headers.append("Sended packets (total)");
-    headers.append("MBTCP Response command");
+
+    //headers.append("MBTCP Response command");
     headers.append("Connection errors");
-    headers.append("Modbus errors");
+    //headers.append("Modbus errors");
     return headers;
 }
 void ExchangeStateWidget::updateStatistic(const QStringList &list)
@@ -59,17 +61,12 @@ void ExchangeStateWidget::updateStatistic(const QStringList &list)
         if (i == 0)
         {
             cell_color = Qt::gray;
-            if (list.at(i).contains("conn")) cell_color = Qt::darkGreen;
-            else if (list.at(i).contains("listen")) cell_color = Qt::darkYellow;
+            if (list.at(i).toLower().contains("conn")) cell_color = Qt::darkGreen;
+            else if (list.at(i).toLower().contains("listen")) cell_color = Qt::darkYellow;
+            else if (list.at(i).toLower().contains("open")) cell_color = Qt::darkYellow;
             m_tableBox->table()->item(i, 0)->setTextColor(cell_color);
         }
-        if (i == 3)
-        {
-            cell_color = Qt::gray;
-            if (list.at(i).toLower().contains("open")) cell_color = Qt::blue;
-            m_tableBox->table()->item(i, 0)->setTextColor(cell_color);
-        }
-        if (i == rows-2 || i == rows-1)
+        if (i == rows-1)
         {
             bool ok;
             quint32 n_err = list.at(i).toUInt(&ok);

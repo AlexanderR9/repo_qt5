@@ -9,29 +9,26 @@
 //#include <QSerialPort>
 #include <QByteArray>
 #include <QSplitter>
+#include <QModbusRequest>
 
 
 MainForm::MainForm(QWidget *parent)
     :LMainWidget(parent),
     m_protocol(NULL),
     v_splitter(NULL),
-    m_centralWidget(NULL)
-
-    //m_comObj(NULL),
-    //f_worker(NULL)
+    m_centralWidget(NULL),
+    m_mbtcpObj(NULL)
 {
     setObjectName("main_form_mbtcptest");
 
-    /*
-    m_comObj = new ComObj(this);
-    connect(m_comObj, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
-    connect(m_comObj, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMessage(const QString&)));
+    initMBObj();
+}
+void MainForm::initMBObj()
+{
+    m_mbtcpObj = new MBTcpObj(this);
 
-    f_worker = new FileWorker(this);
-    connect(f_worker, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
-    connect(f_worker, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMessage(const QString&)));
-    */
-
+    connect(m_mbtcpObj, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
+    connect(m_mbtcpObj, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
 }
 void MainForm::initActions()
 {
@@ -56,9 +53,6 @@ void MainForm::slotAction(int type)
 }
 void MainForm::initWidgets()
 {
-//    m_protocol = new LProtocolBox(false, this);
-  //  addWidget(m_protocol, 0, 0);
-
     v_splitter = new QSplitter(Qt::Vertical, this);
     addWidget(v_splitter, 0, 0);
 
@@ -69,7 +63,10 @@ void MainForm::initWidgets()
 
     connect(m_centralWidget, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_centralWidget, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
+    connect(m_mbtcpObj, SIGNAL(signalUpdateState(const QStringList&)), m_centralWidget, SLOT(slotUpdateState(const QStringList&)));
+    connect(m_mbtcpObj, SIGNAL(signalFillReq(QModbusRequest&, quint8&, QString&)), m_centralWidget, SLOT(slotFillReq(QModbusRequest&, quint8&, QString&)));
 
+    updateToolbar(false);
 }
 void MainForm::initCommonSettings()
 {
@@ -105,120 +102,44 @@ void MainForm::initCommonSettings()
 }
 void MainForm::startExchange()
 {
-
+    if (m_mbtcpObj)
+    {
+        m_mbtcpObj->reinit(mode());
+        m_mbtcpObj->setNetworkParams(host(), port());
+        m_mbtcpObj->start();
+    }
+    updateToolbar(true);
 }
 void MainForm::stopExchange()
 {
-
+    if (m_mbtcpObj)
+    {
+        m_mbtcpObj->stop();
+    }
+    updateToolbar(false);
 }
 void MainForm::sendReq()
 {
-
+    qDebug("MainForm::sendReq()");
+    if (m_mbtcpObj) m_mbtcpObj->sendReq();
 }
-
-/*
-void MainForm::save()
+void MainForm::slotAppSettingsChanged(QStringList list)
 {
-    LMainWidget::save();
-    if (m_comObj->portOpened()) m_comObj->tryClose();
-}
-void MainForm::load()
-{
-    LMainWidget::load();
+    foreach (const QString &v, list) qDebug()<<QString("slotAppSettingsChanged: changed setting key: %1").arg(v);
 
-    QStringList keys;
-    keys.append("infile");
-    slotAppSettingsChanged(keys);
-
-}
-MainForm::~MainForm()
-{
-//    if (m_req) {delete m_req; m_req = NULL;}
-}
-
-void MainForm::slotAppSettingsChanged(QStringList keys)
-{
-    LMainWidget::slotAppSettingsChanged(keys);
-
-    QString key = "infile";
-    if (keys.contains(key))
+    if (list.contains("mode"))
     {
-        m_protocol->addSpace();
-        f_worker->setInputFile(lCommonSettings.paramValue(key).toString());
-
-        key = "showbuff";
-        if (lCommonSettings.paramValue(key).toBool())
-        {
-            QString s_ba = LStatic::baToStr(f_worker->sendingBuffer());
-            m_protocol->addText(s_ba, LProtocolBox::ttData);
-        }
+        m_centralWidget->reinitWidget(mode());
     }
 }
-void MainForm::updatePortParams()
+void MainForm::updateToolbar(bool is_start)
 {
-    if (m_comObj->portOpened()) return;
-
-    ComParams p;
-    p.port_name = lCommonSettings.paramValue("portname").toString().trimmed();
-    QString drct = lCommonSettings.paramValue("direction").toString().trimmed();
-    if (drct == "Only read") p.direction = QSerialPort::Input;
-    if (drct == "Only write") p.direction = QSerialPort::Output;
-    m_comObj->setPortParams(p);
+    getAction(LMainWidget::atSendMsg)->setEnabled(is_start && m_mbtcpObj->isMaster());
+    getAction(LMainWidget::atStart)->setEnabled(!is_start);
+    getAction(LMainWidget::atStop)->setEnabled(is_start);
+    getAction(LMainWidget::atSettings)->setEnabled(!is_start);
 }
-void MainForm::openPort()
-{
-    updatePortParams();
-
-    m_protocol->addSpace();
-    m_protocol->addText(QString("Try open COM port (%1), direction (%2) .........").arg(m_comObj->portName()).arg(m_comObj->strDirection()), LProtocolBox::ttOk);
-
-    bool ok;
-    m_comObj->tryOpen(ok);
-    m_protocol->addText(QString("done!"));
-}
-void MainForm::closePort()
-{
-    m_protocol->addSpace();
-    m_protocol->addText(QString("Try close COM port (%1) .........").arg(m_comObj->portName()), LProtocolBox::ttOk);
-
-    m_comObj->tryClose();
-    m_protocol->addText(QString("done!"));
-}
-void MainForm::writeToPort()
-{
-    m_protocol->addSpace();
-    m_protocol->addText(QString("Try write test data to COM port (%1) .........").arg(m_comObj->portName()), LProtocolBox::ttOk);
-
-    QByteArray ba(f_worker->sendingBuffer());
-    tryAddCRCBuff(ba);
-
-
-    //getTestBA(ba);
-    if (ba.isEmpty()) m_protocol->addText(QString("buffer is empty"), LProtocolBox::ttWarning);
-    else m_comObj->tryWrite(ba);
-
-    m_protocol->addText(QString("done!"));
-}
-
-void MainForm::parseReceivedData(const QByteArray &ba)
-{
-    QString key = "showbuff";
-    if (lCommonSettings.paramValue(key).toBool())
-    {
-        m_protocol->addSpace();
-        QString s_ba = LStatic::baToStr(ba);
-        m_protocol->addText(s_ba, LProtocolBox::ttData);
-        m_protocol->addSpace();
-    }
-
-    key = "savebuff";
-    if (lCommonSettings.paramValue(key).toBool())
-    {
-        f_worker->saveBuffer(ba);
-    }
-}
-*/
-void MainForm::slotMessage(const QString &text)
+void MainForm::slotMsg(const QString &text)
 {
     m_protocol->addText(text);
 }
@@ -226,21 +147,6 @@ void MainForm::slotError(const QString &text)
 {
     m_protocol->addText(text, LProtocolBox::ttErr);
 }
-/*
-void MainForm::getTestBA(QByteArray &ba)
-{
-    ba.clear();
-
-    char c = 0xaa;
-    ba.push_back(c);
-    c = 0xbb;
-    ba.push_back(c);
-    c = 0xdd;
-    ba.push_back(c);
-}
-
-
-*/
 void MainForm::save()
 {
     LMainWidget::save();
@@ -258,6 +164,7 @@ void MainForm::load()
     QByteArray ba(settings.value(QString("%1/v_splitter/state").arg(objectName()), QByteArray()).toByteArray());
     if (!ba.isEmpty()) v_splitter->restoreState(ba);
 
+    m_centralWidget->reinitWidget(mode());
     m_centralWidget->load(settings);
 
 }

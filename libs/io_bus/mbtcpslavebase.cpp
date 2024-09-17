@@ -1,4 +1,4 @@
-#include "mbtcpserverbase.h"
+#include "mbtcpslavebase.h"
 //#include "mbadu.h"
 //#include "comparams.h"
 
@@ -9,39 +9,45 @@
 #include <QDebug>
 
 
-////////////// LMBTCPServerBase //////////////////
-LMBTCPServerBase::LMBTCPServerBase(QObject *parent)
+////////////// LMBTcpSlaveBase //////////////////
+LMBTcpSlaveBase::LMBTcpSlaveBase(QObject *parent)
     :QModbusTcpServer(parent)
 {
-    this->setConnectionParameter(QModbusDevice::NetworkAddressParameter, "127.0.0.1"); //static tcp modbus host
+    //this->setConnectionParameter(QModbusDevice::NetworkAddressParameter, "127.0.0.1"); //static tcp modbus host
     this->setConnectionParameter(QModbusDevice::NetworkPortParameter, 50502); //default tcp port
-
 
     connect(this, SIGNAL(errorOccurred(QModbusDevice::Error)), this, SLOT(slotError(QModbusDevice::Error)));
     connect(this, SIGNAL(stateChanged(QModbusDevice::State)), this, SLOT(slotStateChanged(QModbusDevice::State)));
     connect(this, SIGNAL(dataWritten(QModbusDataUnit::RegisterType, int, int)), this, SLOT(slotDataWritten(QModbusDataUnit::RegisterType, int, int)));
-
 }
-void LMBTCPServerBase::slotError(QModbusDevice::Error err)
+void LMBTcpSlaveBase::slotError(QModbusDevice::Error err)
 {
     qDebug()<<QString("LMBTCPServerBase::slotError  err=%1").arg(err);
 }
-void LMBTCPServerBase::slotStateChanged(QModbusDevice::State state)
+void LMBTcpSlaveBase::slotStateChanged(QModbusDevice::State state)
 {
     qDebug()<<QString("LMBTCPServerBase::slotStateChanged  state=%1").arg(state);
 }
-void LMBTCPServerBase::slotDataWritten(QModbusDataUnit::RegisterType reg_type, int address, int size)
+void LMBTcpSlaveBase::slotDataWritten(QModbusDataUnit::RegisterType reg_type, int address, int size)
 {
     Q_UNUSED(reg_type);
     Q_UNUSED(address);
     Q_UNUSED(size);
     //qDebug()<<QString("LMBTCPServerBase::slotDataWritten  reg_type=%1,  address=%2,  size=%3").arg(reg_type).arg(address).arg(size);
 }
-void LMBTCPServerBase::setDeviceTcpPort(quint32 port)
+void LMBTcpSlaveBase::setDeviceTcpPort(quint16 port)
 {
     this->setConnectionParameter(QModbusDevice::NetworkPortParameter, port);
 }
-QByteArray LMBTCPServerBase::getRegistersData(int reg_type, quint16 start_pos, quint16 reg_count) const
+QString LMBTcpSlaveBase::ipAddress() const
+{
+    return connectionParameter(QModbusDevice::NetworkAddressParameter).toString().trimmed();
+}
+quint16 LMBTcpSlaveBase::port() const
+{
+    return connectionParameter(QModbusDevice::NetworkPortParameter).toInt();
+}
+QByteArray LMBTcpSlaveBase::getRegistersData(int reg_type, quint16 start_pos, quint16 reg_count) const
 {
     QByteArray ba;
     QModbusDataUnit *mbdu = new QModbusDataUnit(QModbusDataUnit::RegisterType(reg_type));
@@ -62,34 +68,33 @@ QByteArray LMBTCPServerBase::getRegistersData(int reg_type, quint16 start_pos, q
     if (mbdu) {delete mbdu; mbdu = NULL;}
     return ba;
 }
-void LMBTCPServerBase::openConnection()
+void LMBTcpSlaveBase::openConnection()
 {
-    qDebug()<<QString("LMBTCPServerBase::openConnection()   address=%1/%2    host=%3").arg(this->serverAddress()).
-              arg(connectionParameter(QModbusDevice::NetworkAddressParameter).toString()).
-              arg(connectionParameter(QModbusDevice::NetworkPortParameter).toInt());
+    qDebug()<<QString("LMBTcpSlaveBase::openConnection()   dev_address=%1  host=[%2]  port=%3").
+              arg(this->serverAddress()).arg(ipAddress()).arg(port());
 
     if (!isConnected()) this->open();
 }
-void LMBTCPServerBase::closeConnection()
+void LMBTcpSlaveBase::closeConnection()
 {
     if (!isDisconnected())
     {
         this->close();
     }
 }
-bool LMBTCPServerBase::isConnected() const
+bool LMBTcpSlaveBase::isConnected() const
 {
     return (state() == QModbusDevice::ConnectedState);
 }
-bool LMBTCPServerBase::isDisconnected() const
+bool LMBTcpSlaveBase::isDisconnected() const
 {
     return (state() == QModbusDevice::UnconnectedState);
 }
-bool LMBTCPServerBase::isClosing() const
+bool LMBTcpSlaveBase::isClosing() const
 {
     return (state() == QModbusDevice::ClosingState);
 }
-QString LMBTCPServerBase::strDeviceState() const
+QString LMBTcpSlaveBase::strDeviceState() const
 {
     switch (this->state())
     {
@@ -101,3 +106,11 @@ QString LMBTCPServerBase::strDeviceState() const
     }
     return QString("Unknown state");
 }
+QModbusResponse LMBTcpSlaveBase::processRequest(const QModbusPdu &request)
+{
+    qDebug("LMBTCPServerBase::processRequest");
+    return QModbusTcpServer::processRequest(request);
+}
+
+
+

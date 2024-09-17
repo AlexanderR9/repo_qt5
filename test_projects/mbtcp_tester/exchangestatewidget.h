@@ -15,6 +15,8 @@ public:
     void updateStatistic(const QStringList&); //обновление информации об обмене
     virtual QString iconPath() const {return QString(":/icons/images/ball_gray.svg");}
 
+    static int stateRow() {return 10;}
+
 protected:
     LTableWidgetBox         *m_tableBox;    //отображение статистики обмена и текущего состояния
 

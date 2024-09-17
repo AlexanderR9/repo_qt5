@@ -1,19 +1,12 @@
-
-QT -= gui
-QT += serialbus serialport
-
-
 TARGET = build/liobus
 TEMPLATE = lib
 DEFINES += LIB_LIBRARY
+DEFINES += LIB_LIBRARY QT_DEPRECATED_WARNINGS
 MOC_DIR = moc
 OBJECTS_DIR = obj
 
-# The following define makes your compiler emit warnings if you use
-# any feature of Qt which as been marked as deprecated (the exact warnings
-# depend on your compiler). Please consult the documentation of the
-# deprecated API in order to know how to port your code away from it.
-DEFINES += QT_DEPRECATED_WARNINGS
+QT -= gui
+QT += serialbus serialport
 
 INCLUDEPATH += .\
 	    $$PWD
@@ -22,18 +15,18 @@ INCLUDEPATH += .\
 # Input
 HEADERS += $$PWD/mbadu.h \
 	$$PWD/mbcrckeytable.h \
-#	$$PWD/mbabstractserver.h \
-	$$PWD/mbslaveserverbase.h \
-	$$PWD/mbtcpserverbase.h \
+	$$PWD/mbtcpslavebase.h \
 	$$PWD/comparams.h \
 	$$PWD/comportobject.h \
-	$$PWD/iobus_global.h
+	$$PWD/iobus_global.h \
+	$$PWD/mbslaveserverbase.h \
+	$$PWD/mbtcpmasterbase.h
 
 
 SOURCES += $$PWD/mbadu.cpp \
-#	$$PWD/mbabstractserver.cpp \
 	$$PWD/mbslaveserverbase.cpp \
-	$$PWD/mbtcpserverbase.cpp \
-	$$PWD/comportobject.cpp
+	$$PWD/comportobject.cpp \
+	$$PWD/mbtcpslavebase.cpp \
+	$$PWD/mbtcpmasterbase.cpp
 
 
