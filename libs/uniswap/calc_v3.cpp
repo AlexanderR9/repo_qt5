@@ -74,7 +74,7 @@ void LPoolCalcObj::updateInputParamsValidity()
     if (in_params.input_token > 1) return;
     if (in_params.input_size < 0.001) return;
 
-    in_params.normalizeCurPrice();
+    //in_params.normalizeCurPrice();
     in_params.validity = true;
 }
 void LPoolCalcObj::setTokenSize(double t_size, quint8 t_index)

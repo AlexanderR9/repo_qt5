@@ -24,12 +24,14 @@ unix:!macx: LIBS += -L$$PWD/../base/build/ -llbase
 HEADERS += $$PWD/calc_v3.h \
 	$$PWD/uniswap_global.h \
         $$PWD/poolstructs.h \
-        $$PWD/poolsimulator_v3.h
+        $$PWD/poolsimulator_v3.h \
+        $$PWD/subgraphreq.h
 
 
 SOURCES += $$PWD/calc_v3.cpp \
         $$PWD/poolstructs.cpp \
-        $$PWD/poolsimulator_v3.cpp
+        $$PWD/poolsimulator_v3.cpp \
+        $$PWD/subgraphreq.cpp
 
 
 

@@ -180,7 +180,7 @@ void LHttpApiReplyData::takeData(QNetworkReply *reply)
 }
 bool LHttpApiReplyData::isOk() const
 {
-    return (hreOk == 0);
+    return (result_code == 0);
 }
 
 

@@ -1,0 +1,12 @@
+mbtcp_tester.pro.user
+mbtcp_tester.debug
+.qmake.stash
+moc
+obj
+Makefile
+bybit
+full_clear
+data
+save
+*.tar.gz
+mbtcp_tester

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+L_PATH=../../libs
+
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$L_PATH/base/build
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$L_PATH/tcp/build
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$L_PATH/io_bus/build
+export LD_LIBRARY_PATH
+
+./mbtcp_tester
