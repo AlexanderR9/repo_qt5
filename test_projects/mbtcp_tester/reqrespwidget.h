@@ -13,7 +13,11 @@ public:
     ReqRespWidget(QWidget *parent = 0);
     virtual ~ReqRespWidget() {}
 
+    static int staticRows() {return 5;}
+    void updateTable(const QStringList&, const QStringList&);
+
 protected:
+    void resetTable();
 
 };
 

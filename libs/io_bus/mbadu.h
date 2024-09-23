@@ -88,6 +88,8 @@ public:
 
     QString toStr() const; //выдает в строковом виде основные параметры сообщения (для отладки)
 
+    static quint16 mbapSize() {return 7;} //заголовок MBTCP запроса/ответа
+
 protected:
     void checkData();
 

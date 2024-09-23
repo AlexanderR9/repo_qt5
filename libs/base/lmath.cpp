@@ -142,6 +142,10 @@ QString LMath::uint8ToBAStr(quint8 a, bool with_x)
 {
     return alignStrBA(QString::number(a, 16), sizeof(a)*2, with_x);
 }
+QString LMath::charToBAStr(char a, bool with_x)
+{
+    return alignStrBA(QString::number(a, 16), sizeof(a)*2, with_x);
+}
 QString LMath::uint16ToBAStr(quint16 a, bool with_x)
 {
     return alignStrBA(QString::number(a, 16), sizeof(a)*2, with_x);

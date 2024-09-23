@@ -10,6 +10,8 @@
 class LMBTcpMasterBase;
 class LMBTcpSlaveBase;
 class QModbusRequest;
+class QModbusResponse;
+class QModbusReply;
 
 
 //MBTcpStat
@@ -32,6 +34,11 @@ struct MBTcpStat
     QString receivedTime() const {return (t_received.isValid() ? t_received.toString(t_mask()) : "---");}
     QString sendedTime() const {return (t_sended.isValid() ? t_sended.toString(t_mask()) : "---");}
 
+    void nextReq(const QModbusRequest&);
+    void nextResp(const QModbusResponse&);
+    void nextErr() {errs++;}
+
+
 };
 
 
@@ -51,17 +58,22 @@ public:
     inline bool isMaster() const {return (m_master != NULL);}
     inline bool isSlave() const {return (m_slave != NULL);}
     inline bool deactivated() const {return (!isMaster() && !isSlave());}
+    inline quint8 devAddress() const {return m_devAddress;}
+    inline void setDevAddress(quint8 a) {m_devAddress = a;}
+
 
     void start();
     void stop();
     QString curMode() const;
     bool isStarted() const;
     void setNetworkParams(QString host, quint16 tcp_port);
-    void sendReq();
+    void sendReq(); //for master only
 
 
 protected:
     MBTcpStat m_stat;
+    quint8 m_devAddress; //modbus device address
+
 
     //может быть инициализирован только один из двух объектов
     //если оба NULL, то утилита не работает
@@ -71,13 +83,19 @@ protected:
     void reset();
     void initSlave();
     void initMaster();
+    void updateReqTable(const QModbusRequest&);
+    void updateRespTable(const QModbusResponse&);
 
 protected slots:
     void slotTimer(); //for update state
+    void slotRequestFinished(bool); //for master only
+    void slotModbusError();
 
 signals:
     void signalUpdateState(const QStringList&);
     void signalFillReq(QModbusRequest&, quint8&, QString&);
+    void signalUpdateReqRespTable(const QStringList&, const QStringList&);
+    void signalUpdateRegTable(const QModbusResponse&);
 
 
 };

@@ -63,6 +63,7 @@ public:
     static QString uint64ToBAStr(quint64, bool with_x = false);
     static QString floatToBAStr(float, bool with_x = false);
     static QString doubleToBAStr(double, bool with_x = false);
+    static QString charToBAStr(char, bool with_x = false);
 
     //взять младшие 2 байта у quint32
     static quint16 lowHalfFromUint32(quint32 a) {a = (a << 16);  return (a >> 16);}

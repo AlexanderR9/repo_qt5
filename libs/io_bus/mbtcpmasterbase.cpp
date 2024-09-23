@@ -1,14 +1,24 @@
 #include "mbtcpmasterbase.h"
 
 #include <QModbusDevice>
+#include <QModbusDataUnit>
 #include <QDebug>
+
 
 
 ////////////// LMBTcpMasterBase //////////////////
 LMBTcpMasterBase::LMBTcpMasterBase(QObject *parent)
-    :QModbusTcpClient(parent)
+    :QModbusTcpClient(parent),
+      m_devAddress(0)
 {
+    setObjectName("lmbtcp_mster_base");
     setNumberOfRetries(1);
+    resetLastResponse();
+}
+void LMBTcpMasterBase::resetLastResponse()
+{
+    m_lastResponse.setFunctionCode(QModbusPdu::Invalid);
+    m_lastResponse.setData(QByteArray());
 }
 void LMBTcpMasterBase::openConnection()
 {
@@ -60,9 +70,20 @@ void LMBTcpMasterBase::setNetworkParams(QString host, quint16 tcp_port)
     setConnectionParameter(QModbusDevice::NetworkAddressParameter, host);
     setConnectionParameter(QModbusDevice::NetworkPortParameter, tcp_port);
 }
+quint16 LMBTcpMasterBase::transactionID() const
+{
+    //to do
+    return 0;
+}
 bool LMBTcpMasterBase::processResponse(const QModbusResponse &response, QModbusDataUnit *data)
 {
-    qDebug()<<QString("LMBTcpMasterBase::processResponse");
+    m_lastResponse = response;
+
+    qDebug()<<QString("LMBTcpMasterBase::processResponse, func_code=%1  resp_data_size=%2").
+              arg(m_lastResponse.functionCode()).arg(m_lastResponse.dataSize());
+
+    if (data)
+        qDebug()<<QString("reply QModbusDataUnit: reg_type=%1  valueCount=%2").arg(data->registerType()).arg(data->valueCount());
 
     return QModbusTcpClient::processResponse(response, data);
 }
@@ -72,14 +93,43 @@ bool LMBTcpMasterBase::processPrivateResponse(const QModbusResponse &response, Q
 
     return QModbusTcpClient::processPrivateResponse(response, data);
 }
-void LMBTcpMasterBase::checkReply(const QModbusReply *reply)
+void LMBTcpMasterBase::slotCheckReply()
 {
+    QModbusReply *reply = qobject_cast<QModbusReply*>(sender());
     if (!reply) {qWarning("LMBTcpMasterBase::checkReply WARNING reply is NULL"); return;}
 
-    QModbusResponse resp(reply->rawResult());
-    QModbusDataUnit data(reply->result());
-    processResponse(resp, &data);
+    if (reply->error() != QModbusDevice::NoError)
+    {
+        qWarning()<<QString("LMBTcpMasterBase::slotCheckReply() WARNING reply->error() = [%1]").arg(reply->errorString());
+        setError(reply->errorString(), reply->error());
+        m_lastResponse = reply->rawResult();
+        //emit errorOccurred(reply->error());
+        emit signalRequestFinished(false);
+    }
+    else
+    {
+        QModbusResponse resp(reply->rawResult());
+        QModbusDataUnit data(reply->result());
+        bool ok = processResponse(resp, &data);
+        emit signalRequestFinished(ok);
+    }
 
+    reply->deleteLater();
+}
+void LMBTcpMasterBase::sendRequest(const QModbusRequest &req)
+{
+    resetLastResponse();
+    setError(QString(), QModbusDevice::NoError);
+    QModbusReply *reply = sendRawRequest(req, m_devAddress);
+    if (!reply)
+    {
+        qWarning("LMBTcpMasterBase::sendRequest  WARNING: reply is NULL");
+        setError("Reply is NULL", QModbusDevice::ProtocolError);
+        emit errorOccurred(ProtocolError);
+        return;
+    }
+
+    connect(reply, SIGNAL(finished()), this, SLOT(slotCheckReply()));
 }
 
 

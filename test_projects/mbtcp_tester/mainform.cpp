@@ -65,6 +65,8 @@ void MainForm::initWidgets()
     connect(m_centralWidget, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
     connect(m_mbtcpObj, SIGNAL(signalUpdateState(const QStringList&)), m_centralWidget, SLOT(slotUpdateState(const QStringList&)));
     connect(m_mbtcpObj, SIGNAL(signalFillReq(QModbusRequest&, quint8&, QString&)), m_centralWidget, SLOT(slotFillReq(QModbusRequest&, quint8&, QString&)));
+    connect(m_mbtcpObj, SIGNAL(signalUpdateReqRespTable(const QStringList&, const QStringList&)), m_centralWidget, SLOT(slotUpdateReqRespTable(const QStringList&, const QStringList&)));
+    connect(m_mbtcpObj, SIGNAL(signalUpdateRegTable(const QModbusResponse&)), m_centralWidget, SLOT(slotUpdateRegTable(const QModbusResponse&)));
 
     updateToolbar(false);
 }

@@ -3,7 +3,7 @@
 
 
 #include <QModbusTcpClient>
-
+#include <QModbusResponse>
 
 //LMBTcpMasterBase
 //класс являющийся надстройкой над ModbusTcpServer,
@@ -11,6 +11,8 @@
 class LMBTcpMasterBase : public QModbusTcpClient
 {
     Q_OBJECT
+    //Q_DECLARE_PRIVATE(QModbusTcpClient)
+
 public:
     LMBTcpMasterBase(QObject *parent = NULL);
     virtual ~LMBTcpMasterBase() {}
@@ -28,14 +30,28 @@ public:
     virtual QString ipAddress() const;
     virtual quint16 port() const;
     virtual void setNetworkParams(QString host, quint16 tcp_port);
+    virtual void sendRequest(const QModbusRequest&);
 
-    virtual void checkReply(const QModbusReply*);
+    virtual quint16 transactionID() const;
+    virtual const QModbusResponse& lastResponse() const {return m_lastResponse;}
+
+    inline quint8 devAddress() const {return m_devAddress;}
+    inline void setDevAddress(quint8 a) {m_devAddress = a;}
 
 
 protected:
+    QModbusResponse m_lastResponse;
+    quint8 m_devAddress; //modbus device address
 
-    bool processResponse(const QModbusResponse &response, QModbusDataUnit *data);
-    bool processPrivateResponse(const QModbusResponse &response, QModbusDataUnit *data);
+    virtual bool processResponse(const QModbusResponse &response, QModbusDataUnit *data);
+    virtual bool processPrivateResponse(const QModbusResponse &response, QModbusDataUnit *data);
+    virtual void resetLastResponse();
+
+protected slots:
+    void slotCheckReply(); //request finished, need check reply
+
+signals:
+    void signalRequestFinished(bool);
 
 };
 
