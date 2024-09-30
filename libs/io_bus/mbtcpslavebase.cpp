@@ -108,7 +108,7 @@ QString LMBTcpSlaveBase::strDeviceState() const
 }
 QModbusResponse LMBTcpSlaveBase::processRequest(const QModbusPdu &request)
 {
-    qDebug("LMBTCPServerBase::processRequest");
+    //qDebug("LMBTCPServerBase::processRequest");
     return QModbusTcpServer::processRequest(request);
 }
 

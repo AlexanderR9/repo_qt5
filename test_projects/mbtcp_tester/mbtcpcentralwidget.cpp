@@ -327,10 +327,10 @@ void MasterWidget::fillReq(QModbusRequest &req, quint8 &dev_addr, QString &err)
 {
     bool ok;
     err.clear();
-    uint a = m_transactionIdEdit->text().toUInt(&ok);
-    if (!ok) a = 99;
+    //uint a = m_transactionIdEdit->text().toUInt(&ok);
+    //if (!ok) a = 99;
 
-    a = m_funcCodeEdit->text().toUInt(&ok, 16);
+    quint8 a = m_funcCodeEdit->text().toUInt(&ok, 16);
     if (!ok) {err=QString("invalid function %1").arg(m_funcCodeEdit->text()); return;}
     req.setFunctionCode(QModbusPdu::FunctionCode(a));
 
@@ -339,8 +339,6 @@ void MasterWidget::fillReq(QModbusRequest &req, quint8 &dev_addr, QString &err)
 
     quint16 start_reg = m_startRegEdit->text().toUInt(&ok);
     if (!ok) {err=QString("invalid start reg address %1").arg(m_startRegEdit->text()); return;}
-    //quint16 reg_count = m_regsLenEdit->text().toUInt(&ok);
-    //if (!ok) {err=QString("invalid regs count %1").arg(m_regsLenEdit->text()); return;}
 
     QByteArray ba;
     QDataStream stream(&ba, QIODevice::WriteOnly);

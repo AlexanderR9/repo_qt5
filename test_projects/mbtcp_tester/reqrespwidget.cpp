@@ -48,6 +48,7 @@ void ReqRespWidget::updateTable(const QStringList &req_list, const QStringList &
 
     QStringList empty_row; empty_row << "" << "";
     qDebug()<<QString("ReqRespWidget::updateTable   req_list(%1)  resp_list(%2)  max(%3)").arg(req_list.count()).arg(resp_list.count()).arg(n);
+    foreach (const QString &v, req_list) qDebug()<<v;
     while (m_table->rowCount() < n)
     {
         LTable::addTableRow(m_table, empty_row);

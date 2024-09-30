@@ -87,7 +87,11 @@ void MBTcpObj::updateReqTable(const QModbusRequest &req)
         if (!ba.isEmpty())
         {
             for (int i=0; i<ba.size(); i++)
+            {
+                //qDebug()<<QString("ba[%1] = %2 / %3").arg(i).arg(ba.at(i)).arg(int(ba.at(i)));
+                //req_list << QString::number(quint8(ba.at(i)), 16);
                 req_list << LMath::charToBAStr(ba.at(i), true);
+            }
         }
     }
     else req_list << "invalid";
