@@ -20,13 +20,14 @@ HEADERS += $$PWD/mbadu.h \
 	$$PWD/comportobject.h \
 	$$PWD/iobus_global.h \
 	$$PWD/mbslaveserverbase.h \
-	$$PWD/mbtcpmasterbase.h
+	$$PWD/mbtcpmasterbase.h \
+        $$PWD/mbtcpstatistic.h
 
 
 SOURCES += $$PWD/mbadu.cpp \
 	$$PWD/mbslaveserverbase.cpp \
 	$$PWD/comportobject.cpp \
 	$$PWD/mbtcpslavebase.cpp \
-	$$PWD/mbtcpmasterbase.cpp
-
+	$$PWD/mbtcpmasterbase.cpp \
+        $$PWD/mbtcpstatistic.cpp
 
