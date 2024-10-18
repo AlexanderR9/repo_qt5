@@ -3,17 +3,55 @@
 #include <QModbusDevice>
 #include <QModbusDataUnit>
 #include <QDebug>
+#include <QTimer>
 
+#define TRACKING_CONNECTION_TIMER       500
 
 
 ////////////// LMBTcpMasterBase //////////////////
 LMBTcpMasterBase::LMBTcpMasterBase(QObject *parent)
     :QModbusTcpClient(parent),
-      m_devAddress(0)
+      m_devAddress(0),
+      is_acive(false),
+      m_reconnectTimeout(-1),
+      m_trackTimer(NULL),
+      m_timerCounter(0)
 {
     setObjectName("lmbtcp_mster_base");
     setNumberOfRetries(1);
     resetLastResponse();
+
+    m_trackTimer = new QTimer(this);
+    connect(m_trackTimer, SIGNAL(timeout()), this, SLOT(slotConnectionTracking()));
+    m_trackTimer->setInterval(TRACKING_CONNECTION_TIMER);
+    m_trackTimer->stop();
+
+}
+void LMBTcpMasterBase::slotConnectionTracking()
+{
+    m_timerCounter++;
+    //qDebug()<<QString("LMBTcpMasterBase::slotConnectionTracking()  state: %1").arg(strDeviceState());
+    //qDebug()<<QString("remainingTime %1").arg(m_timerCounter);
+    if (m_timerCounter < 2) return;
+    if (isConnected()) {m_timerCounter = 0; return;}
+
+    checkReconnect();
+}
+void LMBTcpMasterBase::checkReconnect()
+{
+    if (m_reconnectTimeout < 1) return;
+
+    if (m_timerCounter*TRACKING_CONNECTION_TIMER == (m_reconnectTimeout*1000))
+    {
+        //qDebug("setState(QModbusDevice::ConnectingState);");
+        this->setState(QModbusDevice::ConnectingState);
+    }
+    else if (m_timerCounter*TRACKING_CONNECTION_TIMER > (m_reconnectTimeout*1000))
+    {
+        qDebug("reconnect_timeot, try reconnect!!!!");
+        m_timerCounter = 0;
+        this->open();
+    }
 }
 void LMBTcpMasterBase::resetLastResponse()
 {
@@ -24,14 +62,20 @@ void LMBTcpMasterBase::openConnection()
 {
     qDebug()<<QString("LMBTcpMasterBase::openConnection()   ip_address: [%1]  port=%2").arg(ipAddress()).arg(port());
 
+    is_acive = true;
+    m_timerCounter = 0;
+    m_trackTimer->start();
+
     if (!isConnected()) this->open();
 }
 void LMBTcpMasterBase::closeConnection()
 {
+    m_trackTimer->stop();
     if (!isDisconnected())
     {
         this->close();
     }
+    is_acive = false;
 }
 bool LMBTcpMasterBase::isConnected() const
 {
@@ -47,11 +91,12 @@ bool LMBTcpMasterBase::isClosing() const
 }
 QString LMBTcpMasterBase::strDeviceState() const
 {
+    //TCP connection state
     switch (this->state())
     {
-        case QModbusDevice::UnconnectedState: return QString("Closed");
+        case QModbusDevice::UnconnectedState: return QString("Unconnected");
         case QModbusDevice::ConnectingState: return QString("Connecting");
-        case QModbusDevice::ConnectedState: return QString("Opened");
+        case QModbusDevice::ConnectedState: return QString("Connected");
         case QModbusDevice::ClosingState: return QString("Closing");
         default: break;
     }
@@ -118,6 +163,12 @@ void LMBTcpMasterBase::slotCheckReply()
 }
 void LMBTcpMasterBase::sendRequest(const QModbusRequest &req)
 {
+    if (!isActive())
+    {
+        emit errorOccurred(QModbusDevice::UnknownError);
+        return;
+    }
+
     resetLastResponse();
     setError(QString(), QModbusDevice::NoError);
     QModbusReply *reply = sendRawRequest(req, m_devAddress);

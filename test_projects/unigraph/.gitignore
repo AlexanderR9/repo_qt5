@@ -1,0 +1,13 @@
+unigraph.pro.user
+unigraph.debug
+.qmake.stash
+moc
+obj
+Makefile
+unigraph
+full_clear
+data
+save
+*.tar.gz
+
+
