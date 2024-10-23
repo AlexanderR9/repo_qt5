@@ -181,6 +181,7 @@ QString LMainWidget::actionIconName(int type)
         case atCDErase: return QString("cd_erase.png");
         case atCalcCRC: return QString("crc.png");
         case atFoldersStruct: return QString("folders_struct.png");
+        case atJS: return QString("js.png");
 
 
 
@@ -236,6 +237,7 @@ QString LMainWidget::actionText(int type)
         case atCDErase: return QString("Erase CD");
         case atCalcCRC: return QString("Calc CRC");
         case atFoldersStruct: return QString("Folders struct");
+        case atJS: return QString("JavaScript code executing");
 
         default: break;
     }
