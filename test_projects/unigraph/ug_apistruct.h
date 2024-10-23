@@ -2,7 +2,6 @@
 #define UG_APISTRUCT_H
 
 #include <QMap>
-//#include <QDateTime>
 
 class QJsonObject;
 
@@ -17,7 +16,6 @@ struct UG_APIReqParams
 
     int req_type;
     QString name;
-    //bool is_running;
     QString query;
 
     void reset() {name="?"; req_type=-1; /*is_running=false;*/ query.clear();}
@@ -27,7 +25,6 @@ struct UG_APIReqParams
     static QString userDateMask() {return QString("dd.MM.yyyy");}
     static QString userTimeMask() {return QString("hh:mm:ss");}
     static QString userDateTimeMask() {return QString("dd.MM.yyyy  (hh:mm)");}
-    //static QString appDataPath();
 
 };
 
@@ -64,14 +61,21 @@ struct UG_PoolInfo
 struct UG_TokenInfo
 {
     UG_TokenInfo() {reset();}
+    UG_TokenInfo(QString a, QString t, QString c);
 
     QString address; //contract address
     QString ticker;
     QString chain;
+    QString name; //full name
+    double collected_fees; //usd
+    double tvl; //usd
+    double total_supply; //token units
 
     void reset();
     bool invalid() const;
     void toTableRow(QStringList&) const;
+    QString toFileLine() const;
+    void fromFileLine(const QString&);
 
 };
 

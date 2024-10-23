@@ -96,8 +96,8 @@ void MainForm::slotVisibleActionsUpdate(int p_type)
         {
             getAction(atStart)->setVisible(false);
             getAction(atRefresh)->setVisible(true);
-            getAction(atLoadData)->setVisible(false);
-            getAction(atSave)->setVisible(false);
+            getAction(atLoadData)->setVisible(true);
+            getAction(atSave)->setVisible(true);
             break;
         }
 

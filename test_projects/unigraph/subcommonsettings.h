@@ -40,27 +40,6 @@ struct SubGraph_CommonSettings
     QStringList factoryTitles() const;
     bool invalid() const {return (factories.isEmpty());}
 
-    /*
-    //load basic config
-    void loadConfig(QString&);
-    void parseServicesNode(const QDomNode&);
-    void parseCandlesNode(const QDomNode&);
-    void parseAutoStartNode(const QDomNode&);
-    void parseHistoryNode(const QDomNode&);
-    void parseGlobalFilterNode(const QDomNode&);
-    void parseToken(QString);
-
-    //load uid clones data
-    void loadUidClones(QString&);
-    void parseUidClones(const QDomNode&);
-
-    bool isCloneUid(const QString&) const;
-    QString getOrigUidByClone(const QString&) const;
-    bool hasCloneUid(const QString&) const;
-    QString getLastCloneUidByOrig(const QString&) const;
-    bool isHasCloneBond(const QString&) const;
-    */
-
 };
 
 extern SubGraph_CommonSettings sub_commonSettings;

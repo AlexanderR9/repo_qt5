@@ -125,17 +125,25 @@ void UG_PoolInfo::fromFileLine(const QString &fline)
     tvl = list.at(i).toDouble(); i++;
     volume_all = list.at(i).toDouble(); i++;
     fee = list.at(i).toDouble(); i++;
-
-
 }
 
 
 //UG_TokenInfo
+UG_TokenInfo::UG_TokenInfo(QString a, QString t, QString c)
+    :address(a.trimmed()),
+      ticker(t.trimmed()),
+      chain(c.trimmed())
+{
+    name = "---";
+    collected_fees = tvl = total_supply = 0;
+}
 void UG_TokenInfo::reset()
 {
     address.clear();
     ticker.clear();
     chain.clear();
+    name.clear();
+    collected_fees = tvl = total_supply = -1;
 }
 bool UG_TokenInfo::invalid() const
 {
@@ -146,7 +154,32 @@ bool UG_TokenInfo::invalid() const
 void UG_TokenInfo::toTableRow(QStringList &list) const
 {
     list.clear();
-    list << address << ticker << chain;
+    list << address << ticker << name << chain;
+
+    float fv = 1000000;
+    list << QString::number(total_supply, 'f', 1);
+    list << QString::number(tvl/fv, 'f', 2) << QString::number(collected_fees/fv, 'f', 2);
 }
+QString UG_TokenInfo::toFileLine() const
+{
+    QString fline = QString("%1 / %2 / %3").arg(address).arg(ticker).arg(chain);
+    fline = QString("%1 / %2").arg(fline).arg(QString::number(tvl, 'f', 1));
+    fline = QString("%1 / %2").arg(fline).arg(QString::number(total_supply, 'f', 1));
+    fline = QString("%1 / %2").arg(fline).arg(QString::number(collected_fees, 'f', 1));
+    fline = QString("%1 / %2").arg(fline).arg(name);
+    return fline;
+}
+void UG_TokenInfo::fromFileLine(const QString &fline)
+{
+    QStringList list = LString::trimSplitList(fline.trimmed(), "/");
+    if (list.count() != 7) {qWarning()<<QString("UG_TokenInfo WARNING invalid fline [%1]").arg(fline); return;}
 
-
+    int i = 0;
+    address = list.at(i); i++;
+    ticker = list.at(i); i++;
+    chain = list.at(i); i++;
+    tvl = list.at(i).toDouble(); i++;
+    total_supply = list.at(i).toDouble(); i++;
+    collected_fees = list.at(i).toDouble(); i++;
+    name = list.at(i); i++;
+}

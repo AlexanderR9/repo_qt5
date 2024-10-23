@@ -30,7 +30,7 @@ UG_BasePage::UG_BasePage(QWidget *parent, int t, int user_type)
 void UG_BasePage::slotTimer()
 {
     m_timerCounter++;
-    //qDebug()<<QString("PAGE[%1] slotTimer, counter %2").arg(userSign()).arg(m_timerCounter);
+    qDebug()<<QString("PAGE[%1] slotTimer, counter %2").arg(userSign()).arg(m_timerCounter);
 }
 void UG_BasePage::startUpdating(quint16 t)
 {

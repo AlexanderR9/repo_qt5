@@ -141,6 +141,7 @@ void LMBAduBase::prepareWriteCoilsReqData(quint16 start_reg, const QVector<qint8
     stream << start_reg << len;
 
     QList<quint8> req_reg_bytes;
+    start_reg = 0;
 
     //запихиваем полные байты по 8 бит
     quint8 v_byte = 0;
