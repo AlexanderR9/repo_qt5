@@ -119,6 +119,76 @@ QString LMBAduBase::functionType(quint8 f_code)
     }
     return "??";
 }
+void LMBAduBase::prepareWriteHoldingReqData(quint16 start_reg, const QVector<float> &values, QByteArray &req_ba)
+{
+    req_ba.clear();
+    if (values.isEmpty()) return;
+
+    QDataStream stream(&req_ba, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::BigEndian);
+    stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    stream << start_reg << quint16(values.count()*2) << quint8(values.count()*sizeof(float));
+    foreach (float v, values) stream << v;
+}
+void LMBAduBase::prepareWriteCoilsReqData(quint16 start_reg, const QVector<qint8> &values, QByteArray &req_ba)
+{
+    req_ba.clear();
+    if (values.isEmpty()) return;
+
+    quint16 len = values.count();
+    QDataStream stream(&req_ba, QIODevice::WriteOnly);
+    stream.setByteOrder(QDataStream::BigEndian);
+    stream << start_reg << len;
+
+    QList<quint8> req_reg_bytes;
+
+    //запихиваем полные байты по 8 бит
+    quint8 v_byte = 0;
+    while (len > 8)
+    {
+        v_byte = 0;
+        for (int i=0; i<8; i++)
+        {
+            if (values.at(i+start_reg) > 0)
+                v_byte |= bitSwither(i);
+        }
+        req_reg_bytes.append(v_byte);
+        len -= 8;
+        start_reg += 8;
+    }
+    //запихиваем оставшиеся биты последнего байта
+    if (len > 0)
+    {
+        v_byte = 0;
+        for (int i=0; i<len; i++)
+        {
+            if (values.at(i+start_reg) > 0)
+                v_byte |= bitSwither(i);
+        }
+        req_reg_bytes.append(v_byte);
+    }
+
+    stream << quint8(req_reg_bytes.count());
+    foreach (quint8 v, req_reg_bytes) stream << v;
+
+}
+quint8 LMBAduBase::bitSwither(quint8 bit_index)
+{
+    quint8 bs = 0;
+    switch (bit_index)
+    {
+        case 0: {bs = 0x01; break;}
+        case 1: {bs = 0x02; break;}
+        case 2: {bs = 0x04; break;}
+        case 3: {bs = 0x08; break;}
+        case 4: {bs = 0x10; break;}
+        case 5: {bs = 0x20; break;}
+        case 6: {bs = 0x40; break;}
+        case 7: {bs = 0x80; break;}
+        default: break;
+    }
+    return bs;
+}
 
 
 //////////////////// LMBAdu ////////////////////////////
@@ -297,3 +367,7 @@ QString LMBTcpAdu::toStr() const
     s = QString("%1   cmd_kind(%2)").arg(s).arg(functionType(cmdCode()));
     return s;
 }
+
+
+
+

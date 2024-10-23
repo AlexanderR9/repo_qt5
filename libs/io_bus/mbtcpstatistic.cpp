@@ -17,6 +17,7 @@ void MBTcpStatistic::nextResp(const QModbusResponse &resp)
     t_received = QTime::currentTime();
     received++;
     received_size = LMBTcpAdu::mbapSize() + resp.size();
+    if (resp.isException()) exceptions++;
 }
 void MBTcpStatistic::reset()
 {

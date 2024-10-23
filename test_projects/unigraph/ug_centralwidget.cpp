@@ -1,22 +1,12 @@
 #include "ug_centralwidget.h"
-//#include "bb_chartpage.h"
 #include "lhttp_types.h"
 #include "lhttpapirequester.h"
 #include "ug_jsonviewpage.h"
 #include "subgraphreq.h"
 #include "ug_apistruct.h"
 #include "ug_poolpage.h"
+#include "ug_tokenpage.h"
 
-/*
-#include "bb_apistruct.h"
-#include "apiconfig.h"
-#include "bb_positionspage.h"
-#include "bb_historypage.h"
-#include "bb_spothistorypage.h"
-#include "bb_bagstatepage.h"
-#include "bb_pricespage.h"
-#include "bb_shadowexplorer.h"
-*/
 
 #include <QStackedWidget>
 #include <QSplitter>
@@ -86,17 +76,19 @@ int UG_CentralWidget::pageCount() const
 }
 void UG_CentralWidget::createPages()
 {
-    qDebug("UG_CentralWidget::createPages() 1");
+   // qDebug("UG_CentralWidget::createPages() 1");
     UG_JSONViewPage *j_page = new UG_JSONViewPage(this);
     w_stack->addWidget(j_page);
 
-    qDebug("UG_CentralWidget::createPages() 2");
     UG_PoolPage *p_page = new UG_PoolPage(this);
     w_stack->addWidget(p_page);
     connect(p_page, SIGNAL(signalGetFilterParams(quint16&, double&)), this, SIGNAL(signalGetFilterParams(quint16&, double&)));
 
+    UG_TokenPage *t_page = new UG_TokenPage(this);
+    w_stack->addWidget(t_page);
+    connect(t_page, SIGNAL(signalGetTokensFromPoolPage(QHash<QString, QString>&)), p_page, SLOT(slotSetTokensFromPage(QHash<QString, QString>&)));
 
-    qDebug("UG_CentralWidget::createPages() 3");
+
     for (int i=0; i<w_stack->count(); i++)
     {
         UG_BasePage *w = qobject_cast<UG_BasePage*>(w_stack->widget(i));

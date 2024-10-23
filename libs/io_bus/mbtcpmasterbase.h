@@ -65,7 +65,8 @@ protected slots:
     void slotConnectionTracking();
 
 signals:
-    void signalRequestFinished(bool);
+    void signalRequestFinished(bool); //выполняется когда приходит подготовленный ответ(как успешный, так и нет).
+
 
 };
 

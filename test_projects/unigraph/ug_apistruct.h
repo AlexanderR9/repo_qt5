@@ -7,7 +7,7 @@
 class QJsonObject;
 
 //типы страниц пользовательского интерфейса
-enum UG_ReqType {rtJsonView = 131, rtPools};
+enum UG_ReqType {rtJsonView = 131, rtPools, rtTokens};
 
 
 //необходимые данные для формирования запроса перед отправкой
@@ -27,9 +27,10 @@ struct UG_APIReqParams
     static QString userDateMask() {return QString("dd.MM.yyyy");}
     static QString userTimeMask() {return QString("hh:mm:ss");}
     static QString userDateTimeMask() {return QString("dd.MM.yyyy  (hh:mm)");}
-    static QString appDataPath();
+    //static QString appDataPath();
 
 };
+
 
 //Pool data
 struct UG_PoolInfo
@@ -53,8 +54,28 @@ struct UG_PoolInfo
     QString toStr() const;
     void toTableRow(QStringList&) const;
     QString toFileLine() const;
+    void fromFileLine(const QString&);
 
 };
+
+
+
+//Token data
+struct UG_TokenInfo
+{
+    UG_TokenInfo() {reset();}
+
+    QString address; //contract address
+    QString ticker;
+    QString chain;
+
+    void reset();
+    bool invalid() const;
+    void toTableRow(QStringList&) const;
+
+};
+
+
 
 
 #endif // UG_APISTRUCT_H

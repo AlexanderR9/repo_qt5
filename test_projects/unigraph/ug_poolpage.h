@@ -39,39 +39,13 @@ protected:
 public slots:
     virtual void slotJsonReply(int, const QJsonObject&);
     void slotReqBuzyNow();
+    void slotSetTokensFromPage(QHash<QString, QString>&); //key - id token, value - ticker
 
 protected slots:
     virtual void slotTimer();
 
-
 signals:
     void signalGetFilterParams(quint16&, double&);
-
-
-    /*
-    void updateTableByData(bool);
-    void addRowRecord(const OrderData*, const QPair<QString, QString>&);
-    void clearData();
-    void clearDataByKind(bool);
-    void calcPapersInOrders();
-    void checkCloneUid(OrderData*); //проверить uid пришедшего ордера в ответе на предмена клона, если это клон, то подменить его на нормальный uid из базы  активов
-
-public slots:
-    void slotLoadOrders(const QJsonObject&);
-    void slotLoadStopOrders(const QJsonObject&);
-
-protected slots:
-    void slotContextMenu(QPoint);
-    void slotCancelOrder();
-
-signals:
-    void signalGetPaperInfoByFigi(const QString&, QPair<QString, QString>&);
-    void signalGetTickerByFigi(const QString&, QString&);
-    void signalGetPaperTypeByUID(const QString&, QString&);
-    void signalGetBondNominalByUID(const QString&, float&);
-    void signalCancelOrder(const PlaceOrderData&);
-    void signalSendOrdersInfoToBag(const QMap<QString, QString>&);
-    */
 
 };
 

@@ -29,6 +29,18 @@ public:
     static quint16 convertToLittleEndian(const quint16); //развернуть порядок байт в значении
     static int registerTypeByFunc(quint8); //выдает тип регистров по коду функции или -1
     static QString functionType(quint8); //выдает тип команды (write/read) и вид регистров
+    static quint8 bitSwither(quint8 bit_index); //значения (8шт) - степени 2, служат для вкл/выкл битов в байте, bit_index= 0..7
+
+
+    //функция подготавливает QByteArray(данные запроса) для установки его в переменную QModbusRequest.
+    //данные QByteArray соответствуют команде «0x10» — запись группы регистров Holding.
+    //результат записывает в переданный в параметре QByteArray.
+    static void prepareWriteHoldingReqData(quint16 start_reg, const QVector<float> &values, QByteArray&);
+
+    //функция подготавливает QByteArray(данные запроса) для установки его в переменную QModbusRequest.
+    //данные QByteArray соответствуют команде «0x0F» — запись группы регистров Coils.
+    //результат записывает в переданный в параметре QByteArray.
+    static void prepareWriteCoilsReqData(quint16 start_reg, const QVector<qint8> &values, QByteArray&);
 
 protected:
     QByteArray m_data;
@@ -89,6 +101,8 @@ public:
     QString toStr() const; //выдает в строковом виде основные параметры сообщения (для отладки)
 
     static quint16 mbapSize() {return 7;} //заголовок MBTCP запроса/ответа
+
+
 
 protected:
     void checkData();

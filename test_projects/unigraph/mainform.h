@@ -21,7 +21,7 @@ protected:
     UG_CentralWidget    *m_centralWidget;
 
     QString projectName() const {return "unigraph_app";}
-    QString mainTitle() const {return QString("Unigraph test!");}
+    QString mainTitle() const; // {return QString("Unigraph test!");}
     void initActions();
     void initWidgets();
     void initCommonSettings();

@@ -3,6 +3,7 @@
 #include "lprotocol.h"
 #include "ug_centralwidget.h"
 #include "ug_apistruct.h"
+#include "subcommonsettings.h"
 
 #include <QDebug>
 #include <QSettings>
@@ -24,9 +25,18 @@ MainForm::MainForm(QWidget *parent)
     quint32 a = 1622550974;
     QDateTime dt = QDateTime::fromSecsSinceEpoch(a);
     qDebug()<<dt.toString("yyyy.MM.dd  hh:mm:ss");
+
+    QString err;
+    sub_commonSettings.loadConfig(err);
+    if (!err.isEmpty())
+    {
+        slotError(err);
+        return;
+    }
 }
 void MainForm::initActions()
 {
+    qDebug("MainForm::initActions()");
     addAction(LMainWidget::atStart);
     addAction(LMainWidget::atRefresh);
     addAction(LMainWidget::atStop);
@@ -82,6 +92,15 @@ void MainForm::slotVisibleActionsUpdate(int p_type)
             getAction(atSave)->setVisible(true);
             break;
         }
+        case rtTokens:
+        {
+            getAction(atStart)->setVisible(false);
+            getAction(atRefresh)->setVisible(true);
+            getAction(atLoadData)->setVisible(false);
+            getAction(atSave)->setVisible(false);
+            break;
+        }
+
         default: break;
     }
 }
@@ -134,6 +153,7 @@ void MainForm::actStop()
 }
 void MainForm::initWidgets()
 {
+    qDebug("MainForm::initWidgets()");
     v_splitter = new QSplitter(Qt::Vertical, this);
     addWidget(v_splitter, 0, 0);
 
@@ -152,6 +172,7 @@ void MainForm::initWidgets()
 }
 void MainForm::initCommonSettings()
 {
+    qDebug("MainForm::initCommonSettings()");
     QStringList combo_list;
 
     QString key = QString("req_delay");
@@ -182,8 +203,10 @@ void MainForm::initCommonSettings()
     lCommonSettings.setDefValue(key, QString(""));
 
     key = QString("subgraph_id");
-    lCommonSettings.addParam(QString("The graph subgraph_id"), LSimpleDialog::sdtString, key);
-    lCommonSettings.setDefValue(key, QString(""));
+    //lCommonSettings.addParam(QString("The graph subgraph_id"), LSimpleDialog::sdtString, key);
+    //lCommonSettings.setDefValue(key, QString(""));
+    lCommonSettings.addParam(QString("The graph subgraph_id"), LSimpleDialog::sdtStringCombo, key);
+    lCommonSettings.setComboList(key, sub_commonSettings.factoryTitles());
 
     key = QString("min_tvl");
     lCommonSettings.addParam(QString("Min pools TVL, USDT"), LSimpleDialog::sdtDoubleLine, key);
@@ -224,6 +247,14 @@ void MainForm::save()
 }
 void MainForm::load()
 {
+    qDebug("MainForm::load()");
+
+    if (sub_commonSettings.invalid())
+    {
+        slotMsg(QString("sub_commonSettings is invalid"));
+        return;
+    }
+
     LMainWidget::load();
 
     QSettings settings(companyName(), projectName());
@@ -235,6 +266,8 @@ void MainForm::load()
     m_centralWidget->setUpdatingInterval(pageUpdatingInterval());
     m_centralWidget->setApiServer(graphDomain());
     m_centralWidget->setApiKeys(apiKey(), subgraphID());
+
+    sub_commonSettings.setCurFactory(subgraphID());
 }
 void MainForm::slotEnableControls(bool b)
 {    
@@ -248,11 +281,26 @@ void MainForm::slotAppSettingsChanged(QStringList list)
     LMainWidget::slotAppSettingsChanged(list);
 
     if (list.contains("apikey") || list.contains("subgraph_id"))
+    {
         m_centralWidget->setApiKeys(apiKey(), subgraphID());
+        sub_commonSettings.setCurFactory(subgraphID());
+    }
 
     if (list.contains("graphserv"))
         m_centralWidget->setApiServer(graphDomain());
+
+    updateWindowTitle();
 }
+QString MainForm::mainTitle() const
+{
+    QString s("Unigraph Qt5");
+    if (sub_commonSettings.cur_factory >= 0)
+        s = QString("%1  (CHAIN: %2)").arg(s).arg(sub_commonSettings.curChain());
+    return s;
+}
+
+
+
 
 //private
 int MainForm::expandLevel() const
@@ -289,7 +337,12 @@ QString MainForm::graphDomain() const
 }
 QString MainForm::subgraphID() const
 {
-    return lCommonSettings.paramValue("subgraph_id").toString();
+    QString chain = lCommonSettings.paramValue("subgraph_id").toString();
+    int pos = chain.indexOf("(");
+    if (pos > 0) chain = chain.left(pos).trimmed();
+    foreach (const SubGraph_CommonSettings::SGFactory &f, sub_commonSettings.factories)
+        if (f.chain == chain) return f.sub_id;
+    return QString();
 }
 
 

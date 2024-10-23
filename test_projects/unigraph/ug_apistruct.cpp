@@ -17,11 +17,12 @@
 
 
 //UG_APIReqParams
+/*
 QString UG_APIReqParams::appDataPath()
 {
     return QString("%1%2%3").arg(LFile::appPath()).arg(QDir::separator()).arg(APP_DATA_FOLDER);
 }
-
+*/
 
 
 //UG_APIReqParams
@@ -31,6 +32,7 @@ QString UG_APIReqParams::strReqTypeByType(int t, QString s_extra)
     switch (t)
     {
         case rtPools:           {s = "GET_POOL_DATA"; break;}
+        case rtTokens:           {s = "GET_TOKEN_DATA"; break;}
         case rtJsonView:        {s = "FREE_QUERY"; break;}
 
         default: return "???";
@@ -89,11 +91,14 @@ QString UG_PoolInfo::toStr() const
 void UG_PoolInfo::toTableRow(QStringList &list) const
 {
     QDateTime dt = QDateTime::fromSecsSinceEpoch(ts);
+    int days = dt.daysTo(QDateTime::currentDateTime());
 
+    float fv = 1000000;
     list.clear();
-    list << id << QString::number(tvl, 'f', 1) << QString::number(volume_all, 'f', 1);
-    list << token0 << token1 << QString::number(fee, 'f', 2);
-    list << dt.toString(UG_APIReqParams::userDateMask());
+    //list << id << QString::number(tvl, 'f', 1) << QString::number(volume_all, 'f', 1);
+    list << id << QString::number(tvl/fv, 'f', 2) << QString::number(volume_all/fv, 'f', 2);
+    list << token0 << token1 << QString("%1%").arg(QString::number(fee, 'f', 2));
+    list << QString("%1 (%2 days)").arg(dt.toString(UG_APIReqParams::userDateMask())).arg(days);
 
 }
 QString UG_PoolInfo::toFileLine() const
@@ -105,6 +110,43 @@ QString UG_PoolInfo::toFileLine() const
     fline = QString("%1 / %2").arg(fline).arg(QString::number(fee, 'f', 2));
     return fline;
 }
+void UG_PoolInfo::fromFileLine(const QString &fline)
+{
+    QStringList list = LString::trimSplitList(fline.trimmed(), "/");
+    if (list.count() != 9) {qWarning()<<QString("UG_PoolInfo WARNING invalid fline [%1]").arg(fline); return;}
 
+    int i = 0;
+    id = list.at(i); i++;
+    ts = list.at(i).toUInt(); i++;
+    token0 = list.at(i); i++;
+    token0_id = list.at(i); i++;
+    token1 = list.at(i); i++;
+    token1_id = list.at(i); i++;
+    tvl = list.at(i).toDouble(); i++;
+    volume_all = list.at(i).toDouble(); i++;
+    fee = list.at(i).toDouble(); i++;
+
+
+}
+
+
+//UG_TokenInfo
+void UG_TokenInfo::reset()
+{
+    address.clear();
+    ticker.clear();
+    chain.clear();
+}
+bool UG_TokenInfo::invalid() const
+{
+    if (address.length() < 10) return true;
+    if (ticker.trimmed().isEmpty() || chain.trimmed().isEmpty()) return true;
+    return false;
+}
+void UG_TokenInfo::toTableRow(QStringList &list) const
+{
+    list.clear();
+    list << address << ticker << chain;
+}
 
 
