@@ -33,6 +33,7 @@ protected:
     quint16              m_minUpdatingInterval;
     QTimer               *m_timer; //for next request
     quint32              m_timerCounter;
+    quint16              m_reqLimit; //каким пачками запрашивать данные
 
 
     virtual void reset();
@@ -52,6 +53,7 @@ protected slots:
 signals:
     void signalSendReq(const UG_APIReqParams*);
     void signalStopUpdating();
+    void signalGetReqLimit(quint16&);
 
 };
 

@@ -37,7 +37,8 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/ug_jsonviewpage.h \
         $$PWD/ug_apistruct.h \
     	$$PWD/subcommonsettings.h \
-        $$PWD/ug_tokenpage.h
+        $$PWD/ug_tokenpage.h \
+        $$PWD/ug_daysdatapage.h
 
 
 SOURCES += $$PWD/main.cpp \
@@ -48,5 +49,6 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/ug_jsonviewpage.cpp \
         $$PWD/ug_apistruct.cpp \
     	$$PWD/subcommonsettings.cpp \
-        $$PWD/ug_tokenpage.cpp
+        $$PWD/ug_tokenpage.cpp \
+        $$PWD/ug_daysdatapage.cpp
 

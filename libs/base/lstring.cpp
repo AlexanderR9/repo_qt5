@@ -49,6 +49,9 @@ QString LString::strBetweenStr(const QString &s, QString s1, QString s2)
 {
     if (s.isEmpty() || s1.isEmpty() || s2.isEmpty()) return QString();
     int pos1 = s.indexOf(s1);
+    if (pos1 < 0) return QString();
+    if (s1.length() > 1) pos1 += (s1.length()-1);
+
     int pos2 = s.indexOf(s2);
     if (pos1 < 0 || pos2 < 0 || pos2 <= pos1) return QString();
     return s.mid(pos1+1, pos2-pos1-1);

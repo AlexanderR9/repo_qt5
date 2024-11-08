@@ -12,7 +12,9 @@ UG_BasePage::UG_BasePage(QWidget *parent, int t, int user_type)
       m_reqData(NULL),
       m_minUpdatingInterval(120),
       m_timer(NULL),
-      m_timerCounter(0)
+      m_timerCounter(0),
+      m_reqLimit(70)
+
 {
     m_userSign = user_type;
     setObjectName("ug_base_page");

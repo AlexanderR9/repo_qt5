@@ -6,6 +6,7 @@
 #include "ug_apistruct.h"
 #include "ug_poolpage.h"
 #include "ug_tokenpage.h"
+#include "ug_daysdatapage.h"
 
 
 #include <QStackedWidget>
@@ -88,6 +89,10 @@ void UG_CentralWidget::createPages()
     w_stack->addWidget(t_page);
     connect(t_page, SIGNAL(signalGetTokensFromPoolPage(QHash<QString, QString>&)), p_page, SLOT(slotSetTokensFromPage(QHash<QString, QString>&)));
 
+    UG_DaysDataPage *dd_page = new UG_DaysDataPage(this);
+    w_stack->addWidget(dd_page);
+    //connect(t_page, SIGNAL(signalGetTokensFromPoolPage(QHash<QString, QString>&)), p_page, SLOT(slotSetTokensFromPage(QHash<QString, QString>&)));
+
 
     for (int i=0; i<w_stack->count(); i++)
     {
@@ -101,8 +106,15 @@ void UG_CentralWidget::createPages()
             connect(w, SIGNAL(signalStopUpdating()), this, SLOT(slotStopUpdating()));
             connect(this, SIGNAL(signalJsonReply(int, const QJsonObject&)), w, SLOT(slotJsonReply(int, const QJsonObject&)));
             connect(this, SIGNAL(signalBuzy()), w, SLOT(slotReqBuzyNow()));
+            connect(w, SIGNAL(signalGetReqLimit(quint16&)), this, SLOT(slotGetReqLimit(quint16&)));
+
         }
     }
+}
+void UG_CentralWidget::slotGetReqLimit(quint16 &lim)
+{
+    double x = 0;
+    emit signalGetFilterParams(lim, x);
 }
 void UG_CentralWidget::init()
 {

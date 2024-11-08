@@ -63,6 +63,8 @@ protected slots:
     void slotReqFinished(int);
     void slotPageChanged(int);
     void slotPageActivated(int);
+    void slotGetReqLimit(quint16&);
+
 
 public slots:
     void slotSendReq(const UG_APIReqParams*);

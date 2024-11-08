@@ -17,7 +17,6 @@
 UG_PoolPage::UG_PoolPage(QWidget *parent)
     :UG_BasePage(parent, 10, rtPools),
       m_tableBox(NULL),
-      m_reqLimit(70),
       m_minTVL(2000),
       m_skip(0)
 {

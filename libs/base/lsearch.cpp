@@ -66,7 +66,7 @@ void LSearch::slotSearch(const QString &s)
         }
     }
 
-    //// try search
+    //// try search   
     for (int i=0; i<m_structs.count(); i++)
     {
         search(s, m_structs[i]);
@@ -74,12 +74,45 @@ void LSearch::slotSearch(const QString &s)
     }
     emit signalSearched();
 }
-void LSearch::search(const QString &s, LStructSearch &obj)
+QStringList LSearch::searchElemets(const QString &s) const
 {
     QStringList list;
-    if (s.contains(";;")) list.append(LString::trimSplitList(s, ";;"));
-    else list << s;
+    if (s.trimmed().isEmpty()) return list;
+    if (!s.contains(";;")) {list.append(s); return list;}
 
+    list = LString::trimSplitList(s, ";;", false);
+    int n = list.count();
+    for (int i=n-1; i>=0; i--)
+    {
+        if (list.at(i).trimmed().isEmpty() || list.at(i) == "!!")
+            list.removeAt(i);
+    }
+
+    return list;
+}
+bool LSearch::inverseElement(const QString &s) const
+{
+    return (s.length() > 2 && s.left(2) == "!!");
+}
+bool LSearch::searchConditionalOk(const QString &baseTxt, QString searchTxt) const
+{
+    if (!searchTxt.isEmpty())
+    {
+        //qDebug()<<QString("LSearch::searchConditionalOk:  baseTxt[%1]  searchTxt[%2]").arg(baseTxt).arg(searchTxt);
+        if (inverseElement(searchTxt)) //this NOT search_element
+        {
+            searchTxt = LString::strTrimLeft(searchTxt, 2);
+            qDebug()<<QString("     this inverce item, NOT text [%1]").arg(searchTxt);
+            return !baseTxt.contains(searchTxt);
+        }
+        return baseTxt.contains(searchTxt);
+    }
+    return true;
+}
+void LSearch::search(const QString &s, LStructSearch &obj)
+{
+    //qDebug()<<QString("LSearch::search, s=[%1]").arg(s);
+    QStringList list(searchElemets(s));
     if (obj.table)
     {
         serchOnTable(list, obj.table);
@@ -91,18 +124,22 @@ void LSearch::serchOnTable(const QStringList &list, QTableWidget *tw)
 {
     if (!tw) return;
 
-    int rows = tw->rowCount();
-    int cols = tw->columnCount();
-    for (int i=0; i<rows; i++)
+    for (int i=0; i<tw->rowCount(); i++)
     {
-        tw->hideRow(i);
-        for (int j=0; j<cols; j++)
+        int n_vOk = 0;
+        foreach (const QString &v, list) //iterable search elements
         {
-            bool find_ok = true;
-            foreach (const QString v, list)
-                if (!tw->item(i, j)->text().contains(v)) {find_ok = false; break;}
-            if (find_ok) {tw->showRow(i); break;}
+            bool inv = inverseElement(v);
+            bool v_ok = (inv ? true : false);
+            for (int j=0; j<tw->columnCount(); j++)
+            {
+                QString i_text(tw->item(i, j)->text());
+                if (!inv && searchConditionalOk(i_text, v)) {v_ok = true; break;}
+                if (inv && !searchConditionalOk(i_text, v)) {v_ok = false; break;}
+            }
+            if (v_ok) n_vOk++;
         }
+        tw->setRowHidden(i, (n_vOk < list.count()));
     }
 }
 void LSearch::serchOnList(const QStringList &list, QListWidget *lw)
@@ -112,10 +149,13 @@ void LSearch::serchOnList(const QStringList &list, QListWidget *lw)
     int rows = lw->count();
     for (int i=0; i<rows; i++)
     {
-        bool find_ok = true;
+        int n_vOk = 0;
         foreach (const QString v, list)
-            if (!lw->item(i)->text().contains(v)) {find_ok = false; break;}
-        lw->item(i)->setHidden(!find_ok);
+        {
+            QString i_text(lw->item(i)->text());
+            if (searchConditionalOk(i_text, v)) n_vOk++;
+        }
+        lw->item(i)->setHidden(n_vOk < list.count());
     }
 }
 void LSearch::exec()

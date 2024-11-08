@@ -40,6 +40,15 @@ QString UG_APIReqParams::strReqTypeByType(int t, QString s_extra)
     return s_extra.isEmpty() ? s : QString("%1(%2)").arg(s).arg(s_extra);
 }
 
+//UG_PoolDayData
+void UG_PoolDayData::reset()
+{
+    tvl = price = -1;
+    feesSize = volume = 0;
+    date = 0;
+
+}
+
 
 //UG_PoolInfo
 void UG_PoolInfo::reset()
@@ -158,7 +167,7 @@ void UG_TokenInfo::toTableRow(QStringList &list) const
 
     float fv = 1000000;
     list << QString::number(total_supply, 'f', 1);
-    list << QString::number(tvl/fv, 'f', 2) << QString::number(collected_fees/fv, 'f', 2);
+    list << QString::number(tvl/fv, 'f', 2) << QString::number(collected_fees/float(1000), 'f', 1);
 }
 QString UG_TokenInfo::toFileLine() const
 {

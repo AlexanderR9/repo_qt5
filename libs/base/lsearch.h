@@ -61,6 +61,11 @@ protected slots:
 signals:
     void signalSearched();  //выполняется каждый раз после произведенного фильтра
 
+private:
+    QStringList searchElemets(const QString&) const;
+    bool inverseElement(const QString&) const;
+    bool searchConditionalOk(const QString &baseTxt, QString searchTxt) const;
+
 };
 
 

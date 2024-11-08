@@ -6,7 +6,7 @@
 class QJsonObject;
 
 //типы страниц пользовательского интерфейса
-enum UG_ReqType {rtJsonView = 131, rtPools, rtTokens};
+enum UG_ReqType {rtJsonView = 131, rtPools, rtTokens, rtDaysData};
 
 
 //необходимые данные для формирования запроса перед отправкой
@@ -55,6 +55,20 @@ struct UG_PoolInfo
 
 };
 
+//Pool day data
+struct UG_PoolDayData
+{
+    UG_PoolDayData() {reset();}
+
+    quint32 date;
+    double tvl;
+    double feesSize;
+    double volume;
+    double price;
+
+    void reset();
+
+};
 
 
 //Token data

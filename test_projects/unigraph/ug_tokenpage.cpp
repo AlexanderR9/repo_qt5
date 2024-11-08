@@ -30,7 +30,7 @@ void UG_TokenPage::initTable()
     m_tableBox = new LSearchTableWidgetBox(this);
 
     QStringList headers;
-    headers << "Address" << "Tiker" << "Full name" << "Chain" << "Supply" << "TVL, M (usd)" << "All fees, M (usd)";
+    headers << "Address" << "Tiker" << "Full name" << "Chain" << "Supply" << "TVL, M (usd)" << "All fees, th (usd)";
     m_tableBox->setHeaderLabels(headers);
     m_tableBox->setTitle("Token list");
     m_tableBox->setObjectName("table_box");

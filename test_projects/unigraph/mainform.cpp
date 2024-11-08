@@ -100,6 +100,14 @@ void MainForm::slotVisibleActionsUpdate(int p_type)
             getAction(atSave)->setVisible(true);
             break;
         }
+        case rtDaysData:
+        {
+            getAction(atStart)->setVisible(false);
+            getAction(atRefresh)->setVisible(true);
+            getAction(atLoadData)->setVisible(true);
+            getAction(atSave)->setVisible(false);
+            break;
+        }
 
         default: break;
     }

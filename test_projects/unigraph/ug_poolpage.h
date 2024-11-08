@@ -26,7 +26,6 @@ public:
 protected:
     QList<UG_PoolInfo>       m_pools; //контейнер для хранения записей-пулов
     LSearchTableWidgetBox   *m_tableBox;
-    quint16                  m_reqLimit; //каким пачками запрашивать пулы
     double                   m_minTVL; //минимальный tvl, при котором пул будет добавлятся в m_pools и таблицу
     quint32                  m_skip;
 
