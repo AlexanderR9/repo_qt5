@@ -74,6 +74,18 @@ QString LMBAduBase::rawDataToStr() const
     else s2 = m_data.toHex(':');
     return QString("%1    [%2]").arg(s1).arg(s2);
 }
+QString LMBAduBase::strRegType(int reg_type)
+{
+    switch (reg_type)
+    {
+        case QModbusDataUnit::DiscreteInputs:   return "DiscreteInputs";
+        case QModbusDataUnit::Coils:            return "Coils";
+        case QModbusDataUnit::InputRegisters:   return "InputRegisters";
+        case QModbusDataUnit::HoldingRegisters: return "HoldingRegisters";
+        default: break;
+    }
+    return "Unknown";
+}
 int LMBAduBase::registerTypeByFunc(quint8 f_code)
 {
     switch (f_code)

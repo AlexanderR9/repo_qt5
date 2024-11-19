@@ -204,21 +204,24 @@ void MainForm::initCommonSettings()
 
     key = QString("graphserv");
     lCommonSettings.addParam(QString("The graph server domain"), LSimpleDialog::sdtString, key);
-    lCommonSettings.setDefValue(key, QString(""));
+    lCommonSettings.setDefValue(key, QString(""));        
 
     key = QString("apikey");
     lCommonSettings.addParam(QString("API key"), LSimpleDialog::sdtString, key);
     lCommonSettings.setDefValue(key, QString(""));
 
     key = QString("subgraph_id");
-    //lCommonSettings.addParam(QString("The graph subgraph_id"), LSimpleDialog::sdtString, key);
-    //lCommonSettings.setDefValue(key, QString(""));
     lCommonSettings.addParam(QString("The graph subgraph_id"), LSimpleDialog::sdtStringCombo, key);
     lCommonSettings.setComboList(key, sub_commonSettings.factoryTitles());
 
     key = QString("min_tvl");
     lCommonSettings.addParam(QString("Min pools TVL, USDT"), LSimpleDialog::sdtDoubleLine, key);
     lCommonSettings.setDefValue(key, QString("50000.0"));
+
+    key = QString("use_prefer_tokens");
+    lCommonSettings.addParam(QString("Use only prefer tokens"), LSimpleDialog::sdtBool, key);
+    lCommonSettings.setDefValue(key, false);
+
 
     key = QString("req_size");
     lCommonSettings.addParam(QString("Request elements size"), LSimpleDialog::sdtIntCombo, key);
@@ -276,6 +279,7 @@ void MainForm::load()
     m_centralWidget->setApiKeys(apiKey(), subgraphID());
 
     sub_commonSettings.setCurFactory(subgraphID());
+    sub_commonSettings.only_prefer_tokens = usePreferTokens();
 }
 void MainForm::slotEnableControls(bool b)
 {    
@@ -296,6 +300,9 @@ void MainForm::slotAppSettingsChanged(QStringList list)
 
     if (list.contains("graphserv"))
         m_centralWidget->setApiServer(graphDomain());
+
+    if (list.contains("use_prefer_tokens"))
+        sub_commonSettings.only_prefer_tokens = usePreferTokens();
 
     updateWindowTitle();
 }
@@ -351,6 +358,10 @@ QString MainForm::subgraphID() const
     foreach (const SubGraph_CommonSettings::SGFactory &f, sub_commonSettings.factories)
         if (f.chain == chain) return f.sub_id;
     return QString();
+}
+bool MainForm::usePreferTokens() const
+{
+    return lCommonSettings.paramValue("use_prefer_tokens").toBool();
 }
 
 

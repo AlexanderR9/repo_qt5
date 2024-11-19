@@ -30,6 +30,7 @@ public:
     static int registerTypeByFunc(quint8); //выдает тип регистров по коду функции или -1
     static QString functionType(quint8); //выдает тип команды (write/read) и вид регистров
     static quint8 bitSwither(quint8 bit_index); //значения (8шт) - степени 2, служат для вкл/выкл битов в байте, bit_index= 0..7
+    static QString strRegType(int); // выдает тип регистра в строковом виде (для отладки)
 
 
     //функция подготавливает QByteArray(данные запроса) для установки его в переменную QModbusRequest.

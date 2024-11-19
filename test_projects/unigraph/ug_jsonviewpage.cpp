@@ -102,6 +102,11 @@ void UG_JSONViewPage::cutPrecision(QTreeWidgetItem *item)
                         child_item->setText(1, text1);
                     }
                 }
+                else if (text0 == "timestamp")
+                {
+                    QDateTime dt(QDateTime::fromSecsSinceEpoch(text1.toLong()));
+                    child_item->setText(1, dt.toString(UG_APIReqParams::userDateTimeMask()));
+                }
             }
             else cutPrecision(child_item);
         }

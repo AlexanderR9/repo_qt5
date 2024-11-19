@@ -54,7 +54,7 @@ private:
     double minTVL() const;
     quint16 reqSize() const;
     quint16 reqInterval() const;
-
+    bool usePreferTokens() const;
 
 
 };

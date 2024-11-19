@@ -334,6 +334,8 @@ void LListWidgetBox::init()
     m_listWidget = new QListWidget(this);
     m_listWidget->clear();
     layout()->addWidget(m_listWidget);
+
+    connect(m_listWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(slotItemDoubleClicked(QListWidgetItem*)));
 }
 QListWidget* LListWidgetBox::listWidget() const
 {
@@ -435,6 +437,65 @@ bool LListWidgetBox::valueContain(const QString &s) const
     }
     return false;
 }
+void LListWidgetBox::slotItemDoubleClicked(QListWidgetItem *item)
+{
+    if (!item) return;
+    QGuiApplication::clipboard()->setText(item->text());
+}
+
+
+//LSearchListWidgetBox
+LSearchListWidgetBox::LSearchListWidgetBox(QWidget *parent)
+    :LListWidgetBox(parent, 1),
+      m_searchObj(NULL),
+      m_searchEdit(NULL),
+      m_searchLabel(NULL)
+{
+    setObjectName("lsearchlist_widget_box");
+
+    m_searchEdit = new QLineEdit(this);
+    m_searchLabel = new QLabel("Count: ", this);
+    layout()->removeWidget(m_listWidget);
+    layout()->addWidget(m_searchEdit);
+    layout()->addWidget(m_listWidget);
+    layout()->addWidget(m_searchLabel);
+
+    m_searchObj = new LSearch(m_searchEdit, this);
+    m_searchObj->addList(m_listWidget, m_searchLabel);
+    m_searchObj->exec();
+
+    connect(m_searchObj, SIGNAL(signalSearched()), this, SIGNAL(signalSearched()));
+}
+void LSearchListWidgetBox::searchExec()
+{
+    m_listWidget->clearSelection();
+    m_searchObj->exec();
+    //resizeByContents();
+}
+void LSearchListWidgetBox::searchReset()
+{
+    m_searchEdit->clear();
+    searchExec();
+}
+void LSearchListWidgetBox::setTextLabel(const QString &s)
+{
+    if (m_searchLabel) m_searchLabel->setText(s);
+}
+void LSearchListWidgetBox::searchEditHide()
+{
+    if (m_searchEdit)
+    {
+        layout()->removeWidget(m_searchEdit);
+        m_searchEdit->hide();
+    }
+}
+void LSearchListWidgetBox::setSearchEdit(const QLineEdit *edit)
+{
+    if (m_searchObj) m_searchObj->setSearchEdit(edit);
+}
+
+
+
 
 
 //LTreeWidgetBox

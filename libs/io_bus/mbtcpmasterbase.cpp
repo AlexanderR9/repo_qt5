@@ -30,8 +30,6 @@ LMBTcpMasterBase::LMBTcpMasterBase(QObject *parent)
 void LMBTcpMasterBase::slotConnectionTracking()
 {
     m_timerCounter++;
-    //qDebug()<<QString("LMBTcpMasterBase::slotConnectionTracking()  state: %1").arg(strDeviceState());
-    //qDebug()<<QString("remainingTime %1").arg(m_timerCounter);
     if (m_timerCounter < 2) return;
     if (isConnected()) {m_timerCounter = 0; return;}
 
@@ -43,7 +41,6 @@ void LMBTcpMasterBase::checkReconnect()
 
     if (m_timerCounter*TRACKING_CONNECTION_TIMER == (m_reconnectTimeout*1000))
     {
-        //qDebug("setState(QModbusDevice::ConnectingState);");
         this->setState(QModbusDevice::ConnectingState);
     }
     else if (m_timerCounter*TRACKING_CONNECTION_TIMER > (m_reconnectTimeout*1000))
@@ -135,7 +132,6 @@ bool LMBTcpMasterBase::processResponse(const QModbusResponse &response, QModbusD
 bool LMBTcpMasterBase::processPrivateResponse(const QModbusResponse &response, QModbusDataUnit *data)
 {
     qDebug()<<QString("LMBTcpMasterBase::processPrivateResponse");
-
     return QModbusTcpClient::processPrivateResponse(response, data);
 }
 void LMBTcpMasterBase::slotCheckReply()

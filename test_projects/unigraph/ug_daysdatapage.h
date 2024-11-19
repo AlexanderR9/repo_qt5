@@ -28,25 +28,38 @@ public:
 
 protected:
     QList<UG_PoolDayData>       m_data; //контейнер для хранения записей
+    quint32                     m_skip;
 
-    LListWidgetBox      *m_poolListWidget;
-    LTableWidgetBox     *m_historyTable;
-    LChartWidget        *m_chart;
+    LSearchListWidgetBox        *m_poolListWidget;
+    LTableWidgetBox             *m_historyTable;
+    LChartWidget                *m_chart;
 
     virtual void clearPage();
     void initPage();
     void initTable();
+    void initChart();
+
     void updateTableData();
     QString curPoolID() const; //selected list item
     void prepareQuery();
+    void loadChainPools(QString, QString);
+    void trimData();
+    void calcAvgFactorTH(quint16 n_days, int col);
+    void repaintChart(const QList<int>&);
+    void fillPoints(QList<QPointF>&, int);
+
 
 
 public slots:
     virtual void slotJsonReply(int, const QJsonObject&);
-    virtual void slotReqBuzyNow() {}
+    virtual void slotReqBuzyNow();
 
 protected slots:
     virtual void slotTimer();
+    void slotSelectionChanged();
+
+private:
+    QColor chartColor(int) const;
 
 };
 

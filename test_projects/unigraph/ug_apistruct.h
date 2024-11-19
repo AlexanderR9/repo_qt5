@@ -67,6 +67,10 @@ struct UG_PoolDayData
     double price;
 
     void reset();
+    bool invalid() const;
+    void fromJson(const QJsonObject&);
+    void toTableRow(QStringList&) const;
+    QString toStr() const;
 
 };
 

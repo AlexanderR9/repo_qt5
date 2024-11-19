@@ -44,6 +44,14 @@
         <file>images/media-pause.svg</file>
         <file>images/process-stop.svg</file>
         <file>images/view-refresh.svg</file>
+
+        <file>images/crypto/ARB.png</file>
+        <file>images/crypto/POL.png</file>
+        <file>images/crypto/BASE.png</file>
+        <file>images/crypto/BNB.png</file>
+        <file>images/crypto/OP.png</file>
+        <file>images/crypto/ETH.png</file>
+
         
         <file>images/send_msg.png</file>
         <file>images/log.png</file>

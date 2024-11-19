@@ -20,6 +20,7 @@ class QJsonValue;
 class QJsonArray;
 class QTreeWidgetItem;
 class QTableWidgetItem;
+class QListWidgetItem;
 
 class LSearch;
 class QLabel;
@@ -177,7 +178,34 @@ protected:
     QListWidget    *m_listWidget;
 
     void init();
+
+protected slots:
+    virtual void slotItemDoubleClicked(QListWidgetItem*); //в базовом класе копируется содержимое итема в буфер обмена
+
 };
+class LSearchListWidgetBox : public LListWidgetBox
+{
+    Q_OBJECT
+public:
+    LSearchListWidgetBox(QWidget *parent = NULL);
+    virtual ~LSearchListWidgetBox() {}
+
+    virtual void searchExec();
+    virtual void searchReset();
+    virtual void setTextLabel(const QString&);
+    virtual void searchEditHide();
+    virtual void setSearchEdit(const QLineEdit*);
+
+protected:
+    LSearch     *m_searchObj;
+    QLineEdit   *m_searchEdit;
+    QLabel      *m_searchLabel;
+
+signals:
+    void signalSearched();  //выполняется каждый раз после произведенного фильтра
+
+};
+
 
 
 //виджет-заготовка, представляет из себя групбокс, содержащий QTreeWidget

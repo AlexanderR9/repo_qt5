@@ -34,6 +34,7 @@ QString UG_APIReqParams::strReqTypeByType(int t, QString s_extra)
         case rtPools:           {s = "GET_POOL_DATA"; break;}
         case rtTokens:           {s = "GET_TOKEN_DATA"; break;}
         case rtJsonView:        {s = "FREE_QUERY"; break;}
+        case rtDaysData:        {s = "GET_DAYS_DATA"; break;}
 
         default: return "???";
     }
@@ -48,6 +49,49 @@ void UG_PoolDayData::reset()
     date = 0;
 
 }
+bool UG_PoolDayData::invalid() const
+{
+    if (date < 1000000) return true;
+    if (tvl <= 0 || price <= 0) return true;
+    return false;
+}
+void UG_PoolDayData::fromJson(const QJsonObject &j_obj)
+{
+    if (j_obj.isEmpty()) return;
+
+    tvl = j_obj.value("tvlUSD").toString().toDouble();
+    feesSize = j_obj.value("feesUSD").toString().toDouble();
+    price = j_obj.value("close").toString().toDouble();
+    volume = j_obj.value("volumeUSD").toString().toDouble();
+    date = uint(j_obj.value("date").toDouble());
+
+//    fee = fee/float(10000);
+}
+void UG_PoolDayData::toTableRow(QStringList &list) const
+{
+    QDateTime dt = QDateTime::fromSecsSinceEpoch(date);
+    int days = dt.daysTo(QDateTime::currentDateTime());
+    float fv = 1000000;
+
+
+    list.clear();
+    list << dt.toString(UG_APIReqParams::userDateMask()) << QString::number(price, 'f', 4);
+    list << QString::number(tvl/fv, 'f', 2) << QString::number(volume, 'f', 1) << QString::number(feesSize, 'f', 1);
+
+    double f_th = -1;
+    if (tvl > 0) f_th = feesSize*1000/tvl;
+    list << QString::number(f_th, 'f', 2);
+    list << "-" << "-";
+
+}
+QString UG_PoolDayData::toStr() const
+{
+    QString s("UG_PoolDayData: ");
+    s = QString("%1 date[%2] tvl[%3] fee[%4]").arg(s).arg(date).arg(QString::number(tvl, 'f', 1)).arg(QString::number(feesSize, 'f', 1));
+    s = QString("%1 volume[%2]  price[%3]").arg(s).arg(QString::number(volume, 'f', 1)).arg(QString::number(price, 'f', 4));
+    return s;
+}
+
 
 
 //UG_PoolInfo

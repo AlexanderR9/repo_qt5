@@ -46,6 +46,19 @@ void SubGraph_CommonSettings::reset()
 {
     cur_factory = -1;
     factories.clear();
+    prefer_tokens.clear();
+    only_prefer_tokens = false;
+}
+QString SubGraph_CommonSettings::tickerByChainName(QString chain_name)
+{
+    chain_name = chain_name.trimmed().toLower();
+    if (chain_name == "polygon") return "POL";
+    if (chain_name == "bnb") return "BNB";
+    if (chain_name == "base") return "BASE";
+    if (chain_name == "optimism") return "OP";
+    if (chain_name == "arbitrum") return "ARB";
+    if (chain_name == "etherium") return "ETH";
+    return QString();
 }
 void SubGraph_CommonSettings::loadConfig(QString &err)
 {
@@ -76,6 +89,8 @@ void SubGraph_CommonSettings::loadConfig(QString &err)
     QDomNode factories_node = root_node.namedItem("factories");
     if (!factories_node.isNull()) parseFactoriesNode(factories_node);
 
+    QDomNode prefer_tokens_node = root_node.namedItem("prefer_tokens");
+    if (!prefer_tokens_node.isNull()) parsePreferTokensNode(prefer_tokens_node);
 }
 void SubGraph_CommonSettings::parseFactoriesNode(const QDomNode &node)
 {
@@ -93,5 +108,32 @@ void SubGraph_CommonSettings::parseFactoriesNode(const QDomNode &node)
         child_node = child_node.nextSibling();
     }
 }
+void SubGraph_CommonSettings::parsePreferTokensNode(const QDomNode &node)
+{
+    prefer_tokens.clear();
+    QDomNode child_node = node.firstChild();
+    while (!child_node.isNull())
+    {
+        if (child_node.nodeName() == "token")
+        {
+            QString t = LStaticXML::getStringAttrValue("name", child_node).trimmed();
+            if (!t.isEmpty()) prefer_tokens.append(t);
+        }
+        child_node = child_node.nextSibling();
+    }
+}
+
+
+
+
+//API_CommonSettings::SGFactory
+QString SubGraph_CommonSettings::SGFactory::iconPath() const
+{
+    QString icon_name = QString("%1.png").arg(SubGraph_CommonSettings::tickerByChainName(chain));
+    return QString(":/icons/images/crypto/%1").arg(icon_name);
+}
+
+
+
 
 
