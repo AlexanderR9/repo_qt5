@@ -42,12 +42,21 @@ QString SubGraph_CommonSettings::curChain() const
     if (cur_factory < 0 || factories.isEmpty()) return "?";
     return factories.at(cur_factory).chain;
 }
+int SubGraph_CommonSettings::tokenDecimal(QString symb, QString ch) const
+{
+    symb = symb.trimmed().toUpper();
+    if (!token_decimals.contains(symb)) return -1;
+    if (ch.trimmed().toUpper() == "BNB") return 18;
+    return token_decimals.value(symb);
+}
 void SubGraph_CommonSettings::reset()
 {
     cur_factory = -1;
     factories.clear();
     prefer_tokens.clear();
     only_prefer_tokens = false;
+    wallet.clear();
+    token_decimals.clear();
 }
 QString SubGraph_CommonSettings::tickerByChainName(QString chain_name)
 {
@@ -117,7 +126,12 @@ void SubGraph_CommonSettings::parsePreferTokensNode(const QDomNode &node)
         if (child_node.nodeName() == "token")
         {
             QString t = LStaticXML::getStringAttrValue("name", child_node).trimmed();
-            if (!t.isEmpty()) prefer_tokens.append(t);
+            if (!t.isEmpty())
+            {
+                prefer_tokens.append(t);
+                int dec = LStaticXML::getIntAttrValue("decimal", child_node, -1);
+                if (dec >= 0) token_decimals.insert(t, dec);
+            }
         }
         child_node = child_node.nextSibling();
     }

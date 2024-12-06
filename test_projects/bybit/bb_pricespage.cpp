@@ -196,6 +196,7 @@ void BB_PricesPage::updateTablePrices(const QMap<QString, float> &map)
             quint8 prec = 3;
             if (p > 2) prec = 2;
             if (p > 100) prec = 1;
+            if (ticker.trimmed() == "USDC") prec = 4;
 
             t->item(i, PRICES_COL)->setText(QString::number(p, 'f', prec));
             t->item(i, TIME_COL)->setText(LTime::strCurrentDateTime());

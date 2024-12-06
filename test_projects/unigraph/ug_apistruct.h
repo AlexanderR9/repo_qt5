@@ -6,7 +6,7 @@
 class QJsonObject;
 
 //типы страниц пользовательского интерфейса
-enum UG_ReqType {rtJsonView = 131, rtPools, rtTokens, rtDaysData};
+enum UG_ReqType {rtJsonView = 131, rtPools, rtTokens, rtDaysData, rtPositions};
 
 
 //необходимые данные для формирования запроса перед отправкой
@@ -55,6 +55,49 @@ struct UG_PoolInfo
 
 };
 
+//Position data
+struct UG_PosInfo
+{
+    UG_PosInfo(QString cn) :chain(cn.trimmed().toUpper()) {reset();}
+
+    QString id; //ID of position
+    QString chain; //chain name
+    UG_PoolInfo pool; //pool data for this position
+    quint32 ts; //creation time
+    qint64 liquidity;
+
+    QPair<double, double> deposited;
+    //QPair<double, double> collected;
+    QPair<double, double> collectedFees;
+    QPair<double, double> withdrawn;
+
+
+    QPair<qint8, qint8> digit; //точность
+    QPair<qint32, qint32> tick_range;
+    qint32 cur_tick;
+    double token0Price; //cur pool price token0 in units token1
+
+    inline bool isClosed() const {return (liquidity == 0);}
+    bool isOut() const; //sing out price range
+
+
+    void reset();
+    bool invalid() const;
+    void fromJson(const QJsonObject&);
+    void toTableRow(QStringList&) const;
+    void calcDigit();
+    void calcPricesByTicks(double&, double&) const; //расчет диапазона цен токена0 в единицах токена1
+
+    QString toStr() const;
+    QString poolParams() const;
+    QString priceRange() const;
+
+private:
+    double toStablePrice(const double&) const; //приведение цены к стейблам, в приоритете USDT, затем USDC, если в паре таких нет, то вернет то же значение
+
+
+};
+
 //Pool day data
 struct UG_PoolDayData
 {
@@ -88,6 +131,7 @@ struct UG_TokenInfo
     double collected_fees; //usd
     double tvl; //usd
     double total_supply; //token units
+    quint16 decimal;
 
     void reset();
     bool invalid() const;

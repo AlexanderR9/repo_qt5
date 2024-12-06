@@ -29,11 +29,14 @@ struct SubGraph_CommonSettings
 
     QList<SGFactory> factories;
     QStringList prefer_tokens;
+    QMap<QString, quint8> token_decimals;
     int cur_factory;
     bool only_prefer_tokens;
+    QString wallet;
 
     static QString appDataPath();
     static QString tickerByChainName(QString);
+    static double tickKwant() {return 1.0001;}
 
     void reset();
     void loadConfig(QString&);
@@ -41,6 +44,7 @@ struct SubGraph_CommonSettings
     void parsePreferTokensNode(const QDomNode&);
     void setCurFactory(QString sub_id);
     QString curChain() const; //cur chain name by cur_factory or ?
+    int tokenDecimal(QString, QString) const; //params 1-token sumb, 2-chain
 
     QStringList factoryTitles() const;
     bool invalid() const {return (factories.isEmpty());}

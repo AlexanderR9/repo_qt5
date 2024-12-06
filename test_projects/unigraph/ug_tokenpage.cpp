@@ -16,9 +16,6 @@
 UG_TokenPage::UG_TokenPage(QWidget *parent)
     :UG_BasePage(parent, 10, rtTokens),
       m_tableBox(NULL)
-      //m_reqLimit(70),
-      //m_minTVL(2000),
-      //m_skip(0)
 {
     setObjectName("ug_token_page");
 
@@ -30,7 +27,7 @@ void UG_TokenPage::initTable()
     m_tableBox = new LSearchTableWidgetBox(this);
 
     QStringList headers;
-    headers << "Address" << "Tiker" << "Full name" << "Chain" << "Supply" << "TVL, M (usd)" << "All fees, th (usd)";
+    headers << "Address" << "Tiker" << "Full name" << "Chain" << "Supply" << "TVL, M (usd)" << "All fees, th (usd)" << "Decimal";
     m_tableBox->setHeaderLabels(headers);
     m_tableBox->setTitle("Token list");
     m_tableBox->setObjectName("table_box");
@@ -254,6 +251,7 @@ void UG_TokenPage::prepareQuery()
     s_fields = QString("%1 totalValueLockedUSD").arg(s_fields);
     s_fields = QString("%1 name").arg(s_fields);
     s_fields = QString("%1 feesUSD").arg(s_fields);
+    s_fields = QString("%1 decimals").arg(s_fields);
 
     QString s_tag = QString("token(id: \"%1\")").arg(m_updatedTokens.first());
     m_reqData->query = QString("{%1 {%2}}").arg(s_tag).arg(s_fields);
@@ -265,10 +263,16 @@ void UG_TokenPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 
     //m_updatedTokens.clear();
     const QJsonValue &j_data = j_obj.value("data").toObject().value("token");
-    if (j_data.isNull()) {emit signalError("UG_TokenPage: result QJsonValue <data/token> not found"); return;}
-
-    updateTokenData(m_updatedTokens.first(), j_data.toObject());
+    if (j_data.isNull())
+    {
+        emit signalError("UG_TokenPage: result QJsonValue <data/token> not found");
+    }
+    else
+    {
+        updateTokenData(m_updatedTokens.first(), j_data.toObject());
+    }
     m_updatedTokens.removeFirst();
+
 }
 void UG_TokenPage::updateTokenData(const QString &addr, const QJsonObject &j_obj)
 {
@@ -281,6 +285,7 @@ void UG_TokenPage::updateTokenData(const QString &addr, const QJsonObject &j_obj
             t.total_supply = j_obj.value("totalSupply").toString().toDouble();
             t.tvl = j_obj.value("totalValueLockedUSD").toString().toDouble();
             t.collected_fees = j_obj.value("feesUSD").toString().toDouble();
+            t.decimal = j_obj.value("decimals").toString().toUInt();
             break;
         }
     }

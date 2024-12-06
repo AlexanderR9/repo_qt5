@@ -48,6 +48,7 @@ private:
     int expandLevel() const;
     quint16 pageUpdatingInterval() const;
     QString apiKey() const;
+    QString walletAddr() const;
     QString graphDomain() const;
     QString subgraphID() const;
     quint8 viewPrecision() const;

@@ -5,6 +5,7 @@
 #include "subgraphreq.h"
 #include "ug_apistruct.h"
 #include "ug_poolpage.h"
+#include "ug_pospage.h"
 #include "ug_tokenpage.h"
 #include "ug_daysdatapage.h"
 
@@ -19,7 +20,6 @@
 #include <QJsonArray>
 #include <QJsonValue>
 #include <QJsonObject>
-//#include <QLineEdit>
 #include <QVBoxLayout>
 
 
@@ -91,8 +91,9 @@ void UG_CentralWidget::createPages()
 
     UG_DaysDataPage *dd_page = new UG_DaysDataPage(this);
     w_stack->addWidget(dd_page);
-    //connect(t_page, SIGNAL(signalGetTokensFromPoolPage(QHash<QString, QString>&)), p_page, SLOT(slotSetTokensFromPage(QHash<QString, QString>&)));
 
+    UG_PosPage *pos_page = new UG_PosPage(this);
+    w_stack->addWidget(pos_page);
 
     for (int i=0; i<w_stack->count(); i++)
     {

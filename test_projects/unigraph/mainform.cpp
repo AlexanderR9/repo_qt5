@@ -108,6 +108,14 @@ void MainForm::slotVisibleActionsUpdate(int p_type)
             getAction(atSave)->setVisible(false);
             break;
         }
+        case rtPositions:
+        {
+            getAction(atStart)->setVisible(false);
+            getAction(atRefresh)->setVisible(true);
+            getAction(atLoadData)->setVisible(false);
+            getAction(atSave)->setVisible(false);
+            break;
+        }
 
         default: break;
     }
@@ -214,6 +222,10 @@ void MainForm::initCommonSettings()
     lCommonSettings.addParam(QString("The graph subgraph_id"), LSimpleDialog::sdtStringCombo, key);
     lCommonSettings.setComboList(key, sub_commonSettings.factoryTitles());
 
+    key = QString("wallet");
+    lCommonSettings.addParam(QString("Wallet address"), LSimpleDialog::sdtString, key);
+    lCommonSettings.setDefValue(key, QString(""));
+
     key = QString("min_tvl");
     lCommonSettings.addParam(QString("Min pools TVL, USDT"), LSimpleDialog::sdtDoubleLine, key);
     lCommonSettings.setDefValue(key, QString("50000.0"));
@@ -280,6 +292,7 @@ void MainForm::load()
 
     sub_commonSettings.setCurFactory(subgraphID());
     sub_commonSettings.only_prefer_tokens = usePreferTokens();
+    sub_commonSettings.wallet = walletAddr();
 }
 void MainForm::slotEnableControls(bool b)
 {    
@@ -362,6 +375,10 @@ QString MainForm::subgraphID() const
 bool MainForm::usePreferTokens() const
 {
     return lCommonSettings.paramValue("use_prefer_tokens").toBool();
+}
+QString MainForm::walletAddr() const
+{
+    return lCommonSettings.paramValue("wallet").toString();
 }
 
 
