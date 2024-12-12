@@ -29,6 +29,7 @@ public:
     static double max(const QVector<double> &v);
     static double pi() {return 3.14159265;}
     static int sign(double a) {return ((a < 0) ? -1 : 1);} //знак числа а
+    static int sign(qint64 a) {return ((a < 0) ? -1 : 1);} //знак числа а
     static double sqrt(const double&, const double &exact = 0.001);
 
 
@@ -100,7 +101,102 @@ private:
 
 };
 
+////////////////////////////////////////////////////////////////////
+class LBigInt
+{
+public:
+    LBigInt(QString, bool neg = false); //на вход подать строку в которой все символы это десятичные цифры, знак устанавливается отдельным параметром
+    LBigInt(const LBigInt&); //клонировать другое БЧ
+    LBigInt(quint16); //степень двойки преобразовать в БЧ, is_negative == false
 
+    inline bool invalid() const {return m_rawData.isEmpty();}
+    inline quint16 len() const {return m_rawData.length();}    
+    inline QString rawData() const {return m_rawData;}
+    inline int groupsCount() const {return m_groups.count();}
+    inline bool isNegative() const {return is_negative;}
+
+    void toDebug(); //diag func
+
+    //operations funcs
+    void increase(const LBigInt&); //операция - сложение с другим БЧ  (знак учитывается)
+    void decrease(const LBigInt&); //операция - вычитание из своего БЧ другим БЧ, т.е this.B_NUM - other.B_NUM  (знак учитывается)
+    void multiply(const LBigInt&); //операция - умножение на другое БЧ  (знак учитывается)
+    void multiplySimple(qint32); //операция - умножение на простое число 32bit  (знак учитывается)
+    void makeDual(); //операция - умножение на 2
+    void invertSign(); //операция - умножение на '-1'
+
+    bool isLarger(const LBigInt&) const; //вернет true если свое БЧ больше параметра (знак учитывается)
+    bool isSmaller(const LBigInt&) const; //вернет true если свое БЧ меньше параметра (знак учитывается)
+    bool isEqual(const LBigInt&) const; //вернет true если свое БЧ равно параметру (знак учитывается)
+    bool isLarger_abs(const LBigInt&) const; //вернет true если модуль своего БЧ больше модуля параметра (знак не учитывается)
+    bool isSmaller_abs(const LBigInt&) const; //вернет true если модуль своего БЧ меньше модуля параметра (знак не учитывается)
+    bool isEqual_abs(const LBigInt&) const; //вернет true если модуль своего БЧ равен модулю параметра (знак не учитывается)
+    bool isEqualSign(const LBigInt&) const; //вернет true если знак своего БЧ такой же как у параметра
+    bool isNull() const; //вернет true если БЧ равно 0
+    QString finalValue() const; //значение с учетом знака, для интерфейса пользователя
+    qint64 groupAt(int i) const; // елемент указанной группы
+
+    static quint8 groupSize() {return 8;} //максимально допустимое количество символов в одной группе многочлена
+
+protected:
+    QString m_rawData; //больше число INT в строковом виде, все символы должны быть десятичными цифрами иначе объект будет невалидным
+    bool is_negative; //признак того что число отрицательное (знак БЧ)
+
+    //группы на которые разбивается m_rawData (разложение на многочлен),
+    //длина группы(кол-во символов) - groupSize()
+    //с идексом 0 - самые младшие разряды, т.е индекс группы умноженный на groupSize() это степень 10,
+    //т.е. множитель для группы с индексом i, m_groups.at(i) * 10^(i*groupSize())
+    //все элементы должны быть неотрицательные
+    QList<qint64> m_groups;
+
+    void checkValidity();
+    void initGroups();
+
+    //функция приводит указанный набор  групп к правильному состоянию,
+    //т.е. все элеменеты должны быть не длинее groupSize(), и при этом неотрицательные.
+    //количество элементов-групп может увеличиться(ситуация: некоторые старшие разряды одной группы переползают на уровень выше)
+    static void normalizeGroups(QList<qint64>&);
+    static void normalizeGroupsSign(QList<qint64>&); //только нормализация знаков
+
+    //удаление всех старших нулевых групп, кроме самой младшей
+    static void removeOlderNull(QList<qint64>&);
+
+    // размер единицы старшей группы для младшей, т.е. 10 в степени groupSize()
+    static qint64 olderDigitVolume();
+
+    //функция перезаписывает поля БЧ m_groups и m_rawData в соответствии с входным списком групп.
+    //входные группы должны быть нормализованными.
+    //поле is_negative не меняется.
+    void reloadData(const QList<qint64>&);
+
+
+    void reset();
+    void toNull(); //установить своему БЧ нулевое значение
+
+
+private:
+    //операция - сложение с двух БЧ  (знак не учитывается),
+    //складываются попарно группы своего БЧ и другого.
+    //предполагается что со знаками разобрались до выполнения этой операции и оба БЧ валидны.
+    //при выполнении операции свое БЧ не меняется, результат записывается в промежуточный список групп(входной параметр)
+    //на выходе всегда получаем список нормализованных групп
+    void increasePrivate(const LBigInt&, QList<qint64>&);
+
+    //операция - вычитание из своего БЧ 2-е БЧ  (знак не учитывается),
+    //предполагается что со знаками разобрались до выполнения этой операции и оба БЧ валидны
+    //при выполнении операции свое БЧ не меняется, результат записывается в промежуточный список групп(входной параметр)
+    //на выходе всегда получаем список нормализованных групп
+    void decreasePrivate(const LBigInt&, QList<qint64>&);
+
+
+    //операция - умножение своего БЧ на другое БЧ  (знак не учитывается),
+    //предполагается что со знаками разобрались до выполнения этой операции и оба БЧ валидны
+    //при выполнении операции свое БЧ не меняется, результат записывается в промежуточный список групп(входной параметр)
+    //на выходе всегда получаем список нормализованных групп
+    void multiplyPrivate(const LBigInt&, QList<qint64>&);
+
+
+};
 
 
  #endif

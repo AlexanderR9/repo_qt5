@@ -4,6 +4,9 @@
 #include "lfile.h"
 #include "subcommonsettings.h"
 
+#include <iostream>
+#include <boost/multiprecision/cpp_int.hpp>
+
 #include <QDir>
 #include <QStringList>
 #include <QJsonValue>
@@ -84,6 +87,25 @@ QString UG_PoolDayData::toStr() const
 }
 
 //UG_PosInfo
+void UG_PosInfo::setData(const UG_PosInfo &other)
+{
+    id = other.id;
+    deposited = other.deposited;
+    collectedFees = other.collectedFees;
+    withdrawn = other.withdrawn;
+    ts = other.ts;
+    chain = other.chain;
+    liquidity = other.liquidity;
+    digit = other.digit;
+    tick_range = other.tick_range;
+
+    pool.setData(other.pool);
+
+    feeGrowthInside = other.feeGrowthInside;
+    feeGrowthOutsize_lower = other.feeGrowthOutsize_lower;
+    feeGrowthOutsize_upper = other.feeGrowthOutsize_upper;
+
+}
 void UG_PosInfo::reset()
 {
     id = "?";
@@ -97,8 +119,13 @@ void UG_PosInfo::reset()
     digit.first = digit.second = 1;
     tick_range.first = tick_range.second = -1;
     liquidity = 0;
-    cur_tick = 0;
-    token0Price = -1;
+    //cur_tick = 0;
+    //token0Price = -1;
+
+    feeGrowthInside.first = feeGrowthInside.second = QString("0");
+    feeGrowthOutsize_lower.first = feeGrowthOutsize_lower.second = QString("0");
+    feeGrowthOutsize_upper.first = feeGrowthOutsize_upper.second = QString("0");
+
 }
 bool UG_PosInfo::invalid() const
 {
@@ -112,8 +139,6 @@ void UG_PosInfo::fromJson(const QJsonObject &j_obj)
     if (j_obj.isEmpty()) return;
 
     id = j_obj.value("id").toString();
-    //collected.first = j_obj.value("collectedToken0").toString().toDouble();
-    //collected.second = j_obj.value("collectedToken1").toString().toDouble();
     collectedFees.first = j_obj.value("collectedFeesToken0").toString().toDouble();
     collectedFees.second = j_obj.value("collectedFeesToken1").toString().toDouble();
     deposited.first = j_obj.value("depositedToken0").toString().toDouble();
@@ -124,24 +149,48 @@ void UG_PosInfo::fromJson(const QJsonObject &j_obj)
 
     pool.fromJson(j_obj.value("pool").toObject());
 
-    QJsonObject j_transaction = j_obj.value("transaction").toObject();
-    if (j_transaction.isEmpty())
+    feeGrowthInside.first = j_obj.value("feeGrowthInside0LastX128").toString();
+    feeGrowthInside.second = j_obj.value("feeGrowthInside1LastX128").toString();
+
+    //parse lower tick
+    QJsonValue j_tick = j_obj.value("tickLower");
+    if (j_tick.isObject())
     {
-        qWarning("UG_PosInfo::fromJson - WARNING j_transaction.isEmpty()");
-        return;
+     //   if (j_tick.isEmpty()) {qWarning("UG_PosInfo::fromJson - WARNING j_tick_lower.isEmpty()"); return;}
+        tick_range.first = j_tick.toObject().value("tickIdx").toString().toInt();
+        feeGrowthOutsize_lower.first = j_tick.toObject().value("feeGrowthOutside0X128").toString();
+        feeGrowthOutsize_lower.second = j_tick.toObject().value("feeGrowthOutside1X128").toString();
     }
+    else tick_range.first = j_tick.toString().toInt();
+
+    //parse upper tick
+    j_tick = j_obj.value("tickUpper");
+    if (j_tick.isObject())
+    {
+        //if (j_tick.isEmpty()) {qWarning("UG_PosInfo::fromJson - WARNING j_tick_upper.isEmpty()"); return;}
+        tick_range.second = j_tick.toObject().value("tickIdx").toString().toInt();
+        feeGrowthOutsize_upper.first = j_tick.toObject().value("feeGrowthOutside0X128").toString();
+        feeGrowthOutsize_upper.second = j_tick.toObject().value("feeGrowthOutside1X128").toString();
+    }
+    else tick_range.second = j_tick.toString().toInt();
+
+
+    QJsonObject j_transaction = j_obj.value("transaction").toObject();
+    if (j_transaction.isEmpty()) {qWarning("UG_PosInfo::fromJson - WARNING j_transaction.isEmpty()"); return;}
     ts = j_transaction.value("timestamp").toString().toUInt();
 
+    /*
     QJsonArray j_mint = j_transaction.value("mints").toArray();
     if (!j_mint.isEmpty())
     {
         tick_range.first = j_mint.at(0).toObject().value("tickLower").toString().toInt();
         tick_range.second = j_mint.at(0).toObject().value("tickUpper").toString().toInt();
-        cur_tick = j_obj.value("pool").toObject().value("tick").toString().toInt();
-        token0Price = j_obj.value("pool").toObject().value("token0Price").toString().toDouble();
-        if (token0Price > 0) token0Price = 1/token0Price;
+        //cur_tick = j_obj.value("pool").toObject().value("tick").toString().toInt();
+        //token0Price = j_obj.value("pool").toObject().value("token0Price").toString().toDouble();
+        //if (token0Price > 0) token0Price = 1/token0Price;
     }
     else qWarning("WARNING: mints node not found");
+    */
 
     calcDigit();
 }
@@ -168,8 +217,8 @@ void UG_PosInfo::toTableRow(QStringList &list) const
     //list << QString("%1 / %2").arg(QString::number(collected.first, 'f', digit.first)).arg(QString::number(collected.second, 'f', digit.second));
     list << QString("%1 / %2").arg(QString::number(withdrawn.first, 'f', digit.first)).arg(QString::number(withdrawn.second, 'f', digit.second));
     list << QString("%1 / %2").arg(QString::number(collectedFees.first, 'f', digit.first)).arg(QString::number(collectedFees.second, 'f', digit.second));
-    list << QString("%1 / %2 (cur: %3)").arg(tick_range.first).arg(tick_range.second).arg(cur_tick);
-    list << priceRange();
+    list << QString("%1 / %2 (cur: %3)").arg(tick_range.first).arg(tick_range.second).arg(pool.cur_tick);
+    list << priceRange() << unclaimedFees();
 
 }
 QString UG_PosInfo::toStr() const
@@ -177,8 +226,18 @@ QString UG_PosInfo::toStr() const
     QString s = QString("UG_PosInfo(%1): ").arg(id);
     s = QString("%1 ts[%2] chain[%3] pool[%4]").arg(s).arg(ts).arg(chain).arg(poolParams());
     s = QString("%1 tick_range[%2; %3]").arg(s).arg(tick_range.first).arg(tick_range.second);
-    s = QString("%1 liquidity[%2]  token0Price[%3]").arg(s).arg(liquidity).arg(token0Price);
+    s = QString("%1 liquidity[%2]  token0Price[%3]").arg(s).arg(liquidity).arg(pool.token0_price);
     return s;
+}
+QString UG_PosInfo::toStrFeeGrowth() const
+{
+    QString s0 = "FeeGrowth0: ";
+    s0 = QString("%1 global[%2] outside_l[%3] outside_u[%4] inside[%5]").arg(s0).arg(pool.feeGrowthGlobal.first).
+            arg(feeGrowthOutsize_lower.first).arg(feeGrowthOutsize_upper.first).arg(feeGrowthInside.first);
+    QString s1 = "FeeGrowth1: ";
+    s1 = QString("%1 global[%2] outside_l[%3] outside_u[%4] inside[%5]").arg(s1).arg(pool.feeGrowthGlobal.second).
+            arg(feeGrowthOutsize_lower.second).arg(feeGrowthOutsize_upper.second).arg(feeGrowthInside.second);
+    return QString("%1 ||| %2").arg(s0).arg(s1);
 }
 QString UG_PosInfo::poolParams() const
 {
@@ -195,9 +254,9 @@ QString UG_PosInfo::priceRange() const
 
     p1 = toStablePrice(p1);
     p2 = toStablePrice(p2);
-    double p_cur = token0Price;
+    double p_cur = pool.token0_price;
     double min = qMin(p1, p2);
-    if (min < p1) {p2 = p1; p1 = min; p_cur = 1/token0Price;}
+    if (min < p1) {p2 = p1; p1 = min; p_cur = pool.token1_price;}
     qint8 prec = 1;
     if (min < 0.01) prec = 6;
     else if (min < 1.1) prec = 4;
@@ -235,11 +294,49 @@ void UG_PosInfo::calcPricesByTicks(double &p1, double &p2) const
 }
 bool UG_PosInfo::isOut() const
 {
-    double p1, p2;
-    calcPricesByTicks(p1, p2);
-    if (p1 < 0 || p2 < 0) return false;
+    //double p1, p2;
+    //calcPricesByTicks(p1, p2);
+    //if (p1 < 0 || p2 < 0) return false;
+    if (invalid()) return false;
 
-    return (token0Price < p1 || token0Price > p2);
+    qint32 t = pool.cur_tick;
+    return (tick_range.first > t || tick_range.second < t);
+}
+bool UG_PosInfo::isClosed() const
+{
+    if (withdrawn.first == 0 && withdrawn.second == 0) return false;
+    return (liquidity == 0);
+}
+QString UG_PosInfo::unclaimedFees() const
+{
+    if (isClosed()) return "---";
+
+    double unfees0 = 0;
+    double unfees1 = 0;
+    //double fg = pool.feeGrowthGlobal.first.toDouble();
+    //qDebug()<<QString("fg: str(%1)  double(%2)").arg(pool.feeGrowthGlobal.first).arg(fg);
+
+    namespace mp = boost::multiprecision;
+    mp::cpp_int fg(pool.feeGrowthGlobal.first.toStdString());
+    mp::cpp_int fl(feeGrowthOutsize_lower.first.toStdString());
+    mp::cpp_int fu(feeGrowthOutsize_upper.first.toStdString());
+    mp::cpp_int ft0(feeGrowthInside.first.toStdString());
+    if (pool.cur_tick < tick_range.first) fl = fg - fl;
+    if (pool.cur_tick >= tick_range.second) fu = fg - fu;
+    mp::cpp_int fr = fg - fl - fu;
+    //qDebug()<<QString("fg: str(%1)  double(%2)").arg(pool.feeGrowthGlobal.first).arg();
+    //mp::cpp_int num2 ("487658923425734580234503495059345034250349534059234");
+    //std::cout << num1 * num2 << std::endl;
+    std::cout << std::endl;
+    std::cout << "fg=" << fg << "  fr=" << fr << std::endl;
+
+
+    //mp::cpp_dec_float_100 num2 ("10000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+    //mp::cpp_dec_float_100 num3 = num1 / num2;
+    //mp::cpp_dec_float_100 num4 = num3 * num2;
+
+    QString s = QString("%1 / %2").arg(unfees0).arg(unfees1);
+    return s;
 }
 
 
@@ -255,6 +352,26 @@ void UG_PoolInfo::reset()
     token1_id.clear();
     fee = volume_all = 0;
     ts = 0;
+
+    cur_tick = 0;
+    token0_price = token1_price = -1;
+    feeGrowthGlobal.first = feeGrowthGlobal.second = QString("0");
+}
+void UG_PoolInfo::setData(const UG_PoolInfo &other)
+{
+    id = other.id;
+    tvl = other.tvl;
+    token0 = other.token0;
+    token1 = other.token1;
+    token0_id = other.token0_id;
+    token1_id = other.token1_id;
+    fee = other.fee;
+    volume_all = other.volume_all;
+    ts = other.ts;
+    cur_tick = other.cur_tick;
+    token0_price = other.token0_price;
+    token1_price = other.token1_price;
+    feeGrowthGlobal = other.feeGrowthGlobal;
 }
 bool UG_PoolInfo::invalid() const
 {
@@ -280,6 +397,13 @@ void UG_PoolInfo::fromJson(const QJsonObject &j_obj)
     token1 = j_obj.value("token1").toObject().value("symbol").toString().trimmed().toUpper();
     token1_id = j_obj.value("token1").toObject().value("id").toString().trimmed();
     fee = fee/float(10000);
+
+    cur_tick = j_obj.value("tick").toString().toInt();
+    token1_price = j_obj.value("token0Price").toString().toDouble();
+    token0_price = j_obj.value("token1Price").toString().toDouble();
+    feeGrowthGlobal.first = j_obj.value("feeGrowthGlobal0X128").toString();
+    feeGrowthGlobal.second = j_obj.value("feeGrowthGlobal1X128").toString();
+
 }
 QString UG_PoolInfo::toStr() const
 {

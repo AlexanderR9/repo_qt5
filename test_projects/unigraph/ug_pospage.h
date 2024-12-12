@@ -33,6 +33,10 @@ protected:
     void prepareQuery();
     void parseJArrPos(const QJsonArray&);
     void updateTableData();
+    void sortPositions();
+
+private:
+    QList<int> openedIndexes() const;
 
 
 public slots:

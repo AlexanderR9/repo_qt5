@@ -33,18 +33,26 @@ struct UG_APIReqParams
 struct UG_PoolInfo
 {
     UG_PoolInfo() {reset();}
+    UG_PoolInfo(const UG_PoolInfo &other) {setData(other);}
 
+    //members
     QString id;
     double tvl;
-    QString token0;
-    QString token1;
+    QString token0; //ticker of instrument
+    QString token1; //ticker of instrument
     QString token0_id;
-    QString token1_id;
+    QString token1_id;    
     double fee;
     double volume_all;
     quint32 ts; //creation time
+    QPair<QString, QString> feeGrowthGlobal;
+
+    qint32 cur_tick; //tick index (current state param)
+    double token0_price; //cur pool price token0 in units token1  (current state param)
+    double token1_price; //cur pool price token1 in units token0  (current state param)
 
 
+    // funcs
     void reset();
     bool invalid() const;
     void fromJson(const QJsonObject&);
@@ -52,6 +60,7 @@ struct UG_PoolInfo
     void toTableRow(QStringList&) const;
     QString toFileLine() const;
     void fromFileLine(const QString&);
+    void setData(const UG_PoolInfo&);
 
 };
 
@@ -59,27 +68,30 @@ struct UG_PoolInfo
 struct UG_PosInfo
 {
     UG_PosInfo(QString cn) :chain(cn.trimmed().toUpper()) {reset();}
+    UG_PosInfo(const UG_PosInfo &other) {setData(other);}
 
+    ////////////// MEMBERS //////////////
     QString id; //ID of position
     QString chain; //chain name
-    UG_PoolInfo pool; //pool data for this position
     quint32 ts; //creation time
     qint64 liquidity;
 
+    UG_PoolInfo pool; //parent pool data for this position
+
     QPair<double, double> deposited;
-    //QPair<double, double> collected;
     QPair<double, double> collectedFees;
     QPair<double, double> withdrawn;
-
-
     QPair<qint8, qint8> digit; //точность
     QPair<qint32, qint32> tick_range;
-    qint32 cur_tick;
-    double token0Price; //cur pool price token0 in units token1
+    QPair<QString, QString> feeGrowthInside;
+    QPair<QString, QString> feeGrowthOutsize_lower;
+    QPair<QString, QString> feeGrowthOutsize_upper;
 
-    inline bool isClosed() const {return (liquidity == 0);}
+    ////////////////////////////////////////
+
+
+    bool isClosed() const;// {return (liquidity == 0);}
     bool isOut() const; //sing out price range
-
 
     void reset();
     bool invalid() const;
@@ -88,9 +100,13 @@ struct UG_PosInfo
     void calcDigit();
     void calcPricesByTicks(double&, double&) const; //расчет диапазона цен токена0 в единицах токена1
 
+    void setData(const UG_PosInfo&);
+
     QString toStr() const;
+    QString toStrFeeGrowth() const;
     QString poolParams() const;
     QString priceRange() const;
+    QString unclaimedFees() const;
 
 private:
     double toStablePrice(const double&) const; //приведение цены к стейблам, в приоритете USDT, затем USDC, если в паре таких нет, то вернет то же значение
