@@ -77,6 +77,7 @@ signals:
     void signalPageChanged(int);
     void signalGetFilterParams(quint16&, double&);
     void signalBuzy();
+    void signalChangeSubGraph(QString);
 
 };
 

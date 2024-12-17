@@ -6,7 +6,7 @@
 class QJsonObject;
 
 //типы страниц пользовательского интерфейса
-enum UG_ReqType {rtJsonView = 131, rtPools, rtTokens, rtDaysData, rtPositions};
+enum UG_ReqType {rtJsonView = 131, rtPools, rtTokens, rtDaysData, rtPositions, rtPositionsAct};
 
 
 //необходимые данные для формирования запроса перед отправкой
@@ -18,7 +18,7 @@ struct UG_APIReqParams
     QString name;
     QString query;
 
-    void reset() {name="?"; req_type=-1; /*is_running=false;*/ query.clear();}
+    void reset() {name="?"; req_type=-1; query.clear();}
     bool invalid() const {return (req_type<0 || query.trimmed().isEmpty());}
 
     static QString strReqTypeByType(int, QString = "");
@@ -97,6 +97,7 @@ struct UG_PosInfo
     bool invalid() const;
     void fromJson(const QJsonObject&);
     void toTableRow(QStringList&) const;
+    void toTableRow_act(QStringList&) const;
     void calcDigit();
     void calcPricesByTicks(double&, double&) const; //расчет диапазона цен токена0 в единицах токена1
 
@@ -107,6 +108,8 @@ struct UG_PosInfo
     QString poolParams() const;
     QString priceRange() const;
     QString unclaimedFees() const;
+    QString age() const;
+    QString curAssets() const;
 
 private:
     double toStablePrice(const double&) const; //приведение цены к стейблам, в приоритете USDT, затем USDC, если в паре таких нет, то вернет то же значение

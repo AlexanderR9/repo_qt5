@@ -31,6 +31,9 @@ public:
     static int sign(double a) {return ((a < 0) ? -1 : 1);} //знак числа а
     static int sign(qint64 a) {return ((a < 0) ? -1 : 1);} //знак числа а
     static double sqrt(const double&, const double &exact = 0.001);
+    static qint64 floor64(const double&); //нижнее округление
+    static qint64 ceil64(const double&); //верхнее округление
+    static double fractionalPart(const double&, quint8 digist = 8); //возвращает дробную часть числа, digist знаков после запятой (пример 0.01565465)
 
 
     //случайное значение знака 50/50 (т.е. либо -1, либо 1)
@@ -108,6 +111,7 @@ public:
     LBigInt(QString, bool neg = false); //на вход подать строку в которой все символы это десятичные цифры, знак устанавливается отдельным параметром
     LBigInt(const LBigInt&); //клонировать другое БЧ
     LBigInt(quint16); //степень двойки преобразовать в БЧ, is_negative == false
+    LBigInt(quint32 a, quint16 degree); //a^degree преобразовать в БЧ, is_negative == false
 
     inline bool invalid() const {return m_rawData.isEmpty();}
     inline quint16 len() const {return m_rawData.length();}    
@@ -115,15 +119,25 @@ public:
     inline int groupsCount() const {return m_groups.count();}
     inline bool isNegative() const {return is_negative;}
 
-    void toDebug(); //diag func
+    void toDebug(QString label = QString()); //diag func
 
     //operations funcs
     void increase(const LBigInt&); //операция - сложение с другим БЧ  (знак учитывается)
     void decrease(const LBigInt&); //операция - вычитание из своего БЧ другим БЧ, т.е this.B_NUM - other.B_NUM  (знак учитывается)
     void multiply(const LBigInt&); //операция - умножение на другое БЧ  (знак учитывается)
     void multiplySimple(qint32); //операция - умножение на простое число 32bit  (знак учитывается)
+    void multiply_10(quint8 deegree = 1); //операция - умножение на 10 в степени deegree
     void makeDual(); //операция - умножение на 2
     void invertSign(); //операция - умножение на '-1'
+
+    //деление происходит грубо, т.е. до целого значения, идея - получить нужный порядок результирующего БЧ.
+    //если делитель равен 0, то результат будет -1.
+    //если делитель больше делимого как минимум на 1 группу (в 10^groupSize() раз), то результат будет 0.
+    void division(const LBigInt&); //операция - деление на другое БЧ  (знак учитывается)
+    void division_10(quint8 deegree = 1); //операция - деление на 10 в степени deegree, дробный остаток запишется в m_divisionResult
+    inline double divisionRemainder() const {return m_divisionResult;} //дробный остаток после операции деления
+    inline QString strDivisionRemainder() const {return QString::number(m_divisionResult, 'f', groupSize());}
+
 
     bool isLarger(const LBigInt&) const; //вернет true если свое БЧ больше параметра (знак учитывается)
     bool isSmaller(const LBigInt&) const; //вернет true если свое БЧ меньше параметра (знак учитывается)
@@ -135,6 +149,8 @@ public:
     bool isNull() const; //вернет true если БЧ равно 0
     QString finalValue() const; //значение с учетом знака, для интерфейса пользователя
     qint64 groupAt(int i) const; // елемент указанной группы
+    qint64 groupFirst() const;
+    qint64 groupLast() const;
 
     static quint8 groupSize() {return 8;} //максимально допустимое количество символов в одной группе многочлена
 
@@ -149,6 +165,13 @@ protected:
     //все элементы должны быть неотрицательные
     QList<qint64> m_groups;
 
+    //по умолчанию равен -1. не отражает знак числа БЧ.
+    //обновляется только при выполнении операции деления, имеет смысл только если это значение > 0.
+    //Может принимать > 0 и < 1 и только в случае если при делении результат - БЧ всего с одной группой (младшей),
+    //т.е. когда результат по сути не является БЧ, и данная переменная содержит дробную часть результата.
+    //особенно актуально если результирующее БЧ равно 0.
+    double m_divisionResult;
+
     void checkValidity();
     void initGroups();
 
@@ -157,6 +180,12 @@ protected:
     //количество элементов-групп может увеличиться(ситуация: некоторые старшие разряды одной группы переползают на уровень выше)
     static void normalizeGroups(QList<qint64>&);
     static void normalizeGroupsSign(QList<qint64>&); //только нормализация знаков
+
+    //функция приводит указанный набор вещественных групп к правильному состоянию,
+    //нужна после операции деления для переноса части дробных знаков в младшие группы.
+    //значения входного списка должны быть неотрицательные.
+    //дробный остаток записывает в 3-й параметр.
+    static void normalizeFloatGroups(const QList<double>&, QList<qint64>&, double&);
 
     //удаление всех старших нулевых групп, кроме самой младшей
     static void removeOlderNull(QList<qint64>&);
@@ -195,6 +224,17 @@ private:
     //на выходе всегда получаем список нормализованных групп
     void multiplyPrivate(const LBigInt&, QList<qint64>&);
 
+
+    //операция - деление своего БЧ на другое БЧ  (знак не учитывается),
+    //предполагается что со знаками разобрались до выполнения этой операции и оба БЧ валидны
+    //при выполнении операции свое БЧ не меняется, результат записывается в промежуточный список групп(входной параметр)
+    //на выходе всегда получаем список нормализованных групп.
+    //предполагается что порядок делителя(количество групп) НЕ больше делимого.
+    void divisionPrivate(const LBigInt&, QList<qint64>&);
+
+
+    //преобразует строку в вещественный остаток(<1) и записывает его в m_divisionResult
+    void toFloatRemainder(QString);
 
 };
 

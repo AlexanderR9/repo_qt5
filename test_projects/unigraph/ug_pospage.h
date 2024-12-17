@@ -16,8 +16,8 @@ public:
     UG_PosPage(QWidget*);
     virtual ~UG_PosPage() {m_positions.clear();}
 
-    QString iconPath() const {return QString(":/icons/images/bag.svg");}
-    QString caption() const {return QString("Positions");}
+    virtual QString iconPath() const {return QString(":/icons/images/bag.svg");}
+    virtual QString caption() const {return QString("Positions");}
     virtual void saveData() {}
     virtual void loadData() {}
 
@@ -29,11 +29,12 @@ protected:
     LSearchTableWidgetBox   *m_tableBox;
 
     virtual void clearPage();
-    void initTable();
+    virtual void initTable();
     void prepareQuery();
     void parseJArrPos(const QJsonArray&);
-    void updateTableData();
-    void sortPositions();
+    virtual void updateTableData();
+    virtual void sortPositions();
+    virtual void updateLastRowColor(const UG_PosInfo&);
 
 private:
     QList<int> openedIndexes() const;
@@ -43,10 +44,37 @@ public slots:
     virtual void slotJsonReply(int, const QJsonObject&);
     virtual void slotReqBuzyNow();
 
-
-
 };
 
+//UG_ActivePosPage
+class UG_ActivePosPage : public UG_PosPage
+{
+    Q_OBJECT
+public:
+    UG_ActivePosPage(QWidget*);
+    virtual ~UG_ActivePosPage() {}
+
+    virtual QString iconPath() const {return QString(":/icons/images/ball_green.svg");}
+    virtual void startUpdating(quint16);
+
+protected:
+    int m_chainIndex;
+    bool wait_data;
+
+    virtual void initTable();
+    virtual void updateTableData();
+    virtual void sortPositions();
+    void nextChainReq();
+    virtual void updateLastRowColor(const UG_PosInfo&);
+
+protected slots:
+    virtual void slotTimer();
+
+public slots:
+    virtual void slotJsonReply(int, const QJsonObject&);
+    virtual void slotReqBuzyNow();
+
+};
 
 #endif // UG_POSPAGE_H
 

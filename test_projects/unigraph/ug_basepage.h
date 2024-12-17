@@ -54,6 +54,7 @@ signals:
     void signalSendReq(const UG_APIReqParams*);
     void signalStopUpdating();
     void signalGetReqLimit(quint16&);
+    void signalChangeSubGraph(QString);
 
 };
 

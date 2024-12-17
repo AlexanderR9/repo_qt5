@@ -20,35 +20,47 @@ UG_PosPage::UG_PosPage(QWidget *parent)
     setObjectName("ug_pos_page");
 
     initTable();
+    m_tableBox->resizeByContents();
 
-    //LBigInt bi("39434925698191646345954912238072");
     quint16 deg = 128;
-    LBigInt bi1(deg);
-    //LBigInt bi2("90150012");
-    LBigInt bi3("150000000012");
+    LBigInt b128(deg);
 
-    bi1.toDebug();
-   // bi2.toDebug();
-    bi3.toDebug();
+    LBigInt b2("55872966341152361379129818307772085009");
+    LBigInt b3("52891292993876480607807562983882091758");
+   // b2.toDebug();
+   // b3.toDebug();
+   // b2.decrease(b3);
+   // qDebug()<<QString("b2-b3: final_value_b2 = %1").arg(b2.finalValue());
 
-    //if (bi1.isLarger(bi2)) qDebug("bi1 > bi2");
-    //if (bi1.isSmaller(bi2)) qDebug("bi1 < bi2");
-    //if (bi1.isEqual(bi2)) qDebug("bi1 == bi2");
-    /*
-    bi2.increase(bi1);
-    qDebug("result after bi2.increase(bi1) : ");
-    bi1.decrease(bi3);
-    qDebug("result after bi1.decrease(bi3) : ");
-    */
+/*
+    LBigInt fg("33175355179930087966303993728982874999587517");
+    LBigInt fl("26658212011652901190259811235272731093087155");
+    LBigInt fu("878985802475531816372668997916966386315105");
+    LBigInt liq("1299681570382311");
+    LBigInt ft0("2759845686150014998811437328806478423628533");
+
+    LBigInt fr(fg);
+    fr.toDebug();
+    fr.decrease(fl);
+    qDebug()<<QString("fr-fl: [%1]").arg(fr.finalValue());
+    fr.decrease(fu);
+    qDebug()<<QString("fr-fu: [%1]").arg(fr.finalValue());
+    fr.decrease(ft0);
+    qDebug()<<QString("fr-ft0: [%1]").arg(fr.finalValue());
+    fr.multiply(liq);
+    qDebug()<<QString("fr*liq: [%1]").arg(fr.finalValue());
 
 
-    //qDebug()<<QString("final_value_b2 = %1").arg(bi2.finalValue());
-    //bi1.multiply(bi3);
-    //bi1.toDebug();
-    //qDebug()<<QString("b1*b3: final_value_b1 = %1").arg(bi1.finalValue());
+    fr.toDebug("fg");
+    b128.toDebug("Q128");
+    qDebug("******************************");
+    fr.division(b128);
 
-
-
+    qDebug()<<QString("fr/b128: [%1]").arg(fr.finalValue());
+    fr.toDebug();
+    fr.division_10(18);
+    qDebug()<<QString("fr/D18: [%1]").arg(fr.finalValue());
+*/
 
 }
 void UG_PosPage::updateDataPage(bool forcibly)
@@ -76,22 +88,20 @@ void UG_PosPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 }
 void UG_PosPage::parseJArrPos(const QJsonArray &j_arr)
 {
-    qDebug()<<QString("j_arr POSITIONS %1").arg(j_arr.count());
+    //qDebug()<<QString("j_arr POSITIONS %1").arg(j_arr.count());
     for (int i=0; i<j_arr.count(); i++)
     {
         UG_PosInfo pos(sub_commonSettings.curChain());
         pos.fromJson(j_arr.at(i).toObject());
 
-        qDebug()<<pos.toStr();
+        //qDebug()<<pos.toStr();
         if (!pos.invalid())
         {
             m_positions.append(pos);
-            if (!pos.isClosed()) qDebug()<<pos.toStrFeeGrowth();
-
+            //if (!pos.isClosed()) qDebug()<<pos.toStrFeeGrowth();
         }
         else qWarning("WARNING: INVALID POS DATA!!!");
     }
-
 }
 void UG_PosPage::slotReqBuzyNow()
 {
@@ -114,6 +124,7 @@ void UG_PosPage::initTable()
     m_tableBox->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
     v_splitter->addWidget(m_tableBox);
 
+    m_tableBox->vHeaderHide();
 }
 void UG_PosPage::prepareQuery()
 {
@@ -163,12 +174,14 @@ void UG_PosPage::updateTableData()
     QTableWidget *tw = m_tableBox->table();
     foreach (const UG_PosInfo &pos, m_positions)
     {
-        int last_row = tw->rowCount();
+        //int last_row = tw->rowCount();
 
         QStringList row_data;
         pos.toTableRow(row_data);
         LTable::addTableRow(tw, row_data);
+        updateLastRowColor(pos);
 
+        /*
         if (pos.isClosed())
         {
             LTable::setTableRowColor(tw, last_row, Qt::lightGray);
@@ -178,9 +191,26 @@ void UG_PosPage::updateTableData()
             LTable::setTableRowColor(tw, last_row, "#ff8800");
         }
         else LTable::setTableRowColor(tw, last_row, "#ccffcc");
+        */
     }
     m_tableBox->searchExec();
     m_tableBox->resizeByContents();
+}
+void UG_PosPage::updateLastRowColor(const UG_PosInfo &pos)
+{
+    QTableWidget *tw = m_tableBox->table();
+    int last_row = tw->rowCount()-1;
+    if (last_row < 0) return;
+
+    if (pos.isClosed())
+    {
+        LTable::setTableRowColor(tw, last_row, Qt::lightGray);
+    }
+    else if(pos.isOut())
+    {
+        LTable::setTableRowColor(tw, last_row, "#ff8800");
+    }
+    else LTable::setTableRowColor(tw, last_row, "#ccffcc");
 }
 void UG_PosPage::sortPositions()
 {
@@ -230,5 +260,112 @@ void UG_PosPage::clearPage()
 }
 
 
+UG_ActivePosPage::UG_ActivePosPage(QWidget *parent)
+    :UG_PosPage(parent),
+      m_chainIndex(-1)
+{
+    m_userSign = rtPositionsAct;
+    m_reqData->req_type = m_userSign;
+    setObjectName("ug_pos_act_page");
 
+    initTable();
+    m_tableBox->resizeByContents();
+}
+void UG_ActivePosPage::initTable()
+{
+    //m_tableBox = new LSearchTableWidgetBox(this);
+    LTable::fullClearTable(m_tableBox->table());
 
+    QStringList headers;
+    headers << "ID" << "Age" << "Pool params" << "Chain" << "TVL" << "Deposited" << "Assets" << "Price Range";// << "Unclaimed fees";
+
+    m_tableBox->setHeaderLabels(headers);
+    m_tableBox->setTitle("Active positions");
+}
+void UG_ActivePosPage::startUpdating(quint16 t)
+{
+    qDebug("UG_ActivePosPage::startUpdating");
+    UG_BasePage::startUpdating(t);
+    clearPage();
+    emit signalGetReqLimit(m_reqLimit);
+    m_chainIndex = 0;
+    wait_data = false;
+   // nextChainReq();
+}
+void UG_ActivePosPage::slotTimer()
+{
+    UG_BasePage::slotTimer();
+    if (wait_data) return;
+
+    nextChainReq();
+}
+void UG_ActivePosPage::updateLastRowColor(const UG_PosInfo &pos)
+{
+    QTableWidget *tw = m_tableBox->table();
+    int last_row = tw->rowCount()-1;
+    if (last_row < 0) return;
+
+    if(pos.isOut())
+        LTable::setTableRowColor(tw, last_row, "#ffeecc");
+}
+void UG_ActivePosPage::nextChainReq()
+{
+    if (m_chainIndex < sub_commonSettings.factories.count())
+    {
+        emit signalMsg("try next query ......");
+        emit signalChangeSubGraph(sub_commonSettings.factories.at(m_chainIndex).chain);
+        wait_data = true;
+
+        prepareQuery();
+        sendRequest();
+    }
+    else
+    {
+        emit signalMsg("Updating active positions finished!");
+        emit signalStopUpdating();
+        updateTableData();
+    }
+}
+void UG_ActivePosPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
+{
+    if (req_type != userSign()) {qDebug("req_type != userSign()"); return;}
+    qDebug()<<QString("UG_ActivePosPage::slotJsonReply  req_type=%1, OK!").arg(req_type);
+
+    const QJsonValue &j_data = j_obj.value("data");
+    if (j_data.isNull()) {emit signalError("UG_PosPage: result QJsonValue <data> not found"); return;}
+    const QJsonArray &j_arr = j_data.toObject().value("positions").toArray();
+    if (j_arr.isEmpty()) {emit signalError("UG_PosPage: positions QJsonArray is empty"); return;}
+
+    parseJArrPos(j_arr);
+    m_chainIndex++;
+    wait_data = false;
+    //nextChainReq();
+
+}
+void UG_ActivePosPage::slotReqBuzyNow()
+{
+    //emit signalError("UG_ActivePosPage::slotReqBuzyNow()");
+    //if (updatingRunning()) m_chainIndex--;
+}
+void UG_ActivePosPage::updateTableData()
+{
+    if (m_positions.isEmpty()) return;
+    sortPositions();
+
+    QTableWidget *tw = m_tableBox->table();
+    foreach (const UG_PosInfo &pos, m_positions)
+    {
+        QStringList row_data;
+        pos.toTableRow_act(row_data);
+        LTable::addTableRow(tw, row_data);
+        updateLastRowColor(pos);
+    }
+    m_tableBox->searchExec();
+    m_tableBox->resizeByContents();
+}
+void UG_ActivePosPage::sortPositions()
+{
+    int n = m_positions.count();
+    for (int i=n-1; i>=0; i--)
+        if (m_positions.at(i).isClosed()) m_positions.removeAt(i);
+}

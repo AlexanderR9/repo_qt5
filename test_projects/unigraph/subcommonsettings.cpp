@@ -112,7 +112,11 @@ void SubGraph_CommonSettings::parseFactoriesNode(const QDomNode &node)
             f.sub_id = LStaticXML::getStringAttrValue("subgraph_id", child_node).trimmed();
             f.chain = LStaticXML::getStringAttrValue("chain", child_node).trimmed();
             f.swap_place = LStaticXML::getStringAttrValue("source", child_node).trimmed();
-            if (!f.invalid()) factories.append(f);
+            if (!f.invalid())
+            {
+                factories.append(f);
+                qDebug()<<QString("LOADED FACOTRY: %1").arg(f.toStr());
+            }
         }
         child_node = child_node.nextSibling();
     }

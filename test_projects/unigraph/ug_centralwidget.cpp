@@ -95,6 +95,9 @@ void UG_CentralWidget::createPages()
     UG_PosPage *pos_page = new UG_PosPage(this);
     w_stack->addWidget(pos_page);
 
+    UG_ActivePosPage *apos_page = new UG_ActivePosPage(this);
+    w_stack->addWidget(apos_page);
+
     for (int i=0; i<w_stack->count(); i++)
     {
         UG_BasePage *w = qobject_cast<UG_BasePage*>(w_stack->widget(i));
@@ -108,6 +111,7 @@ void UG_CentralWidget::createPages()
             connect(this, SIGNAL(signalJsonReply(int, const QJsonObject&)), w, SLOT(slotJsonReply(int, const QJsonObject&)));
             connect(this, SIGNAL(signalBuzy()), w, SLOT(slotReqBuzyNow()));
             connect(w, SIGNAL(signalGetReqLimit(quint16&)), this, SLOT(slotGetReqLimit(quint16&)));
+            connect(w, SIGNAL(signalChangeSubGraph(QString)), this, SIGNAL(signalChangeSubGraph(QString)));
 
         }
     }
@@ -348,9 +352,10 @@ void UG_CentralWidget::freeReq()
 void UG_CentralWidget::sendQuery()
 {
     qDebug("-------------------------------------------");
-    emit signalMsg(QString("URL: %1").arg(m_reqObj->fullUrl()));
+    emit signalMsg(QString("Send request URL: %1").arg(m_reqObj->fullUrl()));
     qDebug()<<m_reqObj->metadata();
-    emit signalEnableControls(false);
+    emit signalEnableControls(false);    
+    qDebug()<<QString("Send request to URL: %1").arg(m_reqObj->fullUrl());
     m_reqObj->start(hrmPost);
 }
 void UG_CentralWidget::actAdd()

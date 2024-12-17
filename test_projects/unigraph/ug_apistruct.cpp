@@ -3,6 +3,7 @@
 #include "lstring.h"
 #include "lfile.h"
 #include "subcommonsettings.h"
+#include "lmath.h"
 
 #include <iostream>
 #include <boost/multiprecision/cpp_int.hpp>
@@ -31,6 +32,8 @@ QString UG_APIReqParams::strReqTypeByType(int t, QString s_extra)
         case rtTokens:          {s = "GET_TOKEN_DATA"; break;}
         case rtJsonView:        {s = "FREE_QUERY"; break;}
         case rtDaysData:        {s = "GET_DAYS_DATA"; break;}
+
+        case rtPositionsAct:
         case rtPositions:       {s = "GET_POS_DATA"; break;}
 
         default: return "???";
@@ -148,7 +151,6 @@ void UG_PosInfo::fromJson(const QJsonObject &j_obj)
     liquidity =  j_obj.value("liquidity").toString().toLong();
 
     pool.fromJson(j_obj.value("pool").toObject());
-
     feeGrowthInside.first = j_obj.value("feeGrowthInside0LastX128").toString();
     feeGrowthInside.second = j_obj.value("feeGrowthInside1LastX128").toString();
 
@@ -156,7 +158,6 @@ void UG_PosInfo::fromJson(const QJsonObject &j_obj)
     QJsonValue j_tick = j_obj.value("tickLower");
     if (j_tick.isObject())
     {
-     //   if (j_tick.isEmpty()) {qWarning("UG_PosInfo::fromJson - WARNING j_tick_lower.isEmpty()"); return;}
         tick_range.first = j_tick.toObject().value("tickIdx").toString().toInt();
         feeGrowthOutsize_lower.first = j_tick.toObject().value("feeGrowthOutside0X128").toString();
         feeGrowthOutsize_lower.second = j_tick.toObject().value("feeGrowthOutside1X128").toString();
@@ -167,7 +168,6 @@ void UG_PosInfo::fromJson(const QJsonObject &j_obj)
     j_tick = j_obj.value("tickUpper");
     if (j_tick.isObject())
     {
-        //if (j_tick.isEmpty()) {qWarning("UG_PosInfo::fromJson - WARNING j_tick_upper.isEmpty()"); return;}
         tick_range.second = j_tick.toObject().value("tickIdx").toString().toInt();
         feeGrowthOutsize_upper.first = j_tick.toObject().value("feeGrowthOutside0X128").toString();
         feeGrowthOutsize_upper.second = j_tick.toObject().value("feeGrowthOutside1X128").toString();
@@ -205,6 +205,16 @@ void UG_PosInfo::calcDigit()
     if (pool.token1.contains("AAVE")) digit.second = 3;
     if (pool.token0.contains("LINK")) digit.first = 2;
     if (pool.token1.contains("LINK")) digit.second = 2;
+}
+void UG_PosInfo::toTableRow_act(QStringList &list) const
+{
+    QDateTime dt = QDateTime::fromSecsSinceEpoch(ts);
+
+    list.clear();
+    list << id << age() << poolParams() << chain;
+    list << QString("%1k").arg(QString::number(pool.tvl/float(1000), 'f', 1));
+    list << QString("%1 / %2").arg(QString::number(deposited.first, 'f', digit.first)).arg(QString::number(deposited.second, 'f', digit.second));
+    list << curAssets() << priceRange();
 }
 void UG_PosInfo::toTableRow(QStringList &list) const
 {
@@ -245,6 +255,20 @@ QString UG_PosInfo::poolParams() const
     //pp.append(QString(" %1% / %2k").arg(QString::number(pool.fee, 'f', 2)).arg(QString::number(pool.tvl/float(1000), 'f', 1)));
     pp.append(QString(" %1%").arg(QString::number(pool.fee, 'f', 2)));
     return pp;
+}
+QString UG_PosInfo::age() const
+{
+    if (invalid()) return "?";
+    if (isClosed()) return "-1 d";
+
+    QDateTime dt = QDateTime::fromSecsSinceEpoch(ts);
+    qint64 a = dt.secsTo(QDateTime::currentDateTime());
+    double x = (double(a)/double(3600))/double(24);
+    return QString("%1 days").arg(QString::number(x, 'f', 1));
+}
+QString UG_PosInfo::curAssets() const
+{
+    return QString("? / ?");
 }
 QString UG_PosInfo::priceRange() const
 {
@@ -313,9 +337,54 @@ QString UG_PosInfo::unclaimedFees() const
 
     double unfees0 = 0;
     double unfees1 = 0;
+
+    LBigInt Q128(128);
+    LBigInt B_fg(pool.feeGrowthGlobal.first);
+    B_fg.toDebug();
+    LBigInt B_fl(feeGrowthOutsize_lower.first);
+    B_fl.toDebug();
+    LBigInt B_fu(feeGrowthOutsize_upper.first);
+    B_fu.toDebug();
+    LBigInt B_ft0(feeGrowthInside.first);
+    //B_ft0.toDebug();
+    LBigInt B_liq(QString::number(liquidity));
+
+    LBigInt B_fr(B_fg);
+    qDebug()<<QString("fg: %1").arg(B_fr.finalValue());
+    B_fr.decrease(B_fl);
+    qDebug()<<QString("fg-fl: %1").arg(B_fr.finalValue());
+    B_fr.decrease(B_fu);
+    qDebug()<<QString("fg-fl-fu: %1").arg(B_fr.finalValue());
+
+    if (B_fr.isNegative())
+    {
+        unfees0 = -1;
+    }
+    else
+    {
+        if (B_fr.isLarger(B_ft0))
+        {
+            B_fr.decrease(B_ft0);
+            qDebug()<<QString("fr-ft0: %1").arg(B_fr.finalValue());
+        }
+        B_fr.multiply(B_liq);
+        qDebug()<<QString("fr*liq: %1").arg(B_fr.finalValue());
+        B_fr.division(Q128);
+        qDebug()<<QString("fr/Q128: %1").arg(B_fr.finalValue());
+
+        int dec = sub_commonSettings.tokenDecimal(pool.token0, chain);
+        if (dec > 0)
+        {
+            B_fr.division_10(dec);
+            qDebug()<<QString("fr/dec_%1: %2").arg(dec).arg(B_fr.finalValue());
+        }
+        unfees0 = B_fr.finalValue().toDouble();
+    }
+
+
     //double fg = pool.feeGrowthGlobal.first.toDouble();
     //qDebug()<<QString("fg: str(%1)  double(%2)").arg(pool.feeGrowthGlobal.first).arg(fg);
-
+/*
     namespace mp = boost::multiprecision;
     mp::cpp_int fg(pool.feeGrowthGlobal.first.toStdString());
     mp::cpp_int fl(feeGrowthOutsize_lower.first.toStdString());
@@ -334,6 +403,7 @@ QString UG_PosInfo::unclaimedFees() const
     //mp::cpp_dec_float_100 num2 ("10000000000000000000000000000000000000000000000000000000000000000000000000000000000");
     //mp::cpp_dec_float_100 num3 = num1 / num2;
     //mp::cpp_dec_float_100 num4 = num3 * num2;
+    */
 
     QString s = QString("%1 / %2").arg(unfees0).arg(unfees1);
     return s;

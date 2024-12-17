@@ -101,6 +101,36 @@ double LMath::sqrt(const double &value, const double &exact)
 
     
 }
+qint64 LMath::floor64(const double &a)
+{
+    QString s = QString::number(a, 'f', 6);
+    int pos = s.indexOf(QChar('.'));
+    if (pos > 0) return s.left(pos).toLong();
+    pos = s.indexOf(QChar(','));
+    if (pos > 0) return s.left(pos).toLong();
+    return 0;
+}
+qint64 LMath::ceil64(const double &a)
+{
+    int sign = LMath::sign(a);
+
+    QString s = QString::number(a, 'f', 6);
+    int pos = s.indexOf(QChar('.'));
+    if (pos > 0) return (s.left(pos).toLong()+sign);
+    pos = s.indexOf(QChar(','));
+    if (pos > 0) return (s.left(pos).toLong()+sign);
+    return 0;
+}
+double LMath::fractionalPart(const double &a, quint8 digist)
+{
+    int sign = LMath::sign(a);
+    double b = qAbs(a);
+    b -= LMath::floor64(b);
+    quint64 divisor = qPow(10, digist);
+    qint64 r = floor64(b*double(divisor));
+    b = double(r)/double(divisor);
+    return (sign*b);
+}
 
 
 /////////////BIT OPERATIONS////////////////
@@ -283,7 +313,8 @@ void LMath::getValueFromBA(T &v, const QByteArray &ba, quint16 pos)
 /////////////////////LBigInt///////////////////////////
 LBigInt::LBigInt(QString str_big_number, bool neg)
     :m_rawData(str_big_number.trimmed()),
-    is_negative(neg)
+    is_negative(neg),
+    m_divisionResult(-1)
 {
     m_groups.clear();
 
@@ -292,7 +323,8 @@ LBigInt::LBigInt(QString str_big_number, bool neg)
 }
 LBigInt::LBigInt(const LBigInt &other)
     :m_rawData(QString()),
-      is_negative(false)
+      is_negative(false),
+      m_divisionResult(-1)
 {
     m_groups.clear();
     if (other.invalid()) return;
@@ -302,7 +334,8 @@ LBigInt::LBigInt(const LBigInt &other)
     initGroups();
 }
 LBigInt::LBigInt(quint16 degree)
-    :is_negative(false)
+    :is_negative(false),
+      m_divisionResult(-1)
 {
     QList<qint64> data;
     qint64 a = qint64(qPow(2, 16));
@@ -323,6 +356,18 @@ LBigInt::LBigInt(quint16 degree)
         reloadData(data);
     }
 }
+LBigInt::LBigInt(quint32 a, quint16 degree)
+    :is_negative(false),
+      m_divisionResult(-1)
+{
+    m_rawData = QString::number(a);
+    initGroups();
+    if (degree < 2) return;
+
+    LBigInt bi(*this);
+    for (int i=2; i<=degree; i++)
+        multiply(bi);
+}
 void LBigInt::increase(const LBigInt &other)
 {
     if (invalid() || other.invalid()) return;
@@ -330,13 +375,11 @@ void LBigInt::increase(const LBigInt &other)
     QList<qint64> result;
     if (!isEqualSign(other)) //знаки противоположны, т.е. сложение сводится к вычитанию
     {
-        is_negative = false;
+        if (isSmaller_abs(other)) is_negative = other.isNegative();
+
         decreasePrivate(other, result);
         reloadData(result);
-        if (isNull()) return;
-
-        if (isSmaller_abs(other))
-            is_negative = other.isNegative();
+        if (isNull()) is_negative = false;
     }
     else //знаки одинаковы, т.е. производится попарное сложение групп, а знак не меняется
     {
@@ -356,13 +399,12 @@ void LBigInt::decrease(const LBigInt &other)
     }
     else //знаки одинаковы, т.е. производится попарное вычитание групп с перемещением разрядов при необходимости
     {
-        is_negative = false;
+        if (isSmaller_abs(other)) is_negative = true;
+        else is_negative = false;
+
         decreasePrivate(other, result);
         reloadData(result);
-        if (isNull()) return;
-
-        if (isSmaller_abs(other))
-            is_negative = true;
+        if (isNull()) is_negative = false;
     }
 }
 void LBigInt::multiply(const LBigInt &other)
@@ -377,6 +419,73 @@ void LBigInt::multiply(const LBigInt &other)
     multiplyPrivate(other, result);
     reloadData(result);
     if (isNull()) is_negative = false;
+}
+void LBigInt::multiply_10(quint8 deegree)
+{
+    //m_divisionResult = -1;
+    if (invalid() || deegree == 0) return;
+    if (isNull()) return;
+
+    if (m_divisionResult > 0)
+    {
+        qint64 a = qint64(m_divisionResult*double(olderDigitVolume()));
+        QString s = QString::number(a);
+        for (int i=0; i<deegree; i++)
+        {
+            if (i < s.length()) m_rawData.append(s.at(i));
+            else m_rawData.append(QChar('0'));
+            m_divisionResult *= double(10);
+        }
+        m_divisionResult = LMath::fractionalPart(m_divisionResult, groupSize());
+        if (m_divisionResult < 0.0000000001) m_divisionResult=-1;
+    }
+    else m_rawData.append(LString::symbolString(QChar('0'), deegree));
+
+    initGroups();
+}
+void LBigInt::division_10(quint8 deegree)
+{
+    m_divisionResult = -1;
+    if (invalid() || deegree == 0) return;
+    if (isNull()) return;
+
+    quint16 l = len();
+    if (l > deegree)
+    {
+        QString s_remaind = rawData().right(deegree);
+        m_rawData = LString::strTrimRight(m_rawData, deegree);
+        initGroups();
+        toFloatRemainder(s_remaind);
+    }
+    else
+    {
+        QString s_remaind(rawData());
+        if (l < deegree) s_remaind.prepend(LString::symbolString(QChar('0'), deegree-l));
+        toNull();
+        toFloatRemainder(s_remaind);
+    }
+}
+void LBigInt::division(const LBigInt &other)
+{
+    m_divisionResult = -1;
+    if (invalid() || other.invalid()) return;
+    if (isNull()) return;
+    if (other.isNull()) //делим на 0
+    {
+        QList<qint64> result;
+        result.append(1);
+        is_negative = true;
+        reloadData(result);
+        return;
+    }
+    if (other.groupsCount() > groupsCount()) {toNull(); return;}
+
+    if (!isEqualSign(other)) is_negative = true; //знаки противоположны
+    else is_negative = false; //знаки одинаковы
+
+    QList<qint64> result;
+    divisionPrivate(other, result);
+    reloadData(result);
 }
 void LBigInt::makeDual()
 {
@@ -464,6 +573,41 @@ void LBigInt::normalizeGroups(QList<qint64> &list)
     list.clear();
     list.append(result);
 }
+void LBigInt::normalizeFloatGroups(const QList<double> &list, QList<qint64> &result, double &remainder)
+{
+    result.clear();
+    if (list.isEmpty()) return;
+
+    quint8 gs = groupSize();
+    qint64 older_digit = olderDigitVolume(); // размер единицы старшей группы для младшей
+    int n = list.count();
+    if (n == 1)
+    {
+        result.append(LMath::floor64(list.first()));
+        remainder = LMath::fractionalPart(list.first(), gs);
+        return;
+    }
+
+    // разделяем целые и дробные части
+    QMap<int, qint64> mid_data;
+    qint64 i_part = 0;
+    double f_part = 0;
+    int i = n-1;
+    while (i >= 0)
+    {
+        i_part = LMath::floor64(list.first()) + qint64(f_part*older_digit);
+        f_part = LMath::fractionalPart(list.at(i), gs);
+        mid_data.insert(i, i_part);
+    }
+
+    remainder = f_part;
+    for (int i=0; i<n; i++)
+        result.append(mid_data.value(i));
+
+    removeOlderNull(result);
+    normalizeGroups(result);
+}
+
 void LBigInt::reloadData(const QList<qint64> &list)
 {
     reset();
@@ -572,6 +716,16 @@ qint64 LBigInt::groupAt(int i) const
     if (i < 0 || i >= groupsCount()) return 0;
     return m_groups.at(i);
 }
+qint64 LBigInt::groupFirst() const
+{
+    if (invalid()) return -1;
+    return m_groups.first();
+}
+qint64 LBigInt::groupLast() const
+{
+    if (invalid()) return -1;
+    return m_groups.last();
+}
 void LBigInt::checkValidity()
 {
     if (m_rawData.isEmpty()) return;
@@ -605,20 +759,31 @@ void LBigInt::initGroups()
         m_groups.append(data.toLong());
     }
 }
-void LBigInt::toDebug()
+void LBigInt::toDebug(QString label)
 {
-    qDebug()<<QString("LBigInt INFO: raw_data[%1] len[%2] validity[%3]").arg(rawData()).arg(len()).arg(invalid()?"INVALID":"OK");
+    if (label.isEmpty()) qDebug()<<QString("LBigInt INFO: raw_data[%1] len[%2] validity[%3]").arg(rawData()).arg(len()).arg(invalid()?"INVALID":"OK");
+    else qDebug()<<QString("LBigInt INFO[%0]: raw_data[%1] len[%2] validity[%3]").arg(label).arg(rawData()).arg(len()).arg(invalid()?"INVALID":"OK");
     if (invalid()) return;
 
     qDebug()<<QString("sign[%1], groups[%2]").arg(is_negative?"-":"+").arg(groupsCount());
     for(int i=0; i<groupsCount(); i++)
         qDebug()<<QString("G[%1] -> [%2]*10^%3").arg(i).arg(m_groups.at(i)).arg(i*groupSize());
+
+    qDebug()<<QString("Division remainder: %1").arg(strDivisionRemainder());
+
 }
 QString LBigInt::finalValue() const
 {
     if (invalid()) return QString("BIG_NUM_INVALID");
-    if (isNegative()) return QString("%1%2").arg("-").arg(m_rawData);
-    return m_rawData;
+    QString s_remainder;
+    if (m_divisionResult > 0)
+    {
+        s_remainder = QString::number(m_divisionResult, 'f', groupSize());
+        s_remainder = LString::strTrimLeft(s_remainder, 1);
+    }
+
+    if (isNegative()) return QString("%1%2%3").arg("-").arg(m_rawData).arg(s_remainder);
+    return QString("%1%2").arg(m_rawData).arg(s_remainder);
 }
 void LBigInt::removeOlderNull(QList<qint64> &list)
 {
@@ -787,8 +952,148 @@ void LBigInt::multiplyPrivate(const LBigInt &b, QList<qint64> &result)
         */
 
 }
+void LBigInt::divisionPrivate(const LBigInt &b, QList<qint64> &result)
+{
+    //БЧ b - делитель
+    //свое БЧ - делимое
+    result.clear();
+    qint64 older_digit = olderDigitVolume();
+    quint8 gs  = groupSize();
+
+    //V1 делитель всего с одной группой, т.е. как бы простое число
+    if (b.groupsCount() == 1)
+    {
+        QList<double> f_result;
+        for (int i=0; i<groupsCount(); i++)
+            f_result.append(double(groupAt(i))/double(b.groupFirst()));
+        normalizeFloatGroups(f_result, result, m_divisionResult);
+        if (result.count() > 1) m_divisionResult = -1;
+        return;
+    }
+
+    //V2  количество групп равно (при этом их больше 1), т.е. порядки чисел примерно одинаковы
+    if (groupsCount() == b.groupsCount())
+    {
+        double own_f = groupLast();
+        double other_f = b.groupLast();
+        own_f += (double(groupAt(groupsCount()-2))/double(older_digit));
+        other_f += (double(b.groupAt(groupsCount()-2))/double(older_digit));
+        m_divisionResult = own_f/other_f;
+        result.append(LMath::floor64(m_divisionResult));
+        m_divisionResult = LMath::fractionalPart(m_divisionResult, gs);
+        return;
+    }
+
+    //V3 количество групп и делимого больше чем у делителя (при этом их у обоих БЧ больше 1)
+    LBigInt b_other_normal(b); //клонируем делитель
+    quint16 n_degree = 0;
+    while (b_other_normal.groupsCount() != groupsCount()) //доводим делитель до количества групп равное как у делимого
+    {
+        b_other_normal.multiply_10(1);
+        n_degree++;
+    }
+    qDebug()<<QString("upper_degree %1,  b_other_normal=%2").arg(n_degree).arg(b_other_normal.finalValue());
+
+    //делим 2 старшие группы
+    double own_f = groupLast();
+    double other_f = b_other_normal.groupLast();
+    own_f += (double(groupAt(groupsCount()-2))/double(older_digit));
+    other_f += (double(b_other_normal.groupAt(groupsCount()-2))/double(older_digit));
+    m_divisionResult = own_f/other_f;
+    QString s_body = QString::number(LMath::floor64(m_divisionResult));
+    //result.append(LMath::floor64(m_divisionResult));
+    m_divisionResult = LMath::fractionalPart(m_divisionResult, gs);
+    QString s_remainder = QString::number(qint64(m_divisionResult*double(olderDigitVolume())));
+
+    //домножаем результат на столько же на сколько наращивали делитель
+    for (int i=0; i<n_degree; i++)
+    {
+        if (s_remainder.isEmpty()) s_body.append(QChar('0'));
+        else
+        {
+            s_body.append(s_remainder.at(0));
+            s_remainder = LString::strTrimLeft(s_remainder, 1);
+        }
+        m_divisionResult *= double(10);
+    }
+    m_divisionResult = LMath::fractionalPart(m_divisionResult, gs);
+    if (m_divisionResult < 0.0000000001) m_divisionResult=-1;
 
 
+    //заполняем результат
+    int l = s_body.length();
+    while (l > gs)
+    {
+        QString s_group(s_body.right(gs));
+        s_body = LString::strTrimRight(s_body, gs);
+        result.append(s_group.toLong());
+        l -= gs;
+    }
+    if (!s_body.isEmpty())  result.append(s_body.toLong());
+
+
+
+    //приводим старшую группу делителя к 1
+    /*
+    double older_member = double(b.groupLast());
+    QList<double> fgr_own;
+    for (int i=0; i<groupsCount(); i++)
+        fgr_own.append(double(groupAt(i))/older_member);
+
+    QList<double> fgr_other;
+    if (b.groupsCount() > 1)
+    {
+        for (int i=0; i<(b.groupsCount()-1); i++)
+            fgr_other.append(double(b.groupAt(i))/older_member);
+    }
+    fgr_other.append(1);
+    */
+
+    //V2 количество групп и делимого и делителя > 1
+    //деление столбиком многочленов
+//    QMap<quint16, double> map; //карта результирующих коэффициентов, ключ-степень 10, value-множитель
+//    quint16 b_older_degree = gs*(b.groupsCount()-1); //старшая степень делителя
+//    int i = groupsCount() - 1; //старший индекс группы делимого
+    /*
+    while (2>1)
+    {
+        quint16 result_degree = gs*i - b_older_degree;
+        double k = fgr_own.at(i);
+        map.insert(result_degree, k);
+
+        QList<double> step_list;
+        for (int j=b.groupsCount() - 2; j>=0; j--)
+            step_list.append(k*fgr_other.at(j));
+
+
+
+        break;
+    }
+    */
+
+
+}
+void LBigInt::toFloatRemainder(QString s)
+{
+    int l = s.length();
+    quint8 gs = groupSize();
+    if (l > gs) s = s.left(gs);
+    else if (l < gs) s.append(LString::symbolString(QChar('0'), gs-l));
+
+    int n_null_left = 0;
+    for (int i=0; i<gs; i++)
+    {
+        if (s.at(i) == QChar('0')) n_null_left++;
+        else break;
+    }
+
+    m_divisionResult =  double(s.toLong())/double(olderDigitVolume());
+    if (n_null_left > 0)
+    {
+        for (int i=0; i<n_null_left; i++)
+            m_divisionResult /= double(10);
+    }
+}
 
 
 

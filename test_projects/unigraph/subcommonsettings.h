@@ -23,6 +23,7 @@ struct SubGraph_CommonSettings
         void reset() {sub_id.clear(); chain.clear(); swap_place.clear();}
         bool invalid() const {return (sub_id.isEmpty() || chain.isEmpty());}
         QString iconPath() const;
+        QString toStr() const {return QString("CHAID[%1]  ID[%2]  ICON[%3]").arg(chain).arg(sub_id).arg(iconPath());}
     };
 
 

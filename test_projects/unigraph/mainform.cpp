@@ -108,6 +108,7 @@ void MainForm::slotVisibleActionsUpdate(int p_type)
             getAction(atSave)->setVisible(false);
             break;
         }
+        case rtPositionsAct:
         case rtPositions:
         {
             getAction(atStart)->setVisible(false);
@@ -183,6 +184,7 @@ void MainForm::initWidgets()
     connect(m_centralWidget, SIGNAL(signalPageChanged(int)), this, SLOT(slotVisibleActionsUpdate(int)));
     connect(m_centralWidget, SIGNAL(signalEnableControls(bool)), this, SLOT(slotEnableControls(bool)));
     connect(m_centralWidget, SIGNAL(signalGetFilterParams(quint16&, double&)), this, SLOT(slotSetFilterParams(quint16&, double&)));
+    connect(m_centralWidget, SIGNAL(signalChangeSubGraph(QString)), this, SLOT(slotSetSubGraph(QString)));
 
     slotEnableControls(true);
 }
@@ -316,6 +318,30 @@ void MainForm::slotAppSettingsChanged(QStringList list)
 
     if (list.contains("use_prefer_tokens"))
         sub_commonSettings.only_prefer_tokens = usePreferTokens();
+
+    updateWindowTitle();
+}
+void MainForm::slotSetSubGraph(QString chain_name)
+{
+    chain_name = chain_name.trimmed().toLower();
+    if (sub_commonSettings.curChain().trimmed().toLower() == chain_name) return;
+
+    m_protocol->addText(QString("Try set subgraph for chain: %1").arg(chain_name.toUpper()), LProtocolBox::ttWarning);
+
+    QString sub_id;
+    foreach (const SubGraph_CommonSettings::SGFactory &f, sub_commonSettings.factories)
+    {
+        if (f.chain.toLower() == chain_name)
+        {
+            sub_id = f.sub_id;
+            break;
+        }
+    }
+    if (sub_id.isEmpty()) {qWarning()<<QString("MainForm::slotSetSubGraph - WARNING can't find chain %1").arg(chain_name); return;}
+
+    qDebug()<<QString("next SUB_ID: [%1]").arg(sub_id);
+    sub_commonSettings.setCurFactory(sub_id);
+    m_centralWidget->setApiKeys(apiKey(), sub_id);
 
     updateWindowTitle();
 }

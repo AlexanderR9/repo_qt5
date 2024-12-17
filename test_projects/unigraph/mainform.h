@@ -43,6 +43,7 @@ protected slots:
     void slotEnableControls(bool);
     void slotVisibleActionsUpdate(int);
     void slotSetFilterParams(quint16&, double&);
+    void slotSetSubGraph(QString);
 
 private:
     int expandLevel() const;
