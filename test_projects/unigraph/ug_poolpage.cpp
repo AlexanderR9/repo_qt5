@@ -186,7 +186,9 @@ void UG_PoolPage::prepareQuery()
     s_fields = QString("%1 token0{symbol id}").arg(s_fields);
     s_fields = QString("%1 token1{symbol id}").arg(s_fields);
 
-    QString s_tag = QString("pools(first: %1, skip: %2)").arg(m_reqLimit).arg(m_skip);
+    QString s_where = QString("where: {totalValueLockedUSD_gt: %1}").arg(quint32(m_minTVL));
+
+    QString s_tag = QString("pools(first: %1, skip: %2, %3)").arg(m_reqLimit).arg(m_skip).arg(s_where);
     m_reqData->query = QString("{%1 {%2}}").arg(s_tag).arg(s_fields);
 }
 void UG_PoolPage::startUpdating(quint16 t)

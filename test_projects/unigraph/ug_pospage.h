@@ -66,6 +66,7 @@ protected:
     virtual void sortPositions();
     void nextChainReq();
     virtual void updateLastRowColor(const UG_PosInfo&);
+    void calcStatbleAssetsLastRow(const UG_PosInfo&);
 
 protected slots:
     virtual void slotTimer();

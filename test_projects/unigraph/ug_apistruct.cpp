@@ -113,26 +113,21 @@ void UG_PosInfo::reset()
 {
     id = "?";
     pool.reset();
-    //chain.clear();
     deposited.first = deposited.second = 0;
-    //collected.first = collected.second = 0;
     collectedFees.first = collectedFees.second = 0;
     withdrawn.first = withdrawn.second = 0;
     ts = 0;
     digit.first = digit.second = 1;
     tick_range.first = tick_range.second = -1;
-    liquidity = 0;
-    //cur_tick = 0;
-    //token0Price = -1;
+    liquidity.clear();
 
     feeGrowthInside.first = feeGrowthInside.second = QString("0");
     feeGrowthOutsize_lower.first = feeGrowthOutsize_lower.second = QString("0");
     feeGrowthOutsize_upper.first = feeGrowthOutsize_upper.second = QString("0");
-
 }
 bool UG_PosInfo::invalid() const
 {
-    if (id.length() < 6 || chain.trimmed().isEmpty() || ts == 0) return true;
+    if (id.length() < 5 || chain.trimmed().isEmpty() || ts == 0 || liquidity.isEmpty()) return true;
     if (pool.token0.trimmed().isEmpty() || pool.token1.trimmed().isEmpty()) return true;
     if (pool.tvl <= 0 || pool.fee <= 0) return true;
     return (tick_range.first == tick_range.second);
@@ -142,13 +137,16 @@ void UG_PosInfo::fromJson(const QJsonObject &j_obj)
     if (j_obj.isEmpty()) return;
 
     id = j_obj.value("id").toString();
+    //qDebug()<<QString("pos id: %1").arg(id);
     collectedFees.first = j_obj.value("collectedFeesToken0").toString().toDouble();
     collectedFees.second = j_obj.value("collectedFeesToken1").toString().toDouble();
     deposited.first = j_obj.value("depositedToken0").toString().toDouble();
     deposited.second = j_obj.value("depositedToken1").toString().toDouble();
     withdrawn.first =  j_obj.value("withdrawnToken0").toString().toDouble();
     withdrawn.second =  j_obj.value("withdrawnToken1").toString().toDouble();
-    liquidity =  j_obj.value("liquidity").toString().toLong();
+    liquidity =  j_obj.value("liquidity").toString();
+
+    //qDebug()<<QString("liquidity: %1").arg(liquidity);
 
     pool.fromJson(j_obj.value("pool").toObject());
     feeGrowthInside.first = j_obj.value("feeGrowthInside0LastX128").toString();
@@ -178,19 +176,6 @@ void UG_PosInfo::fromJson(const QJsonObject &j_obj)
     QJsonObject j_transaction = j_obj.value("transaction").toObject();
     if (j_transaction.isEmpty()) {qWarning("UG_PosInfo::fromJson - WARNING j_transaction.isEmpty()"); return;}
     ts = j_transaction.value("timestamp").toString().toUInt();
-
-    /*
-    QJsonArray j_mint = j_transaction.value("mints").toArray();
-    if (!j_mint.isEmpty())
-    {
-        tick_range.first = j_mint.at(0).toObject().value("tickLower").toString().toInt();
-        tick_range.second = j_mint.at(0).toObject().value("tickUpper").toString().toInt();
-        //cur_tick = j_obj.value("pool").toObject().value("tick").toString().toInt();
-        //token0Price = j_obj.value("pool").toObject().value("token0Price").toString().toDouble();
-        //if (token0Price > 0) token0Price = 1/token0Price;
-    }
-    else qWarning("WARNING: mints node not found");
-    */
 
     calcDigit();
 }
@@ -268,7 +253,108 @@ QString UG_PosInfo::age() const
 }
 QString UG_PosInfo::curAssets() const
 {
-    return QString("? / ?");
+    return QString("%1 / %2").arg(QString::number(curAsset0(), 'f', digit.first)).arg(QString::number(curAsset1(), 'f', digit.second));
+}
+double UG_PosInfo::curAsset0() const
+{
+    int dec0 = sub_commonSettings.tokenDecimal(pool.token0, chain);
+    if (dec0 <= 0) return -1;
+
+
+    qDebug()<<QString("Pool: %1/%2,  pX96=%3, liq=%4").arg(pool.token0).arg(pool.token1).arg(pool.pX96).arg(liquidity);
+    qDebug()<<QString("  tick_range[%1..%2], cur_tick %3").arg(tick_range.first).arg(tick_range.second).arg(pool.cur_tick);
+
+    // if out range on the right
+    if (pool.cur_tick >= tick_range.second) return 0;
+
+    double p_low = qPow(SubGraph_CommonSettings::tickKwant(), tick_range.first/2);
+    double p_up = qPow(SubGraph_CommonSettings::tickKwant(), tick_range.second/2);
+
+    //convert liquidity to double
+    LBigInt b_liq(liquidity);
+    b_liq.division_10((dec0==18)?(dec0/2):dec0);
+    quint8 less_order = 0;
+    double f_liq = 0;
+    if (b_liq.len() > 14)
+    {
+          less_order =  b_liq.len()-14;
+          f_liq = b_liq.toLessOrderDouble(less_order);
+    }
+    else f_liq = b_liq.finalValue().toDouble();
+
+
+
+    // if out range on the left
+    if (pool.cur_tick < tick_range.first)
+    {
+        double size0 = f_liq*(p_up - p_low)/(p_up*p_low);
+        if (less_order > 0) size0 *= double(qPow(10, less_order));
+        if (dec0 == 18) size0 /= double(qPow(10, (dec0/2)));
+        return size0;
+    }
+
+
+    LBigInt sqrtPrice(pool.pX96);
+    LBigInt Q96(96);
+    sqrtPrice.division(Q96);
+    double p_cur = sqrtPrice.finalValue().toDouble();
+
+    qDebug()<<QString("   p_low=%1  p_up=%2,  p_cur=%3").arg(QString::number(p_low, 'f', 6)).arg(QString::number(p_up,  'f', 6)).arg(QString::number(p_cur,  'f', 6));
+
+    double size0 = f_liq*(p_up - p_cur)/(p_up*p_cur);
+    if (less_order > 0) size0 *= double(qPow(10, less_order));
+    if (dec0 == 18) size0 /= double(qPow(10, (dec0/2)));
+    return size0;
+}
+double UG_PosInfo::curAsset1() const
+{
+    int dec1 = sub_commonSettings.tokenDecimal(pool.token1, chain);
+    if (dec1 <= 0) return -1;
+
+    // if out range on the left
+    if (pool.cur_tick < tick_range.first) return 0;
+
+    double p_low = qPow(SubGraph_CommonSettings::tickKwant(), tick_range.first/2);
+    double p_up = qPow(SubGraph_CommonSettings::tickKwant(), tick_range.second/2);
+
+    //convert liquidity to double
+    LBigInt b_liq(liquidity);
+    b_liq.division_10((dec1==18)?(dec1/2):dec1);
+    quint8 less_order = 0;
+    double f_liq = 0;
+    if (b_liq.len() > 14)
+    {
+          less_order =  b_liq.len()-14;
+          f_liq = b_liq.toLessOrderDouble(less_order);
+    }
+    else f_liq = b_liq.finalValue().toDouble();
+
+
+    // if out range on the right
+    if (pool.cur_tick >= tick_range.second)
+    {
+        double size1 = f_liq*(p_up - p_low);
+        if (less_order > 0) size1 *= double(qPow(10, less_order));
+        if (dec1 == 18) size1 /= double(qPow(10, (dec1/2)));
+        return size1;
+    }
+
+    //price within range
+    LBigInt sqrtPrice(pool.pX96);
+    LBigInt Q96(96);
+    sqrtPrice.division(Q96);
+    double p_cur = sqrtPrice.finalValue().toDouble();
+
+    double size1 = f_liq*(p_cur - p_low);
+    if (less_order > 0) size1 *= double(qPow(10, less_order));
+    if (dec1 == 18) size1 /= double(qPow(10, (dec1/2)));
+    return size1;
+}
+double UG_PosInfo::byStablePrice() const
+{
+    if (pool.token0.trimmed().toLower().contains("usd")) return pool.token1_price;
+    if (pool.token1.trimmed().toLower().contains("usd")) return pool.token0_price;
+    return -1;
 }
 QString UG_PosInfo::priceRange() const
 {
@@ -329,7 +415,16 @@ bool UG_PosInfo::isOut() const
 bool UG_PosInfo::isClosed() const
 {
     if (withdrawn.first == 0 && withdrawn.second == 0) return false;
-    return (liquidity == 0);
+    return liqNull();
+}
+bool UG_PosInfo::liqNull() const
+{
+    if (liquidity.isEmpty()) return true;
+    if (liquidity.length() < 8)
+    {
+        if (liquidity.trimmed().toInt() == 0) return true;
+    }
+    return false;
 }
 QString UG_PosInfo::unclaimedFees() const
 {
@@ -338,23 +433,24 @@ QString UG_PosInfo::unclaimedFees() const
     double unfees0 = 0;
     double unfees1 = 0;
 
+    /*
     LBigInt Q128(128);
     LBigInt B_fg(pool.feeGrowthGlobal.first);
-    B_fg.toDebug();
+    //B_fg.toDebug();
     LBigInt B_fl(feeGrowthOutsize_lower.first);
-    B_fl.toDebug();
+    //B_fl.toDebug();
     LBigInt B_fu(feeGrowthOutsize_upper.first);
-    B_fu.toDebug();
+    //B_fu.toDebug();
     LBigInt B_ft0(feeGrowthInside.first);
     //B_ft0.toDebug();
     LBigInt B_liq(QString::number(liquidity));
 
     LBigInt B_fr(B_fg);
-    qDebug()<<QString("fg: %1").arg(B_fr.finalValue());
+    //qDebug()<<QString("fg: %1").arg(B_fr.finalValue());
     B_fr.decrease(B_fl);
-    qDebug()<<QString("fg-fl: %1").arg(B_fr.finalValue());
+    //qDebug()<<QString("fg-fl: %1").arg(B_fr.finalValue());
     B_fr.decrease(B_fu);
-    qDebug()<<QString("fg-fl-fu: %1").arg(B_fr.finalValue());
+    //qDebug()<<QString("fg-fl-fu: %1").arg(B_fr.finalValue());
 
     if (B_fr.isNegative())
     {
@@ -365,22 +461,22 @@ QString UG_PosInfo::unclaimedFees() const
         if (B_fr.isLarger(B_ft0))
         {
             B_fr.decrease(B_ft0);
-            qDebug()<<QString("fr-ft0: %1").arg(B_fr.finalValue());
+            //qDebug()<<QString("fr-ft0: %1").arg(B_fr.finalValue());
         }
         B_fr.multiply(B_liq);
-        qDebug()<<QString("fr*liq: %1").arg(B_fr.finalValue());
+        //qDebug()<<QString("fr*liq: %1").arg(B_fr.finalValue());
         B_fr.division(Q128);
-        qDebug()<<QString("fr/Q128: %1").arg(B_fr.finalValue());
+        //qDebug()<<QString("fr/Q128: %1").arg(B_fr.finalValue());
 
         int dec = sub_commonSettings.tokenDecimal(pool.token0, chain);
         if (dec > 0)
         {
             B_fr.division_10(dec);
-            qDebug()<<QString("fr/dec_%1: %2").arg(dec).arg(B_fr.finalValue());
+            //qDebug()<<QString("fr/dec_%1: %2").arg(dec).arg(B_fr.finalValue());
         }
         unfees0 = B_fr.finalValue().toDouble();
     }
-
+*/
 
     //double fg = pool.feeGrowthGlobal.first.toDouble();
     //qDebug()<<QString("fg: str(%1)  double(%2)").arg(pool.feeGrowthGlobal.first).arg(fg);
@@ -422,6 +518,7 @@ void UG_PoolInfo::reset()
     token1_id.clear();
     fee = volume_all = 0;
     ts = 0;
+    pX96.clear();
 
     cur_tick = 0;
     token0_price = token1_price = -1;
@@ -439,6 +536,7 @@ void UG_PoolInfo::setData(const UG_PoolInfo &other)
     volume_all = other.volume_all;
     ts = other.ts;
     cur_tick = other.cur_tick;
+    pX96 = other.pX96;
     token0_price = other.token0_price;
     token1_price = other.token1_price;
     feeGrowthGlobal = other.feeGrowthGlobal;
@@ -473,6 +571,7 @@ void UG_PoolInfo::fromJson(const QJsonObject &j_obj)
     token0_price = j_obj.value("token1Price").toString().toDouble();
     feeGrowthGlobal.first = j_obj.value("feeGrowthGlobal0X128").toString();
     feeGrowthGlobal.second = j_obj.value("feeGrowthGlobal1X128").toString();
+    pX96 = j_obj.value("sqrtPrice").toString();
 
 }
 QString UG_PoolInfo::toStr() const

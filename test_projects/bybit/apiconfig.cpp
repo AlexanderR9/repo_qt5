@@ -108,7 +108,7 @@ QByteArray APIConfig::calcHMACSha256(QByteArray key, QByteArray baseString)
 }
 qint64 APIConfig::toTimeStamp(quint16 d, quint16 m, quint16 y)
 {
-    if (y < 2023 || y > 2024) return -1;
+    if (y < 2023 || y > 2026) return -1;
     QDate date(y, m, d);
     if (!date.isValid()) return -1;
     return (QDateTime(date).toUTC().toMSecsSinceEpoch());

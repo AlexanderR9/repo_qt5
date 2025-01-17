@@ -11,6 +11,9 @@
 #include <QJsonObject>
 #include <QJsonArray>
 
+#define ASSETS_COL  6
+
+
 
 //UG_PosPage
 UG_PosPage::UG_PosPage(QWidget *parent)
@@ -22,45 +25,6 @@ UG_PosPage::UG_PosPage(QWidget *parent)
     initTable();
     m_tableBox->resizeByContents();
 
-    quint16 deg = 128;
-    LBigInt b128(deg);
-
-    LBigInt b2("55872966341152361379129818307772085009");
-    LBigInt b3("52891292993876480607807562983882091758");
-   // b2.toDebug();
-   // b3.toDebug();
-   // b2.decrease(b3);
-   // qDebug()<<QString("b2-b3: final_value_b2 = %1").arg(b2.finalValue());
-
-/*
-    LBigInt fg("33175355179930087966303993728982874999587517");
-    LBigInt fl("26658212011652901190259811235272731093087155");
-    LBigInt fu("878985802475531816372668997916966386315105");
-    LBigInt liq("1299681570382311");
-    LBigInt ft0("2759845686150014998811437328806478423628533");
-
-    LBigInt fr(fg);
-    fr.toDebug();
-    fr.decrease(fl);
-    qDebug()<<QString("fr-fl: [%1]").arg(fr.finalValue());
-    fr.decrease(fu);
-    qDebug()<<QString("fr-fu: [%1]").arg(fr.finalValue());
-    fr.decrease(ft0);
-    qDebug()<<QString("fr-ft0: [%1]").arg(fr.finalValue());
-    fr.multiply(liq);
-    qDebug()<<QString("fr*liq: [%1]").arg(fr.finalValue());
-
-
-    fr.toDebug("fg");
-    b128.toDebug("Q128");
-    qDebug("******************************");
-    fr.division(b128);
-
-    qDebug()<<QString("fr/b128: [%1]").arg(fr.finalValue());
-    fr.toDebug();
-    fr.division_10(18);
-    qDebug()<<QString("fr/D18: [%1]").arg(fr.finalValue());
-*/
 
 }
 void UG_PosPage::updateDataPage(bool forcibly)
@@ -88,7 +52,7 @@ void UG_PosPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 }
 void UG_PosPage::parseJArrPos(const QJsonArray &j_arr)
 {
-    //qDebug()<<QString("j_arr POSITIONS %1").arg(j_arr.count());
+    qDebug()<<QString("j_arr POSITIONS %1").arg(j_arr.count());
     for (int i=0; i<j_arr.count(); i++)
     {
         UG_PosInfo pos(sub_commonSettings.curChain());
@@ -98,7 +62,11 @@ void UG_PosPage::parseJArrPos(const QJsonArray &j_arr)
         if (!pos.invalid())
         {
             m_positions.append(pos);
-            //if (!pos.isClosed()) qDebug()<<pos.toStrFeeGrowth();
+            if (!pos.isClosed())
+            {
+                qDebug()<<QString("assets: %1").arg(pos.curAssets());
+            }
+
         }
         else qWarning("WARNING: INVALID POS DATA!!!");
     }
@@ -142,7 +110,7 @@ void UG_PosPage::prepareQuery()
     s_fields = QString("%1 tickLower{tickIdx feeGrowthOutside0X128 feeGrowthOutside1X128}").arg(s_fields);
     s_fields = QString("%1 tickUpper{tickIdx feeGrowthOutside0X128 feeGrowthOutside1X128}").arg(s_fields);
 
-    s_fields = QString("%1 pool{tick feeGrowthGlobal0X128 feeGrowthGlobal1X128 token0Price token1Price token0{symbol} token1{symbol} feeTier totalValueLockedUSD}").arg(s_fields);
+    s_fields = QString("%1 pool{id tick sqrtPrice feeGrowthGlobal0X128 feeGrowthGlobal1X128 token0Price token1Price token0{symbol} token1{symbol} feeTier totalValueLockedUSD}").arg(s_fields);
     //s_fields = QString("%1 transaction{timestamp mints(first: 10) {timestamp tickLower tickUpper amount0 amount1} }").arg(s_fields);
     s_fields = QString("%1 transaction{timestamp}").arg(s_fields);
 
@@ -174,24 +142,10 @@ void UG_PosPage::updateTableData()
     QTableWidget *tw = m_tableBox->table();
     foreach (const UG_PosInfo &pos, m_positions)
     {
-        //int last_row = tw->rowCount();
-
         QStringList row_data;
         pos.toTableRow(row_data);
         LTable::addTableRow(tw, row_data);
         updateLastRowColor(pos);
-
-        /*
-        if (pos.isClosed())
-        {
-            LTable::setTableRowColor(tw, last_row, Qt::lightGray);
-        }
-        else if(pos.isOut())
-        {
-            LTable::setTableRowColor(tw, last_row, "#ff8800");
-        }
-        else LTable::setTableRowColor(tw, last_row, "#ccffcc");
-        */
     }
     m_tableBox->searchExec();
     m_tableBox->resizeByContents();
@@ -260,6 +214,8 @@ void UG_PosPage::clearPage()
 }
 
 
+
+///////////////////UG_ActivePosPage///////////////////////////////////
 UG_ActivePosPage::UG_ActivePosPage(QWidget *parent)
     :UG_PosPage(parent),
       m_chainIndex(-1)
@@ -270,6 +226,20 @@ UG_ActivePosPage::UG_ActivePosPage(QWidget *parent)
 
     initTable();
     m_tableBox->resizeByContents();
+
+    /*
+    LBigInt Q96(96);
+    LBigInt psqrt("68401484055501712117026");
+    LBigInt liq("2591590707903345");
+    //qDebug("----");
+    Q96.toDebug("Q96");
+    psqrt.toDebug("sqrtPriceX96");
+    qDebug("----");
+    psqrt.division(Q96);
+    psqrt.toDebug("p_cur");
+*/
+
+
 }
 void UG_ActivePosPage::initTable()
 {
@@ -290,7 +260,6 @@ void UG_ActivePosPage::startUpdating(quint16 t)
     emit signalGetReqLimit(m_reqLimit);
     m_chainIndex = 0;
     wait_data = false;
-   // nextChainReq();
 }
 void UG_ActivePosPage::slotTimer()
 {
@@ -339,8 +308,6 @@ void UG_ActivePosPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
     parseJArrPos(j_arr);
     m_chainIndex++;
     wait_data = false;
-    //nextChainReq();
-
 }
 void UG_ActivePosPage::slotReqBuzyNow()
 {
@@ -358,10 +325,36 @@ void UG_ActivePosPage::updateTableData()
         QStringList row_data;
         pos.toTableRow_act(row_data);
         LTable::addTableRow(tw, row_data);
+        calcStatbleAssetsLastRow(pos);
         updateLastRowColor(pos);
     }
     m_tableBox->searchExec();
     m_tableBox->resizeByContents();
+}
+void UG_ActivePosPage::calcStatbleAssetsLastRow(const UG_PosInfo &pos)
+{
+    double p_cur = pos.byStablePrice();
+    if (p_cur<0) return;
+
+    double ast0 = pos.curAsset0();
+    double ast1 = pos.curAsset1();
+
+    double ast_stable = 0;
+    if (pos.pool.token0.trimmed().toLower().contains("usd"))
+    {
+        ast_stable = ast0 + ast1*p_cur;
+    }
+    else
+    {
+        ast_stable = ast0*p_cur + ast1;
+    }
+
+    //update cell
+    QTableWidget *tw = m_tableBox->table();
+    int last_row = tw->rowCount()-1;
+    QString s(tw->item(last_row, ASSETS_COL)->text());
+    s = QString("%1 (%2 ST)").arg(s).arg(QString::number(ast_stable, 'f', 1));
+    tw->item(last_row, ASSETS_COL)->setText(s);
 }
 void UG_ActivePosPage::sortPositions()
 {

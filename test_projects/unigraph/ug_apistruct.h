@@ -48,6 +48,7 @@ struct UG_PoolInfo
     QPair<QString, QString> feeGrowthGlobal;
 
     qint32 cur_tick; //tick index (current state param)
+    QString pX96; //sqrtPrice
     double token0_price; //cur pool price token0 in units token1  (current state param)
     double token1_price; //cur pool price token1 in units token0  (current state param)
 
@@ -74,7 +75,7 @@ struct UG_PosInfo
     QString id; //ID of position
     QString chain; //chain name
     quint32 ts; //creation time
-    qint64 liquidity;
+    QString liquidity; // BigNum
 
     UG_PoolInfo pool; //parent pool data for this position
 
@@ -91,7 +92,8 @@ struct UG_PosInfo
 
 
     bool isClosed() const;// {return (liquidity == 0);}
-    bool isOut() const; //sing out price range
+    bool isOut() const; // out price range
+    bool liqNull() const;
 
     void reset();
     bool invalid() const;
@@ -110,6 +112,9 @@ struct UG_PosInfo
     QString unclaimedFees() const;
     QString age() const;
     QString curAssets() const;
+    double curAsset0() const;
+    double curAsset1() const;
+    double byStablePrice() const; //вернет цену в стэйблах если в паре пула есть такая монета, иначе -1
 
 private:
     double toStablePrice(const double&) const; //приведение цены к стейблам, в приоритете USDT, затем USDC, если в паре таких нет, то вернет то же значение

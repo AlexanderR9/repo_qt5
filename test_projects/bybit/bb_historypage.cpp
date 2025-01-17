@@ -423,13 +423,13 @@ void BB_HistoryPage::updateDataPage(bool force)
     }
     else m_polledDays = 0;
 
-    qDebug("\n\n\n\n\n\n");
+    //qDebug("\n\n\n\n\n\n");
     goExchange(QJsonObject());
 }
 void BB_HistoryPage::getTSNextInterval(qint64 &ts1, qint64 &ts2)
 {
     ts1 = ts2 = -1;
-    if (m_polledDays < 0) return;
+    if (m_polledDays < 0) {qWarning("BB_HistoryPage::getTSNextInterval WARNING m_polledDays < 0"); return;}
 
     QDate cur_d(QDate::currentDate());
 

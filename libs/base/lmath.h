@@ -108,6 +108,7 @@ private:
 class LBigInt
 {
 public:
+    LBigInt();   //невалидное БЧ
     LBigInt(QString, bool neg = false); //на вход подать строку в которой все символы это десятичные цифры, знак устанавливается отдельным параметром
     LBigInt(const LBigInt&); //клонировать другое БЧ
     LBigInt(quint16); //степень двойки преобразовать в БЧ, is_negative == false
@@ -123,6 +124,8 @@ public:
 
     //operations funcs
     void increase(const LBigInt&); //операция - сложение с другим БЧ  (знак учитывается)
+    void increaseSimple(qint32); //операция - сложение с простым числом  (знак учитывается)
+    void increaseOne(); //опрерация увеличение на 1 (аналог ++)
     void decrease(const LBigInt&); //операция - вычитание из своего БЧ другим БЧ, т.е this.B_NUM - other.B_NUM  (знак учитывается)
     void multiply(const LBigInt&); //операция - умножение на другое БЧ  (знак учитывается)
     void multiplySimple(qint32); //операция - умножение на простое число 32bit  (знак учитывается)
@@ -136,7 +139,10 @@ public:
     void division(const LBigInt&); //операция - деление на другое БЧ  (знак учитывается)
     void division_10(quint8 deegree = 1); //операция - деление на 10 в степени deegree, дробный остаток запишется в m_divisionResult
     inline double divisionRemainder() const {return m_divisionResult;} //дробный остаток после операции деления
-    inline QString strDivisionRemainder() const {return QString::number(m_divisionResult, 'f', groupSize());}
+    inline QString strDivisionRemainder() const {return QString::number(m_divisionResult, 'f', 2*groupSize());}
+
+    LBigInt div(const LBigInt&) const; //результат целочисленного деления, знак не учитывается
+    LBigInt mod(const LBigInt&) const; //остаток от целочисленного деления, знак не учитывается
 
 
     bool isLarger(const LBigInt&) const; //вернет true если свое БЧ больше параметра (знак учитывается)
@@ -154,6 +160,12 @@ public:
 
     static quint8 groupSize() {return 8;} //максимально допустимое количество символов в одной группе многочлена
 
+    LBigInt operator=(const LBigInt&);
+
+    //функция преобразует БЧ в double, уменьшая его на dec_order порядков.
+    //dec_order необходимо задать таким чтобы поделенной БЧ уместилось в double
+    double toLessOrderDouble(quint8 dec_order) const;
+
 protected:
     QString m_rawData; //больше число INT в строковом виде, все символы должны быть десятичными цифрами иначе объект будет невалидным
     bool is_negative; //признак того что число отрицательное (знак БЧ)
@@ -169,7 +181,7 @@ protected:
     //обновляется только при выполнении операции деления, имеет смысл только если это значение > 0.
     //Может принимать > 0 и < 1 и только в случае если при делении результат - БЧ всего с одной группой (младшей),
     //т.е. когда результат по сути не является БЧ, и данная переменная содержит дробную часть результата.
-    //особенно актуально если результирующее БЧ равно 0.
+    //особенно актуально если целочисленная часть результирующего БЧ равна 0.
     double m_divisionResult;
 
     void checkValidity();
@@ -197,6 +209,7 @@ protected:
     //входные группы должны быть нормализованными.
     //поле is_negative не меняется.
     void reloadData(const QList<qint64>&);
+
 
 
     void reset();
@@ -229,8 +242,9 @@ private:
     //предполагается что со знаками разобрались до выполнения этой операции и оба БЧ валидны
     //при выполнении операции свое БЧ не меняется, результат записывается в промежуточный список групп(входной параметр)
     //на выходе всегда получаем список нормализованных групп.
-    //предполагается что порядок делителя(количество групп) НЕ больше делимого.
     void divisionPrivate(const LBigInt&, QList<qint64>&);
+//    void divisionPrivate_large(const LBigInt&, QList<qint64>&); //порядок делителя(количество групп) БОЛЬШЕ делимого.
+
 
 
     //преобразует строку в вещественный остаток(<1) и записывает его в m_divisionResult
