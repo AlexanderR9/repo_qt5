@@ -17,7 +17,6 @@
 UG_PoolPage::UG_PoolPage(QWidget *parent)
     :UG_BasePage(parent, 10, rtPools),
       m_tableBox(NULL),
-      m_minTVL(2000),
       m_skip(0)
 {
     setObjectName("ug_pool_page");
@@ -47,28 +46,10 @@ void UG_PoolPage::initTable()
 void UG_PoolPage::updateDataPage(bool forcibly)
 {
     qDebug("UG_PoolPage::updateDataPage");
-    qDebug()<<QString("forcibly: %1").arg(forcibly?"true":"false");
-    if (!forcibly) return;
-
-    emit signalGetFilterParams(m_reqLimit, m_minTVL);
-
-
-    m_pools.clear();
-    m_tableBox->removeAllRows();
-
-    m_tableBox->resizeByContents();
-    QString s_fields = "id";
-    s_fields = QString("%1 feeTier").arg(s_fields);
-    s_fields = QString("%1 totalValueLockedUSD").arg(s_fields);
-    s_fields = QString("%1 volumeUSD").arg(s_fields);
-    s_fields = QString("%1 createdAtTimestamp").arg(s_fields);
-    s_fields = QString("%1 token0{symbol}").arg(s_fields);
-    s_fields = QString("%1 token1{symbol}").arg(s_fields);
-    m_reqData->query = QString("{pools (first: %1) {%2}}").arg(m_reqLimit).arg(s_fields);
-    sendRequest();
 }
 void UG_PoolPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 {
+    qDebug()<<QString("---UG_PoolPage::slotJsonReply)-------");
     if (req_type != userSign()) return;
     qDebug()<<QString("UG_PoolPage::slotJsonReply  req_type=%1, OK!").arg(req_type);
 
@@ -79,6 +60,13 @@ void UG_PoolPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
     const QJsonArray &j_arr = j_list.toArray();
     if (j_arr.isEmpty()) {emit signalError("UG_PoolPage: pools QJsonArray is empty"); return;}
 
+    parseReceivedJson(j_arr);
+    updateTableData();
+    emit signalMsg("Updating pools data finished!");
+    emit signalStopUpdating();
+}
+void UG_PoolPage::parseReceivedJson(const QJsonArray &j_arr)
+{
     qDebug()<<QString("j_arr POOLS %1").arg(j_arr.count());
     for (int i=0; i<j_arr.count(); i++)
     {
@@ -88,24 +76,21 @@ void UG_PoolPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
         //qDebug()<<pool.toStr();
         if (!pool.invalid())
         {
-            if (pool.tvl >= m_minTVL && pool.volume_all > 0)
-                m_pools.append(pool);
+            if ((pool.volume_all/pool.tvl) > m_filterParams.min_ratio)
+            {
+                if (pool.age() > m_filterParams.min_age) m_pools.append(pool);
+            }
+            //if (pool.tvl >= m_minTVL && pool.volume_all > 0)
+              //  m_pools.append(pool);
         }
         //else qWarning("WARNING: INVALID POOL DATA!!!");
-    }
-
-    updateTableData();
-
-    if (j_arr.count() < m_reqLimit)
-    {
-        qDebug()<<QString("m_reqLimit=%1 < j_arr(%2), need stop updating").arg(m_reqLimit).arg(j_arr.count());
-        emit signalMsg("Updating pools data finished!");
-        emit signalStopUpdating();
     }
 }
 void UG_PoolPage::slotTimer()
 {
     UG_BasePage::slotTimer();
+    return;
+
     emit signalMsg("try next query ......");
     prepareQuery();
     m_skip += m_reqLimit;
@@ -186,18 +171,21 @@ void UG_PoolPage::prepareQuery()
     s_fields = QString("%1 token0{symbol id}").arg(s_fields);
     s_fields = QString("%1 token1{symbol id}").arg(s_fields);
 
-    QString s_where = QString("where: {totalValueLockedUSD_gt: %1}").arg(quint32(m_minTVL));
-
-    QString s_tag = QString("pools(first: %1, skip: %2, %3)").arg(m_reqLimit).arg(m_skip).arg(s_where);
+    QString s_where = QString("where: {totalValueLockedUSD_gt: %1}").arg(quint32(m_filterParams.min_tvl*1000000));
+    QString s_tag = QString("pools(first: %1, %2)").arg(m_reqLimit).arg(s_where);
     m_reqData->query = QString("{%1 {%2}}").arg(s_tag).arg(s_fields);
 }
 void UG_PoolPage::startUpdating(quint16 t)
 {
     UG_BasePage::startUpdating(t);
+
     clearPage();
     m_reqData->query.clear();
-    emit signalGetFilterParams(m_reqLimit, m_minTVL);
+    emit signalGetFilterParams(m_reqLimit, m_filterParams);
     m_skip = 0;
+
+    prepareQuery();
+    sendRequest();
 }
 void UG_PoolPage::clearPage()
 {
@@ -222,11 +210,33 @@ void UG_PoolPage::updateTableData()
             QStringList row_data;
             m_pools.at(i).toTableRow(row_data);
             LTable::addTableRow(tw, row_data);
+            tw->item(i, 3)->setToolTip(m_pools.at(i).token0_id);
+            tw->item(i, 4)->setToolTip(m_pools.at(i).token1_id);
         }
         m_tableBox->resizeByContents();
         m_tableBox->searchExec();
     }
     qDebug()<<QString("m_pools size %1, table row count %2").arg(m_pools.count()).arg(tw->rowCount());
+
+    //find stables pool
+    lightStablePools();
+}
+void UG_PoolPage::lightStablePools()
+{
+    if (m_pools.isEmpty()) return;
+
+    QTableWidget *tw = m_tableBox->table();
+    int n_rows = tw->rowCount();
+    for (int i=0; i<n_rows; i++)
+    {
+        if (m_pools.at(i).token0.contains("USD") || m_pools.at(i).token0 == "DAI")
+        {
+            if (m_pools.at(i).token1.contains("USD") || m_pools.at(i).token1 == "DAI")
+            {
+                LTable::setTableRowColor(tw, i, "#ccffff");
+            }
+        }
+    }
 }
 void UG_PoolPage::slotReqBuzyNow()
 {

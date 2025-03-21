@@ -35,6 +35,7 @@ QString UG_APIReqParams::strReqTypeByType(int t, QString s_extra)
 
         case rtPositionsAct:
         case rtPositions:       {s = "GET_POS_DATA"; break;}
+        case rtEthers:          {s = "RUN_NODEJS_SCRIPT"; break;}
 
         default: return "???";
     }
@@ -546,7 +547,15 @@ bool UG_PoolInfo::invalid() const
     if (id.length() < 10) return true;
     if (token0.trimmed().isEmpty() || token1.trimmed().isEmpty()) return true;
     if (token0_id.trimmed().isEmpty() || token1_id.trimmed().isEmpty()) return true;
-    if (token0.trimmed().length()>5 || token1.trimmed().length()>5) return true;
+    if (!token0.contains("MATIC") && !token1.contains("MATIC"))
+    {
+        if (token0.trimmed().length()>5 || token1.trimmed().length()>5) return true;
+    }
+    if (!token0.contains("OP") && !token1.contains("OP"))
+    {
+        if (token0.trimmed().length()<3 || token1.trimmed().length()<3) return true;
+    }
+    if (token0.contains('$') || token1.contains('$')) return true;
     if (tvl <= 0 || fee <= 0 || ts == 0) return true;
     return false;
 }
@@ -587,15 +596,20 @@ QString UG_PoolInfo::toStr() const
 void UG_PoolInfo::toTableRow(QStringList &list) const
 {
     QDateTime dt = QDateTime::fromSecsSinceEpoch(ts);
-    int days = dt.daysTo(QDateTime::currentDateTime());
+    //int days = dt.daysTo(QDateTime::currentDateTime());
 
     float fv = 1000000;
     list.clear();
     //list << id << QString::number(tvl, 'f', 1) << QString::number(volume_all, 'f', 1);
     list << id << QString::number(tvl/fv, 'f', 2) << QString::number(volume_all/fv, 'f', 2);
     list << token0 << token1 << QString("%1%").arg(QString::number(fee, 'f', 2));
-    list << QString("%1 (%2 days)").arg(dt.toString(UG_APIReqParams::userDateMask())).arg(days);
+    list << QString("%1 (%2 days)").arg(dt.toString(UG_APIReqParams::userDateMask())).arg(age());
 
+}
+quint32 UG_PoolInfo::age() const
+{
+    QDateTime dt = QDateTime::fromSecsSinceEpoch(ts);
+    return dt.daysTo(QDateTime::currentDateTime());
 }
 QString UG_PoolInfo::toFileLine() const
 {

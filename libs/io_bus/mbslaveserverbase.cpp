@@ -148,6 +148,7 @@ void LMBSlaveServerBase::trySendResponse(const QModbusResponse &response)
 
     QByteArray reply_ba;
     convertResponseToBA(response, reply_ba); //convert QModbusResponse -> QByteArray
+    //qDebug()<<QString("RESPONSE: ")<<reply_ba.toHex(':');
     int n_bytes = m_port->write(reply_ba);   // запись ответа в COM порт
     if ((n_bytes < 0) || (n_bytes < reply_ba.size())) //проверка результат записи
     {

@@ -8,6 +8,7 @@
 class QJsonObject;
 
 
+
 //UG_PosPage
 class UG_PosPage : public UG_BasePage
 {

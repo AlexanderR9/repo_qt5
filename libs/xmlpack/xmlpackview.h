@@ -28,7 +28,7 @@ public:
     inline bool isEditable() const {return m_editable;}
     inline void setEditing(bool b) {is_editing = b;}
     inline bool isEditing() const {return is_editing;}
-
+    inline const LXMLPackElement* packElement() const {return m_node;}
 
 
 protected:

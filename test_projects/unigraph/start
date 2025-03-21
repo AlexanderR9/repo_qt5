@@ -1,4 +1,16 @@
 #!/bin/bash
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../../libs/base/build:../../libs/web/build:../../libs/uniswap/build
+#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../../libs/base/build:../../libs/web/build:../../libs/uniswap/build
+
+#PATH=/home/roman/work/my/github_repos/repo_html/nodejs/crypto:$PATH
+
+L_PATH=../../libs
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$L_PATH/base/build
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$L_PATH/web/build
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$L_PATH/process/build
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$L_PATH/uniswap/build
+
+#export PATH LD_LIBRARY_PATH
+export LD_LIBRARY_PATH
+
 
 ./unigraph

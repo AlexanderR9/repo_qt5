@@ -4,6 +4,7 @@
 #include "ug_centralwidget.h"
 #include "ug_apistruct.h"
 #include "subcommonsettings.h"
+#include "ug_poolpage.h"
 
 #include <QDebug>
 #include <QSettings>
@@ -67,16 +68,19 @@ void MainForm::slotAction(int type)
         default: break;
     }
 }
-void MainForm::slotSetFilterParams(quint16 &req_limit, double &min_tvl)
+void MainForm::slotSetFilterParams(quint16 &req_limit, PoolFilterParams &f_params)
 {
     req_limit = reqSize();
-    min_tvl = minTVL();
+    f_params.min_tvl = minTVL();
+    f_params.min_age = minPoolAge();
+    f_params.min_ratio = minPoolRatio();
 }
 void MainForm::slotVisibleActionsUpdate(int p_type)
 {
     switch(p_type)
     {
         case rtJsonView:
+        case rtEthers:
         {
             getAction(atStart)->setVisible(true);
             getAction(atRefresh)->setVisible(false);
@@ -183,7 +187,7 @@ void MainForm::initWidgets()
     connect(m_centralWidget, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
     connect(m_centralWidget, SIGNAL(signalPageChanged(int)), this, SLOT(slotVisibleActionsUpdate(int)));
     connect(m_centralWidget, SIGNAL(signalEnableControls(bool)), this, SLOT(slotEnableControls(bool)));
-    connect(m_centralWidget, SIGNAL(signalGetFilterParams(quint16&, double&)), this, SLOT(slotSetFilterParams(quint16&, double&)));
+    connect(m_centralWidget, SIGNAL(signalGetFilterParams(quint16&, PoolFilterParams&)), this, SLOT(slotSetFilterParams(quint16&, PoolFilterParams&)));
     connect(m_centralWidget, SIGNAL(signalChangeSubGraph(QString)), this, SLOT(slotSetSubGraph(QString)));
 
     slotEnableControls(true);
@@ -229,8 +233,14 @@ void MainForm::initCommonSettings()
     lCommonSettings.setDefValue(key, QString(""));
 
     key = QString("min_tvl");
-    lCommonSettings.addParam(QString("Min pools TVL, USDT"), LSimpleDialog::sdtDoubleLine, key);
-    lCommonSettings.setDefValue(key, QString("50000.0"));
+    lCommonSettings.addParam(QString("Min pool TVL, USDT*10^-6 (M)"), LSimpleDialog::sdtString, key);
+    lCommonSettings.setDefValue(key, QString("0.1"));
+    key = QString("min_age");
+    lCommonSettings.addParam(QString("Min pool age, days"), LSimpleDialog::sdtIntLine, key);
+    lCommonSettings.setDefValue(key, QString("120"));
+    key = QString("min_ratio");
+    lCommonSettings.addParam(QString("Min pool ratio of volume/TVL"), LSimpleDialog::sdtIntLine, key);
+    lCommonSettings.setDefValue(key, QString("10"));
 
     key = QString("use_prefer_tokens");
     lCommonSettings.addParam(QString("Use only prefer tokens"), LSimpleDialog::sdtBool, key);
@@ -368,6 +378,14 @@ quint16 MainForm::pageUpdatingInterval() const
 double MainForm::minTVL() const
 {
     return lCommonSettings.paramValue("min_tvl").toDouble();
+}
+quint16 MainForm::minPoolAge() const
+{
+    return lCommonSettings.paramValue("min_age").toUInt();
+}
+quint16 MainForm::minPoolRatio() const
+{
+    return lCommonSettings.paramValue("min_ratio").toUInt();
 }
 quint16 MainForm::reqSize() const
 {

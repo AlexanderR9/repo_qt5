@@ -8,7 +8,7 @@
 #include "ug_pospage.h"
 #include "ug_tokenpage.h"
 #include "ug_daysdatapage.h"
-
+#include "ethers_js.h"
 
 #include <QStackedWidget>
 #include <QSplitter>
@@ -83,7 +83,7 @@ void UG_CentralWidget::createPages()
 
     UG_PoolPage *p_page = new UG_PoolPage(this);
     w_stack->addWidget(p_page);
-    connect(p_page, SIGNAL(signalGetFilterParams(quint16&, double&)), this, SIGNAL(signalGetFilterParams(quint16&, double&)));
+    connect(p_page, SIGNAL(signalGetFilterParams(quint16&, PoolFilterParams&)), this, SIGNAL(signalGetFilterParams(quint16&, PoolFilterParams&)));
 
     UG_TokenPage *t_page = new UG_TokenPage(this);
     w_stack->addWidget(t_page);
@@ -97,6 +97,10 @@ void UG_CentralWidget::createPages()
 
     UG_ActivePosPage *apos_page = new UG_ActivePosPage(this);
     w_stack->addWidget(apos_page);
+
+    EthersPage *eth_page = new EthersPage(this);
+    w_stack->addWidget(eth_page);
+
 
     for (int i=0; i<w_stack->count(); i++)
     {
@@ -118,8 +122,9 @@ void UG_CentralWidget::createPages()
 }
 void UG_CentralWidget::slotGetReqLimit(quint16 &lim)
 {
-    double x = 0;
-    emit signalGetFilterParams(lim, x);
+    //double x = 0;
+    PoolFilterParams p;
+    emit signalGetFilterParams(lim, p);
 }
 void UG_CentralWidget::init()
 {
@@ -267,11 +272,12 @@ bool UG_CentralWidget::requesterBuzy() const
     return false;
 }
 void UG_CentralWidget::updateDataPage()
-{
+{    
     UG_BasePage *page = qobject_cast<UG_BasePage*>(w_stack->currentWidget());
     if (!page) return;
 
     if (page->userSign() == rtJsonView) freeReq();
+    else if (page->userSign() == rtEthers) page->startUpdating(3000);
 //    else page->updateDataPage(true);
 }
 void UG_CentralWidget::updateDataPage(quint16 t)

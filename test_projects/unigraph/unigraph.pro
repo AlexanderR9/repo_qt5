@@ -16,16 +16,19 @@ INCLUDEPATH += . \
             $$PWD/../../libs/base \
             $$PWD/../../libs/base/ui_h \
             $$PWD/../../libs/web \
+            $$PWD/../../libs/process \
             $$PWD/../../libs/uniswap \
 
 #path for libs files
 DEPENDPATH += $$PWD/../../libs/base/build \
             $$PWD/../../libs/web/build \
+            $$PWD/../../libs/process/build \
             $$PWD/../../libs/uniswap/build \
 
 #include libs
 unix:!macx: LIBS += -L$$PWD/../../libs/base/build/ -llbase
 unix:!macx: LIBS += -L$$PWD/../../libs/web/build/ -llweb
+unix:!macx: LIBS += -L$$PWD/../../libs/process/build/ -llprocess
 unix:!macx: LIBS += -L$$PWD/../../libs/uniswap/build/ -lluniswap
 
 
@@ -39,7 +42,8 @@ HEADERS += $$PWD/mainform.h \
     	$$PWD/subcommonsettings.h \
         $$PWD/ug_tokenpage.h \
         $$PWD/ug_daysdatapage.h \
-        $$PWD/ug_pospage.h
+        $$PWD/ug_pospage.h \
+        $$PWD/ethers_js.h
 
 
 SOURCES += $$PWD/main.cpp \
@@ -52,5 +56,6 @@ SOURCES += $$PWD/main.cpp \
     	$$PWD/subcommonsettings.cpp \
         $$PWD/ug_tokenpage.cpp \
         $$PWD/ug_daysdatapage.cpp \
-        $$PWD/ug_pospage.cpp
+        $$PWD/ug_pospage.cpp \
+        $$PWD/ethers_js.cpp
 

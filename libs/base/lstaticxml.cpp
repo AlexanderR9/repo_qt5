@@ -36,16 +36,22 @@ int LStaticXML::getIntAttrValue(const QString &attr_name, const QDomNode &node, 
     if (!node.toElement().hasAttribute(attr_name.trimmed()))  return defValue;
     QString s_value = node.toElement().attribute(attr_name.trimmed());
 
+    bool is_hex = (s_value.length() > 2 && s_value.left(2) == "0x");
     bool ok;
-    int value = s_value.toInt(&ok);
+    int value = s_value.toInt(&ok, is_hex ? 16 : 10);
     if (!ok) return defValue;
-    return value;
+    return value;    
 }
 QString LStaticXML::getStringAttrValue(const QString &attr_name, const QDomNode &node, QString defValue)
 {
     if (attr_name.trimmed().isEmpty() || node.isNull()) return defValue;
     if (!node.toElement().hasAttribute(attr_name.trimmed()))  return defValue;
     return node.toElement().attribute(attr_name.trimmed());
+}
+bool LStaticXML::hasAttr(QString attr_name, const QDomNode &node)
+{
+    if (node.isNull()) return false;
+    return node.toElement().hasAttribute(attr_name.trimmed());
 }
 void LStaticXML::createDomHeader(QDomDocument &dom)
 {

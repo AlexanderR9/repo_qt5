@@ -16,7 +16,8 @@ public:
     LComPortObj(QObject *parent = NULL);
     virtual ~LComPortObj() {}
 
-    void setPortParams(const LComParams&); //установить рабочие параметры порта
+    void setPortParams(const LComParams&); //установить все рабочие параметры порта
+    void setPortName(QString); // обновить имя порта (tty..)
     QString strDirection() const;
 
     inline const QByteArray& currentBuffer() const {return m_buffer;}

@@ -6,7 +6,7 @@
 class QJsonObject;
 
 //типы страниц пользовательского интерфейса
-enum UG_ReqType {rtJsonView = 131, rtPools, rtTokens, rtDaysData, rtPositions, rtPositionsAct};
+enum UG_ReqType {rtJsonView = 131, rtPools, rtTokens, rtDaysData, rtPositions, rtPositionsAct, rtEthers};
 
 
 //необходимые данные для формирования запроса перед отправкой
@@ -62,6 +62,8 @@ struct UG_PoolInfo
     QString toFileLine() const;
     void fromFileLine(const QString&);
     void setData(const UG_PoolInfo&);
+    quint32 age() const; //days
+
 
 };
 

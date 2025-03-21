@@ -9,7 +9,7 @@ LComPortObj::LComPortObj(QObject *parent)
     m_minReceivedBytes(-1)
 {
     LComParams params;
-    setPortParams(params);
+    //setPortParams(params);
 
     connect(this, SIGNAL(readyRead()), this, SLOT(slotReadyRead()));
     connect(this, SIGNAL(error(QSerialPort::SerialPortError)), this, SLOT(slotError()));
@@ -29,6 +29,10 @@ void LComPortObj::slotError()
     int code = error();
     if (code == QSerialPort::NoError) return;
     emit signalPortError(code);
+}
+void LComPortObj::setPortName(QString p_name)
+{
+    setPortName(p_name.trimmed());
 }
 void LComPortObj::setPortParams(const LComParams &params)
 {

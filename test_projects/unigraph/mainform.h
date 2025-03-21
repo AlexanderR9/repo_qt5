@@ -6,6 +6,8 @@
 class LProtocolBox;
 class QSplitter;
 class UG_CentralWidget;
+struct PoolFilterParams;
+
 
 // MainForm
 class MainForm : public LMainWidget
@@ -42,7 +44,7 @@ protected slots:
     void slotAppSettingsChanged(QStringList);
     void slotEnableControls(bool);
     void slotVisibleActionsUpdate(int);
-    void slotSetFilterParams(quint16&, double&);
+    void slotSetFilterParams(quint16&, PoolFilterParams&);
     void slotSetSubGraph(QString);
 
 private:
@@ -54,6 +56,8 @@ private:
     QString subgraphID() const;
     quint8 viewPrecision() const;
     double minTVL() const;
+    quint16 minPoolAge() const;
+    quint16 minPoolRatio() const;
     quint16 reqSize() const;
     quint16 reqInterval() const;
     bool usePreferTokens() const;

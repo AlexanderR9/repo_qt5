@@ -155,6 +155,7 @@ void UG_PosPage::updateLastRowColor(const UG_PosInfo &pos)
     QTableWidget *tw = m_tableBox->table();
     int last_row = tw->rowCount()-1;
     if (last_row < 0) return;
+    tw->item(last_row, 2)->setToolTip(pos.pool.id);
 
     if (pos.isClosed())
     {

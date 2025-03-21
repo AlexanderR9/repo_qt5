@@ -12,6 +12,7 @@ struct UG_APIReqParams;
 class QJsonObject;
 class SubGraphReq;
 class QLineEdit;
+struct PoolFilterParams;
 
 
 //UG_CentralWidget
@@ -75,7 +76,7 @@ signals:
     void signalEnableControls(bool);
     void signalJsonReply(int, const QJsonObject&);
     void signalPageChanged(int);
-    void signalGetFilterParams(quint16&, double&);
+    void signalGetFilterParams(quint16&, PoolFilterParams&);
     void signalBuzy();
     void signalChangeSubGraph(QString);
 
