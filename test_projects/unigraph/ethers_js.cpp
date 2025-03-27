@@ -20,9 +20,11 @@ EthersPage::EthersPage(QWidget *parent)
     connect(m_procObj, SIGNAL(signalFinished()), this, SLOT(slotScriptFinished()));
 
     m_procObj->setCommand("node");
+    m_procObj->setDebugLevel(5);
 }
 void EthersPage::slotScriptFinished()
 {
+    emit signalMsg("-------------slotScriptFinished----------------");
     qDebug("-------------slotScriptFinished----------------");
 
     QStringList out(m_procObj->bufferList());
@@ -41,7 +43,8 @@ void EthersPage::startUpdating(quint16 t)
 
 
     QStringList list;
-    QString script_name("balance_at");
+    //QString script_name("balance_at");
+    QString script_name("gas.js");
     //list << QString("%1/%2.js").arg(SCRIPTS_PATH).arg(script_name);
     list << script_name;
     m_procObj->setArgs(list);

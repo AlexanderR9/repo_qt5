@@ -1,6 +1,8 @@
 #include "comportobject.h"
 #include "comparams.h"
 
+#include <QSerialPortInfo>
+#include <QDebug>
 
 /////////////// LComPortObj ///////////////////
 LComPortObj::LComPortObj(QObject *parent)
@@ -8,11 +10,13 @@ LComPortObj::LComPortObj(QObject *parent)
     m_autoClean(false),
     m_minReceivedBytes(-1)
 {
+    setObjectName("l_serialport");
     LComParams params;
-    //setPortParams(params);
+    setPortParams(params);
 
     connect(this, SIGNAL(readyRead()), this, SLOT(slotReadyRead()));
     connect(this, SIGNAL(error(QSerialPort::SerialPortError)), this, SLOT(slotError()));
+    qDebug("constructor LComPortObj end");
 
 }
 void LComPortObj::slotReadyRead()
@@ -21,7 +25,7 @@ void LComPortObj::slotReadyRead()
     int cur_size = bufferSize();
     m_buffer.append(readAll());
 
-    if (m_minReceivedBytes > 0 && bufferSize() < m_minReceivedBytes) return;
+    if ((m_minReceivedBytes > 0) && (bufferSize() < m_minReceivedBytes)) return;
     emit signalDataReceived(bufferSize() - cur_size);
 }
 void LComPortObj::slotError()
@@ -30,14 +34,18 @@ void LComPortObj::slotError()
     if (code == QSerialPort::NoError) return;
     emit signalPortError(code);
 }
-void LComPortObj::setPortName(QString p_name)
+void LComPortObj::updatePortName(QString p_name)
 {
     setPortName(p_name.trimmed());
 }
 void LComPortObj::setPortParams(const LComParams &params)
 {
+    qDebug()<<QString("LComPortObj::setPortParams  ")<<params.toStr();
+
+
     setPortName(params.port_name);
-    setBaudRate(params.baud_rate, QSerialPort::Direction(params.direction));
+    //setBaudRate(params.baud_rate, QSerialPort::Direction(params.direction));
+    setBaudRate(params.baud_rate);
     setDataBits(QSerialPort::DataBits(params.data_bits));
     setStopBits(QSerialPort::StopBits(params.stop_bits));
     setFlowControl(QSerialPort::FlowControl(params.flow_control));
@@ -53,8 +61,10 @@ void LComPortObj::tryOpen(QString &err)
         err = QString("port allready opened.");
         return;
     }
+
     bool ok = open(QIODevice::OpenMode(openModeByDirection()));
     if (!ok) err = QString("error opening port.");
+    else this->clear();
 }
 void LComPortObj::tryClose(QString &err)
 {

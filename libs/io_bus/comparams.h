@@ -27,6 +27,13 @@ struct LComParams
         parity = QSerialPort::NoParity;
         direction = QSerialPort::AllDirections;
     }
+
+    QString toStr() const
+    {
+        return QString("LComParams: port_name[%1]  baud_rate=%2 stop_bits=%3 flow_control=%4 parity=%5  direction=%6").
+                arg(port_name).arg(baud_rate).arg(stop_bits).arg(flow_control).arg(parity).arg(direction);
+    }
+
 };
 
 

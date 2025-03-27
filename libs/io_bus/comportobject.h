@@ -17,7 +17,7 @@ public:
     virtual ~LComPortObj() {}
 
     void setPortParams(const LComParams&); //установить все рабочие параметры порта
-    void setPortName(QString); // обновить имя порта (tty..)
+    void updatePortName(QString); // обновить имя порта (tty..)
     QString strDirection() const;
 
     inline const QByteArray& currentBuffer() const {return m_buffer;}
@@ -32,10 +32,16 @@ public:
     bool portOpened() const; //признак того что порт открыт
 
 protected:
-    int              m_direction;   //возможные направлления работы порта
+    int              m_direction;   //возможные направлления работы порта in/out
     QByteArray       m_buffer;      // рабочий буфер, куда добавляются для обработки принятые данный
-    bool             m_autoClean; //признак того что надо принудительно очищать m_buffer при приходе новых данных
-    int              m_minReceivedBytes; //минимальное количество принятых байт на которое нужно реагировать, -1 означает что нет ограничений
+
+    //признак того что надо принудительно очищать m_buffer при приходе новых данных,
+    //т.е. m_buffer будет всегда содержать только последние пришедшие данные
+    bool m_autoClean;
+
+    //минимальное количество принятых байт на которое нужно реагировать, -1 означает что нет ограничений,
+    //по умолчанию -1
+    int m_minReceivedBytes;
 
     int openModeByDirection() const; //тип направлления работы порта
 
