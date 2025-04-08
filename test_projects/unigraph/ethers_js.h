@@ -7,6 +7,9 @@ class QJsonObject;
 class QLineEdit;
 class QSettings;
 class LProcessObj;
+class LTabWidgetBox;
+class JSWalletTab;
+class JSApproveTab;
 
 
 //EthersPage
@@ -31,22 +34,20 @@ public:
 
 protected:
     LProcessObj     *m_procObj;
-
-
-    /*
-    LTreeWidgetBox      *m_replyBox;
-    quint8               m_precision;
-    QLineEdit           *m_reqEdit;
-
+    LTabWidgetBox   *m_tab;
+    JSWalletTab     *m_walletPage;
+    JSApproveTab    *m_approvePage;
 
     void initWidgets();
-    void initQueryBox();
-    void cutPrecision(QTreeWidgetItem*);
-    */
+    void initProcessObj();
     virtual void clearPage() {}
+    void tryUpdateBalace();
+    void parseResultBuffer();
+
+    bool walletPageNow() const;
 
 public slots:
-    void slotJsonReply(int, const QJsonObject&) {}
+    void slotJsonReply(int, const QJsonObject&);
     void slotReqBuzyNow() {}
 
 protected slots:

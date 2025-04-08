@@ -34,10 +34,14 @@ struct SubGraph_CommonSettings
     int cur_factory;
     bool only_prefer_tokens;
     QString wallet;
+    QString nodejs_path;
 
     static QString appDataPath();
     static QString tickerByChainName(QString);
     static double tickKwant() {return 1.0001;}
+    static QString nativeTokenAddress() {return QString("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");}
+    static QString nativeTokenByChain(QString);
+    static QString iconPathByChain(QString); //icon file path by chain name
 
     void reset();
     void loadConfig(QString&);

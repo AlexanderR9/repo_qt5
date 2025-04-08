@@ -18,6 +18,7 @@ public:
 
     void setCommand(QString cmd_name) {m_command = cmd_name.trimmed();} //задать имя команды
     void setArgs(const QStringList& args = QStringList()); //задать список аргументов для команды
+    void setProcessDir(QString); //установить m_process папку в которой он будет выполняться, (требуется в экзотических случаях)
 
 
     inline void setSudo(bool b) {m_needSudo = b;}

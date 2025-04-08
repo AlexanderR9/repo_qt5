@@ -103,6 +103,19 @@ QString LString::strAlignRight(const QString &s, int n,  QChar c)
     int n_right = n - s.length();
     return strAddRight(s, n_right, c);
 }
+QString LString::uniteList(const QStringList &list, QString split_symbol)
+{
+    if (list.isEmpty()) return "EMPTY";
+
+    QString s;
+    int n = list.count();
+    for (int i=0; i<n; i++)
+    {
+        s.append(list.at(i));
+        if (i < (n-1)) s.append(split_symbol);
+    }
+    return s;
+}
 QStringList LString::trimSplitList(const QString &data, QString split_symbol, bool remove_empty_line)
 {
     QStringList list = data.split(split_symbol);
@@ -131,6 +144,13 @@ QString LString::removeLongSpaces(const QString &s, bool remove_tabs)
         result.replace(space2, LString::spaceSymbol());
 
     return result;
+}
+QString LString::removeSpaces(const QString &s)
+{
+    if (s.trimmed().isEmpty()) return QString();
+    QString s2 = LString::removeLongSpaces(s);
+    s2.replace(LString::spaceSymbol(), QString());
+    return s2;
 }
 void LString::removeEmptyStrings(QStringList &list, bool remove_spaces)
 {

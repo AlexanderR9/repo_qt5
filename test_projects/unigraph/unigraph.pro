@@ -43,8 +43,9 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/ug_tokenpage.h \
         $$PWD/ug_daysdatapage.h \
         $$PWD/ug_pospage.h \
-        $$PWD/ethers_js.h
-
+        $$PWD/ethers_js.h \
+        $$PWD/jswallettab.h \
+        $$PWD/jsapprovetab.h
 
 SOURCES += $$PWD/main.cpp \
         $$PWD/mainform.cpp \
@@ -57,5 +58,7 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/ug_tokenpage.cpp \
         $$PWD/ug_daysdatapage.cpp \
         $$PWD/ug_pospage.cpp \
-        $$PWD/ethers_js.cpp
+        $$PWD/ethers_js.cpp \
+        $$PWD/jswallettab.cpp \
+        $$PWD/jsapprovetab.cpp
 

@@ -9,6 +9,8 @@
 
 #define APP_DATA_FOLDER     QString("data")
 #define APP_CONFIG_FILE     QString("config.xml")
+#define NODEJS_PATH         QString("/home/roman/work/my/github_repos/repo_html/nodejs/crypto")
+
 
 //global var
 SubGraph_CommonSettings sub_commonSettings;
@@ -57,6 +59,7 @@ void SubGraph_CommonSettings::reset()
     only_prefer_tokens = false;
     wallet.clear();
     token_decimals.clear();
+    nodejs_path = NODEJS_PATH;
 }
 QString SubGraph_CommonSettings::tickerByChainName(QString chain_name)
 {
@@ -68,6 +71,23 @@ QString SubGraph_CommonSettings::tickerByChainName(QString chain_name)
     if (chain_name == "arbitrum") return "ARB";
     if (chain_name == "etherium") return "ETH";
     return QString();
+}
+QString SubGraph_CommonSettings::nativeTokenByChain(QString chain_name)
+{
+    chain_name = chain_name.trimmed().toLower();
+    if (chain_name == "polygon") return "POL";
+    if (chain_name == "bnb") return "BNB";
+    //if (chain_name == "base") return "BASE";
+    //if (chain_name == "optimism") return "OP";
+    //if (chain_name == "arbitrum") return "ARB";
+    if (chain_name == "etherium") return "ETH";
+    return QString();
+}
+QString SubGraph_CommonSettings::iconPathByChain(QString chain_name)
+{
+    QString icon_name = QString("%1.png").arg(SubGraph_CommonSettings::tickerByChainName(chain_name)).trimmed();
+    if (icon_name.isEmpty()) return QString();
+    return QString(":/icons/images/crypto/%1").arg(icon_name);
 }
 void SubGraph_CommonSettings::loadConfig(QString &err)
 {

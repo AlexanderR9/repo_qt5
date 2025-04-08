@@ -1,0 +1,14 @@
+gridbot.pro.user
+.qmake.stash
+moc
+obj
+Makefile
+gridbot
+full_clear
+tarnalib
+config
+Makefile.Debug
+Makefile.Release
+debug
+release
+gridbot.debug

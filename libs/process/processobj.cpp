@@ -73,6 +73,11 @@ void LProcessObj::slotProcessFinished(int exit_code)
     slotTimer();
     //stopProcessChild();
 }
+void LProcessObj::setProcessDir(QString dir_path)
+{
+    if (dir_path.trimmed().isEmpty()) return;
+    m_process->setWorkingDirectory(dir_path);
+}
 QString LProcessObj::strProcessState() const
 {
     switch (m_process->state())
@@ -179,7 +184,7 @@ void LProcessObj::setArgs(const QStringList& args)
 {
     m_args.clear();
     if (!args.isEmpty())
-    {
+    {        
         m_args.append(args);
 
         int pos = args.indexOf(GREP_SYMBOL);
