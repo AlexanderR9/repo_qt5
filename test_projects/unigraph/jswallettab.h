@@ -17,7 +17,7 @@ public:
     void loadAssetsFromFile(); //загрузить список активов из файла
     void getBalacesArgs(QStringList&); // список аргументв для получения балансов активов
     int assetsCount() const;
-    QStringList assetsTokens() const;
+    QMap<QString, QString> assetsTokens() const;
     void updateBalances(const QJsonObject&);
 
 protected:

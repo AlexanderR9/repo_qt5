@@ -152,6 +152,13 @@ QString LString::removeSpaces(const QString &s)
     s2.replace(LString::spaceSymbol(), QString());
     return s2;
 }
+QString LString::removeSymbol(const QString &s, QChar c)
+{
+    if (s.trimmed().isEmpty()) return QString();
+    QString result = s;
+    result.replace(c, QString());
+    return result;
+}
 void LString::removeEmptyStrings(QStringList &list, bool remove_spaces)
 {
     if (list.isEmpty()) return;

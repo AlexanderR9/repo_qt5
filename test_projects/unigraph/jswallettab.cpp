@@ -30,7 +30,7 @@ JSWalletTab::JSWalletTab(QWidget *parent)
     QStringList headers;
     headers << "Number" << "Token" << "Address" << "Decimal" << "Amount";
     LTable::setTableHeaders(m_table->table(), headers);
-    m_table->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
+    m_table->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::SingleSelection);
     m_table->setSelectionColor("#BDFF4F");
 
     v_splitter->addWidget(m_table);
@@ -44,7 +44,7 @@ void JSWalletTab::getBalacesArgs(QStringList &nodejs_args)
         return;
     }
 
-    nodejs_args << "get_balance.js" << QString::number(2);
+    nodejs_args << "qt_balance.js" << QString::number(2);
 }
 void JSWalletTab::initNativeToken()
 {
@@ -59,15 +59,17 @@ int JSWalletTab::assetsCount() const
 {
     return m_table->table()->rowCount();
 }
-QStringList JSWalletTab::assetsTokens() const
+QMap<QString, QString> JSWalletTab::assetsTokens() const
 {
-    QStringList list;
+    QMap<QString, QString> list;
     QTableWidget *t = m_table->table();
 
     int n = assetsCount();
     for (int i=0; i<n; i++)
     {
-        list.append(t->item(i, TOKEN_COL)->text().trimmed());
+        QString t_name = t->item(i, TOKEN_COL)->text().trimmed();
+        QString t_addr = t->item(i, ADDRESS_COL)->text().trimmed();
+        list.insert(t_name, t_addr);
     }
     return list;
 }

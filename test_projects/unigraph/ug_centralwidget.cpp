@@ -100,7 +100,7 @@ void UG_CentralWidget::createPages()
 
     EthersPage *eth_page = new EthersPage(this);
     w_stack->addWidget(eth_page);
-
+    connect(eth_page, SIGNAL(signalEnableControls(bool)), this, SIGNAL(signalEnableControls(bool)));
 
     for (int i=0; i<w_stack->count(); i++)
     {

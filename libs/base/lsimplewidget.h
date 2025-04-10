@@ -25,6 +25,7 @@ class QListWidgetItem;
 class LSearch;
 class QLabel;
 class QLineEdit;
+class QAction;
 
 
 //простой виджет-заготовка с двумя сплитерами.
@@ -98,7 +99,7 @@ public:
     enum SortingDataType {sdtString = 555, sdtNumeric};
 
     LTableWidgetBox(QWidget *parent = NULL, int type = 1);
-    virtual ~LTableWidgetBox() {}
+    virtual ~LTableWidgetBox() {destroyPopupMenu();}
 
     void setHeaderLabels(const QStringList&, int orintation = Qt::Horizontal);
     void vHeaderHide();
@@ -108,20 +109,32 @@ public:
     void sortingOn(); //активировать возможность сортировки столбцов по клику на соответствующем заголовке
     void removeAllRows();
     void addSortingData(quint8, SortingDataType); //добавить данные для сортировки по указанному столбцу
+    int curSelectedRow() const; //индекс текущей выделенной строки или -1, если выделено несколько строк, то вернет индекс 1-й из них
+
+    //реализация всплывающего меню для таблицы по клику ПКМ  (поумолчанию эта функциональность отключена)
+    virtual void popupMenuActivate(const QList< QPair<QString, QString> >&); //активация всплывающего меню, необходимо передать набор пар <название, путь к иконке> , путь к иконке может быть пустым
+    inline int popupMenuSize() const {return m_popupMenuActions.count();} //количество инициализированных пуктов меню
+    void connectSlotToPopupAction(int, QObject*, const char*); //для соединения со слотами внешнего объекта-хозяина необходимо вызвать этот метод для каждого пункта меню, указав индекс пункта
 
     QTableWidget* table() const;
 
 protected:
     QTableWidget    *m_table;
     QMap<quint8, SortingDataType> m_sortingData; //данные которые указывают какие столбцы должны реагировать на сортировку
+    QList<QAction*> m_popupMenuActions; //пункты всплывающего меню, поумолчанию список пуст, активируются методом popumMenuActivate
 
     void init();
     void slotSortString(quint8 col, int order);
     void slotSortNumeric(quint8 col, int order);
 
+    virtual void destroyPopupMenu(); //уничтожает реализацию вплывающего меню (если она была активирована)
+    virtual void connectPopupActionSlots() {qDebug("invoke connectPopupActionSlots()");} //эту функцию необходимо переопределить если активировано всплывающее меню, нужно подключить свои слоты к элементам m_popupMenuActions
+
 protected slots:
     virtual void slotItemDoubleClicked(QTableWidgetItem*); //в базовом класе копируется содержимое итема в буфер обмена
     virtual void slotSortByColumn(int); //сортировка столбца
+    virtual void slotContextMenu(QPoint); //вызывается при вызове всплывающего меню(при условии что оно активировано для этого экземпляра)
+
 
 };
 class LSearchTableWidgetBox : public LTableWidgetBox

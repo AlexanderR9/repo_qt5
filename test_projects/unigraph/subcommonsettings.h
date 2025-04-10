@@ -42,6 +42,7 @@ struct SubGraph_CommonSettings
     static QString nativeTokenAddress() {return QString("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");}
     static QString nativeTokenByChain(QString);
     static QString iconPathByChain(QString); //icon file path by chain name
+    static QString commonIconsPath() {return QString(":/icons/images");} //базовый путь к иконкам проекта
 
     void reset();
     void loadConfig(QString&);

@@ -59,7 +59,7 @@ public:
     //исходная строка не меняется.
     static QString removeLongSpaces(const QString&, bool remove_tabs = true);
     static QString removeSpaces(const QString&); //удаляет вообще все пробелы
-
+    static QString removeSymbol(const QString&, QChar); //удаляет указанный символ в строке (полностью на всех найденных позициях)
 
     //возвращает строку состоящую из N одинаковых символов
     static QString symbolString(QChar c, quint16 N = 50) {return QString(N, c);}

@@ -14,25 +14,26 @@ public:
     JSApproveTab(QWidget*);
     virtual ~JSApproveTab() {}
 
+    void setTokens(const QMap<QString, QString>&);
+    void parseJSResult(const QJsonObject&);
 
-    void setTokens(const QStringList&);
-    /*
-    void loadAssetsFromFile(); //загрузить список активов из файла
-    void getBalacesArgs(QStringList&); // список аргументв для получения балансов активов
-    int assetsCount() const;
-    void updateBalances(const QJsonObject&);
-    */
+    inline QString scriptName() const {return QString("qt_approve.js");}
 
 protected:
     LTableWidgetBox     *m_table;
 
-    /*
-    void addTokenToTable(const QStringList&);
-    void updateTokenBalance(const QString&, const QString&);
+    void initPopupMenu(); //инициализировать элементы всплывающего меню
+    void updateSuppliedCell(int i, int j, float value);
+    void answerUpdate(const QJsonObject&);
+    void answerApprove(const QJsonObject&);
 
-private:
-    void initNativeToken();
-    */
+protected slots:
+    void slotUpdateApproved();
+    void slotSendApprove();
+
+signals:
+    void signalCheckUpproved(QString);
+    void signalApprove(const QStringList&);
 
 };
 

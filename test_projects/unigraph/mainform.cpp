@@ -80,7 +80,6 @@ void MainForm::slotVisibleActionsUpdate(int p_type)
     switch(p_type)
     {
         case rtJsonView:
-        case rtEthers:
         {
             getAction(atStart)->setVisible(true);
             getAction(atRefresh)->setVisible(false);
@@ -113,6 +112,7 @@ void MainForm::slotVisibleActionsUpdate(int p_type)
             break;
         }
         case rtPositionsAct:
+        case rtEthers:
         case rtPositions:
         {
             getAction(atStart)->setVisible(false);

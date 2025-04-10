@@ -87,7 +87,7 @@ QString SubGraph_CommonSettings::iconPathByChain(QString chain_name)
 {
     QString icon_name = QString("%1.png").arg(SubGraph_CommonSettings::tickerByChainName(chain_name)).trimmed();
     if (icon_name.isEmpty()) return QString();
-    return QString(":/icons/images/crypto/%1").arg(icon_name);
+    return QString("%1/crypto/%2").arg(commonIconsPath()).arg(icon_name);
 }
 void SubGraph_CommonSettings::loadConfig(QString &err)
 {
@@ -168,7 +168,7 @@ void SubGraph_CommonSettings::parsePreferTokensNode(const QDomNode &node)
 QString SubGraph_CommonSettings::SGFactory::iconPath() const
 {
     QString icon_name = QString("%1.png").arg(SubGraph_CommonSettings::tickerByChainName(chain));
-    return QString(":/icons/images/crypto/%1").arg(icon_name);
+    return QString("%1/crypto/%2").arg(commonIconsPath()).arg(icon_name);
 }
 
 

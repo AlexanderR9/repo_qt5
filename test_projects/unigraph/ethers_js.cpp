@@ -15,11 +15,14 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QIcon>
+#include <QSettings>
 
 
 
-#define SIGN_START     QString("JSON_RESULT_START")
-#define SIGN_END       QString("JSON_RESULT_END")
+#define SIGN_START      QString("JSON_RESULT_START")
+#define SIGN_END        QString("JSON_RESULT_END")
+#define QUTE_SYMBOL1    QChar('\"')
+#define QUTE_SYMBOL2    QChar('\'')
 
 
 //EthersPage
@@ -61,12 +64,12 @@ void EthersPage::initWidgets()
     m_approvePage = new JSApproveTab(this);
     m_tab->tab()->addTab(m_approvePage, "Approve");
 
-
-
     connect(m_walletPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_walletPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
     connect(m_approvePage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_approvePage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
+    connect(m_approvePage, SIGNAL(signalCheckUpproved(QString)), this, SLOT(slotCheckUpproved(QString)));
+    connect(m_approvePage, SIGNAL(signalApprove(const QStringList&)), this, SLOT(slotApprove(const QStringList&)));
 
 }
 void EthersPage::slotScriptFinished()
@@ -76,6 +79,7 @@ void EthersPage::slotScriptFinished()
     qDebug()<<QString("BUFF:")<<m_procObj->buffer();
 
     parseResultBuffer();
+    emit signalStopUpdating();
 }
 void EthersPage::startUpdating(quint16 t)
 {
@@ -85,10 +89,17 @@ void EthersPage::startUpdating(quint16 t)
         tryUpdateBalace();
         return;
     }
+
+    emit signalError("wrong current page");
+    emit signalStopUpdating();
 }
 bool EthersPage::walletPageNow() const
 {
     return m_tab->tab()->currentWidget()->objectName().contains("wallet");
+}
+bool EthersPage::approvePageNow() const
+{
+    return m_tab->tab()->currentWidget()->objectName().contains("approve");
 }
 void EthersPage::tryUpdateBalace()
 {
@@ -109,15 +120,10 @@ void EthersPage::parseResultBuffer()
     QString s_json = LString::strBetweenStr(result, SIGN_START, SIGN_END);
     emit signalMsg("---------NODE_JS result----------");
     emit signalMsg(s_json);
-
-    s_json = s_json.trimmed();
-    s_json = LString::removeLongSpaces(s_json);
-    s_json.replace(QChar('\n'), QString());
-    s_json.replace(QChar('\''), QString("\""));
-    //qDebug("---------------------------");
-    //qDebug()<<s_json;
-
-
+    s_json = transformJsonResult(s_json);
+    emit signalMsg("--------- transformed result----------");
+    emit signalMsg(s_json);
+    //return;
 
     // Парсим JSON-ответ
     QJsonParseError parseError;
@@ -133,6 +139,32 @@ void EthersPage::parseResultBuffer()
         slotJsonReply(-1, resultObj);
     }
 }
+void EthersPage::slotCheckUpproved(QString token_addr)
+{
+    qDebug()<<QString("%1 .... tryUpdateApproved sum for token_addr (%2)").arg(LTime::strCurrentTime()).arg(token_addr);
+
+    QStringList args;
+    args << m_approvePage->scriptName() << token_addr;// << "pos_manager";
+    m_procObj->setArgs(args);
+    emit signalMsg(QString("%1  start node_js process %2").arg(LTime::strCurrentTime()).arg(LString::symbolString('.', 50)));
+    emit signalMsg(QString("command [%1]").arg(m_procObj->fullCommand()));
+    emit signalEnableControls(false);
+    m_procObj->startCommand();
+}
+void EthersPage::slotApprove(const QStringList &tx_params)
+{
+    qDebug()<<QString("%1 .... slotApprove sum for token_addr (%2)").arg(LTime::strCurrentTime()).arg(tx_params.first());
+
+    QStringList args;
+    args << m_approvePage->scriptName();
+    args.append(tx_params);
+    m_procObj->setArgs(args);
+
+    emit signalMsg(QString("%1  start node_js process %2").arg(LTime::strCurrentTime()).arg(LString::symbolString('.', 50)));
+    emit signalMsg(QString("command [%1]").arg(m_procObj->fullCommand()));
+    emit signalEnableControls(false);
+    m_procObj->startCommand();
+}
 void EthersPage::slotJsonReply(int code, const QJsonObject &j_result)
 {
     Q_UNUSED(code);
@@ -146,5 +178,68 @@ void EthersPage::slotJsonReply(int code, const QJsonObject &j_result)
     {
         m_walletPage->updateBalances(j_result);
     }
+    else if (approvePageNow())
+    {
+        m_approvePage->parseJSResult(j_result);
+    }
 }
+void EthersPage::load(QSettings &settings)
+{
+    UG_BasePage::load(settings);
+    int i_tab = settings.value(QString("%1/tab_index").arg(objectName()), -1).toInt();
+    if (i_tab >= 0) m_tab->tab()->setCurrentIndex(i_tab);
+}
+void EthersPage::save(QSettings &settings)
+{
+    UG_BasePage::save(settings);
+    settings.setValue(QString("%1/tab_index").arg(objectName()), m_tab->tab()->currentIndex());
+}
+
+//private
+QString EthersPage::transformJsonResult(const QString &str_json) const
+{
+    QString s = str_json.trimmed();
+    qDebug()<<QString("transformJsonResult STAGE1: %1").arg(s);
+    if (s.isEmpty()) return s;
+    int len = s.length();
+    if (s.at(0) != '{' || s.at(len-1) != '}') return QString("invalid_json");
+
+    s = LString::strBetweenStr(s, "{", "}");
+    s = LString::removeLongSpaces(s);
+    s = LString::removeSymbol(s, QChar('\n'));
+    s = LString::removeSymbol(s, QUTE_SYMBOL1);
+    s = LString::removeSymbol(s, QUTE_SYMBOL2);
+    s = s.trimmed();
+    len = s.length();
+    if (s.at(len-1) == ',') {s = LString::strTrimRight(s, 1); s = s.trimmed(); len = s.length();}
+
+  //  qDebug()<<QString("transformJsonResult STAGE2: %1").arg(s);
+
+    QStringList list = LString::trimSplitList(s, ",");
+    qDebug()<<QString("----------json pairs %1-------------").arg(list.count());
+    s.clear();
+    for(int i=0; i<list.count(); i++)
+    {
+        qDebug()<<QString("PAIR_%1  [%2]").arg(i+1).arg(list.at(i));
+        if (!s.isEmpty()) s.append(QString(", "));
+
+        QString field = list.at(i).trimmed();
+        int pos = field.indexOf(QChar(':'));
+        if (pos > 0)
+        {
+            //qDebug()<<QString("pos = %1").arg(pos);
+            QString f_name = field.left(pos).trimmed();
+            QString f_value = LString::strTrimLeft(field, pos+1).trimmed();
+            QString j_line = QString("%1%2%1 : %1%3%1").arg(QUTE_SYMBOL1).arg(f_name).arg(f_value);
+           // qDebug()<<QString("     JLINE:  [%1]").arg(j_line);
+            s.append(j_line);
+        }
+        else s.append(field);
+    }
+
+    s.prepend(QChar('{'));
+    s.append(QChar('}'));
+    return s;
+}
+
 

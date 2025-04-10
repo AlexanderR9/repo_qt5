@@ -19,6 +19,9 @@
 #include <QJsonArray>
 #include <QClipboard>
 #include <QLabel>
+#include <QAction>
+#include <QIcon>
+#include <QMenu>
 #include <QLineEdit>
 #include <QGuiApplication>
 
@@ -161,6 +164,12 @@ void LTableWidgetBox::removeAllRows()
 {
     LTable::removeAllRowsTable(m_table);
 }
+int LTableWidgetBox::curSelectedRow() const
+{
+    QList<int> list = LTable::selectedRows(m_table);
+    if (list.isEmpty()) return -1;
+    return list.first();
+}
 void LTableWidgetBox::vHeaderHide()
 {
     m_table->verticalHeader()->hide();
@@ -215,6 +224,16 @@ void LTableWidgetBox::slotSortString(quint8 col, int order)
     Q_UNUSED(order);
     m_table->sortByColumn(col);
 }
+void LTableWidgetBox::destroyPopupMenu()
+{
+    if (!m_popupMenuActions.isEmpty())
+    {
+        disconnect(m_table, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu(QPoint)));
+
+        qDeleteAll(m_popupMenuActions);
+        m_popupMenuActions.clear();
+    }
+}
 void LTableWidgetBox::slotSortNumeric(quint8 col, int order)
 {
     int row = -1;
@@ -263,6 +282,56 @@ void LTableWidgetBox::slotSortByColumn(int col)
     m_table->scrollToTop();
     //m_table->selectRow(0);
 }
+void LTableWidgetBox::popupMenuActivate(const QList< QPair<QString, QString> > &list)
+{
+    qDebug()<<QString("LTableWidgetBox::popupMenuActivate  acts size %1").arg(list.count());
+    destroyPopupMenu();
+    if (list.isEmpty()) return;
+
+    int n = list.count();
+    for (int i=0; i<n; i++)
+    {
+        QString act_name = list.at(i).first.trimmed();
+        QString act_icon = list.at(i).second.trimmed();
+        if (act_name.isEmpty()) continue;
+
+        QIcon ai(act_icon);
+        QAction *act = new QAction(ai, act_name, this);
+        m_popupMenuActions.append(act);
+    }
+
+    qDebug()<<QString("default ContextMenuPolicy %1").arg(m_table->contextMenuPolicy());
+    if (!m_popupMenuActions.isEmpty())
+    {
+        m_table->setContextMenuPolicy(Qt::CustomContextMenu);
+        connectPopupActionSlots();
+        connect(m_table, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(slotContextMenu(QPoint)));
+    }
+    else qWarning("LTableWidgetBox WARNING m_popupMenuActions is empty");
+}
+void LTableWidgetBox::slotContextMenu(QPoint p)
+{
+    qDebug()<<QString("LTableWidgetBox::slotContextMenu  %1/%2").arg(p.x()).arg(p.y());
+    if (m_popupMenuActions.isEmpty()) return;
+    if (LTable::selectedRows(m_table).count() != 1) return;
+
+    QMenu *menu = new QMenu(this);
+    foreach (QAction *act, m_popupMenuActions)
+        menu->addAction(act);
+
+    // Вызываем контекстное меню
+    menu->popup(m_table->viewport()->mapToGlobal(p));
+}
+void LTableWidgetBox::connectSlotToPopupAction(int i_menu, QObject *slot_object, const char *slot_pointer)
+{
+    if (i_menu < 0 || i_menu >= m_popupMenuActions.count()) {qWarning("LTableWidgetBox WARNING - invalid index menu"); return;}
+    if (slot_object)
+    {
+        qDebug()<<QString("LTableWidgetBox::connectSlotToPopupAction   parent [%1]").arg(slot_object->objectName());
+        connect(m_popupMenuActions.at(i_menu), SIGNAL(triggered()), slot_object, slot_pointer);
+    }
+}
+
 
 
 //LSearchTableWidgetBox

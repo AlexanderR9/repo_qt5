@@ -27,6 +27,9 @@ public:
     void updateDataPage(bool) {qDebug("EthersPage::updateDataPage");}
     virtual void saveData() {};
     virtual void loadData() {};
+    //сохранение/восстановление сплитеров
+    virtual void load(QSettings&);
+    virtual void save(QSettings&);
 
     virtual void startUpdating(quint16); //выполняется когда пользователь нажимает кнопку "Start"
 
@@ -45,13 +48,24 @@ protected:
     void parseResultBuffer();
 
     bool walletPageNow() const;
+    bool approvePageNow() const;
+
+private:
+    QString transformJsonResult(const QString&) const; //подрехтовать JS json-result чтобы он был валиден для загрузки в QJsonObject
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);
     void slotReqBuzyNow() {}
+    void slotCheckUpproved(QString);
+    void slotApprove(const QStringList&);
+
 
 protected slots:
     void slotScriptFinished();
+
+signals:
+    void signalEnableControls(bool);
+
 
 };
 
