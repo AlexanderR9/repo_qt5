@@ -66,18 +66,19 @@ void EthersPage::initWidgets()
 
     connect(m_walletPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_walletPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
+    connect(m_walletPage, SIGNAL(signalWalletTx(const QStringList&)), this, SLOT(slotWalletTx(const QStringList&)));
     connect(m_approvePage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_approvePage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
     connect(m_approvePage, SIGNAL(signalCheckUpproved(QString)), this, SLOT(slotCheckUpproved(QString)));
     connect(m_approvePage, SIGNAL(signalApprove(const QStringList&)), this, SLOT(slotApprove(const QStringList&)));
+    connect(this, SIGNAL(signalScriptBroken()), m_walletPage, SLOT(slotScriptBroken()));
+    connect(this, SIGNAL(signalScriptBroken()), m_approvePage, SLOT(slotScriptBroken()));
 
 }
 void EthersPage::slotScriptFinished()
 {
     emit signalMsg(QString("%1  node_js done!").arg(LTime::strCurrentTime()));
-//    qDebug()<<QString("%1 .... QProcess finished").arg(LTime::strCurrentTime());
-    qDebug()<<QString("BUFF:")<<m_procObj->buffer();
-
+  //  qDebug()<<QString("BUFF:")<<m_procObj->buffer();
     parseResultBuffer();
     emit signalStopUpdating();
 }
@@ -136,8 +137,15 @@ void EthersPage::parseResultBuffer()
     {
         QJsonObject resultObj = outputDoc.object();
         emit signalMsg("JSON result was parsed!");
-        slotJsonReply(-1, resultObj);
+        slotJsonReply(rtEthers, resultObj);
     }
+}
+void EthersPage::startProcessObj()
+{
+    emit signalMsg(QString("%1  start node_js process %2").arg(LTime::strCurrentTime()).arg(LString::symbolString('.', 50)));
+    emit signalMsg(QString("command [%1]").arg(m_procObj->fullCommand()));
+    emit signalEnableControls(false);
+    m_procObj->startCommand();
 }
 void EthersPage::slotCheckUpproved(QString token_addr)
 {
@@ -146,10 +154,8 @@ void EthersPage::slotCheckUpproved(QString token_addr)
     QStringList args;
     args << m_approvePage->scriptName() << token_addr;// << "pos_manager";
     m_procObj->setArgs(args);
-    emit signalMsg(QString("%1  start node_js process %2").arg(LTime::strCurrentTime()).arg(LString::symbolString('.', 50)));
-    emit signalMsg(QString("command [%1]").arg(m_procObj->fullCommand()));
-    emit signalEnableControls(false);
-    m_procObj->startCommand();
+
+    startProcessObj();
 }
 void EthersPage::slotApprove(const QStringList &tx_params)
 {
@@ -160,23 +166,28 @@ void EthersPage::slotApprove(const QStringList &tx_params)
     args.append(tx_params);
     m_procObj->setArgs(args);
 
-    emit signalMsg(QString("%1  start node_js process %2").arg(LTime::strCurrentTime()).arg(LString::symbolString('.', 50)));
-    emit signalMsg(QString("command [%1]").arg(m_procObj->fullCommand()));
-    emit signalEnableControls(false);
-    m_procObj->startCommand();
+    startProcessObj();
 }
-void EthersPage::slotJsonReply(int code, const QJsonObject &j_result)
+void EthersPage::slotWalletTx(const QStringList &args)
 {
-    Q_UNUSED(code);
+    qDebug()<<QString("%1 .... slotWalletTx, args %2").arg(LTime::strCurrentTime()).arg(args.count());
+    m_procObj->setArgs(args);
+    startProcessObj();
+}
+void EthersPage::slotJsonReply(int req_type, const QJsonObject &j_result)
+{
+    if (req_type != userSign()) return;
+
     if (j_result.keys().contains("error"))
     {
         emit signalError(j_result.value("error").toString());
+        emit signalScriptBroken();
         return;
     }
 
     if (walletPageNow())
     {
-        m_walletPage->updateBalances(j_result);
+        m_walletPage->parseJSResult(j_result);
     }
     else if (approvePageNow())
     {

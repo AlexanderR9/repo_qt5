@@ -31,6 +31,9 @@ protected slots:
     void slotUpdateApproved();
     void slotSendApprove();
 
+public slots:
+    void slotScriptBroken();
+
 signals:
     void signalCheckUpproved(QString);
     void signalApprove(const QStringList&);

@@ -5,7 +5,7 @@
 
 
 //Orepation Type
-enum TX_OrepationType {txWrap = 1401, txUnwrap, txApprove, txNone = 0};
+enum TX_OrepationType {txWrap = 1401, txUnwrap, txApprove, txTransfer, txNone = 0};
 
 //TxDialogData
 struct TxDialogData
@@ -15,49 +15,85 @@ struct TxDialogData
 
     int tx_kind; //enum TX_OrepationType
     QString token_addr;
+    QString token_name;
 
     QMap<QString, QString> dialog_params; //параметры которые будут возвращены после закрытия диалога
 
-    void reset() {token_addr.clear(); dialog_params.clear();}
+    void reset() {token_addr.clear(); token_name.clear(); dialog_params.clear();}
     //bool invalidType() const {return (order_type < totBuyLimit || order_type > totStopLoss);}
-  //  bool invalid() const {return (invalidType() || lots==0 || price<=0 || company.trimmed().isEmpty());}
+    bool invalid() const {return (tx_kind < txWrap || tx_kind > txTransfer);}
 //    QString toStr() const {return QString("TradeOperationData: order_type=%1, lots=%2, price=%3").arg(order_type).arg(lots).arg(price);}
 
 };
 
-//APITradeDialog
-class TxApproveDialog : public LSimpleDialog
+//TxDialogBase
+class TxDialogBase : public LSimpleDialog
+{
+    Q_OBJECT
+public:
+    TxDialogBase(TxDialogData&, QWidget*);
+    virtual ~TxDialogBase() {}
+
+    static QString iconByTXType(int);
+    static QString captionByTXType(int);
+
+protected:
+    TxDialogData&     m_data;
+
+    virtual void updateTitle();
+
+};
+
+
+//TxApproveDialog
+class TxApproveDialog : public TxDialogBase
 {
     Q_OBJECT
 public:
     TxApproveDialog(TxDialogData&, QWidget*);
     virtual ~TxApproveDialog() {}
 
-    //static QString captionByOrderType(int);
-    //static QString iconByOrderType(int);
+protected:
+    void init();
+
+protected slots:
+    void slotApply();
+};
+
+
+
+
+//TxWrapDialog
+class TxWrapDialog : public TxDialogBase
+{
+    Q_OBJECT
+public:
+    TxWrapDialog(TxDialogData&, QWidget*);
+    virtual ~TxWrapDialog() {}
 
 protected:
-    TxDialogData&     m_data;
-
-
     void init();
-    void updateTitle();
-    /*
-    void updateWidgetsSizePolicy();
-    void fillLots();
-    void fillDeviations();
-    void updateKindWidget();
-
-
 
 protected slots:
-    void slotRecalcResult();
-*/
-
-protected slots:
-    void slotApply(); // {m_apply = true; close();}
-
+    void slotApply();
 };
+
+
+//TxTransferDialog
+class TxTransferDialog : public TxDialogBase
+{
+    Q_OBJECT
+public:
+    TxTransferDialog(TxDialogData&, QWidget*);
+    virtual ~TxTransferDialog() {}
+
+protected:
+    void init();
+
+protected slots:
+    void slotApply();
+};
+
 
 
 

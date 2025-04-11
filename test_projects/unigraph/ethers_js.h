@@ -49,6 +49,7 @@ protected:
 
     bool walletPageNow() const;
     bool approvePageNow() const;
+    void startProcessObj();
 
 private:
     QString transformJsonResult(const QString&) const; //подрехтовать JS json-result чтобы он был валиден для загрузки в QJsonObject
@@ -58,6 +59,7 @@ public slots:
     void slotReqBuzyNow() {}
     void slotCheckUpproved(QString);
     void slotApprove(const QStringList&);
+    void slotWalletTx(const QStringList&);
 
 
 protected slots:
@@ -65,6 +67,7 @@ protected slots:
 
 signals:
     void signalEnableControls(bool);
+    void signalScriptBroken(); //скрипт не выполнился, произошла ошибка и ответ содержит поле 'error'
 
 
 };

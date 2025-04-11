@@ -56,7 +56,7 @@ void JSApproveTab::initPopupMenu()
     QList< QPair<QString, QString> > act_list;
     QPair<QString, QString> pair1("Update", QString("%1/view-refresh.svg").arg(SubGraph_CommonSettings::commonIconsPath()));
     act_list.append(pair1);
-    QPair<QString, QString> pair2("Approve asset", QString("%1/left.svg").arg(SubGraph_CommonSettings::commonIconsPath()));
+    QPair<QString, QString> pair2("Approve asset", TxDialogBase::iconByTXType(txApprove));
     act_list.append(pair2);
 
     //init popup menu actions
@@ -112,8 +112,7 @@ void JSApproveTab::parseJSResult(const QJsonObject &j_result)
 {
     qDebug("JSApproveTab::parseJSResult");
     qDebug() << j_result;
-    QTableWidget *t = m_table->table();
-    t->setEnabled(true);
+    m_table->table()->setEnabled(true);
 
     QString operation = j_result.value("type").toString().trimmed();
     if (operation == "update") answerUpdate(j_result);
@@ -158,7 +157,7 @@ void JSApproveTab::answerApprove(const QJsonObject &j_result)
     }
     else
     {
-        emit signalMsg(QString("TX sending result: %1").arg(code));
+        emit signalError(QString("TX sending result: %1").arg(code));
     }
 }
 void JSApproveTab::updateSuppliedCell(int i, int j, float value)
@@ -179,6 +178,10 @@ void JSApproveTab::updateSuppliedCell(int i, int j, float value)
         t->item(i, j)->setText(QString::number(value, 'f', SUPPLIED_PRECISION));
         t->item(i, j)->setTextColor(Qt::black);
     }
+}
+void JSApproveTab::slotScriptBroken()
+{
+    m_table->table()->setEnabled(true);
 }
 
 
