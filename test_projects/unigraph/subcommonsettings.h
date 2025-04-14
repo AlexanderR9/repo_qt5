@@ -43,6 +43,9 @@ struct SubGraph_CommonSettings
     static QString nativeTokenByChain(QString);
     static QString iconPathByChain(QString); //icon file path by chain name
     static QString commonIconsPath() {return QString(":/icons/images");} //базовый путь к иконкам проекта
+    static bool isStableToken(QString);
+    static bool isWrapedToken(QString);
+    static QString tokenIdCoingecko(QString); //id для использования в параметрах URL api.coingecko.com
 
     void reset();
     void loadConfig(QString&);

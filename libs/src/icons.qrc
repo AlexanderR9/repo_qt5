@@ -52,6 +52,26 @@
         <file>images/crypto/OP.png</file>
         <file>images/crypto/ETH.png</file>
 
+        <file>images/crypto/pol.png</file>
+        <file>images/crypto/wpol.png</file>
+        <file>images/crypto/sol.png</file>
+        <file>images/crypto/aave.png</file>
+        <file>images/crypto/ldo.png</file>
+        <file>images/crypto/usdc.png</file>
+        <file>images/crypto/usdt.png</file>
+        <file>images/crypto/bnb.png</file>
+        <file>images/crypto/wbnb.png</file>
+        <file>images/crypto/eth.png</file>
+        <file>images/crypto/weth.png</file>
+        <file>images/crypto/crv.png</file>
+        <file>images/crypto/xrp.png</file>
+        <file>images/crypto/zro.png</file>
+        <file>images/crypto/op.png</file>
+        <file>images/crypto/arb.png</file>
+        <file>images/crypto/trx.png</file>
+        <file>images/crypto/link.png</file>
+        <file>images/crypto/uni.png</file>
+
         
         <file>images/send_msg.png</file>
         <file>images/log.png</file>

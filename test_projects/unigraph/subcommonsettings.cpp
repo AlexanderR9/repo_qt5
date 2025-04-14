@@ -72,6 +72,40 @@ QString SubGraph_CommonSettings::tickerByChainName(QString chain_name)
     if (chain_name == "etherium") return "ETH";
     return QString();
 }
+bool SubGraph_CommonSettings::isStableToken(QString token)
+{
+    token = token.trimmed().toUpper();
+    if (token == "DAI") return true;
+    if (token.length() < 4) return false;
+    return (token.left(4) == "USDT" || token.left(4) == "USDC");
+}
+bool SubGraph_CommonSettings::isWrapedToken(QString token)
+{
+    token = token.trimmed().toUpper();
+    if (token == "WPOL") return true;
+    if (token == "WETH") return true;
+    if (token == "WBNB") return true;
+    return false;
+}
+QString SubGraph_CommonSettings::tokenIdCoingecko(QString token)
+{
+    token = token.trimmed().toUpper();
+    if (token == "POL" || token == "WPOL")     return "polygon-ecosystem-token";
+    if (token == "ETH" || token == "WETH")     return "ethereum";
+    if (token == "BNB" || token == "WBNB")     return "binancecoin";
+    if (token == "ARB")     return "arbitrum";
+    if (token == "OP")      return "optimism";
+    if (token == "AAVE")    return "aave";
+    if (token == "SOL")     return "solana";
+    if (token == "LINK")    return "chainlink";
+    if (token == "XRP")     return "ripple";
+    if (token == "TRX")     return "tron";
+    if (token == "ZRO")     return "layerzero";
+    if (token == "UNI")     return "uniswap";
+    if (token == "LDO")     return "lido-dao";
+    if (token == "CRV")     return "curve-dao-token";
+    return QString();
+}
 QString SubGraph_CommonSettings::nativeTokenByChain(QString chain_name)
 {
     chain_name = chain_name.trimmed().toLower();
