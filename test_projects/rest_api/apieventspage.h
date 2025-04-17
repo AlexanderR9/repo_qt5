@@ -97,6 +97,7 @@ protected slots:
 signals:
     void signalGetPaperInfoByFigi(const QString&, QPair<QString, QString>&);
     void signalGetTickerByFigi(const QString&, QString&);
+    void signalSendDataToYieldStat(const QList<EventOperation>&);
 
 };
 

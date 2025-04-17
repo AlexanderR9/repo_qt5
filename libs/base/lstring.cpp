@@ -171,5 +171,19 @@ void LString::removeEmptyStrings(QStringList &list, bool remove_spaces)
         if (remove_spaces && s.trimmed().isEmpty()) list.removeAt(i);
     }
 }
+QStringList LString::toUnicode(const QString &s)
+{
+    QStringList result;
+    if (s.isEmpty()) return result;
+
+    int n = s.length();
+    for (int i=0; i<n; i++)
+    {
+        QChar c_pos(s.at(i));
+        QString line = QString("%1. [%2]  code=%3").arg(i+1).arg(c_pos).arg(c_pos.unicode());
+        result.append(line);
+    }
+    return result;
+}
 
 

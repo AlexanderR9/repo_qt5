@@ -64,6 +64,10 @@ public:
     //возвращает строку состоящую из N одинаковых символов
     static QString symbolString(QChar c, quint16 N = 50) {return QString(N, c);}
 
+    //разбивает строку на символы и возвращает список символов с их кодами.
+    //если строка пуста, то вернет пустой список.
+    static QStringList toUnicode(const QString&);
+
 
     //удаляет в QStringList пустые строки
     //если remove_spaces = true то также удаляются строки состоящие из одних пробелов.

@@ -3,6 +3,7 @@
 #include "processobj.h"
 #include "jswallettab.h"
 #include "jsapprovetab.h"
+#include "jstxtab.h"
 #include "subcommonsettings.h"
 #include "ltime.h"
 #include "lfile.h"
@@ -31,7 +32,8 @@ EthersPage::EthersPage(QWidget *parent)
       m_procObj(NULL),
       m_tab(NULL),
       m_walletPage(NULL),
-      m_approvePage(NULL)
+      m_approvePage(NULL),
+      m_txPage(NULL)
 {
     setObjectName("ethers_page");
     initWidgets();
@@ -39,6 +41,7 @@ EthersPage::EthersPage(QWidget *parent)
 
     m_walletPage->loadAssetsFromFile();
     m_approvePage->setTokens(m_walletPage->assetsTokens());
+    m_txPage->loadTxFromFile();
 }
 void EthersPage::initProcessObj()
 {
@@ -64,6 +67,9 @@ void EthersPage::initWidgets()
     m_approvePage = new JSApproveTab(this);
     m_tab->tab()->addTab(m_approvePage, "Approve");
 
+    m_txPage = new JSTxTab(this);
+    m_tab->tab()->addTab(m_txPage, "Transactions");
+
     connect(m_walletPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_walletPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
     connect(m_walletPage, SIGNAL(signalWalletTx(const QStringList&)), this, SLOT(slotWalletTx(const QStringList&)));
@@ -73,6 +79,9 @@ void EthersPage::initWidgets()
     connect(m_approvePage, SIGNAL(signalApprove(const QStringList&)), this, SLOT(slotApprove(const QStringList&)));
     connect(this, SIGNAL(signalScriptBroken()), m_walletPage, SLOT(slotScriptBroken()));
     connect(this, SIGNAL(signalScriptBroken()), m_approvePage, SLOT(slotScriptBroken()));
+    connect(m_txPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
+    connect(m_txPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
+    connect(m_txPage, SIGNAL(signalCheckTx(const QStringList&)), this, SLOT(slotCheckTx(const QStringList&)));
 
 }
 void EthersPage::slotScriptFinished()
@@ -102,6 +111,11 @@ bool EthersPage::approvePageNow() const
 {
     return m_tab->tab()->currentWidget()->objectName().contains("approve");
 }
+bool EthersPage::txPageNow() const
+{
+    return m_tab->tab()->currentWidget()->objectName().contains("tx_tab");
+}
+
 void EthersPage::tryUpdateBalace()
 {
     qDebug()<<QString("%1 .... tryUpdateBalace").arg(LTime::strCurrentTime());
@@ -168,6 +182,12 @@ void EthersPage::slotApprove(const QStringList &tx_params)
 
     startProcessObj();
 }
+void EthersPage::slotCheckTx(const QStringList &args)
+{
+    qDebug()<<QString("%1 .... slotCheckTx, args %2").arg(LTime::strCurrentTime()).arg(args.count());
+    m_procObj->setArgs(args);
+    startProcessObj();
+}
 void EthersPage::slotWalletTx(const QStringList &args)
 {
     qDebug()<<QString("%1 .... slotWalletTx, args %2").arg(LTime::strCurrentTime()).arg(args.count());
@@ -192,6 +212,10 @@ void EthersPage::slotJsonReply(int req_type, const QJsonObject &j_result)
     else if (approvePageNow())
     {
         m_approvePage->parseJSResult(j_result);
+    }
+    else if (txPageNow())
+    {
+        m_txPage->parseJSResult(j_result);
     }
 }
 void EthersPage::load(QSettings &settings)

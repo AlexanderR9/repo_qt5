@@ -10,6 +10,7 @@ class LProcessObj;
 class LTabWidgetBox;
 class JSWalletTab;
 class JSApproveTab;
+class JSTxTab;
 
 
 //EthersPage
@@ -40,6 +41,7 @@ protected:
     LTabWidgetBox   *m_tab;
     JSWalletTab     *m_walletPage;
     JSApproveTab    *m_approvePage;
+    JSTxTab         *m_txPage;
 
     void initWidgets();
     void initProcessObj();
@@ -49,6 +51,7 @@ protected:
 
     bool walletPageNow() const;
     bool approvePageNow() const;
+    bool txPageNow() const;
     void startProcessObj();
 
 private:
@@ -60,6 +63,7 @@ public slots:
     void slotCheckUpproved(QString);
     void slotApprove(const QStringList&);
     void slotWalletTx(const QStringList&);
+    void slotCheckTx(const QStringList&);
 
 
 protected slots:

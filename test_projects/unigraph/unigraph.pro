@@ -46,7 +46,8 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/ethers_js.h \
         $$PWD/jstxdialog.h \
         $$PWD/jswallettab.h \
-        $$PWD/jsapprovetab.h
+        $$PWD/jsapprovetab.h \
+        $$PWD/jstxtab.h
 
 SOURCES += $$PWD/main.cpp \
         $$PWD/mainform.cpp \
@@ -62,5 +63,6 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/ethers_js.cpp \
         $$PWD/jstxdialog.cpp \
         $$PWD/jswallettab.cpp \
-        $$PWD/jsapprovetab.cpp
+        $$PWD/jsapprovetab.cpp \
+        $$PWD/jstxtab.cpp
 

@@ -15,6 +15,7 @@
 #include "apiorderspage.h"
 #include "apiprofitabilitypage.h"
 #include "apibagpage.h"
+#include "yieldstatpage.h"
 
 #include <QDebug>
 #include <QDir>
@@ -121,6 +122,14 @@ void MainForm::initPages()
     connect(bag_page, SIGNAL(signalGetBondEndDateByUID(const QString&, QDate&)), bond_page, SLOT(slotGetBondEndDateByUID(const QString&, QDate&)));
     connect(orders_page, SIGNAL(signalSendOrdersInfoToBag(const QMap<QString, QString>&)), bag_page, SLOT(slotUpdateOrdersInfo(const QMap<QString, QString>&)));
     connect(d_page, SIGNAL(signalGetBagStocks(QStringList&)), bag_page, SLOT(slotSetBagStocks(QStringList&)));
+
+    YieldStatPage *yield_page = new  YieldStatPage(this);
+    m_pages.insert(aptYield, yield_page);
+    connect(events_page, SIGNAL(signalSendDataToYieldStat(const QList<EventOperation>&)), yield_page, SLOT(slotReceivedEvents(const QList<EventOperation>&)));
+    connect(yield_page, SIGNAL(signalGetPaperInfo(QStringList&)), bond_page, SLOT(slotGetPaperInfo(QStringList&)));
+    connect(yield_page, SIGNAL(signalGetPaperInfo(QStringList&)), stock_page, SLOT(slotGetPaperInfo(QStringList&)));
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     //for asset info box
     connect(profit_page, SIGNAL(signalGetBondRiskByTicker(const QString&, QString&)), bond_page, SLOT(slotGetBondRiskByTicker(const QString&, QString&)));

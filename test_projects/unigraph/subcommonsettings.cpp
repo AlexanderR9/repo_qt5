@@ -90,9 +90,11 @@ bool SubGraph_CommonSettings::isWrapedToken(QString token)
 QString SubGraph_CommonSettings::tokenIdCoingecko(QString token)
 {
     token = token.trimmed().toUpper();
+
     if (token == "POL" || token == "WPOL")     return "polygon-ecosystem-token";
     if (token == "ETH" || token == "WETH")     return "ethereum";
     if (token == "BNB" || token == "WBNB")     return "binancecoin";
+
     if (token == "ARB")     return "arbitrum";
     if (token == "OP")      return "optimism";
     if (token == "AAVE")    return "aave";
@@ -104,6 +106,7 @@ QString SubGraph_CommonSettings::tokenIdCoingecko(QString token)
     if (token == "UNI")     return "uniswap";
     if (token == "LDO")     return "lido-dao";
     if (token == "CRV")     return "curve-dao-token";
+
     return QString();
 }
 QString SubGraph_CommonSettings::nativeTokenByChain(QString chain_name)

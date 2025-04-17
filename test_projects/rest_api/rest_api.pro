@@ -39,7 +39,8 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/apiorderspage.h \
         $$PWD/apiprofitabilitypage.h \
         $$PWD/apitradedialog.h \
-        $$PWD/apibagpage.h
+        $$PWD/apibagpage.h \
+        $$PWD/yieldstatpage.h
 
 SOURCES += $$PWD/main.cpp \
 	$$PWD/apipages.cpp \
@@ -55,7 +56,8 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/apiorderspage.cpp \
         $$PWD/apiprofitabilitypage.cpp \
         $$PWD/apitradedialog.cpp \
-        $$PWD/apibagpage.cpp
+        $$PWD/apibagpage.cpp \
+        $$PWD/yieldstatpage.cpp
 
 FORMS += $$PWD/ui/assetinfowidget.ui
 

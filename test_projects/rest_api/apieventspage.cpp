@@ -168,6 +168,9 @@ void APIEventsPage::slotLoadEvents(const QJsonObject &j_obj)
     recalcStat();
 
     m_kindFilterControl->setCurrentIndex(3); //default filter by [!COMMISION]
+
+    ////////////send data to yieldpage/////////////
+    emit signalSendDataToYieldStat(m_events);
 }
 void APIEventsPage::checkCloneUid(EventOperation &e)
 {
