@@ -28,8 +28,8 @@
 
 
 
-#define COLOR_DAY_EVEN      QString("#FFFFF2")
-#define COLOR_DAY_ODD       QString("#FAFFFD")
+#define COLOR_DAY_EVEN      QString("#FFFFE0")
+#define COLOR_DAY_ODD       QString("#EEE8AA")
 #define NONE_FILTER         QString("none")
 
 

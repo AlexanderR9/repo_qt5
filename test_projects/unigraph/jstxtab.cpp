@@ -16,7 +16,8 @@
 #include <QJsonObject>
 #include <QJsonValue>
 
-#define JS_TX_FILE      "tx.log"
+#define JS_TX_FILE          "tx.log"
+#define LOCAL_TX_FILE       "defi/tx.txt"
 #define HASH_COL                4
 #define RESULT_COL              7
 #define FEE_COL                 6
@@ -51,9 +52,8 @@ void JSTxTab::initTable()
 }
 void JSTxTab::loadTxFromFile()
 {
-    //qDebug("-------------");
-
     qDebug("-----------------JSTxTab::loadTxFromFile()--------------------------");
+    m_locData.clear();
     tx_data.clear();
     QString fname = QString("%1%2%3").arg(sub_commonSettings.nodejs_path).arg(QDir::separator()).arg(JS_TX_FILE);
     emit signalMsg(QString("try load transactions list [%1].........").arg(fname));
@@ -62,13 +62,9 @@ void JSTxTab::loadTxFromFile()
         emit signalError("TX file not found");
         return;
     }
-    //qDebug("JSTxTab::loadTxFromFile() 1");
-
     QStringList fdata;
     QString err = LFile::readFileSL(fname, fdata);
     if (!err.isEmpty()) {emit signalError(err); return;}
-
-    //qDebug("JSTxTab::loadTxFromFile() 2");
 
     foreach (const QString &v, fdata)
     {
@@ -81,7 +77,14 @@ void JSTxTab::loadTxFromFile()
         if (!rec.invalid()) tx_data.append(rec);
     }
     emit signalMsg(QString("loaded %1 TX records").arg(tx_data.count()));
+    qDebug()<<QString("loaded %1 TX records").arg(tx_data.count());
 
+    loadLocalData();
+    emit signalMsg(QString("loaded %1 lines local data").arg(m_locData.count()));
+    qDebug()<<QString("loaded %1 lines local data").arg(m_locData.count());
+
+
+    applyLocalData();
     reloadTable();
 }
 void JSTxTab::reloadTable()
@@ -97,9 +100,55 @@ void JSTxTab::reloadTable()
         row_data << QString::number(i+1) << rec.chain << rec.strDate() << rec.strTime();
         row_data << rec.hash << rec.kind << rec.strFee() << rec.strResult();
         LTable::addTableRow(t, row_data);
+
+        if (tx_data.at(i).txOk()) t->item(i, RESULT_COL)->setTextColor(Qt::darkGreen);
+        else if (tx_data.at(i).txFault()) t->item(i, RESULT_COL)->setTextColor(Qt::red);
+        else t->item(i, RESULT_COL)->setTextColor(Qt::gray);
+
     }
     m_table->resizeByContents();
     qDebug()<<QString("JSTxTab: TX table rows %1").arg(t->rowCount());
+}
+void JSTxTab::loadLocalData()
+{
+    m_locData.clear();
+    QString fname = QString("%1%2%3").arg(SubGraph_CommonSettings::appDataPath()).arg(QDir::separator()).arg(LOCAL_TX_FILE);
+    emit signalMsg(QString("try load local file [%1].........").arg(fname));
+    if (!LFile::fileExists(fname))
+    {
+        emit signalError("TX local_file not found");
+        return;
+    }
+    QStringList fdata;
+    QString err = LFile::readFileSL(fname, fdata);
+    if (!err.isEmpty()) {emit signalError(err); return;}
+
+    foreach (const QString &line, fdata)
+    {
+        QString s = line.trimmed();
+        if (s.isEmpty()) continue;
+        QStringList list = LString::trimSplitList(s, "/");
+        if (list.count() == 3)  m_locData.append(s);
+    }
+}
+void JSTxTab::applyLocalData()
+{
+    if (m_locData.isEmpty() || tx_data.isEmpty()) return;
+
+    int n_rows = tx_data.count();
+    foreach (const QString &line, m_locData)
+    {
+        QString s = line.trimmed();
+        QStringList list = LString::trimSplitList(s, "/");
+        if (list.count() != 3) {qWarning()<<QString("LocalRecord: WARNING list.count(%1)!=3").arg(list.count()); continue;}
+
+        float fee = list.at(1).toFloat();
+        for (int i=0; i<n_rows; i++)
+        {
+            if (tx_data.at(i).hash == list.first().trimmed())
+                tx_data[i].fee = fee;
+        }
+    }
 }
 void JSTxTab::updateTableRowByRecord(const JSTxRecord *rec)
 {
@@ -113,10 +162,11 @@ void JSTxTab::updateTableRowByRecord(const JSTxRecord *rec)
 
         t->item(i, FEE_COL)->setText(rec->strFee());
         t->item(i, RESULT_COL)->setText(rec->strResult());
+        if (rec->txOk()) t->item(i, RESULT_COL)->setTextColor(Qt::darkGreen);
+        if (rec->txFault()) t->item(i, RESULT_COL)->setTextColor(Qt::red);
         break;
     }
 }
-
 JSTxRecord* JSTxTab::recordByHash(QString hash_value)
 {
     hash_value = hash_value.trimmed().toLower();
@@ -183,14 +233,44 @@ void JSTxTab::parseJSResult(const QJsonObject &j_result)
     rec->setJSResponse(str_status, str_fee, is_finished);
     updateTableRowByRecord(rec);
     m_table->resizeByContents();
+
+    addRecToLocalFile(rec);
+}
+void JSTxTab::addRecToLocalFile(const JSTxRecord *rec)
+{
+    if (!rec) return;
+    QString fline = rec->toLocalFileLine().trimmed();
+    qDebug()<<QString("LFile::appendFile  line[%1]").arg(fline);
+
+    if (fline.isEmpty()) return;
+    if (m_locData.contains(fline)) {qWarning("local file line already contains this line"); return;}
+
+    QString err;
+    QString fname = QString("%1%2%3").arg(SubGraph_CommonSettings::appDataPath()).arg(QDir::separator()).arg(LOCAL_TX_FILE);
+    qDebug()<<fname;
+    if (LFile::fileExists(fname))
+    {
+        qDebug("appendFile");
+        LFile::appendFile(fname, QString("%1 \n").arg(fline));
+    }
+    else
+    {
+        qDebug("writeFile");
+        LFile::writeFile(fname, QString("%1 \n").arg(fline));
+    }
+    if (!err.isEmpty()) emit signalError(QString("can't append line to local file: %1").arg(fname));
 }
 
 
 
 
-
 ////////////////JSTxRecord//////////////////////
-
+QString JSTxRecord::toLocalFileLine() const
+{
+    if (invalid()) return QString();
+    if (txUnknown())  return QString();
+    return QString("%1 / %2 / %3").arg(hash).arg(strFee()).arg(strResult());
+}
 void JSTxRecord::fromFileLine(const QString &fline)
 {
    // qDebug()<<QString("fromFileLine [%1]").arg(fline);

@@ -28,8 +28,10 @@ struct JSTxRecord
 
     void reset() {hash.clear(); kind="none"; fee=-1; dt = QDateTime(); chain.clear();}
     bool txFault() const {return (fee == -2);}
+    bool txUnknown() const {return (fee == -1);}
     bool txOk() const {return (fee >= 0);}
     void fromFileLine(const QString&);
+    QString toLocalFileLine() const;
     bool invalid() const;
     QString strTime() const;
     QString strDate() const;
@@ -55,11 +57,19 @@ protected:
     LTableWidgetBox     *m_table;
     QList<JSTxRecord>    tx_data;
 
+
+    //информация загруженная из локального файла, содержит информацию только о завершенных транзакциях.
+    //вид строки: hash / fee_size / status (OK/FAULT)
+    QStringList          m_locData;
+
     void initTable();
     void reloadTable();
+    void applyLocalData();
+    void loadLocalData(); //from local defi file
     void initPopupMenu(); //инициализировать элементы всплывающего меню
     JSTxRecord* recordByHash(QString);
     void updateTableRowByRecord(const JSTxRecord*);
+    void addRecToLocalFile(const JSTxRecord *rec); //после получения ответа от nodejs добавить информацию в локальный файл
 
 protected slots:
     void slotTxStatus();
