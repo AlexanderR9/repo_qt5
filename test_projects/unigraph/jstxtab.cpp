@@ -19,6 +19,7 @@
 #define JS_TX_FILE          "tx.log"
 #define LOCAL_TX_FILE       "defi/tx.txt"
 #define HASH_COL                4
+#define TX_KIND_COL             5
 #define RESULT_COL              7
 #define FEE_COL                 6
 
@@ -105,6 +106,7 @@ void JSTxTab::reloadTable()
         else if (tx_data.at(i).txFault()) t->item(i, RESULT_COL)->setTextColor(Qt::red);
         else t->item(i, RESULT_COL)->setTextColor(Qt::gray);
 
+        if (tx_data.at(i).kind == "mint") t->item(i, TX_KIND_COL)->setTextColor("#FF8C00");
     }
     m_table->resizeByContents();
     qDebug()<<QString("JSTxTab: TX table rows %1").arg(t->rowCount());

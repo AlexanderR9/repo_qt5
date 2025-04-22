@@ -47,6 +47,7 @@ QString TxDialogBase::iconByTXType(int tt)
         case txUnwrap: {icon_file = "edit-undo.svg"; break;}
         case txApprove: {icon_file = "left.svg"; break;}
         case txTransfer: {icon_file = "send_msg.png"; break;}
+        case txSwap: {icon_file = "swap.png"; break;}
         default: return QString();
     }
     return QString("%1%2%3").arg(path).arg(QDir::separator()).arg(icon_file);
@@ -59,6 +60,7 @@ QString TxDialogBase::captionByTXType(int tt)
         case txUnwrap: return QString("UNWRAP");
         case txApprove: return QString("APPROVE");
         case txTransfer: return QString("TRANSFER");
+        case txSwap: return QString("SWAP");
         default: break;
     }
     return QString("???");

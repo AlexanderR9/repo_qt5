@@ -4,6 +4,7 @@
 #include "jswallettab.h"
 #include "jsapprovetab.h"
 #include "jstxtab.h"
+#include "jspooltab.h"
 #include "subcommonsettings.h"
 #include "ltime.h"
 #include "lfile.h"
@@ -33,7 +34,8 @@ EthersPage::EthersPage(QWidget *parent)
       m_tab(NULL),
       m_walletPage(NULL),
       m_approvePage(NULL),
-      m_txPage(NULL)
+      m_txPage(NULL),
+      m_poolPage(NULL)
 {
     setObjectName("ethers_page");
     initWidgets();
@@ -42,6 +44,7 @@ EthersPage::EthersPage(QWidget *parent)
     m_walletPage->loadAssetsFromFile();
     m_approvePage->setTokens(m_walletPage->assetsTokens());
     m_txPage->loadTxFromFile();
+    m_poolPage->loadPoolsFromFile();
 }
 void EthersPage::initProcessObj()
 {
@@ -70,6 +73,9 @@ void EthersPage::initWidgets()
     m_txPage = new JSTxTab(this);
     m_tab->tab()->addTab(m_txPage, "Transactions");
 
+    m_poolPage = new JSPoolTab(this);
+    m_tab->tab()->addTab(m_poolPage, "Pools");
+
     connect(m_walletPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_walletPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
     connect(m_walletPage, SIGNAL(signalWalletTx(const QStringList&)), this, SLOT(slotWalletTx(const QStringList&)));
@@ -82,6 +88,8 @@ void EthersPage::initWidgets()
     connect(m_txPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_txPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
     connect(m_txPage, SIGNAL(signalCheckTx(const QStringList&)), this, SLOT(slotCheckTx(const QStringList&)));
+    connect(m_poolPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
+    connect(m_poolPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
 
 }
 void EthersPage::slotScriptFinished()

@@ -16,6 +16,8 @@
 #define ADDRESS_COL             3
 #define TOKEN_COL               0
 #define SUPPLIED_PRECISION      6
+#define LOCAL_APPROVE_FILE       "defi/approve.txt"
+
 
 // JSApproveTab
 JSApproveTab::JSApproveTab(QWidget *parent)
@@ -48,6 +50,9 @@ void JSApproveTab::setTokens(const QMap<QString, QString> &map)
         row_data << t_name.trimmed() << "?" << "?" << map.value(t_name).toLower().trimmed();
         LTable::addTableRow(m_table->table(), row_data);
     }
+
+    loadLocalData();
+    syncTableByLocalData();
     m_table->resizeByContents();
 }
 void JSApproveTab::initPopupMenu()
@@ -101,6 +106,8 @@ void JSApproveTab::slotSendApprove()
         emit signalMsg(QString("Try send TX approve"));
         emit signalMsg(QString("PARAMS: to_contract=%1  amount=%2").arg(approve_data.dialog_params.value("whom")).arg(approve_data.dialog_params.value("amount")));
 
+        removeRecFromLocalData(token_addr);
+
         t->setEnabled(false);
         QStringList tx_params;
         tx_params << token_addr << approve_data.dialog_params.value("whom") << approve_data.dialog_params.value("amount");
@@ -140,6 +147,7 @@ void JSApproveTab::answerUpdate(const QJsonObject &j_result)
         {
             updateSuppliedCell(i, 1, pm_sum);
             updateSuppliedCell(i, 2, swap_sum);
+            addLocalData(token_addr, pm_sum, swap_sum);
             break;
         }
     }
@@ -159,13 +167,15 @@ void JSApproveTab::answerApprove(const QJsonObject &j_result)
     {
         emit signalError(QString("TX sending result: %1").arg(code));
     }
+
+    syncTableByLocalData();
 }
 void JSApproveTab::updateSuppliedCell(int i, int j, float value)
 {
     const QTableWidget *t = m_table->table();
     if (value < 0)
     {
-        t->item(i, j)->setText("-1");
+        t->item(i, j)->setText("---");
         t->item(i, j)->setTextColor(Qt::red);
     }
     else if (value == 0)
@@ -183,7 +193,95 @@ void JSApproveTab::slotScriptBroken()
 {
     m_table->table()->setEnabled(true);
 }
+void JSApproveTab::loadLocalData()
+{
+    m_locData.clear();
+    QString fname = QString("%1%2%3").arg(SubGraph_CommonSettings::appDataPath()).arg(QDir::separator()).arg(LOCAL_APPROVE_FILE);
+    emit signalMsg(QString("try load local file [%1].........").arg(fname));
+    if (!LFile::fileExists(fname))
+    {
+        emit signalError("APPROVE local_file not found");
+        return;
+    }
+    QStringList fdata;
+    QString err = LFile::readFileSL(fname, fdata);
+    if (!err.isEmpty()) {emit signalError(err); return;}
 
+    foreach (const QString &line, fdata)
+    {
+        QString s = line.trimmed();
+        if (s.isEmpty()) continue;
+        QStringList list = LString::trimSplitList(s, "/");
+        if (list.count() == 3)  m_locData.append(s);
+    }
+}
+void JSApproveTab::rewriteLocalDataFile()
+{
+    QString fname = QString("%1%2%3").arg(SubGraph_CommonSettings::appDataPath()).arg(QDir::separator()).arg(LOCAL_APPROVE_FILE);
+    emit signalMsg(QString("try rewrite local file [%1].........").arg(fname));
 
+    QString err = LFile::writeFileSL(fname, m_locData);
+    if (!err.isEmpty()) emit signalError(err);
+    else emit signalMsg(QString("done, wrote %1 records").arg(m_locData.count()));
+}
+void JSApproveTab::removeRecFromLocalData(const QString &token_addr)
+{
+    qDebug()<<QString("removeRecFromLocalData [%1]").arg(token_addr);
+    if (m_locData.isEmpty()) return;
 
+    int n = m_locData.count();
+    for (int i=0; i<n; i++)
+        if (m_locData.at(i).contains(token_addr))
+        {
+            qDebug()<<QString("find, remove index %1").arg(i);
+            m_locData.removeAt(i); break;
+        }
+
+    rewriteLocalDataFile();
+}
+void JSApproveTab::addLocalData(const QString &token_addr, float pm_sum, float swap_sum)
+{
+    removeRecFromLocalData(token_addr.trimmed().toLower());
+    QString line = QString("%1 / %2 / %3").arg(token_addr).arg(QString::number(pm_sum, 'f', 6)).arg(QString::number(swap_sum, 'f', 6));
+    emit signalMsg(QString("add new local data record: [%1]").arg(line));
+    m_locData << line;
+    rewriteLocalDataFile();
+}
+void JSApproveTab::syncTableByLocalData()
+{
+    if (m_locData.isEmpty()) return;
+    float pm_sum = 0;
+    float swap_sum = 0;
+
+    QTableWidget *t = m_table->table();
+    int n = t->rowCount();
+    for (int i=0; i<n; i++)
+    {
+        QString token_addr = t->item(i, ADDRESS_COL)->text().trimmed();
+        getApprovedByLocalData(token_addr, pm_sum, swap_sum);
+        updateSuppliedCell(i, 1, pm_sum);
+        updateSuppliedCell(i, 2, swap_sum);
+    }
+}
+void JSApproveTab::getApprovedByLocalData(const QString &token_addr, float &pm_sum, float &swap_sum) const
+{
+    pm_sum = swap_sum = -1;
+    if (m_locData.isEmpty()) return;
+
+    foreach (const QString &line, m_locData)
+    {
+        QString s = line.trimmed();
+        if (s.isEmpty()) continue;
+        QStringList list = LString::trimSplitList(s, "/");
+        if (list.count() == 3)
+        {
+            if (list.first().trimmed() == token_addr)
+            {
+                pm_sum = list.at(1).toFloat();
+                swap_sum = list.at(2).toFloat();
+                break;
+            }
+        }
+    }
+}
 

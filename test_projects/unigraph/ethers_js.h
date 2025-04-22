@@ -11,6 +11,7 @@ class LTabWidgetBox;
 class JSWalletTab;
 class JSApproveTab;
 class JSTxTab;
+class JSPoolTab;
 
 
 //EthersPage
@@ -42,6 +43,7 @@ protected:
     JSWalletTab     *m_walletPage;
     JSApproveTab    *m_approvePage;
     JSTxTab         *m_txPage;
+    JSPoolTab       *m_poolPage;
 
     void initWidgets();
     void initProcessObj();

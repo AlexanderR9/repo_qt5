@@ -5,7 +5,7 @@
 
 
 //Orepation Type
-enum TX_OrepationType {txWrap = 1401, txUnwrap, txApprove, txTransfer, txNone = 0};
+enum TX_OrepationType {txWrap = 1401, txUnwrap, txApprove, txTransfer, txSwap, txNone = 0};
 
 //TxDialogData
 struct TxDialogData
