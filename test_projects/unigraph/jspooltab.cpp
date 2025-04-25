@@ -10,11 +10,16 @@
 #include <QDir>
 #include <QDebug>
 #include <QJsonObject>
+#include <QJsonDocument>
 #include <QJsonValue>
 
 #define JS_POOL_FILE          "pools.txt"
+#define JS_JSONPARAMS_FILE    "params.json"
 #define FEE_COL                 3
 #define POOL_ADDR_COL           1
+#define POOL_STATE_COL          5
+#define NOTE_COL                6
+
 
 
 // JSPoolTab
@@ -45,14 +50,108 @@ void JSPoolTab::initPopupMenu()
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotTrySwapAssets())); i_menu++;
 
 }
+
+void JSPoolTab::rewriteParamJson(const QJsonObject &j_params)
+{
+    QJsonDocument j_doc(j_params);
+    QString fdata(j_doc.toJson());
+    fdata.append(QChar('\n'));
+    QString fname = QString("%1%2%3").arg(sub_commonSettings.nodejs_path).arg(QDir::separator()).arg(JS_JSONPARAMS_FILE);
+    emit signalMsg(QString("prepare json params for node_js script [%1].........").arg(fname));
+    QString err = LFile::writeFile(fname, fdata);
+    if (!err.isEmpty()) {emit signalError(err); return;}
+    else emit signalMsg("JSON params file done!");
+}
 void JSPoolTab::slotGetPoolState()
 {
     qDebug("JSPoolTab::slotGetPoolState()");
+    int row = m_table->curSelectedRow();
+    if (row < 0) {emit signalError("You must select row"); return;}
+
+    //prepare json params
+    QJsonObject j_params;
+    j_params.insert("address", m_poolData.at(row).address);
+    j_params.insert("fee", m_poolData.at(row).fee);
+    j_params.insert("token0", m_poolData.at(row).token0_addr);
+    j_params.insert("token1", m_poolData.at(row).token1_addr);
+    j_params.insert("tick_space", m_poolData.at(row).tickSpace());    
+    rewriteParamJson(j_params); //rewrite json-file
+
+    m_table->table()->item(row, NOTE_COL)->setText("getting state ...");
+    m_table->table()->item(row, NOTE_COL)->setTextColor("#DC143C");
+    m_table->resizeByContents();
+
+
+    //send action
+    emit signalMsg(QString("Try get pool[%1] state ...").arg(m_poolData.at(row).address));
+    m_table->table()->setEnabled(false);
+    QStringList tx_params;
+    tx_params << "qt_pool_state.js" << JS_JSONPARAMS_FILE;
+    emit signalPoolAction(tx_params);
 }
 void JSPoolTab::slotTrySwapAssets()
 {
     qDebug("JSPoolTab::slotTrySwapAssets()");
+    int row = m_table->curSelectedRow();
+    if (row < 0) {emit signalError("You must select row"); return;}
 
+
+    //prepare dialog params
+    TxDialogData swap_data(txSwap);
+    swap_data.token_addr = m_poolData.at(row).address;
+    swap_data.token_name = QString("%1  %2").arg(m_poolData.at(row).assets).arg(m_poolData.at(row).strFee());
+    TxSwapDialog d(swap_data, this);
+    d.exec();
+    if (d.isApply())
+    {
+        emit signalMsg(QString("Try send TX swap"));
+        int t_input = swap_data.dialog_params.value("input_token").toInt();
+        emit signalMsg(QString("PARAMS: pool=%1, amount=%2, input_token=%3").arg(swap_data.token_name).arg(swap_data.dialog_params.value("amount")).arg(t_input));
+        if (swap_data.dialog_params.value("amount") == "invalid") {signalError("invalid amount value"); return;}
+        if (swap_data.dialog_params.value("dead_line") == "invalid") {signalError("invalid dead_line value"); return;}
+
+
+        if (swap_data.dialog_params.value("is_simulate") == "no") //need check approved size
+        {
+            bool ok;
+            float amount_in = swap_data.dialog_params.value("amount").toFloat(&ok);
+            if (!ok || amount_in < 0.01) {signalError(QString("invalid amount value [%1]").arg(swap_data.dialog_params.value("amount"))); return;}
+
+            float cur_approved = -1;
+            if (t_input == 0) emit signalGetApprovedSize("swap_router", m_poolData.at(row).token0_addr, cur_approved);
+            else  emit signalGetApprovedSize("swap_router", m_poolData.at(row).token1_addr, cur_approved);
+            if (amount_in > cur_approved)
+            {
+                signalError(QString("swapping amount[%1] > approved amount[%2]").arg(amount_in).arg(cur_approved));
+                return;
+            }
+
+            if (t_input == 0) emit signalResetApproved(m_poolData.at(row).token0_addr);
+            else if (t_input == 1) emit signalResetApproved(m_poolData.at(row).token1_addr);
+        }
+
+
+        //prepare json params
+        QJsonObject j_params;
+        j_params.insert("pool_address", swap_data.token_addr);
+        j_params.insert("input_token", t_input);
+        j_params.insert("dead_line", swap_data.dialog_params.value("dead_line"));
+        j_params.insert("size", swap_data.dialog_params.value("amount"));
+        j_params.insert("simulate_mode", swap_data.dialog_params.value("is_simulate"));
+        rewriteParamJson(j_params); //rewrite json-file
+        //return;
+
+        m_table->table()->item(row, NOTE_COL)->setText("try swap ...");
+        m_table->table()->item(row, NOTE_COL)->setTextColor("#DC143C");
+        m_table->resizeByContents();
+
+
+        m_table->table()->setEnabled(false);
+        QStringList tx_params;
+        tx_params << "qt_pool_swap.js" << JS_JSONPARAMS_FILE;
+        emit signalPoolAction(tx_params);
+    }
+    else emit signalMsg("operation was canceled!");
 }
 void JSPoolTab::initTable()
 {
@@ -60,10 +159,10 @@ void JSPoolTab::initTable()
     m_table->setTitle("Pools list");
     m_table->vHeaderHide();
     QStringList headers;
-    headers << "Chain" << "Pool address" << "Assets" << "Fee" << "Tick space" << "Current state";
+    headers << "Chain" << "Pool address" << "Assets" << "Fee" << "Tick space" << "Current state" << "Note";
     LTable::setTableHeaders(m_table->table(), headers);
     m_table->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::SingleSelection);
-    m_table->setSelectionColor("#9D9F4F");
+    m_table->setSelectionColor("#87CEEB");
 
     v_splitter->addWidget(m_table);
 }
@@ -109,7 +208,7 @@ void JSPoolTab::reloadTable()
         row_data.clear();
         const JSPoolRecord &rec = m_poolData.at(i);
         row_data << rec.chain << rec.address << rec.assets << rec.strFee();
-        row_data << QString::number(rec.tickSpace()) << "?";
+        row_data << QString::number(rec.tickSpace()) << "?" << "---";
         LTable::addTableRow(t, row_data);
 
         if (rec.fee == 100) t->item(i, FEE_COL)->setTextColor(Qt::gray);
@@ -124,6 +223,96 @@ void JSPoolTab::reloadTable()
     m_table->resizeByContents();
     qDebug()<<QString("JSPoolTab: POOL table rows %1").arg(t->rowCount());
 }
+void JSPoolTab::parseJSResult(const QJsonObject &j_result)
+{
+    qDebug("JSPoolTab::parseJSResult");
+    qDebug() << j_result;
+    m_table->table()->setEnabled(true);
+
+    QString operation = j_result.value("type").toString().trimmed();
+    if (operation == "state") answerState(j_result);
+    else if (operation == "swap") answerSwap(j_result);
+    else emit signalError(QString("invalid answer type: %1").arg(operation));
+
+    m_table->resizeByContents();
+}
+void JSPoolTab::answerState(const QJsonObject &j_result)
+{
+    if (m_poolData.isEmpty()) return;
+
+    qDebug("JSPoolTab::answerState");
+    int n = m_poolData.count();
+    for(int i=0; i<n; i++)
+    {
+        if (j_result.value("pool_address").toString() == m_poolData.at(i).address)
+        {
+            bool stb = m_poolData.at(i).isStablePool();
+            qDebug()<<QString("find row, %1, pool: %2").arg(i).arg(m_poolData.at(i).address);
+            int  tick = j_result.value("tick").toString().toInt();
+            float p0 = j_result.value("price0").toString().toFloat();
+            float p1 = j_result.value("price1").toString().toFloat();
+            QString str_state = QString("tick=%1").arg(tick);
+            str_state = QString("%1  price0=%2").arg(str_state).arg(QString::number(p0, 'f', pricePrecision(p0, stb)));
+            str_state = QString("%1  price1=%2").arg(str_state).arg(QString::number(p1, 'f', pricePrecision(p1, stb)));
+            m_table->table()->item(i, POOL_STATE_COL)->setText(str_state);
+
+            m_table->table()->item(i, NOTE_COL)->setText("getted state");
+            m_table->table()->item(i, NOTE_COL)->setTextColor("#4B0082");
+
+            break;
+        }
+    }
+}
+void JSPoolTab::answerSwap(const QJsonObject &j_result)
+{
+    if (m_poolData.isEmpty()) return;
+
+    qDebug("JSPoolTab::answerState");
+    int n = m_poolData.count();
+    for(int i=0; i<n; i++)
+    {
+        if (j_result.value("pool_address").toString() == m_poolData.at(i).address)
+        {
+            bool stb = m_poolData.at(i).isStablePool();
+
+            QString note;
+            float size_in = j_result.value("input_size").toString().toFloat();
+            int input = j_result.value("input_token").toString().toInt();
+            QString t_in = ((input == 0) ? m_poolData.at(i).ticker0() : m_poolData.at(i).ticker1());
+            QString t_out = ((input == 1) ? m_poolData.at(i).ticker0() : m_poolData.at(i).ticker1());
+            if (j_result.value("simulate_mode").toString() == "yes")
+            {
+                float size_out = j_result.value("output_size").toString().toFloat();
+                note = QString("SIMULATE:");
+                note = QString("%1 %2 %3").arg(note).arg(QString::number(size_in, 'f', pricePrecision(size_in, stb))).arg(t_in);
+                note = QString("%1 => %2 %3").arg(note).arg(QString::number(size_out, 'f', pricePrecision(size_out, stb))).arg(t_out);
+            }
+            else
+            {
+                note = QString("SWAP:");
+                note = QString("%1 %2 %3").arg(note).arg(QString::number(size_in, 'f', pricePrecision(size_in, stb))).arg(t_in);
+                note = QString("%1 => X %2").arg(note).arg(t_out);
+            }
+            m_table->table()->item(i, NOTE_COL)->setText(note);
+            m_table->table()->item(i, NOTE_COL)->setTextColor("#4B0082");
+            break;
+        }
+    }
+}
+int JSPoolTab::pricePrecision(float p, bool is_stable_pool) const
+{
+    if (p <= 0) return -1;
+    if (is_stable_pool) return 6;
+
+    if (p > 1000) return 1;
+    if (p > 10) return 2;
+    if (p > 4) return 3;
+    if (p > 0.1) return 4;
+    return 6;
+}
+
+
+
 ///////////////////////////JSPoolRecord//////////////////////////////
 
 void JSPoolRecord::reset()
@@ -187,4 +376,29 @@ int JSPoolRecord::tickSpace() const
         default: break;
     }
     return -1;
+}
+bool JSPoolRecord::isStablePool() const
+{
+    QStringList list = LString::trimSplitList(assets, "/");
+    if (list.count() != 2) return false;
+
+    QString t0 = list.at(0).trimmed().toLower();
+    if (t0 == "dai" || t0.contains("usd"))
+    {
+        QString t1 = list.at(1).trimmed().toLower();
+        if (t1 == "dai" || t1.contains("usd")) return true;
+    }
+    return false;
+}
+QString JSPoolRecord::ticker0() const
+{
+    QStringList list = LString::trimSplitList(assets, "/");
+    if (list.count() != 2) return "?";
+    return list.at(0).trimmed().toUpper();
+}
+QString JSPoolRecord::ticker1() const
+{
+    QStringList list = LString::trimSplitList(assets, "/");
+    if (list.count() != 2) return "?";
+    return list.at(1).trimmed().toUpper();
 }

@@ -56,6 +56,8 @@ void JSTxTab::loadTxFromFile()
     qDebug("-----------------JSTxTab::loadTxFromFile()--------------------------");
     m_locData.clear();
     tx_data.clear();
+    m_table->removeAllRows();
+
     QString fname = QString("%1%2%3").arg(sub_commonSettings.nodejs_path).arg(QDir::separator()).arg(JS_TX_FILE);
     emit signalMsg(QString("try load transactions list [%1].........").arg(fname));
     if (!LFile::fileExists(fname))
@@ -148,7 +150,10 @@ void JSTxTab::applyLocalData()
         for (int i=0; i<n_rows; i++)
         {
             if (tx_data.at(i).hash == list.first().trimmed())
+            {
                 tx_data[i].fee = fee;
+                tx_data[i].finished_fault = (list.last().trimmed().toLower() == "fault");
+            }
         }
     }
 }
@@ -165,7 +170,7 @@ void JSTxTab::updateTableRowByRecord(const JSTxRecord *rec)
         t->item(i, FEE_COL)->setText(rec->strFee());
         t->item(i, RESULT_COL)->setText(rec->strResult());
         if (rec->txOk()) t->item(i, RESULT_COL)->setTextColor(Qt::darkGreen);
-        if (rec->txFault()) t->item(i, RESULT_COL)->setTextColor(Qt::red);
+        else if (rec->txFault()) t->item(i, RESULT_COL)->setTextColor(Qt::red);
         break;
     }
 }
@@ -194,7 +199,6 @@ void JSTxTab::initPopupMenu()
     //connect OWN slots to popup actions
     int i_menu = 0;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotTxStatus())); i_menu++;
-
 }
 void JSTxTab::slotTxStatus()
 {
@@ -225,10 +229,6 @@ void JSTxTab::parseJSResult(const QJsonObject &j_result)
     QString str_status = j_result.value("status").toString().trimmed();
     QString str_fee = j_result.value("fee").toString().trimmed();
     qDebug()<<QString("str_status(%1)   str_fee(%2)").arg(str_status).arg(str_fee);
-
-   // if (j_result.value("finished").isBool()) qDebug("FINISHED field is bool type");
-   // else if (j_result.value("finished").isString()) qDebug("FINISHED field is string type");
-   // else     qDebug("FINISHED field is ?? type");
 
     bool is_finished = (j_result.value("finished").toString().trimmed() == "true");
     qDebug()<<QString("is_finished = %1").arg(is_finished?"YES":"NO");
@@ -312,7 +312,8 @@ QString JSTxRecord::strDate() const
 }
 QString JSTxRecord::strFee() const
 {
-    if (txFault()) return "?";
+    //if (txFault()) return "?";
+    if (txFault()) return QString::number(fee, 'f', 4);
     if (txOk()) return QString::number(fee, 'f', 6);
     return "---";
 }
@@ -325,8 +326,9 @@ QString JSTxRecord::strResult() const
 void JSTxRecord::setJSResponse(QString js_status, QString js_fee, bool js_finished)
 {
     if (!js_finished) {fee = -1; return;}
-    if (js_status == "FAULT")  {fee = -2; return;}
+
     fee = js_fee.toFloat();
+    finished_fault = (js_status == "FAULT");
 }
 
 

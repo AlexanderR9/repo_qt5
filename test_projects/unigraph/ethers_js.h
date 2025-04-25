@@ -54,6 +54,7 @@ protected:
     bool walletPageNow() const;
     bool approvePageNow() const;
     bool txPageNow() const;
+    bool poolsPageNow() const;
     void startProcessObj();
 
 private:
@@ -66,6 +67,7 @@ public slots:
     void slotApprove(const QStringList&);
     void slotWalletTx(const QStringList&);
     void slotCheckTx(const QStringList&);
+    void slotPoolAction(const QStringList&);
 
 
 protected slots:

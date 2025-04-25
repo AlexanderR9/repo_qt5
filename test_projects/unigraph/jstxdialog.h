@@ -21,7 +21,7 @@ struct TxDialogData
 
     void reset() {token_addr.clear(); token_name.clear(); dialog_params.clear();}
     //bool invalidType() const {return (order_type < totBuyLimit || order_type > totStopLoss);}
-    bool invalid() const {return (tx_kind < txWrap || tx_kind > txTransfer);}
+    bool invalid() const {return (tx_kind < txWrap || tx_kind > txSwap);}
 //    QString toStr() const {return QString("TradeOperationData: order_type=%1, lots=%2, price=%3").arg(order_type).arg(lots).arg(price);}
 
 };
@@ -86,6 +86,23 @@ class TxTransferDialog : public TxDialogBase
 public:
     TxTransferDialog(TxDialogData&, QWidget*);
     virtual ~TxTransferDialog() {}
+
+protected:
+    void init();
+
+protected slots:
+    void slotApply();
+};
+
+
+
+//TxSwapDialog
+class TxSwapDialog : public TxDialogBase
+{
+    Q_OBJECT
+public:
+    TxSwapDialog(TxDialogData&, QWidget*);
+    virtual ~TxSwapDialog() {}
 
 protected:
     void init();

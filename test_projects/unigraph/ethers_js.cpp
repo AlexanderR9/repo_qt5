@@ -90,6 +90,9 @@ void EthersPage::initWidgets()
     connect(m_txPage, SIGNAL(signalCheckTx(const QStringList&)), this, SLOT(slotCheckTx(const QStringList&)));
     connect(m_poolPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_poolPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
+    connect(m_poolPage, SIGNAL(signalPoolAction(const QStringList&)), this, SLOT(slotPoolAction(const QStringList&)));
+    connect(m_poolPage, SIGNAL(signalResetApproved(const QString&)), m_approvePage, SLOT(slotResetRecord(const QString&)));
+    connect(m_poolPage, SIGNAL(signalGetApprovedSize(QString, const QString&, float&)), m_approvePage, SLOT(slotGetApprovedSize(QString, const QString&, float&)));
 
 }
 void EthersPage::slotScriptFinished()
@@ -105,6 +108,12 @@ void EthersPage::startUpdating(quint16 t)
     if (walletPageNow())
     {
         tryUpdateBalace();
+        return;
+    }
+    if (txPageNow())
+    {
+        m_txPage->loadTxFromFile();
+        emit signalStopUpdating();
         return;
     }
 
@@ -123,6 +132,12 @@ bool EthersPage::txPageNow() const
 {
     return m_tab->tab()->currentWidget()->objectName().contains("tx_tab");
 }
+bool EthersPage::poolsPageNow() const
+{
+    return m_tab->tab()->currentWidget()->objectName().contains("pools");
+}
+
+
 
 void EthersPage::tryUpdateBalace()
 {
@@ -196,6 +211,12 @@ void EthersPage::slotCheckTx(const QStringList &args)
     m_procObj->setArgs(args);
     startProcessObj();
 }
+void EthersPage::slotPoolAction(const QStringList &args)
+{
+    qDebug()<<QString("%1 .... slotPoolAction, args %2").arg(LTime::strCurrentTime()).arg(args.count());
+    m_procObj->setArgs(args);
+    startProcessObj();
+}
 void EthersPage::slotWalletTx(const QStringList &args)
 {
     qDebug()<<QString("%1 .... slotWalletTx, args %2").arg(LTime::strCurrentTime()).arg(args.count());
@@ -224,6 +245,10 @@ void EthersPage::slotJsonReply(int req_type, const QJsonObject &j_result)
     else if (txPageNow())
     {
         m_txPage->parseJSResult(j_result);
+    }
+    else if (poolsPageNow())
+    {
+        m_poolPage->parseJSResult(j_result);
     }
 }
 void EthersPage::load(QSettings &settings)

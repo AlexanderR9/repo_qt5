@@ -19,17 +19,17 @@ struct JSTxRecord
 
     // комиссия за транзакцию в нативных токенах сети.
     // если -1:  результат пока неизвестен, транзакция еще выполняется либо статус не проверялся,
-    // если -2: транзакция завершилась, но действие так и не выполнилось(произошла ошибка)
     double fee;
 
     QDateTime dt;
     QString kind; //transaction type, example: approve or mint
     QString chain;
+    bool finished_fault; //принак того, что транзакция завершилась, но действие так и не выполнилось(произошла ошибка)
 
-    void reset() {hash.clear(); kind="none"; fee=-1; dt = QDateTime(); chain.clear();}
-    bool txFault() const {return (fee == -2);}
+    void reset() {hash.clear(); kind="none"; fee=-1; dt = QDateTime(); chain.clear(); finished_fault = false;}
+    bool txFault() const {return finished_fault;}
     bool txUnknown() const {return (fee == -1);}
-    bool txOk() const {return (fee >= 0);}
+    bool txOk() const {return (fee >= 0 && !finished_fault);}
     void fromFileLine(const QString&);
     QString toLocalFileLine() const;
     bool invalid() const;

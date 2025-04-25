@@ -193,6 +193,39 @@ void JSApproveTab::slotScriptBroken()
 {
     m_table->table()->setEnabled(true);
 }
+void JSApproveTab::slotResetRecord(const QString &token_addr)
+{
+    removeRecFromLocalData(token_addr);
+    rewriteLocalDataFile();
+    syncTableByLocalData();
+    m_table->resizeByContents();
+}
+void JSApproveTab::slotGetApprovedSize(QString whom, const QString &token_addr, float &approved_size)
+{
+    approved_size = 0;
+    whom = whom.trimmed().toLower();
+    qDebug()<<QString("JSApproveTab::slotGetApprovedSize whom=[%1]").arg(whom);
+
+    QTableWidget *t = m_table->table();
+    int n = t->rowCount();
+    for (int i=0; i<n; i++)
+    {
+        if (t->item(i, ADDRESS_COL)->text().trimmed() == token_addr)
+        {
+            float a = 0;
+            bool ok = false;
+            if (whom == "swap_router")
+            {
+                 qDebug()<<QString("cell_text[%1] => float").arg(t->item(i, 2)->text());
+                a = t->item(i, 2)->text().toFloat(&ok);
+            }
+            else if (whom == "pos_manager") a = t->item(i, 1)->text().toFloat(&ok);
+            if (ok) approved_size = a;
+            else approved_size = -9999;
+            break;
+        }
+    }
+}
 void JSApproveTab::loadLocalData()
 {
     m_locData.clear();

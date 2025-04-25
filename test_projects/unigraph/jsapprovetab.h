@@ -45,6 +45,8 @@ protected slots:
 
 public slots:
     void slotScriptBroken();
+    void slotResetRecord(const QString&);
+    void slotGetApprovedSize(QString, const QString&, float&);
 
 signals:
     void signalCheckUpproved(QString);

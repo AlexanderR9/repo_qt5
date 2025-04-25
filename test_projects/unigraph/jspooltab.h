@@ -25,6 +25,9 @@ struct JSPoolRecord
     void fromFileLine(const QString&);
     QString strFee() const;
     int tickSpace() const;
+    bool isStablePool() const; //признак что оба актива стейблы
+    QString ticker0() const;
+    QString ticker1() const;
 
 };
 
@@ -38,6 +41,7 @@ public:
     virtual ~JSPoolTab() {}
 
     void loadPoolsFromFile(); //загрузить список пулов из файла node_js
+    void parseJSResult(const QJsonObject&);
 
 protected:
     LSearchTableWidgetBox     *m_table;
@@ -46,10 +50,22 @@ protected:
     void initTable();
     void reloadTable();
     void initPopupMenu(); //инициализировать элементы всплывающего меню
+    void answerState(const QJsonObject&);
+    void answerSwap(const QJsonObject&);
+
+private:
+    int pricePrecision(float, bool) const;
+    void rewriteParamJson(const QJsonObject&);
 
 protected slots:
     void slotGetPoolState();
     void slotTrySwapAssets();
+
+signals:
+    void signalPoolAction(const QStringList&);
+    void signalResetApproved(const QString&); //при совершениии обмена необходимо отправить сигнал странице approve для сброса соответствующей записи
+    void signalGetApprovedSize(QString, const QString&, float&); //запрос текущих опрувнутых токенов для свопа указанного актива
+
 
 };
 
