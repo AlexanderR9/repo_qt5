@@ -6,6 +6,7 @@
 class LTableWidgetBox;
 class QJsonObject;
 class LHttpApiRequester;
+class WalletBalanceHistory;
 
 
 //JSWalletTab
@@ -19,12 +20,14 @@ public:
     void loadAssetsFromFile(); //загрузить список активов из файла
     void getBalacesArgs(QStringList&); // список аргументв для получения балансов активов
     int assetsCount() const;
-    QMap<QString, QString> assetsTokens() const;
+    QMap<QString, QString> assetsTokens() const; //key - ticker, value - token_address
+    QMap<QString, float> assetsBalances() const; //key - token_address, value - cur_balance
     void parseJSResult(const QJsonObject&);
 
 protected:
     LTableWidgetBox     *m_table;
     LHttpApiRequester   *m_priceRequester;
+    WalletBalanceHistory    *m_balanceHistory;
 
     void initTable();
     void addTokenToTable(const QStringList&);
@@ -36,6 +39,7 @@ protected:
     void initHttpRequester();
     void sendHttpReq();
     void parseHttpResponse(const QJsonObject&);
+    void initBalanceHistoryObj();
 
 private:
     void initNativeToken();

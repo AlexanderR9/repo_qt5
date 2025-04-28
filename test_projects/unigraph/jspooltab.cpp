@@ -64,7 +64,7 @@ void JSPoolTab::rewriteParamJson(const QJsonObject &j_params)
 }
 void JSPoolTab::slotGetPoolState()
 {
-    qDebug("JSPoolTab::slotGetPoolState()");
+   // qDebug("JSPoolTab::slotGetPoolState()");
     int row = m_table->curSelectedRow();
     if (row < 0) {emit signalError("You must select row"); return;}
 
@@ -91,7 +91,7 @@ void JSPoolTab::slotGetPoolState()
 }
 void JSPoolTab::slotTrySwapAssets()
 {
-    qDebug("JSPoolTab::slotTrySwapAssets()");
+   // qDebug("JSPoolTab::slotTrySwapAssets()");
     int row = m_table->curSelectedRow();
     if (row < 0) {emit signalError("You must select row"); return;}
 
@@ -168,7 +168,7 @@ void JSPoolTab::initTable()
 }
 void JSPoolTab::loadPoolsFromFile()
 {
-    qDebug("-----------------JSPoolTab::loadPoolsFromFile()--------------------------");
+ //   qDebug("-----------------JSPoolTab::loadPoolsFromFile()--------------------------");
     m_poolData.clear();
     QString fname = QString("%1%2%3").arg(sub_commonSettings.nodejs_path).arg(QDir::separator()).arg(JS_POOL_FILE);
     emit signalMsg(QString("try load pools list [%1].........").arg(fname));
@@ -192,7 +192,7 @@ void JSPoolTab::loadPoolsFromFile()
         if (!rec.invalid()) m_poolData.append(rec);
     }
     emit signalMsg(QString("loaded %1 POOL records").arg(m_poolData.count()));
-    qDebug()<<QString("loaded %1 POOL records").arg(m_poolData.count());
+  //  qDebug()<<QString("loaded %1 POOL records").arg(m_poolData.count());
 
     reloadTable();
 }
@@ -221,12 +221,12 @@ void JSPoolTab::reloadTable()
 
     m_table->searchExec();
     m_table->resizeByContents();
-    qDebug()<<QString("JSPoolTab: POOL table rows %1").arg(t->rowCount());
+   // qDebug()<<QString("JSPoolTab: POOL table rows %1").arg(t->rowCount());
 }
 void JSPoolTab::parseJSResult(const QJsonObject &j_result)
 {
-    qDebug("JSPoolTab::parseJSResult");
-    qDebug() << j_result;
+ //   qDebug("JSPoolTab::parseJSResult");
+  //  qDebug() << j_result;
     m_table->table()->setEnabled(true);
 
     QString operation = j_result.value("type").toString().trimmed();
@@ -240,14 +240,14 @@ void JSPoolTab::answerState(const QJsonObject &j_result)
 {
     if (m_poolData.isEmpty()) return;
 
-    qDebug("JSPoolTab::answerState");
+   // qDebug("JSPoolTab::answerState");
     int n = m_poolData.count();
     for(int i=0; i<n; i++)
     {
         if (j_result.value("pool_address").toString() == m_poolData.at(i).address)
         {
             bool stb = m_poolData.at(i).isStablePool();
-            qDebug()<<QString("find row, %1, pool: %2").arg(i).arg(m_poolData.at(i).address);
+          //  qDebug()<<QString("find row, %1, pool: %2").arg(i).arg(m_poolData.at(i).address);
             int  tick = j_result.value("tick").toString().toInt();
             float p0 = j_result.value("price0").toString().toFloat();
             float p1 = j_result.value("price1").toString().toFloat();
@@ -267,7 +267,7 @@ void JSPoolTab::answerSwap(const QJsonObject &j_result)
 {
     if (m_poolData.isEmpty()) return;
 
-    qDebug("JSPoolTab::answerState");
+   // qDebug("JSPoolTab::answerState");
     int n = m_poolData.count();
     for(int i=0; i<n; i++)
     {
@@ -334,7 +334,7 @@ bool JSPoolRecord::invalid() const
 }
 void JSPoolRecord::fromFileLine(const QString &fline)
 {
-    qDebug()<<QString("fromFileLine [%1]").arg(fline);
+  //  qDebug()<<QString("fromFileLine [%1]").arg(fline);
     reset();
     QString s = fline.trimmed();
     if (s.isEmpty()) return;

@@ -104,7 +104,7 @@ void EthersPage::slotScriptFinished()
 }
 void EthersPage::startUpdating(quint16 t)
 {
-    qDebug()<<QString("EthersPage::startUpdating t=%1").arg(t);
+ //   qDebug()<<QString("EthersPage::startUpdating t=%1").arg(t);
     if (walletPageNow())
     {
         tryUpdateBalace();
@@ -141,7 +141,7 @@ bool EthersPage::poolsPageNow() const
 
 void EthersPage::tryUpdateBalace()
 {
-    qDebug()<<QString("%1 .... tryUpdateBalace").arg(LTime::strCurrentTime());
+  //  qDebug()<<QString("%1 .... tryUpdateBalace").arg(LTime::strCurrentTime());
     QStringList args;
     m_walletPage->getBalacesArgs(args);
     m_procObj->setArgs(args);
@@ -186,7 +186,7 @@ void EthersPage::startProcessObj()
 }
 void EthersPage::slotCheckUpproved(QString token_addr)
 {
-    qDebug()<<QString("%1 .... tryUpdateApproved sum for token_addr (%2)").arg(LTime::strCurrentTime()).arg(token_addr);
+    //qDebug()<<QString("%1 .... tryUpdateApproved sum for token_addr (%2)").arg(LTime::strCurrentTime()).arg(token_addr);
 
     QStringList args;
     args << m_approvePage->scriptName() << token_addr;// << "pos_manager";
@@ -196,7 +196,7 @@ void EthersPage::slotCheckUpproved(QString token_addr)
 }
 void EthersPage::slotApprove(const QStringList &tx_params)
 {
-    qDebug()<<QString("%1 .... slotApprove sum for token_addr (%2)").arg(LTime::strCurrentTime()).arg(tx_params.first());
+   // qDebug()<<QString("%1 .... slotApprove sum for token_addr (%2)").arg(LTime::strCurrentTime()).arg(tx_params.first());
 
     QStringList args;
     args << m_approvePage->scriptName();
@@ -207,19 +207,19 @@ void EthersPage::slotApprove(const QStringList &tx_params)
 }
 void EthersPage::slotCheckTx(const QStringList &args)
 {
-    qDebug()<<QString("%1 .... slotCheckTx, args %2").arg(LTime::strCurrentTime()).arg(args.count());
+   // qDebug()<<QString("%1 .... slotCheckTx, args %2").arg(LTime::strCurrentTime()).arg(args.count());
     m_procObj->setArgs(args);
     startProcessObj();
 }
 void EthersPage::slotPoolAction(const QStringList &args)
 {
-    qDebug()<<QString("%1 .... slotPoolAction, args %2").arg(LTime::strCurrentTime()).arg(args.count());
+  //  qDebug()<<QString("%1 .... slotPoolAction, args %2").arg(LTime::strCurrentTime()).arg(args.count());
     m_procObj->setArgs(args);
     startProcessObj();
 }
 void EthersPage::slotWalletTx(const QStringList &args)
 {
-    qDebug()<<QString("%1 .... slotWalletTx, args %2").arg(LTime::strCurrentTime()).arg(args.count());
+ //   qDebug()<<QString("%1 .... slotWalletTx, args %2").arg(LTime::strCurrentTime()).arg(args.count());
     m_procObj->setArgs(args);
     startProcessObj();
 }
@@ -267,7 +267,7 @@ void EthersPage::save(QSettings &settings)
 QString EthersPage::transformJsonResult(const QString &str_json) const
 {
     QString s = str_json.trimmed();
-    qDebug()<<QString("transformJsonResult STAGE1: %1").arg(s);
+  //  qDebug()<<QString("transformJsonResult STAGE1: %1").arg(s);
     if (s.isEmpty()) return s;
     int len = s.length();
     if (s.at(0) != '{' || s.at(len-1) != '}') return QString("invalid_json");

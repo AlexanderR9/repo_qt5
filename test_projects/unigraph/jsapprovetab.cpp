@@ -75,12 +75,12 @@ void JSApproveTab::initPopupMenu()
 }
 void JSApproveTab::slotUpdateApproved()
 {
-    qDebug("JSApproveTab::slotUpdateApproved()");
+    //qDebug("JSApproveTab::slotUpdateApproved()");
     int row = m_table->curSelectedRow();
     if (row < 0) {emit signalError("You must select row"); return;}
 
     QTableWidget *t = m_table->table();
-    qDebug()<<QString("token=%1  addr=%2").arg(t->item(row, TOKEN_COL)->text()).arg(t->item(row, ADDRESS_COL)->text());
+   // qDebug()<<QString("token=%1  addr=%2").arg(t->item(row, TOKEN_COL)->text()).arg(t->item(row, ADDRESS_COL)->text());
 
     QString token_addr = t->item(row, ADDRESS_COL)->text().trimmed();
     t->setEnabled(false);
@@ -88,11 +88,11 @@ void JSApproveTab::slotUpdateApproved()
 }
 void JSApproveTab::slotSendApprove()
 {
-    qDebug("JSApproveTab::slotSendApprove()");
+  //  qDebug("JSApproveTab::slotSendApprove()");
     int row = m_table->curSelectedRow();
     if (row < 0) {emit signalError("You must select row"); return;}
     QTableWidget *t = m_table->table();
-    qDebug()<<QString("token=%1  addr=%2").arg(t->item(row, TOKEN_COL)->text()).arg(t->item(row, ADDRESS_COL)->text());
+   // qDebug()<<QString("token=%1  addr=%2").arg(t->item(row, TOKEN_COL)->text()).arg(t->item(row, ADDRESS_COL)->text());
     QString token_addr = t->item(row, ADDRESS_COL)->text().trimmed();
     //t->setEnabled(false);
 
@@ -117,8 +117,8 @@ void JSApproveTab::slotSendApprove()
 }
 void JSApproveTab::parseJSResult(const QJsonObject &j_result)
 {
-    qDebug("JSApproveTab::parseJSResult");
-    qDebug() << j_result;
+   // qDebug("JSApproveTab::parseJSResult");
+   // qDebug() << j_result;
     m_table->table()->setEnabled(true);
 
     QString operation = j_result.value("type").toString().trimmed();
@@ -130,7 +130,7 @@ void JSApproveTab::parseJSResult(const QJsonObject &j_result)
 }
 void JSApproveTab::answerUpdate(const QJsonObject &j_result)
 {
-    qDebug("JSApproveTab::answerUpdate");
+  //  qDebug("JSApproveTab::answerUpdate");
     QTableWidget *t = m_table->table();
 
     bool ok;
@@ -154,7 +154,7 @@ void JSApproveTab::answerUpdate(const QJsonObject &j_result)
 }
 void JSApproveTab::answerApprove(const QJsonObject &j_result)
 {
-    qDebug("JSApproveTab::answerApprove");
+   // qDebug("JSApproveTab::answerApprove");
     QString code = j_result.value("result_code").toString().trimmed();
 
     if (code == "OK")
@@ -204,7 +204,7 @@ void JSApproveTab::slotGetApprovedSize(QString whom, const QString &token_addr, 
 {
     approved_size = 0;
     whom = whom.trimmed().toLower();
-    qDebug()<<QString("JSApproveTab::slotGetApprovedSize whom=[%1]").arg(whom);
+  //  qDebug()<<QString("JSApproveTab::slotGetApprovedSize whom=[%1]").arg(whom);
 
     QTableWidget *t = m_table->table();
     int n = t->rowCount();
@@ -216,7 +216,7 @@ void JSApproveTab::slotGetApprovedSize(QString whom, const QString &token_addr, 
             bool ok = false;
             if (whom == "swap_router")
             {
-                 qDebug()<<QString("cell_text[%1] => float").arg(t->item(i, 2)->text());
+                // qDebug()<<QString("cell_text[%1] => float").arg(t->item(i, 2)->text());
                 a = t->item(i, 2)->text().toFloat(&ok);
             }
             else if (whom == "pos_manager") a = t->item(i, 1)->text().toFloat(&ok);
@@ -259,14 +259,14 @@ void JSApproveTab::rewriteLocalDataFile()
 }
 void JSApproveTab::removeRecFromLocalData(const QString &token_addr)
 {
-    qDebug()<<QString("removeRecFromLocalData [%1]").arg(token_addr);
+  //  qDebug()<<QString("removeRecFromLocalData [%1]").arg(token_addr);
     if (m_locData.isEmpty()) return;
 
     int n = m_locData.count();
     for (int i=0; i<n; i++)
         if (m_locData.at(i).contains(token_addr))
         {
-            qDebug()<<QString("find, remove index %1").arg(i);
+           // qDebug()<<QString("find, remove index %1").arg(i);
             m_locData.removeAt(i); break;
         }
 

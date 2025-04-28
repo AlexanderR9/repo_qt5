@@ -6,7 +6,7 @@
 #include "jstxdialog.h"
 #include "lhttp_types.h"
 #include "lhttpapirequester.h"
-
+#include "walletbalancehistory.h"
 
 #include <QTableWidget>
 #include <QTableWidgetItem>
@@ -29,7 +29,8 @@
 JSWalletTab::JSWalletTab(QWidget *parent)
     :LSimpleWidget(parent, 10),
       m_table(NULL),
-      m_priceRequester(NULL)
+      m_priceRequester(NULL),
+      m_balanceHistory(NULL)
 {
     setObjectName("js_wallet_tab");
 
@@ -41,6 +42,16 @@ JSWalletTab::JSWalletTab(QWidget *parent)
 
     //init http obj
     initHttpRequester();
+
+    //init BalanceHistory
+    initBalanceHistoryObj();
+}
+void JSWalletTab::initBalanceHistoryObj()
+{
+    m_balanceHistory = new WalletBalanceHistory(this);
+    connect(m_balanceHistory, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
+    connect(m_balanceHistory, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
+
 }
 void JSWalletTab::loadAssetIcons()
 {
@@ -324,6 +335,21 @@ QMap<QString, QString> JSWalletTab::assetsTokens() const
     }
     return list;
 }
+QMap<QString, float> JSWalletTab::assetsBalances() const
+{
+    QMap<QString, float> map;
+    QTableWidget *t = m_table->table();
+
+    bool ok = false;
+    int n = assetsCount();
+    for (int i=0; i<n; i++)
+    {
+        QString t_addr = t->item(i, ADDRESS_COL)->text().trimmed();
+        float amount = t->item(i, BALANCES_COL)->text().trimmed().toFloat(&ok);
+        if (ok) map.insert(t_addr, amount);
+    }
+    return map;
+}
 void JSWalletTab::loadAssetsFromFile()
 {
     m_table->removeAllRows();
@@ -410,6 +436,11 @@ void JSWalletTab::updateBalances(const QJsonObject &j_result)
         updateTokenBalance(t_addr, value);
     }
     m_table->resizeByContents();
+
+    //update BalancesHistory
+    QMap<QString, float> balances(assetsBalances());
+    if (!balances.isEmpty()) m_balanceHistory->updateBalances(balances);
+
     sendHttpReq();
 }
 void JSWalletTab::updateTokenBalance(const QString &t_addr, const QString &value)

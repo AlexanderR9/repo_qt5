@@ -36,7 +36,7 @@ QString LFile::readFileSL(QString fname, QStringList &list, QString spliter)
     return QString();
 }
 
-QString LFile::writeFileSL(QString fname, QStringList &list)
+QString LFile::writeFileSL(QString fname, const QStringList &list)
 {
     if (fname.trimmed().isEmpty()) return QString("filename is empty!");
 
@@ -166,6 +166,30 @@ QString LFile::appendFile(QString fname, const QString &data)
     QTextStream stream(&f);
     stream<<data;
     f.close();
+    return QString();
+}
+QString LFile::appendFileSL(QString fname, const QStringList &list)
+{
+    if (fname.trimmed().isEmpty()) return QString("filename is empty!");
+    if (list.isEmpty()) return QString("data list is empty!");
+
+    int n = list.count();
+    if (fileExists(fname))
+    {
+        QFile f(fname);
+        if (!f.open(QIODevice::Append))
+            return QString("file [%1] not open for append data!").arg(fname);
+
+        QTextStream stream(&f);
+        for(int i=0; i<n; i++)
+            stream<<list.at(i)<<"\n";
+        f.close();
+    }
+    else
+    {
+        QString err = writeFileSL(fname, list);
+        if (!err.isEmpty()) return err;
+    }
     return QString();
 }
 QString LFile::dirFolders(QString dir_path, QStringList &list, QString filter_text)
