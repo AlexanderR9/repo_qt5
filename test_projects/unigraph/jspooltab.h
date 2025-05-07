@@ -40,7 +40,7 @@ public:
     JSPoolTab(QWidget*);
     virtual ~JSPoolTab() {}
 
-    void loadPoolsFromFile(); //загрузить список пулов из файла node_js
+    void loadPoolsFromFile(QString); //загрузить список пулов из файла node_js
     void parseJSResult(const QJsonObject&);
 
 protected:

@@ -39,13 +39,13 @@ JSApproveTab::JSApproveTab(QWidget *parent)
     v_splitter->addWidget(m_table);
     initPopupMenu();
 }
-void JSApproveTab::setTokens(const QMap<QString, QString> &map)
+void JSApproveTab::setTokens(const QMap<QString, QString> &map, QString chain_name)
 {
     m_table->removeAllRows();
     QStringList list(map.keys());
     foreach (const QString &t_name, list)
     {
-        if (t_name == SubGraph_CommonSettings::nativeTokenByChain("polygon"))  continue;
+        if (t_name == SubGraph_CommonSettings::nativeCoinByChain(chain_name))  continue;
         QStringList row_data;
         row_data << t_name.trimmed() << "?" << "?" << map.value(t_name).toLower().trimmed();
         LTable::addTableRow(m_table->table(), row_data);

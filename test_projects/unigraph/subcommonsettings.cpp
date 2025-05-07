@@ -106,17 +106,18 @@ QString SubGraph_CommonSettings::tokenIdCoingecko(QString token)
     if (token == "UNI")     return "uniswap";
     if (token == "LDO")     return "lido-dao";
     if (token == "CRV")     return "curve-dao-token";
+    if (token == "CAKE")    return "pancakeswap-token";
 
     return QString();
 }
-QString SubGraph_CommonSettings::nativeTokenByChain(QString chain_name)
+QString SubGraph_CommonSettings::nativeCoinByChain(QString chain_name)
 {
     chain_name = chain_name.trimmed().toLower();
     if (chain_name == "polygon") return "POL";
     if (chain_name == "bnb") return "BNB";
     //if (chain_name == "base") return "BASE";
-    //if (chain_name == "optimism") return "OP";
-    //if (chain_name == "arbitrum") return "ARB";
+    if (chain_name == "optimism") return "ETH";
+    if (chain_name == "arbitrum") return "ETH";
     if (chain_name == "etherium") return "ETH";
     return QString();
 }

@@ -14,7 +14,7 @@ public:
     JSApproveTab(QWidget*);
     virtual ~JSApproveTab() {}
 
-    void setTokens(const QMap<QString, QString>&);
+    void setTokens(const QMap<QString, QString>&, QString);
     void parseJSResult(const QJsonObject&);
 
     inline QString scriptName() const {return QString("qt_approve.js");}

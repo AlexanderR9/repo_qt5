@@ -49,7 +49,7 @@ public:
     JSTxTab(QWidget*);
     virtual ~JSTxTab() {}
 
-    void loadTxFromFile(); //загрузить список hash из файла
+    void loadTxFromFile(QString); //загрузить список hash из файла
     inline int txCount() const {return tx_data.count();}
     void parseJSResult(const QJsonObject&);
 

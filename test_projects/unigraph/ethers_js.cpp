@@ -5,10 +5,12 @@
 #include "jsapprovetab.h"
 #include "jstxtab.h"
 #include "jspooltab.h"
+#include "balancehistorytab.h"
 #include "subcommonsettings.h"
 #include "ltime.h"
 #include "lfile.h"
 #include "lstring.h"
+
 
 #include <QDebug>
 #include <QSplitter>
@@ -35,16 +37,25 @@ EthersPage::EthersPage(QWidget *parent)
       m_walletPage(NULL),
       m_approvePage(NULL),
       m_txPage(NULL),
-      m_poolPage(NULL)
+      m_poolPage(NULL),
+      m_balanceHistoryPage(NULL)
 {
     setObjectName("ethers_page");
     initWidgets();
     initProcessObj();
 
+    m_walletPage->updateChain();
+
+    /*
     m_walletPage->loadAssetsFromFile();
     m_approvePage->setTokens(m_walletPage->assetsTokens());
     m_txPage->loadTxFromFile();
     m_poolPage->loadPoolsFromFile();
+
+    m_balanceHistoryPage->setAssets(m_walletPage->assetsTokens());
+    m_balanceHistoryPage->reloadHistory();
+    */
+
 }
 void EthersPage::initProcessObj()
 {
@@ -55,6 +66,27 @@ void EthersPage::initProcessObj()
     m_procObj->setProcessDir(sub_commonSettings.nodejs_path);
     m_procObj->setDebugLevel(5);
 }
+void EthersPage::slotChainUpdated()
+{
+    qDebug("////////////////EthersPage::slotChainUpdated()///////////////////////");
+    QString icon_path = SubGraph_CommonSettings::iconPathByChain(m_walletPage->chainName()).trimmed();
+    if (LFile::fileExists(icon_path))
+    {
+        int n_tab = m_tab->tab()->count();
+        for (int i=0; i<n_tab; i++)
+            m_tab->tab()->setTabIcon(i, QIcon(icon_path));
+    }
+
+    //init data for other pages
+    m_approvePage->setTokens(m_walletPage->assetsTokens(), m_walletPage->chainName());
+    m_txPage->loadTxFromFile(m_walletPage->chainName());
+    m_poolPage->loadPoolsFromFile(m_walletPage->chainName());
+
+    //init balanceHistoryPage
+    m_balanceHistoryPage->setAssets(m_walletPage->assetsTokens());
+    m_balanceHistoryPage->reloadHistory(m_walletPage->chainName());
+
+}
 void EthersPage::initWidgets()
 {
     m_tab = new LTabWidgetBox(this);
@@ -63,9 +95,7 @@ void EthersPage::initWidgets()
     v_splitter->addWidget(m_tab);
 
     m_walletPage = new JSWalletTab(this);
-    QString icon_path = SubGraph_CommonSettings::iconPathByChain("polygon").trimmed();
-    if (LFile::fileExists(icon_path)) m_tab->tab()->addTab(m_walletPage, QIcon(icon_path), "Wallet");
-    else m_tab->tab()->addTab(m_walletPage, "Wallet");
+    m_tab->tab()->addTab(m_walletPage, "Wallet");
 
     m_approvePage = new JSApproveTab(this);
     m_tab->tab()->addTab(m_approvePage, "Approve");
@@ -76,9 +106,14 @@ void EthersPage::initWidgets()
     m_poolPage = new JSPoolTab(this);
     m_tab->tab()->addTab(m_poolPage, "Pools");
 
+    m_balanceHistoryPage = new BalanceHistoryTab(this);
+    m_tab->tab()->addTab(m_balanceHistoryPage, "Balance history");
+
+
     connect(m_walletPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_walletPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
     connect(m_walletPage, SIGNAL(signalWalletTx(const QStringList&)), this, SLOT(slotWalletTx(const QStringList&)));
+    connect(m_walletPage, SIGNAL(signalChainUpdated()), this, SLOT(slotChainUpdated()));
     connect(m_approvePage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_approvePage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
     connect(m_approvePage, SIGNAL(signalCheckUpproved(QString)), this, SLOT(slotCheckUpproved(QString)));
@@ -93,6 +128,9 @@ void EthersPage::initWidgets()
     connect(m_poolPage, SIGNAL(signalPoolAction(const QStringList&)), this, SLOT(slotPoolAction(const QStringList&)));
     connect(m_poolPage, SIGNAL(signalResetApproved(const QString&)), m_approvePage, SLOT(slotResetRecord(const QString&)));
     connect(m_poolPage, SIGNAL(signalGetApprovedSize(QString, const QString&, float&)), m_approvePage, SLOT(slotGetApprovedSize(QString, const QString&, float&)));
+    connect(m_balanceHistoryPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
+    connect(m_balanceHistoryPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
+    connect(m_walletPage, SIGNAL(signalBalancesUpdated()), m_balanceHistoryPage, SLOT(slotBalancesUpdated()));
 
 }
 void EthersPage::slotScriptFinished()
@@ -112,7 +150,7 @@ void EthersPage::startUpdating(quint16 t)
     }
     if (txPageNow())
     {
-        m_txPage->loadTxFromFile();
+        m_txPage->loadTxFromFile(m_walletPage->chainName());
         emit signalStopUpdating();
         return;
     }
@@ -136,9 +174,6 @@ bool EthersPage::poolsPageNow() const
 {
     return m_tab->tab()->currentWidget()->objectName().contains("pools");
 }
-
-
-
 void EthersPage::tryUpdateBalace()
 {
   //  qDebug()<<QString("%1 .... tryUpdateBalace").arg(LTime::strCurrentTime());
@@ -231,6 +266,12 @@ void EthersPage::slotJsonReply(int req_type, const QJsonObject &j_result)
     {
         emit signalError(j_result.value("error").toString());
         emit signalScriptBroken();
+        return;
+    }
+
+    if (j_result.keys().count() == 1 && j_result.keys().contains("chain"))
+    {
+        m_walletPage->parseJSResult(j_result);
         return;
     }
 

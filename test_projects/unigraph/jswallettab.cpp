@@ -30,7 +30,8 @@ JSWalletTab::JSWalletTab(QWidget *parent)
     :LSimpleWidget(parent, 10),
       m_table(NULL),
       m_priceRequester(NULL),
-      m_balanceHistory(NULL)
+      m_balanceHistory(NULL),
+      m_currentChain(QString())
 {
     setObjectName("js_wallet_tab");
 
@@ -99,7 +100,6 @@ void JSWalletTab::slotHttpReqFinished(int result)
 {
     qDebug()<<QString("JSWalletTab::slotHttpReqFinished: REQUEST FINISHED result=%1").arg(result);
     emit signalMsg(QString("price request finished, result %1").arg(result));
-    //if (!updatingRunning()) {qDebug("!updatingRunning()"); return;}
 
     const LHttpApiReplyData& r = m_priceRequester->lastReply();
     if (r.data.isEmpty()) emit signalMsg("WARNING: REPLY JSON IS EMPTY");
@@ -108,28 +108,6 @@ void JSWalletTab::slotHttpReqFinished(int result)
         qDebug("parse HTTP response");
         parseHttpResponse(r.data);
         m_table->resizeByContents();
-
-        /*
-        QStringList keys(r.data.keys());
-        if (keys.isEmpty()) qDebug("keys is empty");
-        else
-        {
-            qDebug()<<QString("keys %1, first %2").arg(keys.count()).arg(keys.first());
-            const QJsonValue &j_data = r.data.value(keys.first());
-            if (j_data.isObject())
-            {
-                QJsonValue j_price = j_data.toObject().value("usd");
-                if (j_price.isString()) qDebug()<<QString("IS_STRING_TYPE: %1").arg(j_price.toString());
-                else if (j_price.isDouble()) qDebug()<<QString("IS_DOUBLE_TYPE: %1").arg(j_price.toDouble());
-
-            }
-            else qWarning("WARNING j_data is not jobj");
-
-        }
-*/
-
-
-     //   emit signalJsonReply(userSign(), r.data);
     }
     else emit signalError("request fault");
 }
@@ -237,6 +215,13 @@ void JSWalletTab::slotWrap()
     }
     else emit signalMsg("operation was canceled!");
 }
+void JSWalletTab::updateChain()
+{
+    emit signalMsg("Try get chain name ....");
+    QStringList tx_params;
+    tx_params << "qt_chain.js";
+    signalWalletTx(tx_params);
+}
 void JSWalletTab::slotUnwrap()
 {
     int row = m_table->curSelectedRow();
@@ -277,7 +262,7 @@ void JSWalletTab::slotTransfer()
     //prepare dialog params
     TxDialogData data(txTransfer);
     data.token_name = t->item(row, TOKEN_COL)->text().trimmed();
-    if (data.token_name != SubGraph_CommonSettings::nativeTokenByChain("polygon"))
+    if (data.token_name != SubGraph_CommonSettings::nativeCoinByChain(chainName()))
         data.token_addr = t->item(row, ADDRESS_COL)->text().trimmed();
     TxTransferDialog d(data, this);
     d.exec();
@@ -312,9 +297,8 @@ void JSWalletTab::initNativeToken()
 {
     QStringList token_data;
     token_data << SubGraph_CommonSettings::nativeTokenAddress();
-    token_data << SubGraph_CommonSettings::nativeTokenByChain("polygon");
-    token_data << "polygon" << QString::number(18);
-
+    token_data << SubGraph_CommonSettings::nativeCoinByChain(chainName());
+    token_data << chainName() << QString::number(18);
     addTokenToTable(token_data);
 }
 int JSWalletTab::assetsCount() const
@@ -414,15 +398,18 @@ void JSWalletTab::addTokenToTable(const QStringList &token_data)
         return;
     }
 
-    QTableWidget *t = m_table->table();
-    QStringList row_data;
-    QString t_addr = token_data.first().trimmed().toLower();
-    row_data << QString::number(t->rowCount()+1) << token_data.at(1) << t_addr;
-    row_data << token_data.last() << "?" << "---";
-    LTable::addTableRow(t, row_data);
+    if (token_data.at(2).trimmed().toLower() == m_currentChain) //token line mast be for current chain
+    {
+        QTableWidget *t = m_table->table();
+        QStringList row_data;
+        QString t_addr = token_data.first().trimmed().toLower();
+        row_data << QString::number(t->rowCount()+1) << token_data.at(1) << t_addr;
+        row_data << token_data.last() << "?" << "---";
+        LTable::addTableRow(t, row_data);
 
-    t->item(t->rowCount()-1, ADDRESS_COL)->setTextColor("#4682B4");
-    t->item(t->rowCount()-1, BALANCES_COL)->setTextColor(Qt::gray);
+        t->item(t->rowCount()-1, ADDRESS_COL)->setTextColor("#4682B4");
+        t->item(t->rowCount()-1, BALANCES_COL)->setTextColor(Qt::gray);
+    }
 }
 void JSWalletTab::updateBalances(const QJsonObject &j_result)
 {
@@ -439,7 +426,11 @@ void JSWalletTab::updateBalances(const QJsonObject &j_result)
 
     //update BalancesHistory
     QMap<QString, float> balances(assetsBalances());
-    if (!balances.isEmpty()) m_balanceHistory->updateBalances(balances);
+    if (!balances.isEmpty())
+    {
+        m_balanceHistory->updateBalances(balances, chainName());
+        emit signalBalancesUpdated();
+    }
 
     sendHttpReq();
 }
@@ -473,10 +464,25 @@ void JSWalletTab::parseJSResult(const QJsonObject &j_result)
     qDebug("JSWalletTab::parseJSResult");
     m_table->table()->setEnabled(true);
 
-    QString operation = j_result.value("type").toString().trimmed();
-    if (operation == "update") updateBalances(j_result);
-    else if (operation.contains("tx_")) lookTxAnswer(j_result);
-    else emit signalError(QString("invalid answer type: %1").arg(operation));
+    if (j_result.keys().contains("type"))
+    {
+        QString operation = j_result.value("type").toString().trimmed();
+        if (operation == "update") updateBalances(j_result);
+        else if (operation.contains("tx_")) lookTxAnswer(j_result);
+        else emit signalError(QString("invalid answer type: %1").arg(operation));
+    }
+    else if (j_result.keys().contains("chain"))
+    {
+        m_currentChain = j_result.value("chain").toString().trimmed().toLower();
+        qDebug()<<QString("JSWalletTab,  m_currentChain: [%1]").arg(m_currentChain);
+        loadAssetsFromFile();
+        if (assetsCount() > 0) emit signalChainUpdated();
+        else qWarning("JSWalletTab::parseJSResult WARNING: invalid chain, assetsCount == 0");
+    }
+    else
+    {
+        emit signalError("JSWalletTab::parseJSResult  invalid JSON response");
+    }
 
     m_table->resizeByContents();
 }

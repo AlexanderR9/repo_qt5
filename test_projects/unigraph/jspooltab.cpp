@@ -166,7 +166,7 @@ void JSPoolTab::initTable()
 
     v_splitter->addWidget(m_table);
 }
-void JSPoolTab::loadPoolsFromFile()
+void JSPoolTab::loadPoolsFromFile(QString chain_name)
 {
  //   qDebug("-----------------JSPoolTab::loadPoolsFromFile()--------------------------");
     m_poolData.clear();
@@ -181,6 +181,7 @@ void JSPoolTab::loadPoolsFromFile()
     QString err = LFile::readFileSL(fname, fdata);
     if (!err.isEmpty()) {emit signalError(err); return;}
 
+    chain_name = chain_name.trimmed().toUpper();
     foreach (const QString &v, fdata)
     {
         QString fline = v.trimmed();
@@ -189,7 +190,11 @@ void JSPoolTab::loadPoolsFromFile()
 
         JSPoolRecord rec;
         rec.fromFileLine(fline);
-        if (!rec.invalid()) m_poolData.append(rec);
+        if (!rec.invalid())
+        {
+            if (rec.chain == chain_name)
+                m_poolData.append(rec);
+        }
     }
     emit signalMsg(QString("loaded %1 POOL records").arg(m_poolData.count()));
   //  qDebug()<<QString("loaded %1 POOL records").arg(m_poolData.count());
@@ -321,7 +326,7 @@ void JSPoolRecord::reset()
     fee = 0;
     token0_addr.clear();
     token1_addr.clear();
-    chain = QString("POLYGON");
+    chain = QString("?");
     assets.clear();
 }
 bool JSPoolRecord::invalid() const
@@ -340,11 +345,12 @@ void JSPoolRecord::fromFileLine(const QString &fline)
     if (s.isEmpty()) return;
 
     QStringList list = LString::trimSplitList(s, "/");
-    if (list.count() != 5) {qWarning()<<QString("JSPoolRecord::fromFileLine WARNING list.count(%1)!=5").arg(list.count()); return;}
+    if (list.count() != 6) {qWarning()<<QString("JSPoolRecord::fromFileLine WARNING list.count(%1)!=5").arg(list.count()); return;}
    // qDebug()<<QString("fromFileLine list.count()[%1]").arg(list.count());
 
 
     int i = 0;
+    chain = list.at(i).trimmed().toUpper(); i++;
     address = list.at(i).trimmed().toLower(); i++;
     assets =  list.at(i).trimmed(); i++;
     QStringList desc_list = LString::trimSplitList(assets, ":");

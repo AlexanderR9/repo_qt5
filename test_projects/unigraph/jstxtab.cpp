@@ -51,12 +51,13 @@ void JSTxTab::initTable()
 
     v_splitter->addWidget(m_table);
 }
-void JSTxTab::loadTxFromFile()
+void JSTxTab::loadTxFromFile(QString chain_name)
 {
     qDebug("-----------------JSTxTab::loadTxFromFile()--------------------------");
     m_locData.clear();
     tx_data.clear();
     m_table->removeAllRows();
+    chain_name = chain_name.trimmed().toUpper();
 
     QString fname = QString("%1%2%3").arg(sub_commonSettings.nodejs_path).arg(QDir::separator()).arg(JS_TX_FILE);
     emit signalMsg(QString("try load transactions list [%1].........").arg(fname));
@@ -77,7 +78,11 @@ void JSTxTab::loadTxFromFile()
 
         JSTxRecord rec;
         rec.fromFileLine(fline);
-        if (!rec.invalid()) tx_data.append(rec);
+        if (!rec.invalid())
+        {
+            if (rec.chain == chain_name)
+                tx_data.append(rec);
+        }
     }
     emit signalMsg(QString("loaded %1 TX records").arg(tx_data.count()));
     qDebug()<<QString("loaded %1 TX records").arg(tx_data.count());
@@ -314,7 +319,7 @@ QString JSTxRecord::strFee() const
 {
     //if (txFault()) return "?";
     if (txFault()) return QString::number(fee, 'f', 4);
-    if (txOk()) return QString::number(fee, 'f', 6);
+    if (txOk()) return QString::number(fee, 'f', 8);
     return "---";
 }
 QString JSTxRecord::strResult() const

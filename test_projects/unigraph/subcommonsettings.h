@@ -40,7 +40,7 @@ struct SubGraph_CommonSettings
     static QString tickerByChainName(QString);
     static double tickKwant() {return 1.0001;}
     static QString nativeTokenAddress() {return QString("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");}
-    static QString nativeTokenByChain(QString);
+    static QString nativeCoinByChain(QString);
     static QString iconPathByChain(QString); //icon file path by chain name
     static QString commonIconsPath() {return QString(":/icons/images");} //базовый путь к иконкам проекта
     static bool isStableToken(QString);

@@ -12,6 +12,7 @@ class JSWalletTab;
 class JSApproveTab;
 class JSTxTab;
 class JSPoolTab;
+class BalanceHistoryTab;
 
 
 //EthersPage
@@ -35,7 +36,6 @@ public:
 
     virtual void startUpdating(quint16); //выполняется когда пользователь нажимает кнопку "Start"
 
-   // QString freeQueryData() const;
 
 protected:
     LProcessObj     *m_procObj;
@@ -44,6 +44,7 @@ protected:
     JSApproveTab    *m_approvePage;
     JSTxTab         *m_txPage;
     JSPoolTab       *m_poolPage;
+    BalanceHistoryTab   *m_balanceHistoryPage;
 
     void initWidgets();
     void initProcessObj();
@@ -68,6 +69,7 @@ public slots:
     void slotWalletTx(const QStringList&);
     void slotCheckTx(const QStringList&);
     void slotPoolAction(const QStringList&);
+    void slotChainUpdated();
 
 
 protected slots:
