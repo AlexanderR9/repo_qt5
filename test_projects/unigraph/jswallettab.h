@@ -58,6 +58,7 @@ protected slots:
 
 public slots:
     void slotScriptBroken();
+    void slotGetTokenPrice(const QString&, float&);
 
 signals:
     void signalWalletTx(const QStringList&);

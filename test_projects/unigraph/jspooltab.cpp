@@ -18,7 +18,8 @@
 #define FEE_COL                 3
 #define POOL_ADDR_COL           1
 #define POOL_STATE_COL          5
-#define NOTE_COL                6
+#define TVL_COL                 6
+#define NOTE_COL                7
 
 
 
@@ -159,7 +160,7 @@ void JSPoolTab::initTable()
     m_table->setTitle("Pools list");
     m_table->vHeaderHide();
     QStringList headers;
-    headers << "Chain" << "Pool address" << "Assets" << "Fee" << "Tick space" << "Current state" << "Note";
+    headers << "Chain" << "Pool address" << "Assets" << "Fee" << "Tick space" << "Current state" << "TVL" << "Note";
     LTable::setTableHeaders(m_table->table(), headers);
     m_table->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::SingleSelection);
     m_table->setSelectionColor("#87CEEB");
@@ -213,7 +214,7 @@ void JSPoolTab::reloadTable()
         row_data.clear();
         const JSPoolRecord &rec = m_poolData.at(i);
         row_data << rec.chain << rec.address << rec.assets << rec.strFee();
-        row_data << QString::number(rec.tickSpace()) << "?" << "---";
+        row_data << QString::number(rec.tickSpace()) << "?" << "-1" << "---";
         LTable::addTableRow(t, row_data);
 
         if (rec.fee == 100) t->item(i, FEE_COL)->setTextColor(Qt::gray);
@@ -263,6 +264,23 @@ void JSPoolTab::answerState(const QJsonObject &j_result)
 
             m_table->table()->item(i, NOTE_COL)->setText("getted state");
             m_table->table()->item(i, NOTE_COL)->setTextColor("#4B0082");
+
+            float tvl0 = j_result.value("tvl0").toString().toFloat();
+            float tvl1 = j_result.value("tvl1").toString().toFloat();
+            QString str_tvl = QString("%1/%2").arg(int(tvl0)).arg(int(tvl1));
+
+
+            emit signalGetTokenPrice(m_poolData.at(i).token0_addr, p0);
+            emit signalGetTokenPrice(m_poolData.at(i).token1_addr, p1);
+            if (p0 > 0 && p1 > 0)
+            {
+                float tvl_st = (p0*tvl0 + p1*tvl1)/1000;
+                str_tvl = QString("%1 (%3 k_USD)").arg(str_tvl).arg(QString::number(tvl_st, 'f', 1));
+            }
+            else str_tvl = QString("%1 (? k_USD)").arg(str_tvl);
+
+            m_table->table()->item(i, TVL_COL)->setText(str_tvl);
+
 
             break;
         }

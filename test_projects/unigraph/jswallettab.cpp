@@ -507,4 +507,25 @@ void JSWalletTab::slotScriptBroken()
 {
     m_table->table()->setEnabled(true);
 }
+void JSWalletTab::slotGetTokenPrice(const QString &t_addr, float &cur_price)
+{
+    cur_price = -1;
+    QTableWidget *t = m_table->table();
+    bool ok = false;
+    int n = assetsCount();
+    for (int i=0; i<n; i++)
+    {
+        QString addr = t->item(i, ADDRESS_COL)->text().trimmed();
+        if (addr == t_addr)
+        {
+            if (t->item(i, TOKEN_COL)->text().contains("USD")) cur_price = 1;
+            else
+            {
+                float a = t->item(i, PRICE_COL)->text().toFloat(&ok);
+                if (ok) cur_price = a;
+            }
+            break;
+        }
+    }
+}
 

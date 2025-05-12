@@ -123,11 +123,14 @@ void EthersPage::initWidgets()
     connect(m_txPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_txPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
     connect(m_txPage, SIGNAL(signalCheckTx(const QStringList&)), this, SLOT(slotCheckTx(const QStringList&)));
+
     connect(m_poolPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_poolPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
     connect(m_poolPage, SIGNAL(signalPoolAction(const QStringList&)), this, SLOT(slotPoolAction(const QStringList&)));
     connect(m_poolPage, SIGNAL(signalResetApproved(const QString&)), m_approvePage, SLOT(slotResetRecord(const QString&)));
     connect(m_poolPage, SIGNAL(signalGetApprovedSize(QString, const QString&, float&)), m_approvePage, SLOT(slotGetApprovedSize(QString, const QString&, float&)));
+    connect(m_poolPage, SIGNAL(signalGetTokenPrice(const QString&, float&)), m_walletPage, SLOT(slotGetTokenPrice(const QString&, float&)));
+
     connect(m_balanceHistoryPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_balanceHistoryPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
     connect(m_walletPage, SIGNAL(signalBalancesUpdated()), m_balanceHistoryPage, SLOT(slotBalancesUpdated()));
