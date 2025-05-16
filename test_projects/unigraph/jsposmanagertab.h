@@ -28,6 +28,13 @@ protected:
     void reloadPidListToTable(const QJsonArray&);
     void jsonPidListReceived(const QJsonObject&);
     void jsonPosFileDataReceived(const QJsonObject&);
+    void jsonPosStateReceived(const QJsonObject&);
+
+    void initPopupMenu(); //инициализировать элементы всплывающего меню
+
+protected slots:
+    void slotGetPositionState();
+
 
 signals:
     void signalPosManagerAction(const QStringList&);

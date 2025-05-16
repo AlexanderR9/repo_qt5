@@ -19,6 +19,7 @@
 #define T_RANGE_COL         3
 #define STATE_COL           5
 #define LIQ_COL             6
+#define ASSETS_COL          4
 
 
 
@@ -35,16 +36,9 @@ JSPosManagerTab::JSPosManagerTab(QWidget *parent)
     //init tables
     initTables();
 
-    /*
     // init context menu
     initPopupMenu();
 
-    //init http obj
-    initHttpRequester();
-
-    //init BalanceHistory
-    initBalanceHistoryObj();
-    */
 }
 void JSPosManagerTab::initTables()
 {
@@ -99,9 +93,34 @@ void JSPosManagerTab::parseJSResult(const QJsonObject &j_result)
     {
         jsonPosFileDataReceived(j_result);
     }
+    else if (operation == "pos_state")
+    {
+        jsonPosStateReceived(j_result);
+    }
+
+
 
     m_tablePos->searchExec();
     m_tableLog->searchExec();
+}
+void JSPosManagerTab::jsonPosStateReceived(const QJsonObject &j_result)
+{
+    qDebug("JSPosManagerTab::jsonPosStateReceived");
+    int row = m_tablePos->curSelectedRow();
+    QTableWidget *t = m_tablePos->table();
+
+    t->item(row, ASSETS_COL)->setText(j_result.value("assets").toString());
+
+    QString s_state = QString("unclaimed(%1)").arg(j_result.value("reward").toString());
+    QString p_location = j_result.value("price_location").toString().toUpper().trimmed();
+    s_state = QString("%1 P=%2(%3)").arg(s_state).arg(j_result.value("price_current").toString()).arg(p_location);
+    t->item(row, STATE_COL)->setText(s_state);
+
+    if (j_result.value("liq").toString().trimmed().length() > 4)
+    {
+        if (p_location.contains("OUT")) LTable::setTableRowColor(t, row, "#FFDCDC");
+        else LTable::setTableRowColor(t, row, "#BAFBBA");
+    }
 }
 void JSPosManagerTab::jsonPosFileDataReceived(const QJsonObject &j_result)
 {
@@ -183,6 +202,37 @@ void JSPosManagerTab::reloadPidListToTable(const QJsonArray &j_arr)
         t->item(i, 0)->setTextColor("#6B8E23");
     }
 }
+void JSPosManagerTab::initPopupMenu()
+{
+    //prepare menu actions data
+    QList< QPair<QString, QString> > act_list;
+    QPair<QString, QString> pair1("Get state", QString("%1/r_scale.svg").arg(SubGraph_CommonSettings::commonIconsPath()));
+    act_list.append(pair1);
 
+    //QPair<QString, QString> pair2("Swap assets", TxDialogBase::iconByTXType(txSwap));
+    //act_list.append(pair2);
+
+    //init popup menu actions
+    m_tablePos->popupMenuActivate(act_list);
+
+    //connect OWN slots to popup actions
+    int i_menu = 0;
+    m_tablePos->connectSlotToPopupAction(i_menu, this, SLOT(slotGetPositionState())); i_menu++;
+    //m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotTrySwapAssets())); i_menu++;
+
+}
+void JSPosManagerTab::slotGetPositionState()
+{
+   // qDebug("JSPoolTab::slotGetPoolState()");
+    int row = m_tablePos->curSelectedRow();
+    if (row < 0) {emit signalError("You must select row"); return;}
+
+    QStringList params;
+    m_tablePos->setEnabled(false);
+    m_tableLog->setEnabled(false);
+
+    params << "qt_posstate.js" << m_tablePos->table()->item(row, 0)->text().trimmed();
+    emit signalPosManagerAction(params);
+}
 
 

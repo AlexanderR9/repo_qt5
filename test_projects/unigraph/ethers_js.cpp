@@ -134,6 +134,8 @@ void EthersPage::slotScriptFinished()
 }
 void EthersPage::startUpdating(quint16 t)
 {
+    Q_UNUSED(t);
+
  //   qDebug()<<QString("EthersPage::startUpdating t=%1").arg(t);
     if (walletPageNow())
     {
@@ -318,11 +320,15 @@ void EthersPage::load(QSettings &settings)
     UG_BasePage::load(settings);
     int i_tab = settings.value(QString("%1/tab_index").arg(objectName()), -1).toInt();
     if (i_tab >= 0) m_tab->tab()->setCurrentIndex(i_tab);
+
+    if (m_posManagerPage) m_posManagerPage->load(settings);
 }
 void EthersPage::save(QSettings &settings)
 {
     UG_BasePage::save(settings);
     settings.setValue(QString("%1/tab_index").arg(objectName()), m_tab->tab()->currentIndex());
+
+    if (m_posManagerPage) m_posManagerPage->save(settings);
 }
 void EthersPage::initProcessObj()
 {
