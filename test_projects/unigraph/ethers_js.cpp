@@ -5,6 +5,7 @@
 #include "jsapprovetab.h"
 #include "jstxtab.h"
 #include "jspooltab.h"
+#include "jsposmanagertab.h"
 #include "balancehistorytab.h"
 #include "subcommonsettings.h"
 #include "ltime.h"
@@ -38,33 +39,14 @@ EthersPage::EthersPage(QWidget *parent)
       m_approvePage(NULL),
       m_txPage(NULL),
       m_poolPage(NULL),
-      m_balanceHistoryPage(NULL)
+      m_balanceHistoryPage(NULL),
+      m_posManagerPage(NULL)
 {
     setObjectName("ethers_page");
     initWidgets();
     initProcessObj();
 
     m_walletPage->updateChain();
-
-    /*
-    m_walletPage->loadAssetsFromFile();
-    m_approvePage->setTokens(m_walletPage->assetsTokens());
-    m_txPage->loadTxFromFile();
-    m_poolPage->loadPoolsFromFile();
-
-    m_balanceHistoryPage->setAssets(m_walletPage->assetsTokens());
-    m_balanceHistoryPage->reloadHistory();
-    */
-
-}
-void EthersPage::initProcessObj()
-{
-    m_procObj = new LProcessObj(this);
-    connect(m_procObj, SIGNAL(signalFinished()), this, SLOT(slotScriptFinished()));
-
-    m_procObj->setCommand("node");
-    m_procObj->setProcessDir(sub_commonSettings.nodejs_path);
-    m_procObj->setDebugLevel(5);
 }
 void EthersPage::slotChainUpdated()
 {
@@ -109,6 +91,9 @@ void EthersPage::initWidgets()
     m_balanceHistoryPage = new BalanceHistoryTab(this);
     m_tab->tab()->addTab(m_balanceHistoryPage, "Balance history");
 
+    m_posManagerPage = new JSPosManagerTab(this);
+    m_tab->tab()->addTab(m_posManagerPage, "Positions");
+
 
     connect(m_walletPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_walletPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
@@ -133,7 +118,11 @@ void EthersPage::initWidgets()
 
     connect(m_balanceHistoryPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_balanceHistoryPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
-    connect(m_walletPage, SIGNAL(signalBalancesUpdated()), m_balanceHistoryPage, SLOT(slotBalancesUpdated()));
+    //connect(m_walletPage, SIGNAL(signalBalancesUpdated()), m_balanceHistoryPage, SLOT(slotBalancesUpdated()));
+
+    connect(m_posManagerPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
+    connect(m_posManagerPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
+    connect(m_posManagerPage, SIGNAL(signalPosManagerAction(const QStringList&)), this, SLOT(slotPosManagerAction(const QStringList&)));
 
 }
 void EthersPage::slotScriptFinished()
@@ -157,6 +146,17 @@ void EthersPage::startUpdating(quint16 t)
         emit signalStopUpdating();
         return;
     }
+    if (balancePageNow())
+    {
+        m_balanceHistoryPage->reloadHistory(m_walletPage->chainName());
+        emit signalStopUpdating();
+        return;
+    }
+    if (posManagerPageNow())
+    {
+        m_posManagerPage->updatePidList();
+        return;
+    }
 
     emit signalError("wrong current page");
     emit signalStopUpdating();
@@ -176,6 +176,14 @@ bool EthersPage::txPageNow() const
 bool EthersPage::poolsPageNow() const
 {
     return m_tab->tab()->currentWidget()->objectName().contains("pools");
+}
+bool EthersPage::posManagerPageNow() const
+{
+    return m_tab->tab()->currentWidget()->objectName().contains("posmanager");
+}
+bool EthersPage::balancePageNow() const
+{
+    return m_tab->tab()->currentWidget()->objectName().contains("balancehistory");
 }
 void EthersPage::tryUpdateBalace()
 {
@@ -255,6 +263,12 @@ void EthersPage::slotPoolAction(const QStringList &args)
     m_procObj->setArgs(args);
     startProcessObj();
 }
+void EthersPage::slotPosManagerAction(const QStringList &args)
+{
+      qDebug()<<QString("%1 .... slotPosManagerAction, args %2").arg(LTime::strCurrentTime()).arg(args.count());
+      m_procObj->setArgs(args);
+      startProcessObj();
+}
 void EthersPage::slotWalletTx(const QStringList &args)
 {
  //   qDebug()<<QString("%1 .... slotWalletTx, args %2").arg(LTime::strCurrentTime()).arg(args.count());
@@ -294,6 +308,10 @@ void EthersPage::slotJsonReply(int req_type, const QJsonObject &j_result)
     {
         m_poolPage->parseJSResult(j_result);
     }
+    else if (posManagerPageNow())
+    {
+        m_posManagerPage->parseJSResult(j_result);
+    }
 }
 void EthersPage::load(QSettings &settings)
 {
@@ -306,6 +324,17 @@ void EthersPage::save(QSettings &settings)
     UG_BasePage::save(settings);
     settings.setValue(QString("%1/tab_index").arg(objectName()), m_tab->tab()->currentIndex());
 }
+void EthersPage::initProcessObj()
+{
+    m_procObj = new LProcessObj(this);
+    connect(m_procObj, SIGNAL(signalFinished()), this, SLOT(slotScriptFinished()));
+
+    m_procObj->setCommand("node");
+    m_procObj->setProcessDir(sub_commonSettings.nodejs_path);
+    m_procObj->setDebugLevel(5);
+}
+
+
 
 //private
 QString EthersPage::transformJsonResult(const QString &str_json) const
@@ -315,35 +344,77 @@ QString EthersPage::transformJsonResult(const QString &str_json) const
     if (s.isEmpty()) return s;
     int len = s.length();
     if (s.at(0) != '{' || s.at(len-1) != '}') return QString("invalid_json");
+//    s = LString::strBetweenStr(s, "{", "}");
 
-    s = LString::strBetweenStr(s, "{", "}");
+    //удаляем обрамляющие скобки JSON '{  }'
+    s = LString::strTrimLeft(s, 1);
+    s = LString::strTrimRight(s, 1);
+    s = s.trimmed();
+
+    //удаляем лишние пробелы и спец символы
     s = LString::removeLongSpaces(s);
     s = LString::removeSymbol(s, QChar('\n'));
     s = LString::removeSymbol(s, QUTE_SYMBOL1);
     s = LString::removeSymbol(s, QUTE_SYMBOL2);
     s = s.trimmed();
+
+    //определяем длину полезных данных JSON
     len = s.length();
     if (s.at(len-1) == ',') {s = LString::strTrimRight(s, 1); s = s.trimmed(); len = s.length();}
+    qDebug()<<QString("trimed JSON: |%1|").arg(s);
+    //строка готова к разметке позиций пар ключ/значение.
 
-  //  qDebug()<<QString("transformJsonResult STAGE2: %1").arg(s);
 
+    //для начала проведем поиск элементов значений-массивов и в них разделитель символ ',' заменим на ';'
+    int arr_start = -1;
+    int arr_end = -1;
+    int pos = 0;
+    while (2 > 1)
+    {
+        if (arr_start > 0 && arr_end > 0) //found arr-value
+        {
+            s = LString::replaceByRange(s, QString(","), QString(";"), arr_start, arr_end);
+            arr_start = arr_end = -1;
+        }
+        if (pos >= s.length()) break;
+
+        if (arr_start < 0)
+        {
+            if (s.at(pos) == QChar('[')) arr_start = pos;
+            pos++;
+            continue;
+        }
+        if (arr_end < 0)
+        {
+            if (s.at(pos) == QChar(']')) arr_end = pos;
+            pos++;
+            continue;
+        }
+    }
+    qDebug()<<QString("trimed JSON_next: |%1|").arg(s);
+
+    //разбиваем строку на пары JSON (<ключ> : <значение>)
     QStringList list = LString::trimSplitList(s, ",");
     qDebug()<<QString("----------json pairs %1-------------").arg(list.count());
-    s.clear();
+    s.clear(); //final transformed JSON-result
     for(int i=0; i<list.count(); i++)
     {
         qDebug()<<QString("PAIR_%1  [%2]").arg(i+1).arg(list.at(i));
         if (!s.isEmpty()) s.append(QString(", "));
 
         QString field = list.at(i).trimmed();
-        int pos = field.indexOf(QChar(':'));
+        pos = field.indexOf(QChar(':'));
         if (pos > 0)
         {
             //qDebug()<<QString("pos = %1").arg(pos);
             QString f_name = field.left(pos).trimmed();
             QString f_value = LString::strTrimLeft(field, pos+1).trimmed();
             QString j_line = QString("%1%2%1 : %1%3%1").arg(QUTE_SYMBOL1).arg(f_name).arg(f_value);
-           // qDebug()<<QString("     JLINE:  [%1]").arg(j_line);
+            if (f_value.at(0) == QChar('['))  //is arr element
+            {
+                f_value.replace(QString(";"), QString(","));
+                j_line = QString("%1%2%1 : %3").arg(QUTE_SYMBOL1).arg(f_name).arg(f_value);
+            }
             s.append(j_line);
         }
         else s.append(field);

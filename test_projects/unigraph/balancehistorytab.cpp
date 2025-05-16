@@ -58,12 +58,6 @@ void BalanceHistoryTab::setAssets(const QMap<QString, QString> &assets)
         it++;
     }
 }
-/*
-void BalanceHistoryTab::slotBalancesUpdated()
-{
-    reloadHistory();
-}
-*/
 void BalanceHistoryTab::reloadHistory(QString chain_name)
 {
     qDebug("----BalanceHistoryTab::reloadHistory()----");
@@ -149,7 +143,7 @@ void BalanceHistoryTab::calcDeviationColumn()
 }
 void BalanceHistoryTab::calcDeviationByAddr(QString addr)
 {
-    qDebug()<<QString("BalanceHistoryTab::calcDeviationByAddr  addr[%1]").arg(addr);
+    //qDebug()<<QString("BalanceHistoryTab::calcDeviationByAddr  addr[%1]").arg(addr);
     QTableWidget *t = m_table->table();
     int n_row = t->rowCount();
     if (n_row == 0) return;

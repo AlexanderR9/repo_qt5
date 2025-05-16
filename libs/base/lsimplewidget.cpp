@@ -260,7 +260,7 @@ void LTableWidgetBox::slotSortNumeric(quint8 col, int order)
 }
 void LTableWidgetBox::slotSortByColumn(int col)
 {
-    qDebug()<<QString("slotSortByColumn %1").arg(col);
+  //  qDebug()<<QString("slotSortByColumn %1").arg(col);
 
     if (!m_sortingData.contains(col)) return;
     if (m_table->rowCount() < 3) return;
@@ -284,7 +284,7 @@ void LTableWidgetBox::slotSortByColumn(int col)
 }
 void LTableWidgetBox::popupMenuActivate(const QList< QPair<QString, QString> > &list)
 {
-    qDebug()<<QString("LTableWidgetBox::popupMenuActivate  acts size %1").arg(list.count());
+   // qDebug()<<QString("LTableWidgetBox::popupMenuActivate  acts size %1").arg(list.count());
     destroyPopupMenu();
     if (list.isEmpty()) return;
 
@@ -300,7 +300,7 @@ void LTableWidgetBox::popupMenuActivate(const QList< QPair<QString, QString> > &
         m_popupMenuActions.append(act);
     }
 
-    qDebug()<<QString("default ContextMenuPolicy %1").arg(m_table->contextMenuPolicy());
+  //  qDebug()<<QString("default ContextMenuPolicy %1").arg(m_table->contextMenuPolicy());
     if (!m_popupMenuActions.isEmpty())
     {
         m_table->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -311,7 +311,7 @@ void LTableWidgetBox::popupMenuActivate(const QList< QPair<QString, QString> > &
 }
 void LTableWidgetBox::slotContextMenu(QPoint p)
 {
-    qDebug()<<QString("LTableWidgetBox::slotContextMenu  %1/%2").arg(p.x()).arg(p.y());
+ //   qDebug()<<QString("LTableWidgetBox::slotContextMenu  %1/%2").arg(p.x()).arg(p.y());
     if (m_popupMenuActions.isEmpty()) return;
     if (LTable::selectedRows(m_table).count() != 1) return;
 
@@ -327,7 +327,7 @@ void LTableWidgetBox::connectSlotToPopupAction(int i_menu, QObject *slot_object,
     if (i_menu < 0 || i_menu >= m_popupMenuActions.count()) {qWarning("LTableWidgetBox WARNING - invalid index menu"); return;}
     if (slot_object)
     {
-        qDebug()<<QString("LTableWidgetBox::connectSlotToPopupAction   parent [%1]").arg(slot_object->objectName());
+      //  qDebug()<<QString("LTableWidgetBox::connectSlotToPopupAction   parent [%1]").arg(slot_object->objectName());
         connect(m_popupMenuActions.at(i_menu), SIGNAL(triggered()), slot_object, slot_pointer);
     }
 }

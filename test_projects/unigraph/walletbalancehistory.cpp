@@ -21,7 +21,7 @@ WalletBalanceHistory::WalletBalanceHistory(QObject *parent)
 
     loadHistoryFile();
     //qDebug()<<QString("------------WalletBalanceHistory::WalletBalanceHistory  m_lastSnapshots size %1").arg(m_lastSnapshots.count());
-    out();
+   // out();
 }
 void WalletBalanceHistory::loadHistoryFile()
 {
@@ -38,7 +38,7 @@ void WalletBalanceHistory::loadHistoryFile()
     if (!err.isEmpty()) {emit signalError(err); return;}
 
     LString::removeEmptyStrings(fdata);
-    qDebug()<<QString("WalletBalanceHistory datafile size %1 lines").arg(fdata.count());
+    //qDebug()<<QString("WalletBalanceHistory datafile size %1 lines").arg(fdata.count());
     foreach (const QString &line, fdata)
     {
         //qDebug()<<QString("loadHistoryFile fline[%1]").arg(line);
@@ -48,7 +48,7 @@ void WalletBalanceHistory::loadHistoryFile()
         else qWarning()<<QString("WalletBalanceHistory::loadHistoryFile WARNING: can't read file record [%1]").arg(line);
     }
 
-    qDebug()<<QString("m_lastSnapshots size %1, current chain [%2]").arg(m_lastSnapshots.count()).arg(m_currentChain);
+   // qDebug()<<QString("m_lastSnapshots size %1, current chain [%2]").arg(m_lastSnapshots.count()).arg(m_currentChain);
 
 }
 void WalletBalanceHistory::initLastRecord(const SnapshotPointAsset &rec)
@@ -63,7 +63,7 @@ void WalletBalanceHistory::initLastRecord(const SnapshotPointAsset &rec)
 }
 void WalletBalanceHistory::updateBalances(const QMap<QString, float> &map, QString chain_name)
 {
-    qDebug()<<QString("WalletBalanceHistory::updateBalances  map size %1").arg(map.size());
+   // qDebug()<<QString("WalletBalanceHistory::updateBalances  map size %1").arg(map.size());
     m_currentChain = chain_name.trimmed();
 
     if (map.isEmpty()) return;
@@ -78,7 +78,7 @@ void WalletBalanceHistory::updateBalances(const QMap<QString, float> &map, QStri
         compareTokenBalances(addr, cur_balance, new_records);
     }
 
-    qDebug()<<QString("WalletBalanceHistory::updateBalances  new records %1").arg(new_records.count());
+  //  qDebug()<<QString("WalletBalanceHistory::updateBalances  new records %1").arg(new_records.count());
     //out();
 
     appendFreshPointToFile(new_records);
@@ -103,8 +103,8 @@ void WalletBalanceHistory::compareTokenBalances(const QString &t_addr, double cu
     //qDebug()<<QString("d_balance=%1,  0.01% = %2").arg(d).arg(p01);
     if (d > p01) //need update last value
     {
-        qDebug()<<QString("d_balance=%1,  0.01% = %2  [d > p01,  need update last value]").arg(d).arg(p01);
-        qDebug()<<QString("   %1: last_balance=%2  new_balance=%3").arg(t_addr).arg(last_balance).arg(cur_balance);
+       // qDebug()<<QString("d_balance=%1,  0.01% = %2  [d > p01,  need update last value]").arg(d).arg(p01);
+       // qDebug()<<QString("   %1: last_balance=%2  new_balance=%3").arg(t_addr).arg(last_balance).arg(cur_balance);
         SnapshotPointAsset next_point(QDateTime::currentDateTime(), t_addr, cur_balance);
         next_point.chain = m_currentChain;
         new_records.append(next_point);

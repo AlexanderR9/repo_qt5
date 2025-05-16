@@ -116,7 +116,7 @@ void JSTxTab::reloadTable()
         if (tx_data.at(i).kind == "mint") t->item(i, TX_KIND_COL)->setTextColor("#FF8C00");
     }
     m_table->resizeByContents();
-    qDebug()<<QString("JSTxTab: TX table rows %1").arg(t->rowCount());
+    //qDebug()<<QString("JSTxTab: TX table rows %1").arg(t->rowCount());
 }
 void JSTxTab::loadLocalData()
 {
@@ -207,13 +207,13 @@ void JSTxTab::initPopupMenu()
 }
 void JSTxTab::slotTxStatus()
 {
-    qDebug("JSTxTab::slotTxStatus()");
+  //  qDebug("JSTxTab::slotTxStatus()");
     int row = m_table->curSelectedRow();
     if (row < 0) {emit signalError("You must select row"); return;}
 
     QTableWidget *t = m_table->table();
     QString hash = t->item(row, HASH_COL)->text().trimmed();
-    qDebug()<<QString("TX_HASH: %1").arg(hash);
+   // qDebug()<<QString("TX_HASH: %1").arg(hash);
 
     QStringList params;
     params << "qt_tx.js" << hash;
@@ -222,8 +222,8 @@ void JSTxTab::slotTxStatus()
 }
 void JSTxTab::parseJSResult(const QJsonObject &j_result)
 {
-    qDebug("JSTxTab::parseJSResult");
-    qDebug() << j_result;
+  //  qDebug("JSTxTab::parseJSResult");
+  //  qDebug() << j_result;
     m_table->table()->setEnabled(true);
 
     QString hash = j_result.value("hash").toString().trimmed();
@@ -233,10 +233,10 @@ void JSTxTab::parseJSResult(const QJsonObject &j_result)
 
     QString str_status = j_result.value("status").toString().trimmed();
     QString str_fee = j_result.value("fee").toString().trimmed();
-    qDebug()<<QString("str_status(%1)   str_fee(%2)").arg(str_status).arg(str_fee);
+  //  qDebug()<<QString("str_status(%1)   str_fee(%2)").arg(str_status).arg(str_fee);
 
     bool is_finished = (j_result.value("finished").toString().trimmed() == "true");
-    qDebug()<<QString("is_finished = %1").arg(is_finished?"YES":"NO");
+  //  qDebug()<<QString("is_finished = %1").arg(is_finished?"YES":"NO");
     rec->setJSResponse(str_status, str_fee, is_finished);
     updateTableRowByRecord(rec);
     m_table->resizeByContents();
@@ -247,22 +247,22 @@ void JSTxTab::addRecToLocalFile(const JSTxRecord *rec)
 {
     if (!rec) return;
     QString fline = rec->toLocalFileLine().trimmed();
-    qDebug()<<QString("LFile::appendFile  line[%1]").arg(fline);
+  //  qDebug()<<QString("LFile::appendFile  line[%1]").arg(fline);
 
     if (fline.isEmpty()) return;
     if (m_locData.contains(fline)) {qWarning("local file line already contains this line"); return;}
 
     QString err;
     QString fname = QString("%1%2%3").arg(SubGraph_CommonSettings::appDataPath()).arg(QDir::separator()).arg(LOCAL_TX_FILE);
-    qDebug()<<fname;
+  //  qDebug()<<fname;
     if (LFile::fileExists(fname))
     {
-        qDebug("appendFile");
+      //  qDebug("appendFile");
         LFile::appendFile(fname, QString("%1 \n").arg(fline));
     }
     else
     {
-        qDebug("writeFile");
+      //  qDebug("writeFile");
         LFile::writeFile(fname, QString("%1 \n").arg(fline));
     }
     if (!err.isEmpty()) emit signalError(QString("can't append line to local file: %1").arg(fname));

@@ -107,6 +107,8 @@ QString SubGraph_CommonSettings::tokenIdCoingecko(QString token)
     if (token == "LDO")     return "lido-dao";
     if (token == "CRV")     return "curve-dao-token";
     if (token == "CAKE")    return "pancakeswap-token";
+    if (token == "TWT")     return "trust-wallet-token";
+    if (token == "NEAR")    return "near";
 
     return QString();
 }

@@ -13,6 +13,7 @@ class JSApproveTab;
 class JSTxTab;
 class JSPoolTab;
 class BalanceHistoryTab;
+class JSPosManagerTab;
 
 
 //EthersPage
@@ -45,21 +46,28 @@ protected:
     JSTxTab         *m_txPage;
     JSPoolTab       *m_poolPage;
     BalanceHistoryTab   *m_balanceHistoryPage;
+    JSPosManagerTab   *m_posManagerPage;
 
     void initWidgets();
     void initProcessObj();
     virtual void clearPage() {}
     void tryUpdateBalace();
     void parseResultBuffer();
+    void startProcessObj();
 
     bool walletPageNow() const;
     bool approvePageNow() const;
     bool txPageNow() const;
     bool poolsPageNow() const;
-    void startProcessObj();
+    bool balancePageNow() const;
+    bool posManagerPageNow() const;
+
 
 private:
-    QString transformJsonResult(const QString&) const; //подрехтовать JS json-result чтобы он был валиден для загрузки в QJsonObject
+    //при формировании результа (json) в node_js скриптах - недопустимо использовать символы ',' '['  ']' ':' в текстовых значениях полей,
+    //т.к. по этим символам распознаються границы пар-значений и значения-массивы.
+    //данная функция подрехтовывает JS json-result чтобы он был валиден для загрузки в QJsonObject
+    QString transformJsonResult(const QString&) const;
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);
@@ -69,6 +77,7 @@ public slots:
     void slotWalletTx(const QStringList&);
     void slotCheckTx(const QStringList&);
     void slotPoolAction(const QStringList&);
+    void slotPosManagerAction(const QStringList&);
     void slotChainUpdated();
 
 

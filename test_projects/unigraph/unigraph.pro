@@ -50,7 +50,9 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/jstxtab.h \
         $$PWD/jspooltab.h \
         $$PWD/walletbalancehistory.h \
-        $$PWD/balancehistorytab.h
+        $$PWD/balancehistorytab.h \
+	$$PWD/jsposmanagertab.h
+
 
 SOURCES += $$PWD/main.cpp \
         $$PWD/mainform.cpp \
@@ -70,5 +72,6 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/jstxtab.cpp \
         $$PWD/jspooltab.cpp \
         $$PWD/walletbalancehistory.cpp \
-        $$PWD/balancehistorytab.cpp
+        $$PWD/balancehistorytab.cpp \
+	$$PWD/jsposmanagertab.cpp
 
