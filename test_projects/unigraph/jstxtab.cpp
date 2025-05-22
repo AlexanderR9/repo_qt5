@@ -116,6 +116,8 @@ void JSTxTab::reloadTable()
         if (tx_data.at(i).kind == "mint") t->item(i, TX_KIND_COL)->setTextColor("#FF8C00");
     }
     m_table->resizeByContents();
+    t->scrollToBottom();
+
     //qDebug()<<QString("JSTxTab: TX table rows %1").arg(t->rowCount());
 }
 void JSTxTab::loadLocalData()

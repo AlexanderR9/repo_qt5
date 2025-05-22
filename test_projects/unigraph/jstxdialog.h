@@ -5,24 +5,21 @@
 
 
 //Orepation Type
-enum TX_OrepationType {txWrap = 1401, txUnwrap, txApprove, txTransfer, txSwap, txNone = 0};
+enum TX_OrepationType {txWrap = 1401, txUnwrap, txApprove, txTransfer, txSwap,
+                       txMint, txIncrease, txDecrease, txCollect, txNone = 0};
 
 //TxDialogData
 struct TxDialogData
 {
     TxDialogData(int t) :tx_kind(t) {reset();}
 
-
     int tx_kind; //enum TX_OrepationType
     QString token_addr;
     QString token_name;
-
     QMap<QString, QString> dialog_params; //параметры которые будут возвращены после закрытия диалога
 
     void reset() {token_addr.clear(); token_name.clear(); dialog_params.clear();}
-    //bool invalidType() const {return (order_type < totBuyLimit || order_type > totStopLoss);}
-    bool invalid() const {return (tx_kind < txWrap || tx_kind > txSwap);}
-//    QString toStr() const {return QString("TradeOperationData: order_type=%1, lots=%2, price=%3").arg(order_type).arg(lots).arg(price);}
+    bool invalid() const {return (tx_kind < txWrap || tx_kind > txCollect);}
 
 };
 
@@ -44,7 +41,6 @@ protected:
 
 };
 
-
 //TxApproveDialog
 class TxApproveDialog : public TxDialogBase
 {
@@ -59,9 +55,6 @@ protected:
 protected slots:
     void slotApply();
 };
-
-
-
 
 //TxWrapDialog
 class TxWrapDialog : public TxDialogBase
@@ -78,7 +71,6 @@ protected slots:
     void slotApply();
 };
 
-
 //TxTransferDialog
 class TxTransferDialog : public TxDialogBase
 {
@@ -94,8 +86,6 @@ protected slots:
     void slotApply();
 };
 
-
-
 //TxSwapDialog
 class TxSwapDialog : public TxDialogBase
 {
@@ -109,6 +99,36 @@ protected:
 
 protected slots:
     void slotApply();
+};
+
+
+
+
+
+//TxMintPositionDialog
+class TxMintPositionDialog : public TxDialogBase
+{
+    Q_OBJECT
+public:
+    TxMintPositionDialog(TxDialogData&, QWidget*);
+    virtual ~TxMintPositionDialog() {}
+
+protected:
+    QGroupBox *m_mintParamsBox;
+
+    void init();
+    void initStaticFields();
+    void initMintFields();
+    void replaceToGridLayout();
+    void checkMintParamsValidity(QString&);
+    void parseNoteText();
+
+protected slots:
+    void slotApply();
+    void slotRangeTypeChanged(int);
+    void slotAmountsChanged();
+
+
 };
 
 

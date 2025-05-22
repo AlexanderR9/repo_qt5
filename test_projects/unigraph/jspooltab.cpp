@@ -41,6 +41,8 @@ void JSPoolTab::initPopupMenu()
     act_list.append(pair1);
     QPair<QString, QString> pair2("Swap assets", TxDialogBase::iconByTXType(txSwap));
     act_list.append(pair2);
+    QPair<QString, QString> pair3("Mint position", TxDialogBase::iconByTXType(txMint));
+    act_list.append(pair3);
 
     //init popup menu actions
     m_table->popupMenuActivate(act_list);
@@ -49,9 +51,9 @@ void JSPoolTab::initPopupMenu()
     int i_menu = 0;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotGetPoolState())); i_menu++;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotTrySwapAssets())); i_menu++;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotMintPosition())); i_menu++;
 
 }
-
 void JSPoolTab::rewriteParamJson(const QJsonObject &j_params)
 {
     QJsonDocument j_doc(j_params);
@@ -90,12 +92,46 @@ void JSPoolTab::slotGetPoolState()
     tx_params << "qt_pool_state.js" << JS_JSONPARAMS_FILE;
     emit signalPoolAction(tx_params);
 }
+void JSPoolTab::slotMintPosition()
+{
+    qDebug("JSPoolTab::slotMinPosition()");
+    int row = m_table->curSelectedRow();
+    if (row < 0) {emit signalError("You must select row"); return;}
+
+    QTableWidget *t = m_table->table();
+    if (t->item(row, POOL_STATE_COL)->text() == "?") {emit signalError("You must get pool state"); return;}
+    QString cur_state = t->item(row, POOL_STATE_COL)->text();
+    QString cur_tvl = t->item(row, TVL_COL)->text();
+
+    emit signalMsg(QString("Try mint new position, POOL(%1) ...").arg(m_poolData.at(row).address));
+
+
+    //prepare dialog params
+    TxDialogData mint_data(txMint);
+    mint_data.token_addr = m_poolData.at(row).address;
+    mint_data.token_name = QString("%1  %2").arg(m_poolData.at(row).assets).arg(m_poolData.at(row).strFee());
+    mint_data.dialog_params.insert("state", cur_state);
+    mint_data.dialog_params.insert("tvl", cur_tvl);
+    mint_data.dialog_params.insert("note", t->item(row, NOTE_COL)->text());
+
+    float cur_approved = 0;
+    QString s_approved = "?";
+    emit signalGetApprovedSize("pos_manager", m_poolData.at(row).token0_addr, cur_approved);
+    s_approved = QString::number(cur_approved, 'f', 2);
+    emit signalGetApprovedSize("pos_manager", m_poolData.at(row).token1_addr, cur_approved);
+    s_approved = QString("%1 / %2").arg(s_approved).arg(QString::number(cur_approved, 'f', 2));
+    mint_data.dialog_params.insert("approved", s_approved);
+
+    TxMintPositionDialog d(mint_data, this);
+    d.exec();
+    if (d.isApply()) sendMintTx(mint_data, row);
+    else emit signalMsg("operation was canceled!");
+}
 void JSPoolTab::slotTrySwapAssets()
 {
    // qDebug("JSPoolTab::slotTrySwapAssets()");
     int row = m_table->curSelectedRow();
     if (row < 0) {emit signalError("You must select row"); return;}
-
 
     //prepare dialog params
     TxDialogData swap_data(txSwap);
@@ -231,13 +267,12 @@ void JSPoolTab::reloadTable()
 }
 void JSPoolTab::parseJSResult(const QJsonObject &j_result)
 {
- //   qDebug("JSPoolTab::parseJSResult");
-  //  qDebug() << j_result;
     m_table->table()->setEnabled(true);
 
     QString operation = j_result.value("type").toString().trimmed();
     if (operation == "state") answerState(j_result);
     else if (operation == "swap") answerSwap(j_result);
+    else if (operation == "mint_tx") answerMintTx(j_result);
     else emit signalError(QString("invalid answer type: %1").arg(operation));
 
     m_table->resizeByContents();
@@ -332,6 +367,61 @@ int JSPoolTab::pricePrecision(float p, bool is_stable_pool) const
     if (p > 4) return 3;
     if (p > 0.1) return 4;
     return 6;
+}
+void JSPoolTab::sendMintTx(const TxDialogData &mint_data, int row)
+{
+    emit signalMsg(QString("Send TX mint"));
+
+    //prepare json params
+    QJsonObject j_params;
+    QMap<QString, QString>::const_iterator it = mint_data.dialog_params.constBegin();
+    while (it != mint_data.dialog_params.constEnd())
+    {
+        bool is_int = (it.key().contains("tick") || it.key().contains("index") || it.key().contains("line"));
+        bool is_double = (it.key().contains("price") || it.key().contains("amount"));
+
+        if (is_int) j_params.insert(it.key(), it.value().toInt());
+        else if (is_double) j_params.insert(it.key(), it.value().toDouble());
+        else j_params.insert(it.key(), it.value());
+        it++;
+    }
+    rewriteParamJson(j_params); //rewrite json-file
+
+    m_table->table()->item(row, NOTE_COL)->setText("try mint ...");
+    m_table->table()->item(row, NOTE_COL)->setTextColor("#DC143C");
+    m_table->resizeByContents();
+    m_table->table()->setEnabled(false);
+    QStringList tx_params;
+    tx_params << "qt_mint.js" << JS_JSONPARAMS_FILE;
+    emit signalPoolAction(tx_params);
+}
+void JSPoolTab::answerMintTx(const QJsonObject &j_result)
+{
+    qDebug("**************JSPoolTab::answerMintTx");
+    int row = m_table->curSelectedRow();
+
+    QString note;
+    float amount0 = j_result.value("token0_amount").toString().toFloat();
+    float amount1 = j_result.value("token1_amount").toString().toFloat();
+    int t1 = j_result.value("tick_lower").toString().toInt();
+    int t2 = j_result.value("tick_upper").toString().toInt();
+    bool is_simulate = (j_result.value("is_simulate").toString().trimmed().toLower() == "true");
+    note = QString("AMOUNTS(%1 / %2)").arg(QString::number(amount0, 'f', 2)).arg(QString::number(amount1, 'f', 2));
+    note = QString("%1 RANGE[%2; %3]").arg(note).arg(t1).arg(t2);
+    m_table->table()->item(row, NOTE_COL)->setText(note);
+    m_table->table()->item(row, NOTE_COL)->setTextColor("#4B0082");
+
+
+    QString tx_hash("IS_SIMULATE_MODE");
+    if (!is_simulate) tx_hash = j_result.value("tx_hash").toString().trimmed().toLower();
+    m_table->table()->item(row, NOTE_COL)->setToolTip(tx_hash);
+
+    emit signalMsg(LString::symbolString('-', 100));
+    emit signalMsg("TX mint done!");
+    emit signalMsg(note);
+    emit signalMsg(QString("REAL_PRICES: %1").arg(j_result.value("real_price_range").toString()));
+    emit signalMsg(tx_hash);
+
 }
 
 

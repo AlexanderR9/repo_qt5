@@ -18,7 +18,8 @@
 #define P_RANGE_COL         2
 #define T_RANGE_COL         3
 #define STATE_COL           5
-#define LIQ_COL             6
+#define LIQ_COL             7
+#define REWARD_COL          6
 #define ASSETS_COL          4
 
 
@@ -46,7 +47,7 @@ void JSPosManagerTab::initTables()
     m_tablePos->setTitle("Positions list");
     m_tablePos->vHeaderHide();
     QStringList headers;
-    headers << "PID" << "Pool" << "Price range" << "Tick range" << "Assets amount" << "State" << "Liquidity";
+    headers << "PID" << "Pool" << "Price range" << "Tick range" << "Assets amount" << "State" << "Unclaimed fees" << "Liquidity";
     LTable::setTableHeaders(m_tablePos->table(), headers);
     m_tablePos->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::SingleSelection);
     m_tablePos->setSelectionColor("#87CEEB");
@@ -110,16 +111,36 @@ void JSPosManagerTab::jsonPosStateReceived(const QJsonObject &j_result)
     QTableWidget *t = m_tablePos->table();
 
     t->item(row, ASSETS_COL)->setText(j_result.value("assets").toString());
+    t->item(row, REWARD_COL)->setText(j_result.value("reward").toString());
 
-    QString s_state = QString("unclaimed(%1)").arg(j_result.value("reward").toString());
+    //QString s_state = QString("unclaimed(%1)").arg(j_result.value("reward").toString());
     QString p_location = j_result.value("price_location").toString().toUpper().trimmed();
-    s_state = QString("%1 P=%2(%3)").arg(s_state).arg(j_result.value("price_current").toString()).arg(p_location);
-    t->item(row, STATE_COL)->setText(s_state);
+    QString s_state = QString("P=%1 (%2)").arg(j_result.value("price_current").toString()).arg(p_location);
+    QString s_liq = j_result.value("liq").toString().trimmed();
 
-    if (j_result.value("liq").toString().trimmed().length() > 4)
+    t->item(row, LIQ_COL)->setText(s_liq);
+    if (s_liq.length() > 4)
     {
         if (p_location.contains("OUT")) LTable::setTableRowColor(t, row, "#FFDCDC");
         else LTable::setTableRowColor(t, row, "#BAFBBA");
+    }
+    else if (!p_location.contains("OUT"))
+    {
+        s_state = QString("P=%1 (IN_RANGE)").arg(j_result.value("price_current").toString());
+    }
+    t->item(row, STATE_COL)->setText(s_state);
+
+
+
+    //////////////////////////////////////////////////////////
+    if (t->item(row, POOL_COL)->text() == "-") //need reread fdata
+    {
+        //next req, get pos_data from file
+        m_tablePos->setEnabled(false);
+        m_tableLog->setEnabled(false);
+        QStringList params;
+        params << "qt_show_posdata.js";
+        emit signalPosManagerAction(params);
     }
 }
 void JSPosManagerTab::jsonPosFileDataReceived(const QJsonObject &j_result)

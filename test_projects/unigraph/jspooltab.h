@@ -6,6 +6,7 @@
 
 class LSearchTableWidgetBox;
 class QJsonObject;
+struct TxDialogData;
 
 
 //JSPoolRecord
@@ -44,7 +45,7 @@ public:
     void parseJSResult(const QJsonObject&);
 
 protected:
-    LSearchTableWidgetBox     *m_table;
+    LSearchTableWidgetBox       *m_table;
     QList<JSPoolRecord>         m_poolData;
 
     void initTable();
@@ -52,6 +53,8 @@ protected:
     void initPopupMenu(); //инициализировать элементы всплывающего меню
     void answerState(const QJsonObject&);
     void answerSwap(const QJsonObject&);
+    void answerMintTx(const QJsonObject&);
+    void sendMintTx(const TxDialogData&, int);
 
 private:
     int pricePrecision(float, bool) const;
@@ -60,6 +63,7 @@ private:
 protected slots:
     void slotGetPoolState();
     void slotTrySwapAssets();
+    void slotMintPosition();
 
 signals:
     void signalPoolAction(const QStringList&);
