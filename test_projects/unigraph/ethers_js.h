@@ -37,6 +37,7 @@ public:
 
     virtual void startUpdating(quint16); //выполняется когда пользователь нажимает кнопку "Start"
 
+    static QString inputParamsJsonFile() {return QString("params.json");}
 
 protected:
     LProcessObj     *m_procObj;
@@ -79,7 +80,7 @@ public slots:
     void slotPoolAction(const QStringList&);
     void slotPosManagerAction(const QStringList&);
     void slotChainUpdated();
-
+    void slotRewriteParamJson(const QJsonObject&);
 
 protected slots:
     void slotScriptFinished();

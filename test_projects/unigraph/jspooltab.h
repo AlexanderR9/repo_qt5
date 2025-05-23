@@ -58,18 +58,21 @@ protected:
 
 private:
     int pricePrecision(float, bool) const;
-    void rewriteParamJson(const QJsonObject&);
 
 protected slots:
     void slotGetPoolState();
     void slotTrySwapAssets();
     void slotMintPosition();
 
+public slots:
+    void slotScriptBroken(); //скрипт не выполнился, произошла ошибка и ответ содержит поле 'error'
+
 signals:
     void signalPoolAction(const QStringList&);
     void signalResetApproved(const QString&); //при совершениии обмена необходимо отправить сигнал странице approve для сброса соответствующей записи
     void signalGetApprovedSize(QString, const QString&, float&); //запрос текущих опрувнутых токенов для свопа указанного актива
     void signalGetTokenPrice(const QString&, float&); //получить текущую цену токена со страницы кошелька
+    void signalRewriteParamJson(const QJsonObject&);
 
 
 };

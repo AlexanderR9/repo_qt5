@@ -51,6 +51,9 @@ QString TxDialogBase::iconByTXType(int tt)
         case txTransfer: {icon_file = "send_msg.png"; break;}
         case txSwap: {icon_file = "swap.png"; break;}
         case txMint: {icon_file = "exchange.png"; break;}
+        case txIncrease: {icon_file = "list-add.svg"; break;}
+        case txDecrease: {icon_file = "list-remove.svg"; break;}
+        case txCollect: {icon_file = "crypto/usdc.png"; break;}
         default: return QString();
     }
     return QString("%1%2%3").arg(path).arg(QDir::separator()).arg(icon_file);
@@ -65,6 +68,9 @@ QString TxDialogBase::captionByTXType(int tt)
         case txTransfer: return QString("TRANSFER");
         case txSwap: return QString("SWAP");
         case txMint: return QString("MINT_POSITION");
+        case txIncrease: return QString("INCREASE_LIQ");
+        case txDecrease: return QString("DECREASE_LIQ");
+        case txCollect: return QString("COLLECT_TOKENS");
         default: break;
     }
     return QString("???");
@@ -331,6 +337,101 @@ void TxSwapDialog::slotApply()
 }
 
 
+///////////////////TxRemoveLiqDialog////////////////////////////
+TxRemoveLiqDialog::TxRemoveLiqDialog(TxDialogData &data, QWidget *parent)
+    :TxDialogBase(data, parent)
+{
+    setObjectName(QString("tx_remove_liq_dialog"));
+    resize(600, 400);
+
+    if (m_data.invalid()) return;
+
+    init();
+    transformByTxKind();
+    addVerticalSpacer();
+
+
+    this->setCaptionsWidth(180);
+    setExpandWidgets();
+}
+void TxRemoveLiqDialog::transformByTxKind()
+{
+    if (m_data.tx_kind == txCollect)
+    {
+        groupBox->layout()->itemAt(4)->widget()->hide();
+        groupBox->layout()->itemAt(5)->widget()->hide();
+
+        /*
+        QString key = "state";
+        const SimpleWidget *sw = this->widgetByKey(key);
+        if (sw)
+        {
+            sw->label->setText("Unclaimed fees");
+            sw->edit->setStyleSheet(QString("QLineEdit {color: #008000;}"));
+
+        }
+        */
+    }
+}
+void TxRemoveLiqDialog::init()
+{
+    QString key = "pid";
+    this->addSimpleWidget("PID position", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.token_addr);
+    const SimpleWidget *sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+    QString color = "#000080";
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg(color));
+
+    key = "pool";
+    this->addSimpleWidget("Pool parameters", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.token_name);
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    key = "assets";
+    this->addSimpleWidget("Current assets", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value("assets"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    key = "range";
+    this->addSimpleWidget("Price range", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value("range"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+
+    key = "state";
+    this->addSimpleWidget("Position state", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value("state"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+    if (sw->edit->text().toLower().contains("out")) color = "#8B0000";
+    else color = "#4682B4";
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg(color));
+
+    key = "reward";
+    this->addSimpleWidget("Unclimed fees", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value("reward"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    key = "is_simulate";
+    this->addSimpleWidget("Simulate mode", LSimpleDialog::sdtBool, key);
+    sw = this->widgetByKey(key);
+    sw->checkBox->setChecked(true);
+}
+void TxRemoveLiqDialog::slotApply()
+{
+    m_data.dialog_params.clear();
+
+    QString simulate_mode = (widgetValue("is_simulate").toBool() ? "yes" : "no");
+    m_data.dialog_params.insert("simulate_mode", simulate_mode);
+
+    LSimpleDialog::slotApply();
+}
+
 
 
 ///////////////////TxMintPositionDialog////////////////////////////
@@ -482,7 +583,6 @@ void TxMintPositionDialog::init()
     slotRangeTypeChanged(0);
     parseNoteText();
 }
-//bool TxMintPositionDialog::mintParamsValidity() const
 void TxMintPositionDialog::checkMintParamsValidity(QString &err)
 {
     err.clear();
@@ -654,5 +754,202 @@ void TxMintPositionDialog::parseNoteText()
 }
 
 
+///////////////////TxIncreaseLiqDialog////////////////////////////
+TxIncreaseLiqDialog::TxIncreaseLiqDialog(TxDialogData &data, QWidget *parent)
+    :TxDialogBase(data, parent)
+{
+    setObjectName(QString("tx_increase_liq_dialog"));
+    resize(600, 500);
 
+    if (m_data.invalid()) return;
+
+    init();
+    //initAmountFields();
+    transformEditValues();
+    addVerticalSpacer();
+
+    this->setCaptionsWidth(180);
+    setExpandWidgets();
+}
+void TxIncreaseLiqDialog::transformEditValues()
+{
+    QString key = "trange";
+    //const SimpleWidget *sw = this->widgetByKey(key);
+    QString text = widgetValue(key).toString();
+    text.replace("(", "[");
+    text.replace(")", "]");
+    setWidgetValue(key, text);
+
+
+    key = "prange";
+    text = widgetValue(key).toString().trimmed();
+    text.remove("(");
+    text.remove(")");
+    QStringList plist = LString::trimSplitList(text, ";");
+    if (plist.count() == 2)
+    {
+        text = QString("P_low = %1    P_high = %2").arg(plist.at(0).trimmed()).arg(plist.at(1).trimmed());
+        setWidgetValue(key, text);
+    }
+}
+void TxIncreaseLiqDialog::init()
+{
+    QString key = "pid";
+    this->addSimpleWidget("PID position", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.token_addr);
+    const SimpleWidget *sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+    QString color = "#000080";
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg(color));
+
+    key = "pool";
+    this->addSimpleWidget("Pool parameters", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.token_name);
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    key = "approved";
+    this->addSimpleWidget("Approved assets", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value("approved"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    key = "trange";
+    this->addSimpleWidget("Tick range", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value("tick_range"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    key = "prange";
+    this->addSimpleWidget("Price range", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value("price_range"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    key = "p_current";
+    this->addSimpleWidget("Current price", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value("current_price"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+    color = "#0000CD";
+    if (sw->edit->text().toLower().contains("out")) color = "#B22222";
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg(color));
+
+
+    //---------------------------------------------
+    initAmountFields();
+
+    key = "dead_line";
+    this->addSimpleWidget("Dead line, secs", LSimpleDialog::sdtIntCombo, key);
+    sw = this->widgetByKey(key);
+    for (int i=1; i<15; i++)
+        sw->comboBox->addItem(QString::number(i*20));
+    sw->comboBox->setCurrentIndex(3);
+
+    key = "is_simulate";
+    this->addSimpleWidget("Simulate mode", LSimpleDialog::sdtBool, key);
+    sw = this->widgetByKey(key);
+    sw->checkBox->setChecked(true);
+}
+void TxIncreaseLiqDialog::initAmountFields()
+{
+    QString color = "#6B8E23";
+    //--------------------------------
+    QString key = "amount0";
+    this->addSimpleWidget("Token_0 amount", LSimpleDialog::sdtString, key, 2);
+    this->setWidgetValue(key, "1.00");
+    const SimpleWidget *sw = this->widgetByKey(key);
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1; font-weight: bold;}").arg(color));
+    connect(sw->edit, SIGNAL(textChanged(const QString&)), this, SLOT(slotAmountsChanged()));
+    //--------------------------------
+    key = "amount1";
+    this->addSimpleWidget("Token_1 amount", LSimpleDialog::sdtString, key, 2);
+    this->setWidgetValue(key, "-1");
+    sw = this->widgetByKey(key);
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1; font-weight: bold;}").arg(color));
+    connect(sw->edit, SIGNAL(textChanged(const QString&)), this, SLOT(slotAmountsChanged()));
+}
+void TxIncreaseLiqDialog::slotApply()
+{
+    m_data.dialog_params.clear();
+
+    QString err;
+    checkIncreaseParamsValidity(err);
+    if (!err.isEmpty())
+    {
+        QMessageBox::warning(this, "Error", err);
+        m_data.dialog_params.clear();
+        return;
+    }
+
+    QString simulate_mode = (widgetValue("is_simulate").toBool() ? "yes" : "no");
+    m_data.dialog_params.insert("simulate_mode", simulate_mode);
+    m_data.dialog_params.insert("dead_line", widgetValue("dead_line").toString().trimmed());
+
+    LSimpleDialog::slotApply();
+}
+void TxIncreaseLiqDialog::slotAmountsChanged()
+{
+    QString sender_name = sender()->objectName();
+    qDebug()<<QString("TxIncreaseLiqDialog  sender[%1]").arg(sender()->objectName());
+    const SimpleWidget *sw = NULL;
+    if (sender_name.contains("amount0"))
+    {
+        sw = this->widgetByKey("amount1");
+    }
+    else if (sender_name.contains("amount1"))
+    {
+        sw = this->widgetByKey("amount0");
+    }
+    else
+    {
+        qWarning()<<QString("TxIncreaseLiqDialog::slotAmountsChanged() WARNING invalid sender name [%1]").arg(sender_name);
+        return;
+    }
+
+    if (sw)
+    {
+        disconnect(sw->edit, SIGNAL(textChanged(const QString&)), this, SLOT(slotAmountsChanged()));
+        sw->edit->setText(QString::number(-1));
+        connect(sw->edit, SIGNAL(textChanged(const QString&)), this, SLOT(slotAmountsChanged()));
+    }
+    else qWarning()<<QString("TxIncreaseLiqDialog::slotAmountsChanged() WARNING SW is NULL");
+}
+void TxIncreaseLiqDialog::checkIncreaseParamsValidity(QString &err)
+{
+    err.clear();
+    bool ok;
+    QString trange = widgetValue("trange").toString().trimmed();
+    trange.remove("[");
+    trange.remove("]");
+    QStringList tlist = LString::trimSplitList(trange, ";");
+    if (tlist.count() != 2) {err = "ticks range is incorrect value"; return;}
+
+    int t1 = tlist.at(0).trimmed().toInt(&ok);
+    if (!ok) {err = "tick1 value is invalid"; return;}
+    int t2 = tlist.at(1).trimmed().toInt(&ok);
+    if (!ok) {err = "tick2 value is invalid"; return;}
+    if (t2 <= t1) {err = "ticks range is invalid, must (tick2 > tick1)"; return;}
+    m_data.dialog_params.insert("l_tick", QString::number(t1));
+    m_data.dialog_params.insert("h_tick", QString::number(t2));
+
+
+    //check amounts
+    float amount0 = this->widgetValue("amount0").toFloat(&ok);
+    if (!ok) {err = "amount0 value is invalid"; return;}
+    float amount1 = this->widgetValue("amount1").toFloat(&ok);
+    if (!ok) {err = "amount1 value is invalid"; return;}
+    if (amount1 > 0 && amount0 > 0) {err = "one of amounts must -1 value"; return;}
+    if (amount1 <= 0 && amount0 <= 0) {err = "one of amounts must > 0"; return;}
+    if (amount0 > 0)
+    {
+        m_data.dialog_params.insert("token0_amount", QString::number(amount0));
+        m_data.dialog_params.insert("token1_amount", QString::number(-1));
+    }
+    else
+    {
+        m_data.dialog_params.insert("token1_amount", QString::number(amount1));
+        m_data.dialog_params.insert("token0_amount", QString::number(-1));
+    }
+}
 

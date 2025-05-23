@@ -4,6 +4,7 @@
 #include "lstring.h"
 #include "subcommonsettings.h"
 #include "jstxdialog.h"
+#include "ethers_js.h"
 
 #include <QTableWidget>
 #include <QSplitter>
@@ -14,7 +15,7 @@
 #include <QJsonValue>
 
 #define JS_POOL_FILE          "pools.txt"
-#define JS_JSONPARAMS_FILE    "params.json"
+//#define JS_JSONPARAMS_FILE    "params.json"
 #define FEE_COL                 3
 #define POOL_ADDR_COL           1
 #define POOL_STATE_COL          5
@@ -54,17 +55,6 @@ void JSPoolTab::initPopupMenu()
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotMintPosition())); i_menu++;
 
 }
-void JSPoolTab::rewriteParamJson(const QJsonObject &j_params)
-{
-    QJsonDocument j_doc(j_params);
-    QString fdata(j_doc.toJson());
-    fdata.append(QChar('\n'));
-    QString fname = QString("%1%2%3").arg(sub_commonSettings.nodejs_path).arg(QDir::separator()).arg(JS_JSONPARAMS_FILE);
-    emit signalMsg(QString("prepare json params for node_js script [%1].........").arg(fname));
-    QString err = LFile::writeFile(fname, fdata);
-    if (!err.isEmpty()) {emit signalError(err); return;}
-    else emit signalMsg("JSON params file done!");
-}
 void JSPoolTab::slotGetPoolState()
 {
    // qDebug("JSPoolTab::slotGetPoolState()");
@@ -78,7 +68,7 @@ void JSPoolTab::slotGetPoolState()
     j_params.insert("token0", m_poolData.at(row).token0_addr);
     j_params.insert("token1", m_poolData.at(row).token1_addr);
     j_params.insert("tick_space", m_poolData.at(row).tickSpace());    
-    rewriteParamJson(j_params); //rewrite json-file
+    emit signalRewriteParamJson(j_params); //rewrite json-file
 
     m_table->table()->item(row, NOTE_COL)->setText("getting state ...");
     m_table->table()->item(row, NOTE_COL)->setTextColor("#DC143C");
@@ -89,7 +79,7 @@ void JSPoolTab::slotGetPoolState()
     emit signalMsg(QString("Try get pool[%1] state ...").arg(m_poolData.at(row).address));
     m_table->table()->setEnabled(false);
     QStringList tx_params;
-    tx_params << "qt_pool_state.js" << JS_JSONPARAMS_FILE;
+    tx_params << "qt_pool_state.js" << EthersPage::inputParamsJsonFile();
     emit signalPoolAction(tx_params);
 }
 void JSPoolTab::slotMintPosition()
@@ -175,7 +165,7 @@ void JSPoolTab::slotTrySwapAssets()
         j_params.insert("dead_line", swap_data.dialog_params.value("dead_line"));
         j_params.insert("size", swap_data.dialog_params.value("amount"));
         j_params.insert("simulate_mode", swap_data.dialog_params.value("is_simulate"));
-        rewriteParamJson(j_params); //rewrite json-file
+        emit signalRewriteParamJson(j_params); //rewrite json-file
         //return;
 
         m_table->table()->item(row, NOTE_COL)->setText("try swap ...");
@@ -185,7 +175,7 @@ void JSPoolTab::slotTrySwapAssets()
 
         m_table->table()->setEnabled(false);
         QStringList tx_params;
-        tx_params << "qt_pool_swap.js" << JS_JSONPARAMS_FILE;
+        tx_params << "qt_pool_swap.js" << EthersPage::inputParamsJsonFile();
         emit signalPoolAction(tx_params);
     }
     else emit signalMsg("operation was canceled!");
@@ -385,14 +375,14 @@ void JSPoolTab::sendMintTx(const TxDialogData &mint_data, int row)
         else j_params.insert(it.key(), it.value());
         it++;
     }
-    rewriteParamJson(j_params); //rewrite json-file
+    emit signalRewriteParamJson(j_params); //rewrite json-file
 
     m_table->table()->item(row, NOTE_COL)->setText("try mint ...");
     m_table->table()->item(row, NOTE_COL)->setTextColor("#DC143C");
     m_table->resizeByContents();
     m_table->table()->setEnabled(false);
     QStringList tx_params;
-    tx_params << "qt_mint.js" << JS_JSONPARAMS_FILE;
+    tx_params << "qt_mint.js" << EthersPage::inputParamsJsonFile();
     emit signalPoolAction(tx_params);
 }
 void JSPoolTab::answerMintTx(const QJsonObject &j_result)
@@ -423,7 +413,11 @@ void JSPoolTab::answerMintTx(const QJsonObject &j_result)
     emit signalMsg(tx_hash);
 
 }
-
+void JSPoolTab::slotScriptBroken()
+{
+    m_table->table()->setEnabled(true);
+    m_table->resizeByContents();
+}
 
 
 ///////////////////////////JSPoolRecord//////////////////////////////

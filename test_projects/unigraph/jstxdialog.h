@@ -127,9 +127,47 @@ protected slots:
     void slotApply();
     void slotRangeTypeChanged(int);
     void slotAmountsChanged();
+};
 
+
+//TxRemoveLiqDialog
+class TxRemoveLiqDialog : public TxDialogBase
+{
+    Q_OBJECT
+public:
+    TxRemoveLiqDialog(TxDialogData&, QWidget*);
+    virtual ~TxRemoveLiqDialog() {}
+
+protected:
+    void init();
+    void transformByTxKind();
+
+protected slots:
+    void slotApply();
+};
+
+
+//TxIncreaseLiqDialog
+class TxIncreaseLiqDialog : public TxDialogBase
+{
+    Q_OBJECT
+public:
+    TxIncreaseLiqDialog(TxDialogData&, QWidget*);
+    virtual ~TxIncreaseLiqDialog() {}
+
+protected:
+    void init();
+    void transformEditValues();
+    void initAmountFields();
+    void checkIncreaseParamsValidity(QString&);
+
+protected slots:
+    void slotApply();
+    void slotAmountsChanged();
 
 };
+
+
 
 
 

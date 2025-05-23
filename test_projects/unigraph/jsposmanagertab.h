@@ -6,6 +6,7 @@
 
 class QJsonArray;
 class QJsonObject;
+struct TxDialogData;
 
 
 //JSPosTab
@@ -26,18 +27,35 @@ protected:
 
     void initTables();
     void reloadPidListToTable(const QJsonArray&);
+    void updateCurrentPrices(); //запросить со страницы кошелька текущие цены активов
+
+    void initPopupMenu(); //инициализировать элементы всплывающего меню
+    void sendIncreaseTx(const TxDialogData&, int);
+    void sendDecreaseTx(const TxDialogData&, int);
+    void sendCollectTx(const TxDialogData&, int);
+    void sendTx(QString, int);
+    void rereadJSPosFileData();
+
+    //reseived node_js result
     void jsonPidListReceived(const QJsonObject&);
     void jsonPosFileDataReceived(const QJsonObject&);
     void jsonPosStateReceived(const QJsonObject&);
-
-    void initPopupMenu(); //инициализировать элементы всплывающего меню
+    void jsonTxIncreaseReceived(const QJsonObject&);
+    void jsonTxDecreaseReceived(const QJsonObject&);
+    void jsonTxCollectReceived(const QJsonObject&);
 
 protected slots:
     void slotGetPositionState();
+    void slotTryIncreaseLiquidity();
+    void slotTryDecreaseLiquidity();
+    void slotTryCollectTokens();
 
+public slots:
+    void slotScriptBroken(); //скрипт не выполнился, произошла ошибка и ответ содержит поле 'error'
 
 signals:
     void signalPosManagerAction(const QStringList&);
+    void signalRewriteParamJson(const QJsonObject&);
 
 
 };

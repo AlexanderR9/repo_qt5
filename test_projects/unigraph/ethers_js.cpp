@@ -20,6 +20,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QIcon>
+#include <QDir>
 #include <QSettings>
 
 
@@ -115,6 +116,8 @@ void EthersPage::initWidgets()
     connect(m_poolPage, SIGNAL(signalResetApproved(const QString&)), m_approvePage, SLOT(slotResetRecord(const QString&)));
     connect(m_poolPage, SIGNAL(signalGetApprovedSize(QString, const QString&, float&)), m_approvePage, SLOT(slotGetApprovedSize(QString, const QString&, float&)));
     connect(m_poolPage, SIGNAL(signalGetTokenPrice(const QString&, float&)), m_walletPage, SLOT(slotGetTokenPrice(const QString&, float&)));
+    connect(m_poolPage, SIGNAL(signalRewriteParamJson(const QJsonObject&)), this, SLOT(slotRewriteParamJson(const QJsonObject&)));
+    connect(this, SIGNAL(signalScriptBroken()), m_poolPage, SLOT(slotScriptBroken()));
 
     connect(m_balanceHistoryPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_balanceHistoryPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
@@ -123,6 +126,9 @@ void EthersPage::initWidgets()
     connect(m_posManagerPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_posManagerPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
     connect(m_posManagerPage, SIGNAL(signalPosManagerAction(const QStringList&)), this, SLOT(slotPosManagerAction(const QStringList&)));
+    connect(m_posManagerPage, SIGNAL(signalRewriteParamJson(const QJsonObject&)), this, SLOT(slotRewriteParamJson(const QJsonObject&)));
+    connect(this, SIGNAL(signalScriptBroken()), m_posManagerPage, SLOT(slotScriptBroken()));
+
 
 }
 void EthersPage::slotScriptFinished()
@@ -338,6 +344,17 @@ void EthersPage::initProcessObj()
     m_procObj->setCommand("node");
     m_procObj->setProcessDir(sub_commonSettings.nodejs_path);
     m_procObj->setDebugLevel(5);
+}
+void EthersPage::slotRewriteParamJson(const QJsonObject &j_params)
+{
+    QJsonDocument j_doc(j_params);
+    QString fdata(j_doc.toJson());
+    fdata.append(QChar('\n'));
+    QString fname = QString("%1%2%3").arg(sub_commonSettings.nodejs_path).arg(QDir::separator()).arg(inputParamsJsonFile());
+    emit signalMsg(QString("prepare json params for node_js script [%1].........").arg(fname));
+    QString err = LFile::writeFile(fname, fdata);
+    if (!err.isEmpty()) {emit signalError(err); return;}
+    else emit signalMsg("JSON params file done!");
 }
 
 
