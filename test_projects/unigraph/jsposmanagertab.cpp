@@ -5,6 +5,7 @@
 #include "subcommonsettings.h"
 #include "jstxdialog.h"
 #include "ethers_js.h"
+#include "jstxlogger.h"
 
 
 #include <QTableWidget>
@@ -89,6 +90,7 @@ void JSPosManagerTab::parseJSResult(const QJsonObject &j_result)
     QString operation = j_result.value("type").toString().trimmed();
     if (operation == "pid_list") jsonPidListReceived(j_result);
     else if (operation == "pos_file_data") jsonPosFileDataReceived(j_result);
+    else if (operation == "pos_short_info") jsonPosShortInfoReceived(j_result);
     else if (operation == "pos_state") jsonPosStateReceived(j_result);
     else if (operation == "decrease") jsonTxDecreaseReceived(j_result);
     else if (operation == "increase") jsonTxIncreaseReceived(j_result);
@@ -133,6 +135,8 @@ void JSPosManagerTab::initPopupMenu()
     QList< QPair<QString, QString> > act_list;
     QPair<QString, QString> pair1("Get state", QString("%1/r_scale.svg").arg(SubGraph_CommonSettings::commonIconsPath()));
     act_list.append(pair1);
+    QPair<QString, QString> pair1_1("Get short info", QString("%1/ball_yellow.svg").arg(SubGraph_CommonSettings::commonIconsPath()));
+    act_list.append(pair1_1);
     QPair<QString, QString> pair2("Increase liquidity", TxDialogBase::iconByTXType(txIncrease));
     act_list.append(pair2);
     QPair<QString, QString> pair3("Decrease liquidity", TxDialogBase::iconByTXType(txDecrease));
@@ -146,6 +150,7 @@ void JSPosManagerTab::initPopupMenu()
     //connect OWN slots to popup actions
     int i_menu = 0;
     m_tablePos->connectSlotToPopupAction(i_menu, this, SLOT(slotGetPositionState())); i_menu++;
+    m_tablePos->connectSlotToPopupAction(i_menu, this, SLOT(slotGetShortInfo())); i_menu++;
     m_tablePos->connectSlotToPopupAction(i_menu, this, SLOT(slotTryIncreaseLiquidity())); i_menu++;
     m_tablePos->connectSlotToPopupAction(i_menu, this, SLOT(slotTryDecreaseLiquidity())); i_menu++;
     m_tablePos->connectSlotToPopupAction(i_menu, this, SLOT(slotTryCollectTokens())); i_menu++;
@@ -164,6 +169,20 @@ void JSPosManagerTab::slotGetPositionState()
     QString pid = m_tablePos->table()->item(row, 0)->text().trimmed();
     QString pool_addr = m_tablePos->table()->item(row, POOL_COL)->data(Qt::UserRole).toString().trimmed();
     params << "qt_posstate.js" << pid << pool_addr;
+    emit signalPosManagerAction(params);
+}
+void JSPosManagerTab::slotGetShortInfo()
+{
+    int row = m_tablePos->curSelectedRow();
+    if (row < 0) {emit signalError("You must select row"); return;}
+
+    m_tablePos->setEnabled(false);
+    m_tableLog->setEnabled(false);
+
+
+    QStringList params;
+    QString pid = m_tablePos->table()->item(row, 0)->text().trimmed();
+    params << "qt_show_posdata.js" << pid;
     emit signalPosManagerAction(params);
 }
 void JSPosManagerTab::slotTryIncreaseLiquidity()
@@ -260,7 +279,6 @@ void JSPosManagerTab::updateCurrentPrices()
 {
 
 }
-
 void JSPosManagerTab::sendIncreaseTx(const TxDialogData &increase_data, int row)
 {
     emit signalMsg(QString("Try increase from position, PID=%1 ...").arg(increase_data.token_addr));
@@ -330,7 +348,6 @@ void JSPosManagerTab::sendTx(QString cmd, int row)
     tx_params << "qt_pos_tx.js" << EthersPage::inputParamsJsonFile();
     emit signalPosManagerAction(tx_params);
 }
-
 void JSPosManagerTab::rereadJSPosFileData()
 {
     emit signalMsg("\n ##### JSPosManagerTab::rereadJSPosFileData() ####");
@@ -340,6 +357,90 @@ void JSPosManagerTab::rereadJSPosFileData()
     QStringList params;
     params << "qt_show_posdata.js";
     emit signalPosManagerAction(params);
+}
+void JSPosManagerTab::sendTxRecordToLog(int row, const QJsonObject &j_result)
+{
+    qDebug("");
+    qDebug("JSPosManagerTab::sendTxRecordToLog");
+
+    QString tx_kind = j_result.value("type").toString().trimmed().toLower();
+    QString cur_chain;
+    emit signalGetChainName(cur_chain);
+
+    QTableWidget *t = m_tablePos->table();
+    JSTxLogRecord rec(tx_kind, cur_chain);
+    rec.tx_hash = j_result.value("tx_hash").toString().trimmed();
+    rec.pid = j_result.value("pid").toString().trimmed().toUInt();
+    rec.pool_address = j_result.value("pool_address").toString().trimmed();
+    rec.current_price = j_result.value("current_price").toString().trimmed().toFloat();
+    rec.current_tick = j_result.value("pool_tick").toString().trimmed().toInt();
+    rec.price_range = cellRangeToLogFormat(t->item(row, P_RANGE_COL)->text());
+    rec.tick_range = cellRangeToLogFormat(t->item(row, T_RANGE_COL)->text());
+
+    if (tx_kind == "decrease")
+    {
+        tokenSizesToLogValues(t->item(row, ASSETS_COL)->text(), rec);
+    }
+    else if (tx_kind == "collect")
+    {
+        tokenSizesToLogValues(t->item(row, REWARD_COL)->text(), rec);
+    }
+    else if (tx_kind == "increase")
+    {
+        rec.token0_size = j_result.value("token0_amount").toString().trimmed().toFloat();
+        rec.token1_size = j_result.value("token1_amount").toString().trimmed().toFloat();
+    }
+
+
+    rec.note = QString::number(rec.token0_size, 'f', SubGraph_CommonSettings::interfacePrecision(rec.token0_size));
+    rec.note = QString("%1%2").arg(rec.note).arg(rowTokenName(row, 0));
+    rec.note = QString("%1:%2%3").arg(rec.note).arg(QString::number(rec.token1_size, 'f', SubGraph_CommonSettings::interfacePrecision(rec.token1_size))).arg(rowTokenName(row, 1));
+    rec.note = QString("%1_AMOUNTS[%2]").arg(tx_kind.toUpper()).arg(rec.note);
+
+    rec.token_address = "---";
+    emit signalSendTxLog(rec);
+}
+QString JSPosManagerTab::cellRangeToLogFormat(QString s) const
+{
+    QString s_range = s.trimmed();
+    s_range.remove("(");
+    s_range.remove(")");
+    QStringList plist = LString::trimSplitList(s_range, ";");
+    if (plist.count() != 2) return QString("???");
+
+    return QString("%1:%2").arg(plist.at(0).trimmed()).arg(plist.at(1).trimmed());
+}
+void JSPosManagerTab::tokenSizesToLogValues(QString s, JSTxLogRecord &rec) const
+{
+    rec.token0_size = rec.token1_size = -1;
+    QString s_sizes = s.trimmed();
+    s_sizes = LString::removeSpaces(s_sizes);
+    QStringList list = LString::trimSplitList(s_sizes, "/");
+    if (list.count() != 2) return;
+
+    bool ok;
+    float a = list.at(0).toFloat(&ok);
+    if (ok && a>=0) rec.token0_size = a;
+    a = list.at(1).toFloat(&ok);
+    if (ok && a>=0) rec.token1_size = a;
+}
+QString JSPosManagerTab::rowTokenName(int row, quint8 t_index) const
+{
+    QTableWidget *t = m_tablePos->table();
+    if (row >= t->rowCount() || row < 0) return QString("?");
+    if (t_index > 1) return QString("?");
+
+    QString s = t->item(row, POOL_COL)->text().trimmed();
+    int pos = s.indexOf("(");
+    if (pos < 0) return QString("?");
+
+    s = s.left(pos).trimmed();
+    s = LString::removeSpaces(s);
+    QStringList list = LString::trimSplitList(s, "/");
+    if (list.count() != 2) return QString("?");
+
+    if (t_index == 0) return list.at(0);
+    return list.at(1);
 }
 
 
@@ -407,6 +508,26 @@ void JSPosManagerTab::jsonPosStateReceived(const QJsonObject &j_result)
         rereadJSPosFileData();
     }
 }
+void JSPosManagerTab::jsonPosShortInfoReceived(const QJsonObject &j_result)
+{
+    emit signalMsg("JSON_ANSWER RECEIVED: short_info of potition");
+
+    qDebug("JSPosManagerTab::jsonPosShortInfoReceived");
+    int row = m_tablePos->curSelectedRow();
+    QTableWidget *t = m_tablePos->table();
+
+    QString s_liq = j_result.value("liq").toString().trimmed();
+    t->item(row, LIQ_COL)->setText(s_liq);
+    if (s_liq == "0") t->item(row, LIQ_COL)->setTextColor(Qt::lightGray);
+    else t->item(row, LIQ_COL)->setTextColor(Qt::blue);
+
+
+    QString pool_info = j_result.value("pool_info").toString().trimmed();
+    QString pool_addr = j_result.value("pool_address").toString().trimmed();
+    t->item(row, POOL_COL)->setText(pool_info);
+    t->item(row, POOL_COL)->setData(Qt::UserRole, pool_addr);
+    t->item(row, POOL_COL)->setToolTip(pool_addr);
+}
 void JSPosManagerTab::jsonTxDecreaseReceived(const QJsonObject &j_result)
 {
     qDebug("JSPosManagerTab::jsonTxDecreaseReceived");
@@ -420,12 +541,14 @@ void JSPosManagerTab::jsonTxDecreaseReceived(const QJsonObject &j_result)
     if (!is_simulate)
     {
         tx_hash = j_result.value("tx_hash").toString().trimmed().toLower();
-        t->item(row, ASSETS_COL)->setText("?");
-        t->item(row, REWARD_COL)->setText("?");
+        //t->item(row, ASSETS_COL)->setText("?");
+        //t->item(row, REWARD_COL)->setText("?");
         t->item(row, LIQ_COL)->setTextColor("#DC143C");
         emit signalMsg(QString("TX_HASH: %1").arg(tx_hash));
         t->item(row, LIQ_COL)->setText(tx_hash);
         t->item(row, STATE_COL)->setText("-");
+
+        sendTxRecordToLog(row, j_result);
     }
     else
     {
@@ -485,12 +608,14 @@ void JSPosManagerTab::jsonTxCollectReceived(const QJsonObject &j_result)
     if (!is_simulate)
     {
         tx_hash = j_result.value("tx_hash").toString().trimmed().toLower();
-        t->item(row, ASSETS_COL)->setText("?");
-        t->item(row, REWARD_COL)->setText("?");
+        //t->item(row, ASSETS_COL)->setText("?");
+        //t->item(row, REWARD_COL)->setText("?");
         t->item(row, LIQ_COL)->setTextColor("#DC143C");
         emit signalMsg(QString("TX_HASH: %1").arg(tx_hash));
         t->item(row, LIQ_COL)->setText(tx_hash);
         t->item(row, STATE_COL)->setText("-");
+
+        sendTxRecordToLog(row, j_result);
     }
     else
     {
@@ -522,6 +647,8 @@ void JSPosManagerTab::jsonTxIncreaseReceived(const QJsonObject &j_result)
         emit signalMsg(QString("TX_HASH: %1").arg(tx_hash));
         t->item(row, LIQ_COL)->setText(tx_hash);
         t->item(row, STATE_COL)->setText("-");
+
+        sendTxRecordToLog(row, j_result);
     }
     else
     {

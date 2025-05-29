@@ -7,6 +7,8 @@ class LTableWidgetBox;
 class QJsonObject;
 class LHttpApiRequester;
 class WalletBalanceHistory;
+struct JSTxLogRecord;
+
 
 
 //JSWalletTab
@@ -44,11 +46,15 @@ protected:
     void parseHttpResponse(const QJsonObject&);
     void initBalanceHistoryObj();
     void loadAssetsFromFile(); //загрузить список активов из файла
+    void sendTxRecordToLog(const QJsonObject&); //подготовить и отправить запись о выполненной транзакции в JSTxLogger для добавления в журнал
+
 
 private:
     void initNativeToken();
     void prepareCoingeckoParams(QString&);
     void updatePriceItem(QString, double);
+    float findTokenPrice(QString) const; //ищет текущую цену токена в таблице, параметр может быть как имя токена так и адрес, в случае ошибки вернет -1
+
 
 protected slots:
     void slotWrap();
@@ -58,12 +64,15 @@ protected slots:
 
 public slots:
     void slotScriptBroken();
-    void slotGetTokenPrice(const QString&, float&);
+    void slotGetTokenPrice(const QString&, float&) const;
+    void slotGetChainName(QString&);
 
 signals:
     void signalWalletTx(const QStringList&);
     void signalBalancesUpdated();
     void signalChainUpdated();
+    void signalSendTxLog(const JSTxLogRecord&);
+
 
 
 };

@@ -7,6 +7,8 @@
 class QJsonArray;
 class QJsonObject;
 struct TxDialogData;
+struct JSTxLogRecord;
+
 
 
 //JSPosTab
@@ -35,11 +37,14 @@ protected:
     void sendCollectTx(const TxDialogData&, int);
     void sendTx(QString, int);
     void rereadJSPosFileData();
+    void sendTxRecordToLog(int, const QJsonObject&); //подготовить и отправить запись о выполненной транзакции в JSTxLogger для добавления в журнал
+    QString rowTokenName(int, quint8) const; //возвращает тикер указанного токена из пары в указанной строке
 
     //reseived node_js result
     void jsonPidListReceived(const QJsonObject&);
     void jsonPosFileDataReceived(const QJsonObject&);
     void jsonPosStateReceived(const QJsonObject&);
+    void jsonPosShortInfoReceived(const QJsonObject&);
     void jsonTxIncreaseReceived(const QJsonObject&);
     void jsonTxDecreaseReceived(const QJsonObject&);
     void jsonTxCollectReceived(const QJsonObject&);
@@ -49,6 +54,11 @@ protected slots:
     void slotTryIncreaseLiquidity();
     void slotTryDecreaseLiquidity();
     void slotTryCollectTokens();
+    void slotGetShortInfo();
+
+private:
+    QString cellRangeToLogFormat(QString) const; //преобразовать формат range из ячейки к формату лог файла
+    void tokenSizesToLogValues(QString, JSTxLogRecord&) const; //преобразовать формат объемов токенов из ячейки к полям записи JSTxLogRecord
 
 public slots:
     void slotScriptBroken(); //скрипт не выполнился, произошла ошибка и ответ содержит поле 'error'
@@ -56,6 +66,8 @@ public slots:
 signals:
     void signalPosManagerAction(const QStringList&);
     void signalRewriteParamJson(const QJsonObject&);
+    void signalSendTxLog(const JSTxLogRecord&);
+    void signalGetChainName(QString&);
 
 
 };

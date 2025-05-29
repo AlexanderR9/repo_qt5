@@ -11,7 +11,7 @@
 #include "ltime.h"
 #include "lfile.h"
 #include "lstring.h"
-
+#include "jstxlogger.h"
 
 #include <QDebug>
 #include <QSplitter>
@@ -41,7 +41,8 @@ EthersPage::EthersPage(QWidget *parent)
       m_txPage(NULL),
       m_poolPage(NULL),
       m_balanceHistoryPage(NULL),
-      m_posManagerPage(NULL)
+      m_posManagerPage(NULL),
+      m_txLogger(NULL)
 {
     setObjectName("ethers_page");
     initWidgets();
@@ -69,6 +70,7 @@ void EthersPage::slotChainUpdated()
     m_balanceHistoryPage->setAssets(m_walletPage->assetsTokens());
     m_balanceHistoryPage->reloadHistory(m_walletPage->chainName());
 
+    initTxLoggerObj();
 }
 void EthersPage::initWidgets()
 {
@@ -104,6 +106,9 @@ void EthersPage::initWidgets()
     connect(m_approvePage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
     connect(m_approvePage, SIGNAL(signalCheckUpproved(QString)), this, SLOT(slotCheckUpproved(QString)));
     connect(m_approvePage, SIGNAL(signalApprove(const QStringList&)), this, SLOT(slotApprove(const QStringList&)));
+    connect(m_approvePage, SIGNAL(signalGetChainName(QString&)), m_walletPage, SLOT(slotGetChainName(QString&)));
+    connect(m_approvePage, SIGNAL(signalGetTokenPrice(const QString&, float&)), m_walletPage, SLOT(slotGetTokenPrice(const QString&, float&)));
+
     connect(this, SIGNAL(signalScriptBroken()), m_walletPage, SLOT(slotScriptBroken()));
     connect(this, SIGNAL(signalScriptBroken()), m_approvePage, SLOT(slotScriptBroken()));
     connect(m_txPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
@@ -118,6 +123,7 @@ void EthersPage::initWidgets()
     connect(m_poolPage, SIGNAL(signalGetTokenPrice(const QString&, float&)), m_walletPage, SLOT(slotGetTokenPrice(const QString&, float&)));
     connect(m_poolPage, SIGNAL(signalRewriteParamJson(const QJsonObject&)), this, SLOT(slotRewriteParamJson(const QJsonObject&)));
     connect(this, SIGNAL(signalScriptBroken()), m_poolPage, SLOT(slotScriptBroken()));
+    connect(m_poolPage, SIGNAL(signalGetChainName(QString&)), m_walletPage, SLOT(slotGetChainName(QString&)));
 
     connect(m_balanceHistoryPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_balanceHistoryPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
@@ -127,6 +133,7 @@ void EthersPage::initWidgets()
     connect(m_posManagerPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
     connect(m_posManagerPage, SIGNAL(signalPosManagerAction(const QStringList&)), this, SLOT(slotPosManagerAction(const QStringList&)));
     connect(m_posManagerPage, SIGNAL(signalRewriteParamJson(const QJsonObject&)), this, SLOT(slotRewriteParamJson(const QJsonObject&)));
+    connect(m_posManagerPage, SIGNAL(signalGetChainName(QString&)), m_walletPage, SLOT(slotGetChainName(QString&)));
     connect(this, SIGNAL(signalScriptBroken()), m_posManagerPage, SLOT(slotScriptBroken()));
 
 
@@ -344,6 +351,20 @@ void EthersPage::initProcessObj()
     m_procObj->setCommand("node");
     m_procObj->setProcessDir(sub_commonSettings.nodejs_path);
     m_procObj->setDebugLevel(5);
+}
+void EthersPage::initTxLoggerObj()
+{
+    m_txLogger = new JSTxLogger(this);
+    connect(m_txLogger, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
+    connect(m_txLogger, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
+
+    m_txLogger->setChainName(m_walletPage->chainName());
+
+    connect(m_walletPage, SIGNAL(signalSendTxLog(const JSTxLogRecord&)), m_txLogger, SLOT(slotAddLog(const JSTxLogRecord&)));
+    connect(m_approvePage, SIGNAL(signalSendTxLog(const JSTxLogRecord&)), m_txLogger, SLOT(slotAddLog(const JSTxLogRecord&)));
+    connect(m_poolPage, SIGNAL(signalSendTxLog(const JSTxLogRecord&)), m_txLogger, SLOT(slotAddLog(const JSTxLogRecord&)));
+    connect(m_posManagerPage, SIGNAL(signalSendTxLog(const JSTxLogRecord&)), m_txLogger, SLOT(slotAddLog(const JSTxLogRecord&)));
+
 }
 void EthersPage::slotRewriteParamJson(const QJsonObject &j_params)
 {

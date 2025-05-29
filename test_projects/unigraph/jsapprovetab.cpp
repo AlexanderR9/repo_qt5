@@ -4,6 +4,7 @@
 #include "lstring.h"
 #include "subcommonsettings.h"
 #include "jstxdialog.h"
+#include "jstxlogger.h"
 
 #include <QTableWidget>
 #include <QSplitter>
@@ -162,6 +163,8 @@ void JSApproveTab::answerApprove(const QJsonObject &j_result)
         QString hash = j_result.value("tx_hash").toString().trimmed();
         emit signalMsg("TX sended OK!!!");
         emit signalMsg(QString("TX_HASH: %1").arg(hash));
+
+        sendTxRecordToLog(j_result);
     }
     else
     {
@@ -317,4 +320,35 @@ void JSApproveTab::getApprovedByLocalData(const QString &token_addr, float &pm_s
         }
     }
 }
+void JSApproveTab::sendTxRecordToLog(const QJsonObject &j_result)
+{
+    qDebug("");
+    qDebug("JSApproveTab::sendTxRecordToLog");
 
+    QString tx_kind = j_result.value("type").toString().trimmed();
+    tx_kind.remove("tx_");
+    tx_kind = tx_kind.toLower().trimmed();
+
+    QString cur_chain;
+    emit signalGetChainName(cur_chain);
+    JSTxLogRecord rec(tx_kind, cur_chain);
+
+    if (j_result.contains("tx_hash"))
+        rec.tx_hash = j_result.value("tx_hash").toString().trimmed();
+    if (j_result.contains("token"))
+    {
+        rec.token_address = j_result.value("token").toString().trimmed();
+        emit signalGetTokenPrice(rec.token_address, rec.current_price);
+    }
+    if (j_result.contains("size"))
+        rec.token0_size = j_result.value("size").toString().trimmed().toFloat();
+
+
+    qDebug()<<QString("tx_kind[%1]  token_address[%2]").arg(tx_kind).arg(rec.token_address);
+    qDebug()<<QString("current_price[%1]  size[%2]").arg(rec.current_price).arg(rec.token0_size);
+
+    if (j_result.contains("whom")) rec.note = QString("WHOM[%1]").arg(j_result.value("whom").toString().trimmed());
+    rec.pool_address = "---";
+    emit signalSendTxLog(rec);
+
+}

@@ -7,6 +7,10 @@
 #include "lhttp_types.h"
 #include "lhttpapirequester.h"
 #include "walletbalancehistory.h"
+#include "jstxlogger.h"
+
+
+
 
 #include <QTableWidget>
 #include <QTableWidgetItem>
@@ -497,6 +501,8 @@ void JSWalletTab::lookTxAnswer(const QJsonObject &j_result)
         QString hash = j_result.value("tx_hash").toString().trimmed();
         emit signalMsg("TX sended OK!!!");
         emit signalMsg(QString("TX_KIND: [%1],  TX_HASH: [%2]").arg(tx_kind).arg(hash));
+
+        sendTxRecordToLog(j_result);
     }
     else
     {
@@ -507,7 +513,7 @@ void JSWalletTab::slotScriptBroken()
 {
     m_table->table()->setEnabled(true);
 }
-void JSWalletTab::slotGetTokenPrice(const QString &t_addr, float &cur_price)
+void JSWalletTab::slotGetTokenPrice(const QString &t_addr, float &cur_price) const
 {
     cur_price = -1;
     QTableWidget *t = m_table->table();
@@ -527,5 +533,62 @@ void JSWalletTab::slotGetTokenPrice(const QString &t_addr, float &cur_price)
             break;
         }
     }
+    qDebug()<<QString("JSWalletTab::slotGetTokenPrice  t_addr[%1]  cur_price = %2").arg(t_addr).arg(cur_price);
 }
+void JSWalletTab::slotGetChainName(QString &s)
+{
+    s = chainName();
+}
+float JSWalletTab::findTokenPrice(QString t) const
+{
+    qDebug()<<QString("JSWalletTab::findTokenPrice t=%1").arg(t);
+    float p = -1;
+    if (t.length() > 20)
+    {
+        qDebug("t.length() > 20");
+        slotGetTokenPrice(t, p);
+        return p;
+    }
 
+
+    QString t_addr = assetsTokens().value(t, QString()).trimmed();
+    qDebug()<<QString("t_addr=%1").arg(t_addr);
+
+    if (t_addr.isEmpty()) return p;
+    slotGetTokenPrice(t_addr, p);
+    return p;
+}
+void JSWalletTab::sendTxRecordToLog(const QJsonObject &j_result)
+{
+    QString tx_kind = j_result.value("type").toString().trimmed();
+    tx_kind.remove("tx_");
+    tx_kind = tx_kind.toLower().trimmed();
+    JSTxLogRecord rec(tx_kind, chainName());
+    if (j_result.contains("tx_hash"))
+        rec.tx_hash = j_result.value("tx_hash").toString().trimmed();
+
+    if (tx_kind.contains("wrap"))
+    {
+        rec.token_address = j_result.value("token").toString().trimmed();
+        rec.token0_size = j_result.value("size").toString().trimmed().toFloat();
+    }
+    else if (tx_kind.contains("transfer"))
+    {
+        rec.token_address = j_result.value("token").toString().trimmed();
+        rec.token0_size = j_result.value("size").toString().trimmed().toFloat();
+        if (j_result.contains("to_wallet"))
+            rec.note = QString("TO_WALLET[%1]").arg(j_result.value("to_wallet").toString().trimmed().toLower());
+    }
+    else
+    {
+        emit signalError(QString("JSWalletTab: invalid TX_kind - [%1]").arg(tx_kind));
+        return;
+    }
+
+    qDebug("");
+    qDebug()<<QString("tx_kind[%1]  token_address[%2]").arg(tx_kind).arg(rec.token_address);
+    rec.current_price = findTokenPrice(rec.token_address);
+    qDebug()<<QString("current_price[%1] ").arg(rec.current_price);
+    rec.pool_address = "---";
+    emit signalSendTxLog(rec);
+}

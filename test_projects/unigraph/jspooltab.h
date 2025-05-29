@@ -7,6 +7,7 @@
 class LSearchTableWidgetBox;
 class QJsonObject;
 struct TxDialogData;
+struct JSTxLogRecord;
 
 
 //JSPoolRecord
@@ -55,6 +56,7 @@ protected:
     void answerSwap(const QJsonObject&);
     void answerMintTx(const QJsonObject&);
     void sendMintTx(const TxDialogData&, int);
+    void sendTxRecordToLog(int, const QJsonObject&); //подготовить и отправить запись о выполненной транзакции в JSTxLogger для добавления в журнал
 
 private:
     int pricePrecision(float, bool) const;
@@ -73,6 +75,8 @@ signals:
     void signalGetApprovedSize(QString, const QString&, float&); //запрос текущих опрувнутых токенов для свопа указанного актива
     void signalGetTokenPrice(const QString&, float&); //получить текущую цену токена со страницы кошелька
     void signalRewriteParamJson(const QJsonObject&);
+    void signalSendTxLog(const JSTxLogRecord&);
+    void signalGetChainName(QString&);
 
 
 };

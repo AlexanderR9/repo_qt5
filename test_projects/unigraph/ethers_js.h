@@ -14,6 +14,7 @@ class JSTxTab;
 class JSPoolTab;
 class BalanceHistoryTab;
 class JSPosManagerTab;
+class JSTxLogger;
 
 
 //EthersPage
@@ -48,9 +49,11 @@ protected:
     JSPoolTab       *m_poolPage;
     BalanceHistoryTab   *m_balanceHistoryPage;
     JSPosManagerTab   *m_posManagerPage;
+    JSTxLogger      *m_txLogger;
 
     void initWidgets();
     void initProcessObj();
+    void initTxLoggerObj();
     virtual void clearPage() {}
     void tryUpdateBalace();
     void parseResultBuffer();

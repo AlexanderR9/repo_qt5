@@ -46,6 +46,7 @@ struct SubGraph_CommonSettings
     static bool isStableToken(QString);
     static bool isWrapedToken(QString);
     static QString tokenIdCoingecko(QString); //id для использования в параметрах URL api.coingecko.com
+    static quint8 interfacePrecision(float); //разумная точность числа для отображения в интерфейсе пользователя
 
     void reset();
     void loadConfig(QString&);

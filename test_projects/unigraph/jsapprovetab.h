@@ -5,6 +5,9 @@
 
 class LTableWidgetBox;
 class QJsonObject;
+struct JSTxLogRecord;
+
+
 
 //JSApproveTab
 class JSApproveTab : public LSimpleWidget
@@ -38,6 +41,7 @@ protected:
     void addLocalData(const QString&, float, float); //в момент получения ответа о текущих апувнутых значения добавить обновить/добавить соответствующую запись в m_locData
     void syncTableByLocalData();
     void getApprovedByLocalData(const QString&, float&, float&) const; //получить из локальных данных текущие апрувнутые значения для указанного токена
+    void sendTxRecordToLog(const QJsonObject&); //подготовить и отправить запись о выполненной транзакции в JSTxLogger для добавления в журнал
 
 protected slots:
     void slotUpdateApproved();
@@ -51,6 +55,9 @@ public slots:
 signals:
     void signalCheckUpproved(QString);
     void signalApprove(const QStringList&);
+    void signalSendTxLog(const JSTxLogRecord&);
+    void signalGetChainName(QString&);
+    void signalGetTokenPrice(const QString&, float&); //получить текущую цену токена со страницы кошелька
 
 };
 

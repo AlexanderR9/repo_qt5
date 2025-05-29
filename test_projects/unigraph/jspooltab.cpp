@@ -5,6 +5,8 @@
 #include "subcommonsettings.h"
 #include "jstxdialog.h"
 #include "ethers_js.h"
+#include "jstxlogger.h"
+
 
 #include <QTableWidget>
 #include <QSplitter>
@@ -261,8 +263,8 @@ void JSPoolTab::parseJSResult(const QJsonObject &j_result)
 
     QString operation = j_result.value("type").toString().trimmed();
     if (operation == "state") answerState(j_result);
-    else if (operation == "swap") answerSwap(j_result);
-    else if (operation == "mint_tx") answerMintTx(j_result);
+    else if (operation == "tx_swap") answerSwap(j_result);
+    else if (operation == "tx_mint") answerMintTx(j_result);
     else emit signalError(QString("invalid answer type: %1").arg(operation));
 
     m_table->resizeByContents();
@@ -340,6 +342,8 @@ void JSPoolTab::answerSwap(const QJsonObject &j_result)
                 note = QString("SWAP:");
                 note = QString("%1 %2 %3").arg(note).arg(QString::number(size_in, 'f', pricePrecision(size_in, stb))).arg(t_in);
                 note = QString("%1 => X %2").arg(note).arg(t_out);
+
+                sendTxRecordToLog(i, j_result);
             }
             m_table->table()->item(i, NOTE_COL)->setText(note);
             m_table->table()->item(i, NOTE_COL)->setTextColor("#4B0082");
@@ -403,7 +407,11 @@ void JSPoolTab::answerMintTx(const QJsonObject &j_result)
 
 
     QString tx_hash("IS_SIMULATE_MODE");
-    if (!is_simulate) tx_hash = j_result.value("tx_hash").toString().trimmed().toLower();
+    if (!is_simulate)
+    {
+        tx_hash = j_result.value("tx_hash").toString().trimmed().toLower();
+        sendTxRecordToLog(row, j_result);
+    }
     m_table->table()->item(row, NOTE_COL)->setToolTip(tx_hash);
 
     emit signalMsg(LString::symbolString('-', 100));
@@ -418,7 +426,72 @@ void JSPoolTab::slotScriptBroken()
     m_table->table()->setEnabled(true);
     m_table->resizeByContents();
 }
+void JSPoolTab::sendTxRecordToLog(int row, const QJsonObject &j_result)
+{
+    qDebug("");
+    qDebug("JSPoolTab::sendTxRecordToLog");
 
+    QString tx_kind = j_result.value("type").toString().trimmed();
+    tx_kind.remove("tx_");
+    tx_kind = tx_kind.toLower().trimmed();
+
+    QString cur_chain;
+    emit signalGetChainName(cur_chain);
+    JSTxLogRecord rec(tx_kind, cur_chain);
+    if (j_result.contains("tx_hash"))
+        rec.tx_hash = j_result.value("tx_hash").toString().trimmed();
+
+    if (tx_kind.contains("mint"))
+    {
+        rec.token_address = "---";
+        rec.token0_size = j_result.value("token0_amount").toString().trimmed().toFloat();
+        rec.token1_size = j_result.value("token1_amount").toString().trimmed().toFloat();
+        rec.current_price = j_result.value("current_price").toString().trimmed().toFloat();
+        rec.current_tick = j_result.value("current_tick").toString().trimmed().toInt();
+        int t1 = j_result.value("tick_lower").toString().trimmed().toInt();
+        int t2 = j_result.value("tick_upper").toString().trimmed().toInt();
+        rec.tick_range = QString("%1:%2").arg(t1).arg(t2);
+        QString s_prange = j_result.value("real_price_range").toString().trimmed();
+        s_prange.remove("(");
+        s_prange.remove(")");
+        QStringList plist = LString::trimSplitList(s_prange, ";");
+        if (plist.count() == 2)
+            rec.price_range = QString("%1:%2").arg(plist.at(0).trimmed()).arg(plist.at(1).trimmed());
+        rec.note = m_poolData.at(row).assets.trimmed();
+        rec.note.replace("/", ":");
+        float fee_p = float(m_poolData.at(row).fee)/float(10000);
+        rec.note = QString("%1:%2%").arg(rec.note).arg(fee_p);
+        rec.note = LString::removeSpaces(rec.note);
+        rec.note = QString("POOL[%1]").arg(rec.note);
+    }
+    else if (tx_kind.contains("swap"))
+    {
+        qDebug(" - branch SWAP");
+        rec.token0_size = j_result.value("input_size").toString().trimmed().toFloat();
+        rec.token1_size = j_result.value("output_size").toString().trimmed().toFloat();
+        int t_index = j_result.value("input_token").toString().trimmed().toInt();
+        rec.token_address = ((t_index == 0) ? m_poolData.at(row).token0_addr : m_poolData.at(row).token1_addr);
+        rec.current_price = j_result.value("price_token").toString().trimmed().toFloat();
+        rec.current_tick = j_result.value("pool_tick").toString().trimmed().toInt();
+
+        qDebug()<<QString("current_price=%1  current_tick=%2").arg(rec.current_price).arg(rec.current_tick);
+
+        rec.note = QString::number(rec.token0_size, 'f', SubGraph_CommonSettings::interfacePrecision(rec.token0_size));
+        rec.note = QString("%1 %2").arg(rec.note).arg((t_index == 0) ? m_poolData.at(row).ticker0() : m_poolData.at(row).ticker1());
+        rec.note = QString("%1 => %2").arg(rec.note).arg(QString::number(rec.token1_size, 'f', SubGraph_CommonSettings::interfacePrecision(rec.token1_size)));
+        rec.note = QString("%1 %2").arg(rec.note).arg((t_index == 0) ? m_poolData.at(row).ticker1() : m_poolData.at(row).ticker0());
+        qDebug() << QString("NOTE [%1]").arg(rec.note);
+    }
+    else
+    {
+        emit signalError(QString("JSPoolTab: invalid TX_kind - [%1]").arg(tx_kind));
+        return;
+    }
+
+
+    rec.pool_address = m_poolData.at(row).address;
+    emit signalSendTxLog(rec);
+}
 
 ///////////////////////////JSPoolRecord//////////////////////////////
 
