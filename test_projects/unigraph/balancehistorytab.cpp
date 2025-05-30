@@ -168,4 +168,7 @@ void BalanceHistoryTab::calcDeviationByAddr(QString addr)
 
     }
 }
-
+void BalanceHistoryTab::slotBalancesUpdated(QString chain)
+{
+    reloadHistory(chain);
+}

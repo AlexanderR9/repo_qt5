@@ -15,6 +15,7 @@ class JSPoolTab;
 class BalanceHistoryTab;
 class JSPosManagerTab;
 class JSTxLogger;
+class LSplash;
 
 
 //EthersPage
@@ -50,6 +51,7 @@ protected:
     BalanceHistoryTab   *m_balanceHistoryPage;
     JSPosManagerTab   *m_posManagerPage;
     JSTxLogger      *m_txLogger;
+    LSplash         *m_splashWidget;
 
     void initWidgets();
     void initProcessObj();

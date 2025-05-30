@@ -27,8 +27,8 @@ protected:
     void calcDeviationColumn(); // посчитать столбец с отклонениями баланса
     void calcDeviationByAddr(QString); // посчитать отклонения баланса для указанного актива
 
-//public slots:
-    //void slotBalancesUpdated(); //выполняется каждый раз при запросе текущих балансов из сети
+public slots:
+    void slotBalancesUpdated(QString); //выполняется каждый раз при запросе текущих балансов из сети
 
 
 };

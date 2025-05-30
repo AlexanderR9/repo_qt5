@@ -433,7 +433,7 @@ void JSWalletTab::updateBalances(const QJsonObject &j_result)
     if (!balances.isEmpty())
     {
         m_balanceHistory->updateBalances(balances, chainName());
-        emit signalBalancesUpdated();
+        emit signalBalancesUpdated(chainName());
     }
 
     sendHttpReq();

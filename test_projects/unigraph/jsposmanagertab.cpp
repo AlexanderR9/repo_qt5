@@ -55,6 +55,11 @@ void JSPosManagerTab::initTables()
     h_splitter->addWidget(m_tablePos);
     m_tablePos->searchExec();
 
+    m_tablePos->sortingOn();
+    m_tablePos->addSortingData(LIQ_COL, LTableWidgetBox::sdtNumeric);
+    m_tablePos->addSortingData(POOL_COL, LTableWidgetBox::sdtString);
+
+
     m_tableLog = new LSearchTableWidgetBox(this);
     m_tableLog->setTitle("Pool log (closed)");
     m_tableLog->vHeaderHide();
@@ -486,6 +491,7 @@ void JSPosManagerTab::jsonPosStateReceived(const QJsonObject &j_result)
     else t->item(row, LIQ_COL)->setTextColor(Qt::blue);
 
 
+    LTable::setTableRowColor(t, row, Qt::white);
     if (s_liq.length() > 4)
     {
         if (p_location.contains("OUT")) LTable::setTableRowColor(t, row, "#FFDCDC");

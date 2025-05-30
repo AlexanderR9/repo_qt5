@@ -69,7 +69,7 @@ public slots:
 
 signals:
     void signalWalletTx(const QStringList&);
-    void signalBalancesUpdated();
+    void signalBalancesUpdated(QString);
     void signalChainUpdated();
     void signalSendTxLog(const JSTxLogRecord&);
 

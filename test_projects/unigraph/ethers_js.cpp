@@ -12,6 +12,7 @@
 #include "lfile.h"
 #include "lstring.h"
 #include "jstxlogger.h"
+#include "lsplash.h"
 
 #include <QDebug>
 #include <QSplitter>
@@ -42,9 +43,17 @@ EthersPage::EthersPage(QWidget *parent)
       m_poolPage(NULL),
       m_balanceHistoryPage(NULL),
       m_posManagerPage(NULL),
-      m_txLogger(NULL)
+      m_txLogger(NULL),
+      m_splashWidget(NULL)
 {
     setObjectName("ethers_page");
+
+    m_splashWidget = new LSplash(this);
+    m_splashWidget->resize(300, 100);
+    m_splashWidget->initProgress(8);
+
+    //m_splashWidget->stopDelay();
+
     initWidgets();
     initProcessObj();
 
@@ -127,7 +136,7 @@ void EthersPage::initWidgets()
 
     connect(m_balanceHistoryPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_balanceHistoryPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
-    //connect(m_walletPage, SIGNAL(signalBalancesUpdated()), m_balanceHistoryPage, SLOT(slotBalancesUpdated()));
+    connect(m_walletPage, SIGNAL(signalBalancesUpdated(QString)), m_balanceHistoryPage, SLOT(slotBalancesUpdated(QString)));
 
     connect(m_posManagerPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_posManagerPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
@@ -153,6 +162,7 @@ void EthersPage::startUpdating(quint16 t)
     if (walletPageNow())
     {
         tryUpdateBalace();
+        //m_splashWidget->startDelay("Waiting JS reply .....");
         return;
     }
     if (txPageNow())
@@ -170,6 +180,7 @@ void EthersPage::startUpdating(quint16 t)
     if (posManagerPageNow())
     {
         m_posManagerPage->updatePidList();
+        //m_splashWidget->startDelay("Waiting JS reply .....");
         return;
     }
 
@@ -206,9 +217,14 @@ void EthersPage::tryUpdateBalace()
     QStringList args;
     m_walletPage->getBalacesArgs(args);
     m_procObj->setArgs(args);
+
+    /*
     emit signalMsg(QString("%1  start node_js process %2").arg(LTime::strCurrentTime()).arg(LString::symbolString('.', 50)));
     emit signalMsg(QString("command [%1]").arg(m_procObj->fullCommand()));
     m_procObj->startCommand();
+    */
+
+    startProcessObj();
 }
 void EthersPage::parseResultBuffer()
 {
@@ -244,11 +260,11 @@ void EthersPage::startProcessObj()
     emit signalMsg(QString("command [%1]").arg(m_procObj->fullCommand()));
     emit signalEnableControls(false);
     m_procObj->startCommand();
+
+    m_splashWidget->startDelay("Waiting JS reply .....");
 }
 void EthersPage::slotCheckUpproved(QString token_addr)
 {
-    //qDebug()<<QString("%1 .... tryUpdateApproved sum for token_addr (%2)").arg(LTime::strCurrentTime()).arg(token_addr);
-
     QStringList args;
     args << m_approvePage->scriptName() << token_addr;// << "pos_manager";
     m_procObj->setArgs(args);
@@ -257,8 +273,6 @@ void EthersPage::slotCheckUpproved(QString token_addr)
 }
 void EthersPage::slotApprove(const QStringList &tx_params)
 {
-   // qDebug()<<QString("%1 .... slotApprove sum for token_addr (%2)").arg(LTime::strCurrentTime()).arg(tx_params.first());
-
     QStringList args;
     args << m_approvePage->scriptName();
     args.append(tx_params);
@@ -268,30 +282,28 @@ void EthersPage::slotApprove(const QStringList &tx_params)
 }
 void EthersPage::slotCheckTx(const QStringList &args)
 {
-   // qDebug()<<QString("%1 .... slotCheckTx, args %2").arg(LTime::strCurrentTime()).arg(args.count());
     m_procObj->setArgs(args);
     startProcessObj();
 }
 void EthersPage::slotPoolAction(const QStringList &args)
 {
-  //  qDebug()<<QString("%1 .... slotPoolAction, args %2").arg(LTime::strCurrentTime()).arg(args.count());
     m_procObj->setArgs(args);
     startProcessObj();
 }
 void EthersPage::slotPosManagerAction(const QStringList &args)
 {
-      qDebug()<<QString("%1 .... slotPosManagerAction, args %2").arg(LTime::strCurrentTime()).arg(args.count());
       m_procObj->setArgs(args);
       startProcessObj();
 }
 void EthersPage::slotWalletTx(const QStringList &args)
 {
- //   qDebug()<<QString("%1 .... slotWalletTx, args %2").arg(LTime::strCurrentTime()).arg(args.count());
     m_procObj->setArgs(args);
     startProcessObj();
 }
 void EthersPage::slotJsonReply(int req_type, const QJsonObject &j_result)
 {
+    m_splashWidget->stopDelay();
+
     if (req_type != userSign()) return;
 
     if (j_result.keys().contains("error"))
@@ -318,6 +330,7 @@ void EthersPage::slotJsonReply(int req_type, const QJsonObject &j_result)
     else if (txPageNow())
     {
         m_txPage->parseJSResult(j_result);
+        m_splashWidget->startProgress("delay after TX ....");
     }
     else if (poolsPageNow())
     {
