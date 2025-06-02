@@ -72,7 +72,7 @@ signals:
     void signalBalancesUpdated(QString);
     void signalChainUpdated();
     void signalSendTxLog(const JSTxLogRecord&);
-
+    //void signalStartTXDelay();
 
 
 };

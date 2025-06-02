@@ -81,6 +81,8 @@ protected:
 public slots:
     void slotAddLog(const JSTxLogRecord&); // добавить запись о транзакции в лог файл txLogFile
 
+signals:
+    void signalStartTXDelay();
 
 };
 

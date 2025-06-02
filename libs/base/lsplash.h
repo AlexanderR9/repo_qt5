@@ -18,8 +18,11 @@ public:
 
     void startDelay(const QString &s = QString());
     void stopDelay();
+    void setTextSize(int, bool is_bold = false);
+    void setTextColor(QString); //mask value example: '#E9967A'
 
     void initProgress(quint32); //param - timeout seconds
+    void updateProgressDelay(quint32); //param - timeout seconds
     void startProgress(const QString &s = QString()); //запуск окна с прогрессом, окно после окончания таймаута закроется автоматом
 
 protected:
@@ -32,6 +35,8 @@ protected:
 protected slots:
     void slotProgressTimer();
 
+signals:
+    void signalProgressFinished();
 
 };
 

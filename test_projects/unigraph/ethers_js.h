@@ -17,6 +17,7 @@ class JSPosManagerTab;
 class JSTxLogger;
 class LSplash;
 
+#include <QDebug>
 
 //EthersPage
 class EthersPage : public UG_BasePage
@@ -29,6 +30,9 @@ public:
     QString iconPath() const {return QString(":/icons/images/crypto/ETH.png");}
     QString caption() const {return QString("Ethers JS");}
     //void setExpandLevel(int);
+
+    inline void setDelayAfterTX(quint16 d) {m_delayAfterTX = d; qDebug()<<QString("m_delayAfterTX=%1").arg(m_delayAfterTX);}
+
 
     void updateDataPage(bool) {qDebug("EthersPage::updateDataPage");}
     virtual void saveData() {};
@@ -52,6 +56,7 @@ protected:
     JSPosManagerTab   *m_posManagerPage;
     JSTxLogger      *m_txLogger;
     LSplash         *m_splashWidget;
+    quint16             m_delayAfterTX; //принудительная задержка интерфейса на это количество сек после любой транзакции
 
     void initWidgets();
     void initProcessObj();
@@ -89,6 +94,8 @@ public slots:
 
 protected slots:
     void slotScriptFinished();
+    void slotTXDelayFinished(); //выполняется когда принудительная задержка истекла
+    void slotStartTXDelay(); //запустить принудительную задержку после выполнения транзакции
 
 signals:
     void signalEnableControls(bool);

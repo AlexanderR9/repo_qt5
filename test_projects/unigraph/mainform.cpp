@@ -261,6 +261,13 @@ void MainForm::initCommonSettings()
     lCommonSettings.setComboList(key, combo_list);
     lCommonSettings.setDefValue(key, combo_list.at(3));
 
+    key = QString("delay_after_tx");
+    lCommonSettings.addParam(QString("Delay after TX, secs"), LSimpleDialog::sdtIntCombo, key);
+    combo_list.clear();
+    for (int i=1; i<10; i++) combo_list << QString::number(i*5);
+    lCommonSettings.setComboList(key, combo_list);
+
+
 }
 void MainForm::slotError(const QString &text)
 {
@@ -301,6 +308,7 @@ void MainForm::load()
     m_centralWidget->setUpdatingInterval(pageUpdatingInterval());
     m_centralWidget->setApiServer(graphDomain());
     m_centralWidget->setApiKeys(apiKey(), subgraphID());
+    m_centralWidget->setDelayAfterTX(delayAfterTX());
 
     sub_commonSettings.setCurFactory(subgraphID());
     sub_commonSettings.only_prefer_tokens = usePreferTokens();
@@ -328,6 +336,10 @@ void MainForm::slotAppSettingsChanged(QStringList list)
 
     if (list.contains("use_prefer_tokens"))
         sub_commonSettings.only_prefer_tokens = usePreferTokens();
+
+    if (list.contains("delay_after_tx"))
+        m_centralWidget->setDelayAfterTX(delayAfterTX());
+
 
     updateWindowTitle();
 }
@@ -423,6 +435,10 @@ bool MainForm::usePreferTokens() const
 QString MainForm::walletAddr() const
 {
     return lCommonSettings.paramValue("wallet").toString();
+}
+quint16 MainForm::delayAfterTX() const
+{
+    return lCommonSettings.paramValue("delay_after_tx").toUInt();
 }
 
 

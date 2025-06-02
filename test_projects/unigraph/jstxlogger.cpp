@@ -33,17 +33,13 @@ void JSTxLogger::slotAddLog(const JSTxLogRecord &rec)
 
     QString err;
     QString fname = QString("%1%2%3").arg(SubGraph_CommonSettings::appDataPath()).arg(QDir::separator()).arg(txLogFile());
-    if (!LFile::fileExists(fname))
-    {
-        err = LFile::writeFile(fname, fline);
-    }
-    else
-    {
-        err = LFile::appendFile(fname, fline);
-    }
+    if (!LFile::fileExists(fname)) err = LFile::writeFile(fname, fline);
+    else err = LFile::appendFile(fname, fline);
 
     if (!err.isEmpty())
         emit signalError(QString("JSTxLogger::slotAddLog, %1").arg(err));
+
+    emit signalStartTXDelay(); //запустить диалоговое окно для блокировки интерфейса на определенную задержку
 }
 
 

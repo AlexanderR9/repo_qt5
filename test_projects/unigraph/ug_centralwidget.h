@@ -36,6 +36,7 @@ public:
     void setViewPrecision(quint8 p);
     bool updatingRunning() const;
     bool isBuzy() const;
+    void setDelayAfterTX(quint16);
 
 
     void actAdd();

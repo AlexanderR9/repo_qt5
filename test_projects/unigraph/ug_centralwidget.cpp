@@ -328,6 +328,22 @@ bool UG_CentralWidget::isBuzy() const
     if (!m_reqObj) return true;
     return m_reqObj->isBuzy();
 }
+void UG_CentralWidget::setDelayAfterTX(quint16 d)
+{
+    qDebug()<<QString("UG_CentralWidget::setDelayAfterTX  d=%1").arg(d);
+    for (int i=0; i<w_stack->count(); i++)
+    {
+        UG_BasePage *w = qobject_cast<UG_BasePage*>(w_stack->widget(i));
+        if (w)
+        {
+            if (w->userSign() == rtEthers)
+            {
+                EthersPage *eth_page = qobject_cast<EthersPage*>(w);
+                if (eth_page) eth_page->setDelayAfterTX(d);
+            }
+        }
+    }
+}
 void UG_CentralWidget::freeReq()
 {
     qDebug("//////////////start free req///////////////");

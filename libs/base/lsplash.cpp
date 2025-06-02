@@ -3,6 +3,7 @@
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QTest>
+#include <QColor>
 #include <QTimer>
 #include <QProgressBar>
 
@@ -27,11 +28,26 @@ LSplash::LSplash(QWidget *parent)
     font.setPointSize(12);
     font.setBold(true);
     m_label->setFont(font);
+    m_label->setAlignment(Qt::AlignCenter);
+
     QPalette plt;
     plt.setColor(QPalette::WindowText, Qt::blue);
     m_label->setPalette(plt);
 
     stopDelay();
+}
+void LSplash::setTextSize(int size, bool is_bold)
+{
+    QFont font(m_label->font());
+    font.setPointSize(size);
+    font.setBold(is_bold);
+    m_label->setFont(font);
+}
+void LSplash::setTextColor(QString color_value)
+{
+    QPalette plt(m_label->palette());
+    plt.setColor(QPalette::WindowText, QColor(color_value));
+    m_label->setPalette(plt);
 }
 void LSplash::startDelay(const QString &s)
 {
@@ -46,6 +62,8 @@ void LSplash::startProgress(const QString &s)
 {
     if (!m_progressBar) {qWarning("WARNING m_progressBar is NULL"); return;}
 
+    m_progressBar->show();
+
     m_timerCounter = 0;
     m_progressBar->setValue(0);
     m_progressTimer->start();
@@ -57,6 +75,11 @@ void LSplash::stopDelay()
 
     hide();
     QTest::qWait(100);
+}
+void LSplash::updateProgressDelay(quint32 sec)
+{
+    if (m_progressBar)
+        m_progressDelay = sec*1000;
 }
 void LSplash::initProgress(quint32 sec)
 {
@@ -73,8 +96,9 @@ void LSplash::initProgress(quint32 sec)
     m_progressTimer = new QTimer(this);
     m_progressTimer->setInterval(PROGRESS_TIMER_INTERVAL);
     m_progressTimer->stop();
-
     connect(m_progressTimer, SIGNAL(timeout()), SLOT(slotProgressTimer()));
+
+    m_progressBar->hide();
 }
 void LSplash::slotProgressTimer()
 {
@@ -84,7 +108,10 @@ void LSplash::slotProgressTimer()
     {
         m_progressBar->setValue(100);
         m_progressTimer->stop();
+        m_progressBar->hide();
         stopDelay();
+
+        emit signalProgressFinished();
     }
 
     float a = float(m_timerCounter*PROGRESS_TIMER_INTERVAL)/float(m_progressDelay);

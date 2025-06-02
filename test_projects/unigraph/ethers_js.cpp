@@ -44,15 +44,18 @@ EthersPage::EthersPage(QWidget *parent)
       m_balanceHistoryPage(NULL),
       m_posManagerPage(NULL),
       m_txLogger(NULL),
-      m_splashWidget(NULL)
+      m_splashWidget(NULL),
+      m_delayAfterTX(15)
 {
     setObjectName("ethers_page");
 
     m_splashWidget = new LSplash(this);
-    m_splashWidget->resize(300, 100);
-    m_splashWidget->initProgress(8);
+    m_splashWidget->resize(400, 100);
+    m_splashWidget->initProgress(m_delayAfterTX);
+    m_splashWidget->setTextSize(16);
+    m_splashWidget->setTextColor("#008080");
+    connect(m_splashWidget, SIGNAL(signalProgressFinished()), this, SLOT(slotTXDelayFinished()));
 
-    //m_splashWidget->stopDelay();
 
     initWidgets();
     initProcessObj();
@@ -146,6 +149,27 @@ void EthersPage::initWidgets()
     connect(this, SIGNAL(signalScriptBroken()), m_posManagerPage, SLOT(slotScriptBroken()));
 
 
+}
+void EthersPage::slotTXDelayFinished()
+{
+    qDebug("EthersPage::slotTXDelayFinished()");
+    //emit signalStopUpdating();
+    this->setEnabled(true);
+
+    m_splashWidget->setTextSize(16);
+    m_splashWidget->setTextColor("#008080");
+}
+void EthersPage::slotStartTXDelay()
+{
+    qDebug()<<QString("EthersPage::slotStartTXDelay() delay %1 seconds").arg(m_delayAfterTX);
+    m_splashWidget->setTextSize(14, true);
+    m_splashWidget->setTextColor("#DD4500");
+    m_splashWidget->updateProgressDelay(m_delayAfterTX);
+
+    this->setEnabled(false);
+    //emit signalEnableControls(false);
+    QString text = QString("Going delay after TX, %1 seconds!").arg(m_delayAfterTX);
+    m_splashWidget->startProgress(text);
 }
 void EthersPage::slotScriptFinished()
 {
@@ -330,7 +354,8 @@ void EthersPage::slotJsonReply(int req_type, const QJsonObject &j_result)
     else if (txPageNow())
     {
         m_txPage->parseJSResult(j_result);
-        m_splashWidget->startProgress("delay after TX ....");
+        //m_splashWidget->startProgress("delay after TX ....");
+        //slotStartTXDelay();
     }
     else if (poolsPageNow())
     {
@@ -377,6 +402,7 @@ void EthersPage::initTxLoggerObj()
     connect(m_approvePage, SIGNAL(signalSendTxLog(const JSTxLogRecord&)), m_txLogger, SLOT(slotAddLog(const JSTxLogRecord&)));
     connect(m_poolPage, SIGNAL(signalSendTxLog(const JSTxLogRecord&)), m_txLogger, SLOT(slotAddLog(const JSTxLogRecord&)));
     connect(m_posManagerPage, SIGNAL(signalSendTxLog(const JSTxLogRecord&)), m_txLogger, SLOT(slotAddLog(const JSTxLogRecord&)));
+    connect(m_txLogger, SIGNAL(signalStartTXDelay()), this, SLOT(slotStartTXDelay()));
 
 }
 void EthersPage::slotRewriteParamJson(const QJsonObject &j_params)
