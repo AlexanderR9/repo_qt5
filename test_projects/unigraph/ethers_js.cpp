@@ -13,6 +13,7 @@
 #include "lstring.h"
 #include "jstxlogger.h"
 #include "lsplash.h"
+#include "jsposhistorytab.h"
 
 #include <QDebug>
 #include <QSplitter>
@@ -77,6 +78,7 @@ void EthersPage::slotChainUpdated()
     m_approvePage->setTokens(m_walletPage->assetsTokens(), m_walletPage->chainName());
     m_txPage->loadTxFromFile(m_walletPage->chainName());
     m_poolPage->loadPoolsFromFile(m_walletPage->chainName());
+    m_posHistoryPage->loadTxLogFile(m_walletPage->chainName());
 
     //init balanceHistoryPage
     m_balanceHistoryPage->setAssets(m_walletPage->assetsTokens());
@@ -104,11 +106,14 @@ void EthersPage::initWidgets()
     m_tab->tab()->addTab(m_poolPage, "Pools");
 
     m_balanceHistoryPage = new BalanceHistoryTab(this);
-    m_tab->tab()->addTab(m_balanceHistoryPage, "Balance history");
+    m_tab->tab()->addTab(m_balanceHistoryPage, "Balance log");
 
     m_posManagerPage = new JSPosManagerTab(this);
     m_tab->tab()->addTab(m_posManagerPage, "Positions");
 
+
+    m_posHistoryPage = new JSPosHistoryTab(this);
+    m_tab->tab()->addTab(m_posHistoryPage, "History");
 
     connect(m_walletPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_walletPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
@@ -148,6 +153,10 @@ void EthersPage::initWidgets()
     connect(m_posManagerPage, SIGNAL(signalGetChainName(QString&)), m_walletPage, SLOT(slotGetChainName(QString&)));
     connect(this, SIGNAL(signalScriptBroken()), m_posManagerPage, SLOT(slotScriptBroken()));
 
+    connect(m_posHistoryPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
+    connect(m_posHistoryPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
+    connect(m_posHistoryPage, SIGNAL(signalCheckTxResult(const QString&, bool&)), m_txPage, SLOT(slotCheckTxResult(const QString&, bool&)));
+    connect(m_posHistoryPage, SIGNAL(signalGetPoolInfo(const QString&, QString&)), m_poolPage, SLOT(slotSetPoolInfo(const QString&, QString&)));
 
 }
 void EthersPage::slotTXDelayFinished()
@@ -230,6 +239,10 @@ bool EthersPage::poolsPageNow() const
 bool EthersPage::posManagerPageNow() const
 {
     return m_tab->tab()->currentWidget()->objectName().contains("posmanager");
+}
+bool EthersPage::posHistoryPageNow() const
+{
+    return m_tab->tab()->currentWidget()->objectName().contains("poshistory");
 }
 bool EthersPage::balancePageNow() const
 {

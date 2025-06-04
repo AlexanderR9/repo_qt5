@@ -269,7 +269,18 @@ void JSTxTab::addRecToLocalFile(const JSTxRecord *rec)
     }
     if (!err.isEmpty()) emit signalError(QString("can't append line to local file: %1").arg(fname));
 }
-
+void JSTxTab::slotCheckTxResult(const QString &tx_hash, bool &ok)
+{
+    ok = false;
+    foreach (const JSTxRecord &rec, tx_data)
+    {
+        if (rec.hash == tx_hash)
+        {
+            ok = rec.txOk();
+            break;
+        }
+    }
+}
 
 
 

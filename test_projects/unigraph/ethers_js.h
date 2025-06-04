@@ -16,6 +16,7 @@ class BalanceHistoryTab;
 class JSPosManagerTab;
 class JSTxLogger;
 class LSplash;
+class JSPosHistoryTab;
 
 #include <QDebug>
 
@@ -53,6 +54,7 @@ protected:
     JSTxTab         *m_txPage;
     JSPoolTab       *m_poolPage;
     BalanceHistoryTab   *m_balanceHistoryPage;
+    JSPosHistoryTab   *m_posHistoryPage;
     JSPosManagerTab   *m_posManagerPage;
     JSTxLogger      *m_txLogger;
     LSplash         *m_splashWidget;
@@ -72,6 +74,7 @@ protected:
     bool poolsPageNow() const;
     bool balancePageNow() const;
     bool posManagerPageNow() const;
+    bool posHistoryPageNow() const;
 
 
 private:

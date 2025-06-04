@@ -206,7 +206,7 @@ quint8 SubGraph_CommonSettings::interfacePrecision(float v)
     if (v == 0) return 1;
     if (v >= 100) return 1;
     if (v >= 10) return 2;
-    if (v >= 1) return 3;
+    if (v >= 2) return 3;
     if (v < 0.1) return 6;
     return 4;
 }

@@ -71,6 +71,9 @@ protected:
     void updateTableRowByRecord(const JSTxRecord*);
     void addRecToLocalFile(const JSTxRecord *rec); //после получения ответа от nodejs добавить информацию в локальный файл
 
+public slots:
+    void slotCheckTxResult(const QString&, bool&); //выполняется для проверки успешности выполнения транзакции
+
 protected slots:
     void slotTxStatus();
 

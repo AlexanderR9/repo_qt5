@@ -257,6 +257,19 @@ void JSPoolTab::reloadTable()
     m_table->resizeByContents();
    // qDebug()<<QString("JSPoolTab: POOL table rows %1").arg(t->rowCount());
 }
+void JSPoolTab::slotSetPoolInfo(const QString &pool_addr, QString &data)
+{
+    data = "??";
+    foreach (const JSPoolRecord &rec, m_poolData)
+    {
+        if (rec.address == pool_addr)
+        {
+            data = QString("%1/%2").arg(rec.assets).arg(rec.strFee());
+            data = LString::removeSpaces(data);
+            break;
+        }
+    }
+}
 void JSPoolTab::parseJSResult(const QJsonObject &j_result)
 {
     m_table->table()->setEnabled(true);
@@ -456,7 +469,17 @@ void JSPoolTab::sendTxRecordToLog(int row, const QJsonObject &j_result)
         s_prange.remove(")");
         QStringList plist = LString::trimSplitList(s_prange, ";");
         if (plist.count() == 2)
-            rec.price_range = QString("%1:%2").arg(plist.at(0).trimmed()).arg(plist.at(1).trimmed());
+        {
+            float pr1 = plist.at(0).trimmed().toFloat();
+            float pr2 = plist.at(1).trimmed().toFloat();
+            quint8 p_prec = 4;
+            if (pr1 > 50) p_prec = 2;
+            if (pr1 < 1.5) p_prec = 6;
+            if (pr1 < 0.2) p_prec = 8;
+            rec.price_range = QString("%1:%2").arg(QString::number(pr1, 'f', p_prec)).arg(QString::number(pr2, 'f', p_prec));
+
+            //rec.price_range = QString("%1:%2").arg(plist.at(0).trimmed()).arg(plist.at(1).trimmed());
+        }
         rec.note = m_poolData.at(row).assets.trimmed();
         rec.note.replace("/", ":");
         float fee_p = float(m_poolData.at(row).fee)/float(10000);

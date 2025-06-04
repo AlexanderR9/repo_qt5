@@ -18,6 +18,8 @@
 #define AMOUNT_COL              5
 #define ADDRESS_COL             2
 #define CHAIN_COL               1
+#define COLOR_DAY_EVEN      QString("#FFFFEE")
+#define COLOR_DAY_ODD       QString("#EEFFFF")
 
 
 
@@ -123,13 +125,26 @@ void BalanceHistoryTab::parseFileData(const QStringList &fdata)
     }
 
     ////////////////////fill table//////////////////////////////
+    QTableWidget *t = m_table->table();
+
+    QDate cur_date;
+    QString row_color = COLOR_DAY_EVEN;
     foreach (const WalletBalanceHistory::SnapshotPointAsset &rec, rec_list)
     {
         QStringList row_data;
         row_data << rec.time.toString(DT_MASK) << rec.chain.toUpper() << rec.token_address;
         row_data << m_walletAssets.value(rec.token_address, "?") << QString("-");
         row_data << QString::number(rec.balance, 'f', CELL_PRECISION);
-        LTable::addTableRow(m_table->table(), row_data);
+        LTable::addTableRow(t, row_data);
+
+
+        if (!cur_date.isValid() || cur_date != rec.time.date())
+        {
+            if (row_color == COLOR_DAY_EVEN) row_color = COLOR_DAY_ODD;
+            else row_color = COLOR_DAY_EVEN;
+            cur_date = rec.time.date();
+        }
+        LTable::setTableRowColor(t, t->rowCount()-1, row_color);
     }
 }
 void BalanceHistoryTab::calcDeviationColumn()

@@ -68,6 +68,7 @@ protected slots:
 
 public slots:
     void slotScriptBroken(); //скрипт не выполнился, произошла ошибка и ответ содержит поле 'error'
+    void slotSetPoolInfo(const QString&, QString&); //выдать краткую информацию о пуле по ее адресу
 
 signals:
     void signalPoolAction(const QStringList&);

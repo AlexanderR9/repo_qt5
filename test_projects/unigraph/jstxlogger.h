@@ -32,6 +32,7 @@ struct JSTxLogRecord
     QString pool_address; // используется для (mint, increase, decrease, collect, swap)
     QString token_address; // указывает токен, с которым совершается действие , используется для (wrap, unwrap, approve, transfer, swap)
 
+    quint8 line_step; //текущий шаг в цепочке итераций по конкретному пулу, для отслеживания убытков/прибыли, значение 0 не имеет значение
     quint64 pid; // используется для (increase, decrease, collect)
 
     // при операции swap, чтобы понять какой токен был входной нужно посмотреть token_address
@@ -53,6 +54,8 @@ struct JSTxLogRecord
     void fromFileLine(const QString&);
     bool invalid() const;
 
+    void fromPriceRange(float&, float&) const; //попытаться вытащить вещественные значения из переменной price_range
+
 };
 
 
@@ -68,15 +71,20 @@ public:
 
     virtual QString name() const {return QString("jstx_logger");}
 
+    void reloadLogFile(); //загрузить данные в m_logData из файла txLogFile
 
     inline void setChainName(QString s) {m_currentChain = s.trimmed();}
     inline QString chainName() const {return m_currentChain;}
+    inline const JSTxLogRecord& recordAt(int i) const {return m_logData.at(i);}
+    inline int logSize() const {return m_logData.count();}
+    inline bool logEmpty() const {return m_logData.isEmpty();}
 
 
     static QString txLogFile() {return QString("defi/tx_history.log");}
 
 protected:
     QString m_currentChain; //название текущей сети
+    QList<JSTxLogRecord> m_logData; //контейнер для загрузки всех записей из файла txLogFile
 
 public slots:
     void slotAddLog(const JSTxLogRecord&); // добавить запись о транзакции в лог файл txLogFile
