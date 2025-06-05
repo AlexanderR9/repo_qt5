@@ -11,6 +11,7 @@
 #include <QTableWidget>
 #include <QSplitter>
 #include <QDir>
+#include <QTimer>
 #include <QDebug>
 #include <QJsonObject>
 #include <QJsonDocument>
@@ -25,13 +26,16 @@
 #define REWARD_COL          6
 #define ASSETS_COL          4
 
+#define LIQ_STATE_TIMER_INTERVAL  700
 
 
 // JSPosManagerTab
 JSPosManagerTab::JSPosManagerTab(QWidget *parent)
     :LSimpleWidget(parent, 20),
       m_tablePos(NULL),
-      m_tableLog(NULL)
+      m_tableLog(NULL),
+      m_liqStateTimer(NULL),
+      js_running(false)
 {
     setObjectName("js_posmanager_tab");
 
@@ -41,6 +45,45 @@ JSPosManagerTab::JSPosManagerTab(QWidget *parent)
     // init context menu
     initPopupMenu();
 
+    m_liqStateTimer = new QTimer(this);
+    m_liqStateTimer->setInterval(LIQ_STATE_TIMER_INTERVAL);
+    m_liqStateTimer->stop();
+    connect(m_liqStateTimer, SIGNAL(timeout()), this, SLOT(slotLiqStateTimer()));
+
+
+}
+void JSPosManagerTab::slotLiqStateTimer()
+{
+    if (js_running) {qDebug("js_running"); return;}
+
+    if (m_liqPids.isEmpty())
+    {
+        m_liqStateTimer->stop();
+        emit signalMsg("Getting states finished!");
+        emit signalEnableControls(true);
+        return;
+    }
+
+    quint32 pid = m_liqPids.takeFirst();
+    emit signalMsg(QString("next PID: %1").arg(pid));
+    selectRowByPid(pid);
+    slotGetPositionState();
+
+}
+void JSPosManagerTab::selectRowByPid(quint32 pid)
+{
+    QTableWidget *t = m_tablePos->table();
+    t->clearSelection();
+    int n_row = t->rowCount();
+    for (int i=0; i<n_row; i++)
+    {
+        QString s_pid = t->item(i, 0)->text().trimmed();
+        if (s_pid == QString::number(pid))
+        {
+            t->selectRow(i);
+            break;
+        }
+    }
 }
 void JSPosManagerTab::initTables()
 {
@@ -91,6 +134,8 @@ void JSPosManagerTab::parseJSResult(const QJsonObject &j_result)
     emit signalMsg("\n\n\n");
     m_tablePos->setEnabled(true);
     m_tableLog->setEnabled(true);
+    js_running = false;
+
 
     QString operation = j_result.value("type").toString().trimmed();
     if (operation == "pid_list") jsonPidListReceived(j_result);
@@ -169,6 +214,7 @@ void JSPosManagerTab::slotGetPositionState()
 
     m_tablePos->setEnabled(false);
     m_tableLog->setEnabled(false);
+    js_running = true;
 
     QStringList params;
     QString pid = m_tablePos->table()->item(row, 0)->text().trimmed();
@@ -446,6 +492,31 @@ QString JSPosManagerTab::rowTokenName(int row, quint8 t_index) const
 
     if (t_index == 0) return list.at(0);
     return list.at(1);
+}
+void JSPosManagerTab::getAllLiqStates()
+{
+    m_liqPids.clear();
+    m_liqPids.append(getLiqPids());
+    if (m_liqPids.isEmpty()) {emit signalError("PID list is empty"); return;}
+
+    emit signalMsg(QString("Liq PID list size: %1 ").arg(m_liqPids.count()));
+    emit signalEnableControls(false);
+
+    m_liqStateTimer->start();
+}
+QList<quint32> JSPosManagerTab::getLiqPids() const
+{
+    QList<quint32> pids;
+    QTableWidget *t = m_tablePos->table();
+    int n_row = t->rowCount();
+    if (n_row == 0) return pids;
+
+    for (int i=0; i<n_row; i++)
+    {
+        if (t->item(i, LIQ_COL)->text().trimmed().length() > 2)
+            pids.append(t->item(i, 0)->text().trimmed().toUInt());
+    }
+    return pids;
 }
 
 

@@ -21,11 +21,16 @@ public:
 
     void updatePidList(); //запросить из сети список всех PID (поз)
     void parseJSResult(const QJsonObject&); //проверить ответ полученный от  скриптов node_js
-
+    void getAllLiqStates(); //запросить состояние у всех поз с положительной ликвидностью
+    QList<quint32> getLiqPids() const; //выдать из таблицы список PID  с положительной ликвидностью
 
 protected:
     LSearchTableWidgetBox     *m_tablePos;
     LSearchTableWidgetBox     *m_tableLog;
+    QTimer                    *m_liqStateTimer; //таймер для опроса всех позиций с положительной ликвидностью
+    QList<quint32>             m_liqPids;
+    bool                       js_running;
+
 
     void initTables();
     void reloadPidListToTable(const QJsonArray&);
@@ -39,6 +44,7 @@ protected:
     void rereadJSPosFileData();
     void sendTxRecordToLog(int, const QJsonObject&); //подготовить и отправить запись о выполненной транзакции в JSTxLogger для добавления в журнал
     QString rowTokenName(int, quint8) const; //возвращает тикер указанного токена из пары в указанной строке
+    void selectRowByPid(quint32);
 
     //reseived node_js result
     void jsonPidListReceived(const QJsonObject&);
@@ -55,6 +61,7 @@ protected slots:
     void slotTryDecreaseLiquidity();
     void slotTryCollectTokens();
     void slotGetShortInfo();
+    void slotLiqStateTimer();
 
 private:
     QString cellRangeToLogFormat(QString) const; //преобразовать формат range из ячейки к формату лог файла
@@ -68,6 +75,7 @@ signals:
     void signalRewriteParamJson(const QJsonObject&);
     void signalSendTxLog(const JSTxLogRecord&);
     void signalGetChainName(QString&);
+    void signalEnableControls(bool);
 
 
 };

@@ -37,7 +37,7 @@ public:
     bool updatingRunning() const;
     bool isBuzy() const;
     void setDelayAfterTX(quint16);
-
+    void getStateLiqPos();
 
     void actAdd();
     void actRemove();
@@ -80,6 +80,7 @@ signals:
     void signalGetFilterParams(quint16&, PoolFilterParams&);
     void signalBuzy();
     void signalChangeSubGraph(QString);
+    void signalGetStateLiqPos();
 
 };
 

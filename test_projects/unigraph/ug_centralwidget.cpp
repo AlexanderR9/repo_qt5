@@ -101,6 +101,7 @@ void UG_CentralWidget::createPages()
     EthersPage *eth_page = new EthersPage(this);
     w_stack->addWidget(eth_page);
     connect(eth_page, SIGNAL(signalEnableControls(bool)), this, SIGNAL(signalEnableControls(bool)));
+    connect(this, SIGNAL(signalGetStateLiqPos()), eth_page, SLOT(slotGetStateLiqPos()));
 
     for (int i=0; i<w_stack->count(); i++)
     {
@@ -340,9 +341,14 @@ void UG_CentralWidget::setDelayAfterTX(quint16 d)
             {
                 EthersPage *eth_page = qobject_cast<EthersPage*>(w);
                 if (eth_page) eth_page->setDelayAfterTX(d);
+                break;
             }
         }
     }
+}
+void UG_CentralWidget::getStateLiqPos()
+{
+    emit signalGetStateLiqPos();
 }
 void UG_CentralWidget::freeReq()
 {

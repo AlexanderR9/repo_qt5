@@ -40,6 +40,7 @@ void MainForm::initActions()
     qDebug("MainForm::initActions()");
     addAction(LMainWidget::atStart);
     addAction(LMainWidget::atRefresh);
+    addAction(LMainWidget::atMonitoring);
     addAction(LMainWidget::atStop);
     addAction(LMainWidget::atClear);
     addAction(LMainWidget::atSave);
@@ -52,6 +53,7 @@ void MainForm::initActions()
     this->setActionTooltip(atStart, "Send free query");
     this->setActionTooltip(atSave, "Save page data to file");
     this->setActionTooltip(atLoadData, "Load page data from file");
+    this->setActionTooltip(atMonitoring, "Get state of positions with liquitydy");
 
 }
 void MainForm::slotAction(int type)
@@ -65,6 +67,7 @@ void MainForm::slotAction(int type)
         case LMainWidget::atClear: {m_protocol->clearProtocol(); break;}
         case LMainWidget::atSave: {actSaveData(); break;}
         case LMainWidget::atLoadData: {actLoadData(); break;}
+        case LMainWidget::atMonitoring: {m_centralWidget->getStateLiqPos(); break;}
         default: break;
     }
 }
@@ -85,6 +88,7 @@ void MainForm::slotVisibleActionsUpdate(int p_type)
             getAction(atRefresh)->setVisible(false);
             getAction(atLoadData)->setVisible(false);
             getAction(atSave)->setVisible(false);
+            getAction(atMonitoring)->setVisible(false);
             break;
         }
         case rtPools:
@@ -93,6 +97,7 @@ void MainForm::slotVisibleActionsUpdate(int p_type)
             getAction(atRefresh)->setVisible(true);
             getAction(atLoadData)->setVisible(true);
             getAction(atSave)->setVisible(true);
+            getAction(atMonitoring)->setVisible(false);
             break;
         }
         case rtTokens:
@@ -101,6 +106,7 @@ void MainForm::slotVisibleActionsUpdate(int p_type)
             getAction(atRefresh)->setVisible(true);
             getAction(atLoadData)->setVisible(true);
             getAction(atSave)->setVisible(true);
+            getAction(atMonitoring)->setVisible(false);
             break;
         }
         case rtDaysData:
@@ -109,16 +115,26 @@ void MainForm::slotVisibleActionsUpdate(int p_type)
             getAction(atRefresh)->setVisible(true);
             getAction(atLoadData)->setVisible(true);
             getAction(atSave)->setVisible(false);
+            getAction(atMonitoring)->setVisible(false);
             break;
         }
         case rtPositionsAct:
-        case rtEthers:
         case rtPositions:
         {
             getAction(atStart)->setVisible(false);
             getAction(atRefresh)->setVisible(true);
             getAction(atLoadData)->setVisible(false);
             getAction(atSave)->setVisible(false);
+            getAction(atMonitoring)->setVisible(false);
+            break;
+        }
+        case rtEthers:
+        {
+            getAction(atStart)->setVisible(false);
+            getAction(atRefresh)->setVisible(true);
+            getAction(atLoadData)->setVisible(false);
+            getAction(atSave)->setVisible(false);
+            getAction(atMonitoring)->setVisible(true);
             break;
         }
 
@@ -319,6 +335,7 @@ void MainForm::slotEnableControls(bool b)
     getAction(atStart)->setEnabled(b);
     getAction(atStop)->setEnabled(!b);
     getAction(atRefresh)->setEnabled(b);
+    getAction(atMonitoring)->setEnabled(b);
     getAction(atSettings)->setEnabled(b);
 }
 void MainForm::slotAppSettingsChanged(QStringList list)

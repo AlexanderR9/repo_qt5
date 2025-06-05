@@ -94,6 +94,7 @@ public slots:
     void slotPosManagerAction(const QStringList&);
     void slotChainUpdated();
     void slotRewriteParamJson(const QJsonObject&);
+    void slotGetStateLiqPos(); //обновить состояние всех позиций по очереди у которых есть ликвидность
 
 protected slots:
     void slotScriptFinished();

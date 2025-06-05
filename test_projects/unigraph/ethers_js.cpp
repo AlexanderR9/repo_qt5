@@ -148,6 +148,7 @@ void EthersPage::initWidgets()
 
     connect(m_posManagerPage, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_posManagerPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
+    connect(m_posManagerPage, SIGNAL(signalEnableControls(bool)), this, SIGNAL(signalEnableControls(bool)));
     connect(m_posManagerPage, SIGNAL(signalPosManagerAction(const QStringList&)), this, SLOT(slotPosManagerAction(const QStringList&)));
     connect(m_posManagerPage, SIGNAL(signalRewriteParamJson(const QJsonObject&)), this, SLOT(slotRewriteParamJson(const QJsonObject&)));
     connect(m_posManagerPage, SIGNAL(signalGetChainName(QString&)), m_walletPage, SLOT(slotGetChainName(QString&)));
@@ -429,7 +430,14 @@ void EthersPage::slotRewriteParamJson(const QJsonObject &j_params)
     if (!err.isEmpty()) {emit signalError(err); return;}
     else emit signalMsg("JSON params file done!");
 }
-
+void EthersPage::slotGetStateLiqPos()
+{
+    qDebug("EthersPage::slotGetStateLiqPos()");
+    emit signalMsg("");
+    emit signalMsg("Try get state of all liquitity positions ........");
+    m_tab->tab()->setCurrentWidget(m_posManagerPage);
+    m_posManagerPage->getAllLiqStates();
+}
 
 
 //private
