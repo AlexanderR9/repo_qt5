@@ -475,6 +475,44 @@ void APIReqPage::checkReply()
         if (m_cycleWroker->cycleModeOn()) m_cycleWroker->handleReplyData(r.data);
         else  handleReplyData();
     }
+    else
+    {
+        qWarning()<<QString("*******************APIReqPage::checkReply() WARNING code=%1**************").arg(r.result_code);
+        foreach (const QString &v, m_reqObj->lastReply().headers)
+        {
+            QString s = v.trimmed().toLower();
+            if (s.contains("not found")) emit signalError(v);
+            if (s.contains("forbidden")) emit signalError(v);
+        }
+
+/*
+        QJsonObject::const_iterator it =  r.data.constBegin();
+        while (it != r.data.constEnd())
+        {
+            if (it.value().isObject())
+            {
+                qDebug()<<QString("KEY[%1] => OBJ").arg(it.key());
+                QJsonObject::const_iterator it2 =  it.value().toObject().constBegin();
+                while (it2 != it.value().toObject().constEnd())
+                {
+                    if (it2.value().isDouble()) qDebug()<<QString("   KEY[%1] => VALUE[%2] (DOUBLE)").arg(it2.key()).arg(it2.value().toDouble());
+                    else if (it2.value().isBool()) qDebug()<<QString("   KEY[%1] => VALUE[%2] (BOOL)").arg(it2.key()).arg(it2.value().toBool());
+                    else qDebug()<<QString("   KEY[%1] => VALUE[%2]").arg(it2.key()).arg(it2.value().toString());
+                    it2++;
+                }
+            }
+            else
+            {
+                if (it.value().isDouble()) qDebug()<<QString("   KEY[%1] => VALUE[%2] (DOUBLE)").arg(it.key()).arg(it.value().toDouble());
+                else if (it.value().isBool()) qDebug()<<QString("   KEY[%1] => VALUE[%2] (BOOL)").arg(it.key()).arg(it.value().toBool());
+                else qDebug()<<QString("KEY[%1] => VALUE[%2]").arg(it.key()).arg(it.value().toString());
+            }
+            it++;
+        }
+        qDebug()<<QString();
+        */
+
+    }
 
     if (isNeedUpdateInfo()) needUpdateInfo();
 }
