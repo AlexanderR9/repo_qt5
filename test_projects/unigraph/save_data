@@ -1,0 +1,41 @@
+#!/bin/bash
+
+#############README#################
+# 1. скрипт запускается без аргументов
+# 2. предварительно необходимо задать переменную NODEJS_DIR, где лежат скрипты node_js на текущей машине
+
+
+NODEJS_DIR="/home/roman/work/my/github_repos/repo_html/nodejs/crypto"
+
+TARGET_DIR="data"
+CUR_DATE=$(date +%d%m%y)
+TAR_FILE="unigraph_data_${CUR_DATE}.tar.gz"
+DELAY=0.8
+
+echo "Saving data folder [$TARGET_DIR] .........."
+echo "TAR_FILE: $TAR_FILE"
+echo "NODEJS_DIR: $NODEJS_DIR"
+sleep $DELAY
+if ! [ -d $NODEJS_DIR ]; then 
+    echo "WARNING: not found NODEJS_DIR, script breaking!" 
+    sleep $DELAY
+fi;
+
+echo "copy node_js files ....";
+cp $NODEJS_DIR/pid_list.txt $TARGET_DIR/defi/nodejs/
+cp $NODEJS_DIR/pos_data.txt $TARGET_DIR/defi/nodejs/
+cp $NODEJS_DIR/tx.log $TARGET_DIR/defi/nodejs/
+sleep $DELAY
+echo "done!"
+
+
+echo -e " \n try taring file ..........";
+sleep $DELAY
+tar -czvf $TAR_FILE $TARGET_DIR
+
+echo "done!"
+sleep $DELAY
+
+
+
+exit 0;

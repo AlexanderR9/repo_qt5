@@ -9,7 +9,6 @@
 
 #define APP_DATA_FOLDER     QString("data")
 #define APP_CONFIG_FILE     QString("config.xml")
-#define NODEJS_PATH         QString("/home/roman/work/my/github_repos/repo_html/nodejs/crypto")
 
 
 //global var
@@ -59,7 +58,8 @@ void SubGraph_CommonSettings::reset()
     only_prefer_tokens = false;
     wallet.clear();
     token_decimals.clear();
-    nodejs_path = NODEJS_PATH;
+    nodejs_path.clear();
+    graph_domain = "gateway.thegraph.com";
 }
 QString SubGraph_CommonSettings::tickerByChainName(QString chain_name)
 {
@@ -160,6 +160,16 @@ void SubGraph_CommonSettings::loadConfig(QString &err)
 
     QDomNode prefer_tokens_node = root_node.namedItem("prefer_tokens");
     if (!prefer_tokens_node.isNull()) parsePreferTokensNode(prefer_tokens_node);
+
+    QDomNode defi_node = root_node.namedItem("defi");
+    if (!defi_node.isNull()) parseDefiNode(defi_node);
+    else
+    {
+        err = "invalid config, not found <defi> node";
+        qWarning()<<QString("WARNING: ")<<err;
+        return;
+    }
+
 }
 void SubGraph_CommonSettings::parseFactoriesNode(const QDomNode &node)
 {
@@ -178,6 +188,18 @@ void SubGraph_CommonSettings::parseFactoriesNode(const QDomNode &node)
                 qDebug()<<QString("LOADED FACOTRY: %1").arg(f.toStr());
             }
         }
+        child_node = child_node.nextSibling();
+    }
+}
+void SubGraph_CommonSettings::parseDefiNode(const QDomNode &node)
+{
+    QDomNode child_node = node.firstChild();
+    while (!child_node.isNull())
+    {
+        if (child_node.nodeName() == "nodejs_path")
+            nodejs_path = LStaticXML::getStringAttrValue("value", child_node).trimmed();
+        if (child_node.nodeName() == "graph_domain")
+            graph_domain = LStaticXML::getStringAttrValue("value", child_node).trimmed();
         child_node = child_node.nextSibling();
     }
 }

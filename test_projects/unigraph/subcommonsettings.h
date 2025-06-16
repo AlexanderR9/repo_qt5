@@ -35,6 +35,7 @@ struct SubGraph_CommonSettings
     bool only_prefer_tokens;
     QString wallet;
     QString nodejs_path;
+    QString graph_domain;
 
     static QString appDataPath();
     static QString tickerByChainName(QString);
@@ -52,6 +53,8 @@ struct SubGraph_CommonSettings
     void loadConfig(QString&);
     void parseFactoriesNode(const QDomNode&);
     void parsePreferTokensNode(const QDomNode&);
+    void parseDefiNode(const QDomNode&);
+
     void setCurFactory(QString sub_id);
     QString curChain() const; //cur chain name by cur_factory or ?
     int tokenDecimal(QString, QString) const; //params 1-token sumb, 2-chain

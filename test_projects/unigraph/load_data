@@ -1,0 +1,71 @@
+#!/bin/bash
+
+#############README#################
+# 1. скрипт запускается с одним аргументом - архивный файл tar.gz где хранятся данные
+# 2. предварительно необходимо задать переменную NODEJS_DIR, где лежат скрипты node_js на текущей машине
+
+NODEJS_DIR="/home/roman/work/my/github_repos/repo_html/nodejs/crypto"
+
+
+TARGET_DIR="data"
+TAR_FILE=""
+DELAY=0.8
+
+echo "Loading data folder [$TARGET_DIR] .........."
+
+
+#parse arguments of script
+N_ARGS=$#
+sleep $DELAY
+echo "Reading script arguments ....."
+sleep $DELAY
+echo "input arguments: $N_ARGS"
+sleep $DELAY
+if [ $N_ARGS -eq 0 ] ; then
+        echo "WARNING: arguments list is empty"
+        echo $BREAK_MSG
+        exit -1
+fi
+sleep $DELAY
+echo -e "Ok! \n"
+sleep $DELAY
+TAR_FILE=$1
+sleep $DELAY
+echo "TAR_FILE: $TAR_FILE"
+echo "NODEJS_DIR: $NODEJS_DIR"
+sleep $DELAY
+if ! [ -d $NODEJS_DIR ]; then 
+    echo "WARNING: not found NODEJS_DIR, script breaking!" 
+    sleep $DELAY
+fi;
+
+sleep $DELAY
+echo "remove old data ..."
+if [ -d $TARGET_DIR ]; then 
+    rm -R $TARGET_DIR;
+fi;
+sleep $DELAY
+echo "done!"
+sleep $DELAY
+
+echo -e " \n try untaring file [$TAR_FILE] ..........";
+sleep $DELAY
+tar -xzvf $TAR_FILE
+echo "done!"
+sleep $DELAY
+
+
+
+echo "copy to node_js files ....";
+cp $TARGET_DIR/defi/nodejs/pid_list.txt $NODEJS_DIR/
+cp $TARGET_DIR/defi/nodejs/pos_data.txt $NODEJS_DIR/
+cp $TARGET_DIR/defi/nodejs/tx.log $NODEJS_DIR/
+sleep $DELAY
+echo "done!"
+
+echo "//////// LOADING FINISHED! ////////////"
+sleep $DELAY
+
+
+
+exit 0;

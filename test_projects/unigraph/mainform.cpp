@@ -232,9 +232,11 @@ void MainForm::initCommonSettings()
     lCommonSettings.setComboList(key, combo_list);
 
 
+    /*
     key = QString("graphserv");
     lCommonSettings.addParam(QString("The graph server domain"), LSimpleDialog::sdtString, key);
     lCommonSettings.setDefValue(key, QString(""));        
+    */
 
     key = QString("apikey");
     lCommonSettings.addParam(QString("API key"), LSimpleDialog::sdtString, key);
@@ -322,7 +324,8 @@ void MainForm::load()
     m_centralWidget->load(settings);
     m_centralWidget->setExpandLevel(expandLevel());
     m_centralWidget->setUpdatingInterval(pageUpdatingInterval());
-    m_centralWidget->setApiServer(graphDomain());
+    //m_centralWidget->setApiServer(graphDomain());
+    m_centralWidget->setApiServer(sub_commonSettings.graph_domain);
     m_centralWidget->setApiKeys(apiKey(), subgraphID());
     m_centralWidget->setDelayAfterTX(delayAfterTX());
 
@@ -348,8 +351,8 @@ void MainForm::slotAppSettingsChanged(QStringList list)
         sub_commonSettings.setCurFactory(subgraphID());
     }
 
-    if (list.contains("graphserv"))
-        m_centralWidget->setApiServer(graphDomain());
+    //if (list.contains("graphserv"))
+      //  m_centralWidget->setApiServer(graphDomain());
 
     if (list.contains("use_prefer_tokens"))
         sub_commonSettings.only_prefer_tokens = usePreferTokens();
@@ -432,10 +435,14 @@ QString MainForm::apiKey() const
 {
     return lCommonSettings.paramValue("apikey").toString();
 }
+
+/*
 QString MainForm::graphDomain() const
 {
     return lCommonSettings.paramValue("graphserv").toString();
 }
+*/
+
 QString MainForm::subgraphID() const
 {
     QString chain = lCommonSettings.paramValue("subgraph_id").toString();
