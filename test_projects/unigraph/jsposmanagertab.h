@@ -8,7 +8,27 @@ class QJsonArray;
 class QJsonObject;
 struct TxDialogData;
 struct JSTxLogRecord;
+class QTableWidgetItem;
 
+
+//sort col by doubleclick table
+class JSPosTableWidgetBox: public LSearchTableWidgetBox
+{
+    Q_OBJECT
+public:
+    JSPosTableWidgetBox(QWidget *parent = NULL);
+    virtual ~JSPosTableWidgetBox() {}
+
+    inline void setFilterCol(int a) {m_filterCol = a;}
+
+protected:
+    int m_filterCol;
+
+protected slots:
+    virtual void slotItemDoubleClicked(QTableWidgetItem*); //в базовом класе копируется содержимое итема в буфер обмена
+    virtual void slotDoubleClickEmptyArea(); //вызывается при двойном клике по пустой области таблицы
+
+};
 
 
 //JSPosTab
@@ -25,8 +45,8 @@ public:
     QList<quint32> getLiqPids() const; //выдать из таблицы список PID  с положительной ликвидностью
 
 protected:
-    LSearchTableWidgetBox     *m_tablePos;
-    LSearchTableWidgetBox     *m_tableLog;
+    JSPosTableWidgetBox       *m_tablePos;
+    //LSearchTableWidgetBox     *m_tableLog;
     QTimer                    *m_liqStateTimer; //таймер для опроса всех позиций с положительной ликвидностью
     QList<quint32>             m_liqPids;
     bool                       js_running;
@@ -45,6 +65,7 @@ protected:
     void sendTxRecordToLog(int, const QJsonObject&); //подготовить и отправить запись о выполненной транзакции в JSTxLogger для добавления в журнал
     QString rowTokenName(int, quint8) const; //возвращает тикер указанного токена из пары в указанной строке
     void selectRowByPid(quint32);
+    void sendPosStateToHistoryPage(const QJsonObject&); //отправить текущее состояние обновившейся позиции на вкладку истории поз
 
     //reseived node_js result
     void jsonPidListReceived(const QJsonObject&);
@@ -76,7 +97,7 @@ signals:
     void signalSendTxLog(const JSTxLogRecord&);
     void signalGetChainName(QString&);
     void signalEnableControls(bool);
-
+    void signalSendPosState(QString, QString);
 
 };
 

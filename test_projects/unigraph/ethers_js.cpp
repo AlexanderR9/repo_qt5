@@ -158,6 +158,7 @@ void EthersPage::initWidgets()
     connect(m_posHistoryPage, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
     connect(m_posHistoryPage, SIGNAL(signalCheckTxResult(const QString&, bool&)), m_txPage, SLOT(slotCheckTxResult(const QString&, bool&)));
     connect(m_posHistoryPage, SIGNAL(signalGetPoolInfo(const QString&, QString&)), m_poolPage, SLOT(slotSetPoolInfo(const QString&, QString&)));
+    connect(m_posManagerPage, SIGNAL(signalSendPosState(QString, QString)), m_posHistoryPage, SLOT(slotPosStateReceived(QString, QString)));
 
 }
 void EthersPage::slotTXDelayFinished()

@@ -5,12 +5,12 @@
 #include <QWidget>
 #include <QString>
 #include <QGroupBox>
+#include <QTableWidget>
 #include <QMap>
 
 
 class QSplitter;
 class QSettings;
-class QTableWidget;
 class QTabWidget;
 class QListWidget;
 class QTreeWidget;
@@ -21,6 +21,7 @@ class QJsonArray;
 class QTreeWidgetItem;
 class QTableWidgetItem;
 class QListWidgetItem;
+class QMouseEvent;
 
 class LSearch;
 class QLabel;
@@ -92,6 +93,17 @@ public slots:
 //при некорректном значении type используется  QVBoxLayout
 
 //LTableWidgetBox (groupbox with table)
+class LTableWidget : public QTableWidget
+{
+    Q_OBJECT
+public:
+    LTableWidget(QWidget *parent) :QTableWidget(parent) {}
+    virtual ~LTableWidget() {}
+protected:
+    void mouseDoubleClickEvent(QMouseEvent*) override; //переопределяем функцию клика мыши по области таблицы
+signals:
+    void signalDoubleClickEmptyArea(); //имитится при двойном клике по пустой области таблицы
+};
 class LTableWidgetBox : public QGroupBox
 {
     Q_OBJECT
@@ -134,7 +146,7 @@ protected slots:
     virtual void slotItemDoubleClicked(QTableWidgetItem*); //в базовом класе копируется содержимое итема в буфер обмена
     virtual void slotSortByColumn(int); //сортировка столбца
     virtual void slotContextMenu(QPoint); //вызывается при вызове всплывающего меню(при условии что оно активировано для этого экземпляра)
-
+    virtual void slotDoubleClickEmptyArea() {} //вызывается при двойном клике по пустой области таблицы
 
 };
 class LSearchTableWidgetBox : public LTableWidgetBox

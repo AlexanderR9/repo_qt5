@@ -1,4 +1,5 @@
 #include "jsposhistorytab.h"
+#include "jsposmanagertab.h"
 #include "ltable.h"
 #include "lfile.h"
 #include "ltime.h"
@@ -19,6 +20,8 @@
 #define DECREASED_COL       6
 #define REWARDS_COL         7
 #define APR_COL             8
+#define RANGE_COL           3
+#define CP_COL              4
 
 
 
@@ -43,8 +46,9 @@ JSPosHistoryTab::JSPosHistoryTab(QWidget *parent)
 }
 void JSPosHistoryTab::initTable()
 {
-    m_table = new LSearchTableWidgetBox(this);
+    m_table = new JSPosTableWidgetBox(this);
     m_table->setTitle("Positions history");
+    m_table->setFilterCol(0);
     m_table->vHeaderHide();
     QStringList headers;
     headers << "Pool" << "Opened time" << "Closed time" << "Position range" << "Open/close price" <<
@@ -75,7 +79,7 @@ void JSPosHistoryTab::convertLogDataToStepData()
 
     bool tx_ok = false;
     int n = m_txHistoryObj->logSize();
-    qDebug()<<QString("JSPosHistoryTab::convertLogDataToStepData() n=%1").arg(n);
+    //qDebug()<<QString("JSPosHistoryTab::convertLogDataToStepData() n=%1").arg(n);
     for (int i=0; i<n; i++)
     {
         const JSTxLogRecord& log_rec = m_txHistoryObj->recordAt(i);
@@ -84,7 +88,7 @@ void JSPosHistoryTab::convertLogDataToStepData()
 
         if (log_rec.tx_kind == "mint" || log_rec.tx_kind == "increase")
         {
-            qDebug()<<QString("find start point, pool [%1], TIME[%2]").arg(log_rec.pool_address).arg(LTime::strDateTime(log_rec.dt));
+            //qDebug()<<QString("find start point, pool [%1], TIME[%2]").arg(log_rec.pool_address).arg(LTime::strDateTime(log_rec.dt));
             addNewRecord(log_rec);
             continue;
         }
@@ -92,12 +96,12 @@ void JSPosHistoryTab::convertLogDataToStepData()
 
         if (log_rec.tx_kind == "decrease")
         {
-            qDebug()<<QString("find decrease point, pool [%1]").arg(log_rec.pool_address);
+            //qDebug()<<QString("find decrease point, pool [%1]").arg(log_rec.pool_address);
             decreaseRecord(log_rec);
         }
         else if (log_rec.tx_kind == "collect")
         {
-            qDebug()<<QString("find exit point, pool [%1], TIME[%2]").arg(log_rec.pool_address).arg(LTime::strDateTime(log_rec.dt));
+            //qDebug()<<QString("find exit point, pool [%1], TIME[%2]").arg(log_rec.pool_address).arg(LTime::strDateTime(log_rec.dt));
             collectRecord(log_rec);
         }
     }
@@ -169,10 +173,7 @@ void JSPosHistoryTab::reloadTableData()
 {
     m_table->removeAllRows();
     int n = m_txHistoryObj->logSize();
-    qDebug()<<QString("try reloadTableData of JSPosHistoryTab, records %1").arg(n);
-
-   // headers << "Pool" << "Opened time" << "Closed time" << "Position range" << "Open/close price" <<
-    //           "Deposited" << "Decreased" << "Rewards" << "APR";
+    //qDebug()<<QString("try reloadTableData of JSPosHistoryTab, records %1").arg(n);
 
     QTableWidget *t = m_table->table();
     for (int i=0; i<m_stepData.count(); i++)
@@ -193,12 +194,40 @@ void JSPosHistoryTab::reloadTableData()
 
         t->item(i, OPEN_TIME_COL+1)->setToolTip(QString("%1 days").arg(QString::number(pos.lifeTime(), 'f', 1)));
         t->item(i, DEPOSITED_COL)->setToolTip(QString("%1 %2").arg(QString::number(pos.startAssetsSize(), 'f', 2)).arg(pos.totalSizeTokenName()));
+        t->item(i, DECREASED_COL)->setToolTip(QString("%1 %2").arg(QString::number(pos.decreasedAssetsSize(), 'f', 2)).arg(pos.totalSizeTokenName()));
         t->item(i, REWARDS_COL)->setToolTip(QString("%1 %2").arg(QString::number(pos.rewardsAssetsSize(), 'f', 2)).arg(pos.totalSizeTokenName()));
-
+        t->item(i, RANGE_COL)->setToolTip(pos.tick_range);
 
     }
 
     m_table->searchExec();
+}
+void JSPosHistoryTab::slotPosStateReceived(QString pool_key, QString pos_state)
+{
+    qDebug()<<QString("JSPosHistoryTab::slotPosStateReceived  pool_key[%1]  pos_state[%2]").arg(pool_key).arg(pos_state);
+    QStringList list = LString::trimSplitList(pos_state, "/");
+    if (list.count() != 4) {emit signalError("JSPosHistoryTab: pos_state count !=4"); return;}
+
+    QTableWidget *t = m_table->table();
+    for (int i=0; i<m_stepData.count(); i++)
+    {
+        PosLineStep &pos = m_stepData[i];
+        if (pos.isClosed()) continue;
+
+        if (pool_key.contains(pos.pool_info) && pool_key.contains(pos.tick_range))
+        {
+            pos.exit_state.current_price = list.at(0).toFloat();
+            pos.claimed_rewards.first = list.at(1).toFloat();
+            pos.claimed_rewards.second = list.at(2).toFloat();
+            t->item(i, CP_COL)->setText(pos.strCurrentPrices());
+            t->item(i, REWARDS_COL)->setText(pos.strClaimedFees());
+            t->item(i, APR_COL)->setText(QString("%1%").arg(QString::number(pos.calcAPR(), 'f', 1)));
+            t->item(i, REWARDS_COL)->setToolTip(QString("%1 %2").arg(QString::number(pos.rewardsAssetsSize(), 'f', 2)).arg(pos.totalSizeTokenName()));
+            if (list.at(3).toLower().contains("active")) LTable::setTableRowColor(t, i, "#7FFFA0");
+            else LTable::setTableRowColor(t, i, "#FFFF0F");
+            break;
+        }
+    }
 }
 
 
@@ -252,10 +281,6 @@ float PosLineStep::lifeTime() const
     float h = float(mins)/float(60);
     return h/float(24);
 }
-float PosLineStep::calcAPR() const
-{
-    return 0;
-}
 QString PosLineStep::strPriceRange() const
 {
     QString s = QString::number(pos_range.first, 'f', SubGraph_CommonSettings::interfacePrecision(pos_range.first));
@@ -289,20 +314,39 @@ QString PosLineStep::strClaimedFees() const
 float PosLineStep::startAssetsSize() const
 {
     if (invalid()) return -1;
+
     int t_index = totalSizeTokenIndex();
     float liq_size = 0;
-    if (t_index == 0) liq_size = start_state.token0_size + start_state.token1_size*start_state.current_price;
-    else liq_size = start_state.token1_size + start_state.token0_size*start_state.current_price;
+    if (customPool())
+    {
+        if (t_index == 0) liq_size = start_state.token0_size + start_state.token1_size/start_state.current_price;
+        else liq_size = start_state.token1_size + start_state.token0_size/start_state.current_price;
+    }
+    else
+    {
+        if (t_index == 0) liq_size = start_state.token0_size + start_state.token1_size*start_state.current_price;
+        else liq_size = start_state.token1_size + start_state.token0_size*start_state.current_price;
+    }
     return liq_size;
 }
 float PosLineStep::rewardsAssetsSize() const
 {
     if (invalid()) return -1;
+    if (zeroResult()) return 0;
     if (exit_state.current_price <= 0) return 0;
+
     int t_index = totalSizeTokenIndex();
     float rew_size = 0;
-    if (t_index == 0) rew_size = claimed_rewards.first + claimed_rewards.second*exit_state.current_price;
-    else rew_size = claimed_rewards.second + claimed_rewards.first*exit_state.current_price;
+    if (customPool())
+    {
+        if (t_index == 0) rew_size = claimed_rewards.first + claimed_rewards.second/exit_state.current_price;
+        else rew_size = claimed_rewards.second + claimed_rewards.first/exit_state.current_price;
+    }
+    else
+    {
+        if (t_index == 0) rew_size = claimed_rewards.first + claimed_rewards.second*exit_state.current_price;
+        else rew_size = claimed_rewards.second + claimed_rewards.first*exit_state.current_price;
+    }
     return rew_size;
 }
 float PosLineStep::collectedAssetsSize() const
@@ -312,25 +356,33 @@ float PosLineStep::collectedAssetsSize() const
 
     int t_index = totalSizeTokenIndex();
     float liq_size = 0;
-    if (t_index == 0) liq_size = exit_state.token0_size + exit_state.token1_size*exit_state.current_price;
-    else liq_size = exit_state.token1_size + exit_state.token0_size*exit_state.current_price;
+    if (customPool())
+    {
+        if (t_index == 0) liq_size = exit_state.token0_size + exit_state.token1_size/exit_state.current_price;
+        else liq_size = exit_state.token1_size + exit_state.token0_size/exit_state.current_price;
+    }
+    else
+    {
+        if (t_index == 0) liq_size = exit_state.token0_size + exit_state.token1_size*exit_state.current_price;
+        else liq_size = exit_state.token1_size + exit_state.token0_size*exit_state.current_price;
+    }
     return (liq_size + rewardsAssetsSize());
+}
+float PosLineStep::decreasedAssetsSize() const
+{
+    if (invalid()) return -1;
+    if (!isClosed()) return 0;
+    return (collectedAssetsSize() - rewardsAssetsSize());
 }
 int PosLineStep::totalSizeTokenIndex() const
 {
     QStringList s_tokens = LString::trimSplitList(pool_info.trimmed(), "/");
     if (s_tokens.count() != 3)  return -1;
-    if (s_tokens.at(0).trimmed() == "USDC")
-    {
-        if (s_tokens.at(1).trimmed() == "USDT") return 1;
-        return 0;
-    }
-    if (s_tokens.at(1).trimmed() == "USDC")
-    {
-        if (s_tokens.at(0).trimmed() == "USDT") return 1;
-        return 1;
-    }
+    if (s_tokens.at(0).trimmed() == "USDT") return 0;
     if (s_tokens.at(1).trimmed() == "USDT") return 1;
+    if (s_tokens.at(0).trimmed() == "USDC") return 0;
+    if (s_tokens.at(1).trimmed() == "USDC") return 1;
+    //if (s_tokens.at(0).trimmed().contains("POL")) return 0;
     if (s_tokens.at(0).trimmed().contains("ETH")) return 1;
     return 0;
 }
@@ -340,6 +392,25 @@ QString PosLineStep::totalSizeTokenName() const
     if (t_index < 0) return QString("???");
     QStringList s_tokens = LString::trimSplitList(pool_info.trimmed(), "/");
     return s_tokens.at(t_index).trimmed();
+}
+bool PosLineStep::customPool() const
+{
+    return (!pool_info.toUpper().contains("USD") && !pool_info.toUpper().contains("ETH"));
+}
+float PosLineStep::calcAPR() const
+{
+
+    if (invalid()) return -1;
+    if (zeroResult()) return 0;
+
+    float started_liq = startAssetsSize();
+    float fees = rewardsAssetsSize();
+    float days = lifeTime();
+    if (started_liq <= 0 || fees <= 0 || days <= 0) return 0;
+
+    float p = 100*fees/started_liq;
+    float k = float(365)/days;
+    return k*p;
 }
 
 

@@ -7,7 +7,7 @@
 #include <QSplitter>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QTableWidget>
+//#include <QTableWidget>
 #include <QTabWidget>
 #include <QListWidget>
 #include <QListWidgetItem>
@@ -19,6 +19,7 @@
 #include <QJsonArray>
 #include <QClipboard>
 #include <QLabel>
+#include <QMouseEvent>
 #include <QAction>
 #include <QIcon>
 #include <QMenu>
@@ -145,11 +146,12 @@ LTableWidgetBox::LTableWidgetBox(QWidget *parent, int t)
 }
 void LTableWidgetBox::init()
 {
-    m_table = new QTableWidget(this);
+    m_table = new LTableWidget(this);
     LTable::fullClearTable(m_table);
     layout()->addWidget(m_table);
 
     connect(m_table, SIGNAL(itemDoubleClicked(QTableWidgetItem*)), this, SLOT(slotItemDoubleClicked(QTableWidgetItem*)));
+    connect(m_table, SIGNAL(signalDoubleClickEmptyArea()), this, SLOT(slotDoubleClickEmptyArea()));
 }
 void LTableWidgetBox::slotItemDoubleClicked(QTableWidgetItem *item)
 {
@@ -329,6 +331,22 @@ void LTableWidgetBox::connectSlotToPopupAction(int i_menu, QObject *slot_object,
     {
       //  qDebug()<<QString("LTableWidgetBox::connectSlotToPopupAction   parent [%1]").arg(slot_object->objectName());
         connect(m_popupMenuActions.at(i_menu), SIGNAL(triggered()), slot_object, slot_pointer);
+    }
+}
+//---------------------------------------------------
+void LTableWidget::mouseDoubleClickEvent(QMouseEvent *e)
+{
+    QTableWidgetItem *item = itemAt(e->pos());
+    if (item)
+    {
+        // Вызов базовой реализации, если нужно
+        QTableWidget::mouseDoubleClickEvent(e);
+    }
+    else
+    {
+        //click on empty area
+        qDebug("LTableWidget::mouseDoubleClickEvent on empty area");
+        emit signalDoubleClickEmptyArea();
     }
 }
 

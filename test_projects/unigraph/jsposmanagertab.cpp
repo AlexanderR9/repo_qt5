@@ -10,6 +10,7 @@
 
 #include <QTableWidget>
 #include <QSplitter>
+#include <QLabel>
 #include <QDir>
 #include <QTimer>
 #include <QDebug>
@@ -33,7 +34,7 @@
 JSPosManagerTab::JSPosManagerTab(QWidget *parent)
     :LSimpleWidget(parent, 20),
       m_tablePos(NULL),
-      m_tableLog(NULL),
+      //m_tableLog(NULL),
       m_liqStateTimer(NULL),
       js_running(false)
 {
@@ -87,8 +88,9 @@ void JSPosManagerTab::selectRowByPid(quint32 pid)
 }
 void JSPosManagerTab::initTables()
 {
-    m_tablePos = new LSearchTableWidgetBox(this);
+    m_tablePos = new JSPosTableWidgetBox(this);
     m_tablePos->setTitle("Positions list");
+    m_tablePos->setFilterCol(1);
     m_tablePos->vHeaderHide();
     QStringList headers;
     headers << "PID" << "Pool" << "Price range" << "Tick range" << "Assets amount" << "State" << "Unclaimed fees" << "Liquidity";
@@ -102,7 +104,7 @@ void JSPosManagerTab::initTables()
     m_tablePos->addSortingData(LIQ_COL, LTableWidgetBox::sdtNumeric);
     m_tablePos->addSortingData(POOL_COL, LTableWidgetBox::sdtString);
 
-
+/*
     m_tableLog = new LSearchTableWidgetBox(this);
     m_tableLog->setTitle("Pool log (closed)");
     m_tableLog->vHeaderHide();
@@ -113,14 +115,15 @@ void JSPosManagerTab::initTables()
     m_tableLog->setSelectionColor("#87CEEB");
     h_splitter->addWidget(m_tableLog);
     m_tableLog->searchExec();
+    */
 
 }
 void JSPosManagerTab::updatePidList()
 {
     QStringList params;
-    m_tableLog->removeAllRows();
+    //m_tableLog->removeAllRows();
     m_tablePos->setEnabled(false);
-    m_tableLog->setEnabled(false);
+    //m_tableLog->setEnabled(false);
 
     params << "qt_pidlist.js";
     emit signalPosManagerAction(params);
@@ -133,7 +136,7 @@ void JSPosManagerTab::parseJSResult(const QJsonObject &j_result)
 
     emit signalMsg("\n\n\n");
     m_tablePos->setEnabled(true);
-    m_tableLog->setEnabled(true);
+    //m_tableLog->setEnabled(true);
     js_running = false;
 
 
@@ -147,14 +150,14 @@ void JSPosManagerTab::parseJSResult(const QJsonObject &j_result)
     else if (operation == "collect") jsonTxCollectReceived(j_result);
 
     m_tablePos->searchExec();
-    m_tableLog->searchExec();
+    //m_tableLog->searchExec();
 }
 void JSPosManagerTab::slotScriptBroken()
 {
     m_tablePos->setEnabled(true);
-    m_tableLog->setEnabled(true);
+   // m_tableLog->setEnabled(true);
     m_tablePos->resizeByContents();
-    m_tableLog->resizeByContents();
+   // m_tableLog->resizeByContents();
 }
 void JSPosManagerTab::reloadPidListToTable(const QJsonArray &j_arr)
 {
@@ -213,7 +216,7 @@ void JSPosManagerTab::slotGetPositionState()
     if (row < 0) {emit signalError("You must select row"); return;}
 
     m_tablePos->setEnabled(false);
-    m_tableLog->setEnabled(false);
+    //m_tableLog->setEnabled(false);
     js_running = true;
 
     QStringList params;
@@ -228,7 +231,7 @@ void JSPosManagerTab::slotGetShortInfo()
     if (row < 0) {emit signalError("You must select row"); return;}
 
     m_tablePos->setEnabled(false);
-    m_tableLog->setEnabled(false);
+    //m_tableLog->setEnabled(false);
 
 
     QStringList params;
@@ -392,7 +395,7 @@ void JSPosManagerTab::sendTx(QString cmd, int row)
     t->item(row, STATE_COL)->setTextColor("#DC143C");
     m_tablePos->resizeByContents();
     m_tablePos->setEnabled(false);
-    m_tableLog->setEnabled(false);
+    //m_tableLog->setEnabled(false);
 
     //invoke node_js script
     QStringList tx_params;
@@ -403,7 +406,7 @@ void JSPosManagerTab::rereadJSPosFileData()
 {
     emit signalMsg("\n ##### JSPosManagerTab::rereadJSPosFileData() ####");
     m_tablePos->setEnabled(false);
-    m_tableLog->setEnabled(false);
+    //m_tableLog->setEnabled(false);
 
     QStringList params;
     params << "qt_show_posdata.js";
@@ -518,7 +521,25 @@ QList<quint32> JSPosManagerTab::getLiqPids() const
     }
     return pids;
 }
+void JSPosManagerTab::sendPosStateToHistoryPage(const QJsonObject &j_result)
+{
+    int row = m_tablePos->curSelectedRow();
+    QTableWidget *t = m_tablePos->table();
+    QString pool_key = t->item(row, POOL_COL)->text().trimmed();
+    pool_key.replace("(", "/");
+    pool_key.remove(")");
+    pool_key = LString::removeSpaces(pool_key);
+    pool_key = QString("%1/%2").arg(pool_key).arg(cellRangeToLogFormat(t->item(row, T_RANGE_COL)->text()));
+    pool_key = pool_key.trimmed();
+    pool_key = LString::removeSpaces(pool_key);
 
+    QString pos_state = j_result.value("price_current").toString().trimmed();
+    pos_state = QString("%1/%2").arg(pos_state).arg(j_result.value("reward").toString().trimmed());
+    pos_state = QString("%1/%2").arg(pos_state).arg(j_result.value("price_location").toString().toLower().trimmed());
+    pos_state = LString::removeSpaces(pos_state);
+
+    emit signalSendPosState(pool_key, pos_state);
+}
 
 
 //reseived node_js result
@@ -576,6 +597,7 @@ void JSPosManagerTab::jsonPosStateReceived(const QJsonObject &j_result)
     t->item(row, STATE_COL)->setText(s_state);
     t->item(row, STATE_COL)->setTextColor(Qt::black);
 
+    sendPosStateToHistoryPage(j_result); //update state on history pos page
 
 
     ///////////////////////check need reread fdata///////////////////////////////////
@@ -733,4 +755,56 @@ void JSPosManagerTab::jsonTxIncreaseReceived(const QJsonObject &j_result)
         emit signalMsg(QString("IS_SIMULATE_MODE"));
     }
 }
+
+
+/////////////////////JSPosTableWidgetBox//////////////////////////
+JSPosTableWidgetBox::JSPosTableWidgetBox(QWidget *parent)
+    :LSearchTableWidgetBox(parent)
+{
+    m_filterCol = -1;
+
+}
+void JSPosTableWidgetBox::slotItemDoubleClicked(QTableWidgetItem *item)
+{
+    qDebug("JSPosTableWidgetBox::slotItemDoubleClicked");
+    if (!item) return;
+    if (m_filterCol < 0 || m_filterCol >= m_table->columnCount())
+    {
+        LSearchTableWidgetBox::slotItemDoubleClicked(item);
+        return;
+    }
+    if (item->column() != m_filterCol)
+    {
+        LSearchTableWidgetBox::slotItemDoubleClicked(item);
+        return;
+    }
+
+
+    QString f_text(item->text());
+    qDebug()<<QString("NEED FILTER: item(%1/%2)  text(%3)").arg(item->row()).arg(item->column()).arg(item->text());
+    int n_visible = 0;
+    for (int i=0; i<m_table->rowCount(); i++)
+    {
+        bool need_hide = (m_table->item(i, m_filterCol)->text() != f_text);
+        if (need_hide) m_table->hideRow(i);
+        else {m_table->showRow(i); n_visible++;}
+    }
+    QString s = QString("Record number: %2/%3").arg(n_visible).arg(m_table->rowCount());
+    m_searchLabel->setText(s);
+}
+void JSPosTableWidgetBox::slotDoubleClickEmptyArea()
+{
+    qDebug("JSPosTableWidgetBox::slotDoubleClickEmptyArea() CANCEL FILTER");
+    m_table->clearSelection();
+    for (int i=0; i<m_table->rowCount(); i++)
+        m_table->showRow(i);
+    this->searchExec();
+}
+
+
+
+
+
+
+
 
