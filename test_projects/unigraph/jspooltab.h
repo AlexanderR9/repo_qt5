@@ -30,6 +30,7 @@ struct JSPoolRecord
     bool isStablePool() const; //признак что оба актива стейблы
     QString ticker0() const;
     QString ticker1() const;
+    QString assetsAddrs() const;
 
 };
 

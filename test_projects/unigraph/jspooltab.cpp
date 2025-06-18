@@ -20,6 +20,7 @@
 //#define JS_JSONPARAMS_FILE    "params.json"
 #define FEE_COL                 3
 #define POOL_ADDR_COL           1
+#define ASSETS_COL              2
 #define POOL_STATE_COL          5
 #define TVL_COL                 6
 #define NOTE_COL                7
@@ -251,6 +252,7 @@ void JSPoolTab::reloadTable()
         else t->item(i, FEE_COL)->setTextColor(Qt::red);
 
         t->item(i, POOL_ADDR_COL)->setTextColor("#4682B4");
+        t->item(i, ASSETS_COL)->setToolTip(rec.assetsAddrs());
     }
 
     m_table->searchExec();
@@ -605,4 +607,8 @@ QString JSPoolRecord::ticker1() const
     QStringList list = LString::trimSplitList(assets, "/");
     if (list.count() != 2) return "?";
     return list.at(1).trimmed().toUpper();
+}
+QString JSPoolRecord::assetsAddrs() const
+{
+    return QString("%1 / %2").arg(token0_addr).arg(token1_addr);
 }

@@ -19,11 +19,14 @@ public:
 
     void setTokens(const QMap<QString, QString>&, QString);
     void parseJSResult(const QJsonObject&);
+    void getAllApprovedVolums(); //запросить состояние у всех токенов
 
     inline QString scriptName() const {return QString("qt_approve.js");}
 
 protected:
     LTableWidgetBox     *m_table;
+    QTimer              *m_updateTimer; //таймер для опроса всех объемов апрувнутых токенов
+    bool                 js_running;
 
     //информация загруженная из локального файла, содержит информацию только о значениях апрувнутых токенов.
     //вид строки: token_addr / approved_value for POS_MANAGER / approved_value for SWAP_ROUTER
@@ -46,6 +49,7 @@ protected:
 protected slots:
     void slotUpdateApproved();
     void slotSendApprove();
+    void slotTimer();
 
 public slots:
     void slotScriptBroken();
@@ -58,6 +62,7 @@ signals:
     void signalSendTxLog(const JSTxLogRecord&);
     void signalGetChainName(QString&);
     void signalGetTokenPrice(const QString&, float&); //получить текущую цену токена со страницы кошелька
+    void signalEnableControls(bool);
 
 };
 

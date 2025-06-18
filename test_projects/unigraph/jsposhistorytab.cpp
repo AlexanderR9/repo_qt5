@@ -22,6 +22,7 @@
 #define APR_COL             8
 #define RANGE_COL           3
 #define CP_COL              4
+#define T_LIFE_COL          9
 
 
 
@@ -52,7 +53,7 @@ void JSPosHistoryTab::initTable()
     m_table->vHeaderHide();
     QStringList headers;
     headers << "Pool" << "Opened time" << "Closed time" << "Position range" << "Open/close price" <<
-               "Deposited" << "Decreased" << "Rewards" << "APR";
+               "Deposited" << "Decreased" << "Rewards" << "APR" << "Lasting";
 
     LTable::setTableHeaders(m_table->table(), headers);
     m_table->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::SingleSelection);
@@ -183,7 +184,7 @@ void JSPosHistoryTab::reloadTableData()
         row_data << pos.pool_info << pos.start_state.strTime() << pos.exit_state.strTime();
         row_data << pos.strPriceRange() << pos.strCurrentPrices();
         row_data << pos.strDeposited() << pos.strDecreased() << pos.strClaimedFees();
-        row_data << QString("%1%").arg(QString::number(pos.calcAPR(), 'f', 1));
+        row_data << QString("%1%").arg(QString::number(pos.calcAPR(), 'f', 1)) << pos.strLasting();
         LTable::addTableRow(t, row_data);
 
         if (pos.isClosed())
@@ -192,7 +193,7 @@ void JSPosHistoryTab::reloadTableData()
             else LTable::setTableRowColor(t, i, "#FAEBD7");
         }
 
-        t->item(i, OPEN_TIME_COL+1)->setToolTip(QString("%1 days").arg(QString::number(pos.lifeTime(), 'f', 1)));
+        //t->item(i, OPEN_TIME_COL+1)->setToolTip(QString("%1 days").arg(QString::number(pos.lifeTime(), 'f', 1)));
         t->item(i, DEPOSITED_COL)->setToolTip(QString("%1 %2").arg(QString::number(pos.startAssetsSize(), 'f', 2)).arg(pos.totalSizeTokenName()));
         t->item(i, DECREASED_COL)->setToolTip(QString("%1 %2").arg(QString::number(pos.decreasedAssetsSize(), 'f', 2)).arg(pos.totalSizeTokenName()));
         t->item(i, REWARDS_COL)->setToolTip(QString("%1 %2").arg(QString::number(pos.rewardsAssetsSize(), 'f', 2)).arg(pos.totalSizeTokenName()));
@@ -310,6 +311,11 @@ QString PosLineStep::strClaimedFees() const
     QString s = QString::number(claimed_rewards.first, 'f', SubGraph_CommonSettings::interfacePrecision(claimed_rewards.first));
     s = QString("%1/%2").arg(s).arg(QString::number(claimed_rewards.second, 'f', SubGraph_CommonSettings::interfacePrecision(claimed_rewards.second)));
     return s;
+}
+QString PosLineStep::strLasting() const
+{
+    if (invalid()) return "?";
+    return QString("%1 days").arg(QString::number(lifeTime(), 'f', 1));
 }
 float PosLineStep::startAssetsSize() const
 {

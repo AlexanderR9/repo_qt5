@@ -125,6 +125,7 @@ void EthersPage::initWidgets()
     connect(m_approvePage, SIGNAL(signalApprove(const QStringList&)), this, SLOT(slotApprove(const QStringList&)));
     connect(m_approvePage, SIGNAL(signalGetChainName(QString&)), m_walletPage, SLOT(slotGetChainName(QString&)));
     connect(m_approvePage, SIGNAL(signalGetTokenPrice(const QString&, float&)), m_walletPage, SLOT(slotGetTokenPrice(const QString&, float&)));
+    connect(m_approvePage, SIGNAL(signalEnableControls(bool)), this, SIGNAL(signalEnableControls(bool)));
 
     connect(this, SIGNAL(signalScriptBroken()), m_walletPage, SLOT(slotScriptBroken()));
     connect(this, SIGNAL(signalScriptBroken()), m_approvePage, SLOT(slotScriptBroken()));
@@ -212,10 +213,21 @@ void EthersPage::startUpdating(quint16 t)
         emit signalStopUpdating();
         return;
     }
+    if (posHistoryPageNow())
+    {
+        m_posHistoryPage->loadTxLogFile(m_walletPage->chainName());
+        emit signalStopUpdating();
+        return;
+    }
     if (posManagerPageNow())
     {
         m_posManagerPage->updatePidList();
         //m_splashWidget->startDelay("Waiting JS reply .....");
+        return;
+    }
+    if (approvePageNow())
+    {
+        m_approvePage->getAllApprovedVolums();
         return;
     }
 

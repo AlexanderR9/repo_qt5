@@ -9,6 +9,7 @@
 #include <QTableWidget>
 #include <QSplitter>
 #include <QDir>
+#include <QTimer>
 #include <QDebug>
 #include <QJsonObject>
 #include <QJsonValue>
@@ -23,7 +24,9 @@
 // JSApproveTab
 JSApproveTab::JSApproveTab(QWidget *parent)
     :LSimpleWidget(parent, 10),
-      m_table(NULL)
+      m_table(NULL),
+      m_updateTimer(NULL),
+      js_running(false)
 {
     setObjectName("js_approve_tab");
 
@@ -39,6 +42,12 @@ JSApproveTab::JSApproveTab(QWidget *parent)
 
     v_splitter->addWidget(m_table);
     initPopupMenu();
+
+    m_updateTimer = new QTimer(this);
+    m_updateTimer->setInterval(900);
+    m_updateTimer->stop();
+    connect(m_updateTimer, SIGNAL(timeout()), this, SLOT(slotTimer()));
+
 }
 void JSApproveTab::setTokens(const QMap<QString, QString> &map, QString chain_name)
 {
@@ -81,8 +90,6 @@ void JSApproveTab::slotUpdateApproved()
     if (row < 0) {emit signalError("You must select row"); return;}
 
     QTableWidget *t = m_table->table();
-   // qDebug()<<QString("token=%1  addr=%2").arg(t->item(row, TOKEN_COL)->text()).arg(t->item(row, ADDRESS_COL)->text());
-
     QString token_addr = t->item(row, ADDRESS_COL)->text().trimmed();
     t->setEnabled(false);
     emit signalCheckUpproved(token_addr);
@@ -151,6 +158,15 @@ void JSApproveTab::answerUpdate(const QJsonObject &j_result)
             addLocalData(token_addr, pm_sum, swap_sum);
             break;
         }
+    }
+
+    /////////////////////////////////////
+    if (m_updateTimer->isActive())
+    {
+        js_running = false;
+        int row = m_table->curSelectedRow();
+        if (row == (n-1)) {t->clearSelection(); return;}
+        t->selectRow(row+1);
     }
 }
 void JSApproveTab::answerApprove(const QJsonObject &j_result)
@@ -352,3 +368,39 @@ void JSApproveTab::sendTxRecordToLog(const QJsonObject &j_result)
     emit signalSendTxLog(rec);
 
 }
+void JSApproveTab::slotTimer()
+{
+    if (js_running) {qDebug("js_running"); return;}
+
+    int row = m_table->curSelectedRow();
+    if (row < 0)
+    {
+        m_updateTimer->stop();
+        emit signalMsg("Getting approved finished!");
+        emit signalEnableControls(true);
+        return;
+    }
+    emit signalMsg(QString("next request approved, TOKEN: %1").arg(m_table->table()->item(row, 0)->text()));
+    js_running = true;
+    slotUpdateApproved();
+}
+void JSApproveTab::getAllApprovedVolums()
+{
+    QTableWidget *t = m_table->table();
+    if (t->rowCount() == 0)
+    {
+        m_updateTimer->stop();
+        emit signalMsg("Getting states finished!");
+        emit signalEnableControls(true);
+        return;
+    }
+
+    t->clearSelection();
+    t->selectRow(0);
+    js_running = false;
+
+    emit signalMsg(QString("Start getting approved volumes ....... "));
+    emit signalEnableControls(false);
+    m_updateTimer->start();
+}
+

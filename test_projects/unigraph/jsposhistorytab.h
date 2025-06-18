@@ -80,6 +80,7 @@ struct PosLineStep
     QString strDeposited() const;
     QString strDecreased() const;
     QString strClaimedFees() const;
+    QString strLasting() const; //продолжительность
 
 };
 
