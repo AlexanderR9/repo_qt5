@@ -3,10 +3,11 @@
 
 
 #include "ug_basepage.h"
+#include "jstxdialog.h"
 
 class LSearchTableWidgetBox;
 class QJsonObject;
-struct TxDialogData;
+//struct TxDialogData;
 struct JSTxLogRecord;
 
 
@@ -50,6 +51,11 @@ protected:
     LSearchTableWidgetBox       *m_table;
     QList<JSPoolRecord>         m_poolData;
 
+    //сохраненные параметры операции для быстрого восстановления при повторной такой же.
+    TxDialogData                m_mintParamsSaved;
+    TxDialogData                m_swapParamsSaved;
+
+
     void initTable();
     void reloadTable();
     void initPopupMenu(); //инициализировать элементы всплывающего меню
@@ -57,7 +63,9 @@ protected:
     void answerSwap(const QJsonObject&);
     void answerMintTx(const QJsonObject&);
     void sendMintTx(const TxDialogData&, int);
+    void sendSwapTx(const TxDialogData&, int);
     void sendTxRecordToLog(int, const QJsonObject&); //подготовить и отправить запись о выполненной транзакции в JSTxLogger для добавления в журнал
+    void copyCurrentTxParams(const TxDialogData&); //сохранить текущие настройки последней операции
 
 private:
     int pricePrecision(float, bool) const;

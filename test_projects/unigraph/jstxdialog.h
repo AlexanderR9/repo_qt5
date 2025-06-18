@@ -11,6 +11,7 @@ enum TX_OrepationType {txWrap = 1401, txUnwrap, txApprove, txTransfer, txSwap,
 //TxDialogData
 struct TxDialogData
 {
+    TxDialogData() :tx_kind(txNone) {reset();}
     TxDialogData(int t) :tx_kind(t) {reset();}
 
     int tx_kind; //enum TX_OrepationType
@@ -110,18 +111,20 @@ class TxMintPositionDialog : public TxDialogBase
 {
     Q_OBJECT
 public:
-    TxMintPositionDialog(TxDialogData&, QWidget*);
+    TxMintPositionDialog(TxDialogData&, const TxDialogData&, QWidget*);
     virtual ~TxMintPositionDialog() {}
 
 protected:
     QGroupBox *m_mintParamsBox;
+    //const TxDialogData &m_savedParams;
 
     void init();
     void initStaticFields();
     void initMintFields();
     void replaceToGridLayout();
     void checkMintParamsValidity(QString&);
-    void parseNoteText();
+    //void parseNoteText();
+    void applySavedParams(const TxDialogData&); //проверить значения из прошлой аналогичной операции из заполнить соответствующие поля
 
 protected slots:
     void slotApply();

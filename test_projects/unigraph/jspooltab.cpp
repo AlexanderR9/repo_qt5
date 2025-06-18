@@ -3,7 +3,7 @@
 #include "lfile.h"
 #include "lstring.h"
 #include "subcommonsettings.h"
-#include "jstxdialog.h"
+//#include "jstxdialog.h"
 #include "ethers_js.h"
 #include "jstxlogger.h"
 
@@ -115,7 +115,7 @@ void JSPoolTab::slotMintPosition()
     s_approved = QString("%1 / %2").arg(s_approved).arg(QString::number(cur_approved, 'f', 2));
     mint_data.dialog_params.insert("approved", s_approved);
 
-    TxMintPositionDialog d(mint_data, this);
+    TxMintPositionDialog d(mint_data, m_mintParamsSaved, this);
     d.exec();
     if (d.isApply()) sendMintTx(mint_data, row);
     else emit signalMsg("operation was canceled!");
@@ -130,57 +130,10 @@ void JSPoolTab::slotTrySwapAssets()
     TxDialogData swap_data(txSwap);
     swap_data.token_addr = m_poolData.at(row).address;
     swap_data.token_name = QString("%1  %2").arg(m_poolData.at(row).assets).arg(m_poolData.at(row).strFee());
+
     TxSwapDialog d(swap_data, this);
     d.exec();
-    if (d.isApply())
-    {
-        emit signalMsg(QString("Try send TX swap"));
-        int t_input = swap_data.dialog_params.value("input_token").toInt();
-        emit signalMsg(QString("PARAMS: pool=%1, amount=%2, input_token=%3").arg(swap_data.token_name).arg(swap_data.dialog_params.value("amount")).arg(t_input));
-        if (swap_data.dialog_params.value("amount") == "invalid") {signalError("invalid amount value"); return;}
-        if (swap_data.dialog_params.value("dead_line") == "invalid") {signalError("invalid dead_line value"); return;}
-
-
-        if (swap_data.dialog_params.value("is_simulate") == "no") //need check approved size
-        {
-            bool ok;
-            float amount_in = swap_data.dialog_params.value("amount").toFloat(&ok);
-            if (!ok || amount_in < 0.01) {signalError(QString("invalid amount value [%1]").arg(swap_data.dialog_params.value("amount"))); return;}
-
-            float cur_approved = -1;
-            if (t_input == 0) emit signalGetApprovedSize("swap_router", m_poolData.at(row).token0_addr, cur_approved);
-            else  emit signalGetApprovedSize("swap_router", m_poolData.at(row).token1_addr, cur_approved);
-            if (amount_in > cur_approved)
-            {
-                signalError(QString("swapping amount[%1] > approved amount[%2]").arg(amount_in).arg(cur_approved));
-                return;
-            }
-
-            if (t_input == 0) emit signalResetApproved(m_poolData.at(row).token0_addr);
-            else if (t_input == 1) emit signalResetApproved(m_poolData.at(row).token1_addr);
-        }
-
-
-        //prepare json params
-        QJsonObject j_params;
-        j_params.insert("pool_address", swap_data.token_addr);
-        j_params.insert("input_token", t_input);
-        j_params.insert("dead_line", swap_data.dialog_params.value("dead_line"));
-        j_params.insert("size", swap_data.dialog_params.value("amount"));
-        j_params.insert("simulate_mode", swap_data.dialog_params.value("is_simulate"));
-        emit signalRewriteParamJson(j_params); //rewrite json-file
-        //return;
-
-        m_table->table()->item(row, NOTE_COL)->setText("try swap ...");
-        m_table->table()->item(row, NOTE_COL)->setTextColor("#DC143C");
-        m_table->resizeByContents();
-
-
-        m_table->table()->setEnabled(false);
-        QStringList tx_params;
-        tx_params << "qt_pool_swap.js" << EthersPage::inputParamsJsonFile();
-        emit signalPoolAction(tx_params);
-    }
+    if (d.isApply()) sendSwapTx(swap_data, row);
     else emit signalMsg("operation was canceled!");
 }
 void JSPoolTab::initTable()
@@ -380,12 +333,15 @@ int JSPoolTab::pricePrecision(float p, bool is_stable_pool) const
 void JSPoolTab::sendMintTx(const TxDialogData &mint_data, int row)
 {
     emit signalMsg(QString("Send TX mint"));
+    copyCurrentTxParams(mint_data);
 
     //prepare json params
     QJsonObject j_params;
     QMap<QString, QString>::const_iterator it = mint_data.dialog_params.constBegin();
     while (it != mint_data.dialog_params.constEnd())
     {
+        qDebug()<<QString("FROM_DIALOG: key[%1]  value[%2]").arg(it.key()).arg(it.value());
+
         bool is_int = (it.key().contains("tick") || it.key().contains("index") || it.key().contains("line"));
         bool is_double = (it.key().contains("price") || it.key().contains("amount"));
 
@@ -402,6 +358,55 @@ void JSPoolTab::sendMintTx(const TxDialogData &mint_data, int row)
     m_table->table()->setEnabled(false);
     QStringList tx_params;
     tx_params << "qt_mint.js" << EthersPage::inputParamsJsonFile();
+    emit signalPoolAction(tx_params);
+}
+void JSPoolTab::sendSwapTx(const TxDialogData &swap_data, int row)
+{
+    emit signalMsg(QString("Try send TX swap"));
+    int t_input = swap_data.dialog_params.value("input_token").toInt();
+    emit signalMsg(QString("PARAMS: pool=%1, amount=%2, input_token=%3").arg(swap_data.token_name).arg(swap_data.dialog_params.value("amount")).arg(t_input));
+    if (swap_data.dialog_params.value("amount") == "invalid") {signalError("invalid amount value"); return;}
+    if (swap_data.dialog_params.value("dead_line") == "invalid") {signalError("invalid dead_line value"); return;}
+
+    copyCurrentTxParams(swap_data);
+    if (swap_data.dialog_params.value("is_simulate") == "no") //need check approved size
+    {
+        bool ok;
+        float amount_in = swap_data.dialog_params.value("amount").toFloat(&ok);
+        if (!ok || amount_in < 0.01) {signalError(QString("invalid amount value [%1]").arg(swap_data.dialog_params.value("amount"))); return;}
+
+        float cur_approved = -1;
+        if (t_input == 0) emit signalGetApprovedSize("swap_router", m_poolData.at(row).token0_addr, cur_approved);
+        else  emit signalGetApprovedSize("swap_router", m_poolData.at(row).token1_addr, cur_approved);
+        if (amount_in > cur_approved)
+        {
+            signalError(QString("swapping amount[%1] > approved amount[%2]").arg(amount_in).arg(cur_approved));
+            return;
+        }
+
+        if (t_input == 0) emit signalResetApproved(m_poolData.at(row).token0_addr);
+        else if (t_input == 1) emit signalResetApproved(m_poolData.at(row).token1_addr);
+    }
+
+
+    //prepare json params
+    QJsonObject j_params;
+    j_params.insert("pool_address", swap_data.token_addr);
+    j_params.insert("input_token", t_input);
+    j_params.insert("dead_line", swap_data.dialog_params.value("dead_line"));
+    j_params.insert("size", swap_data.dialog_params.value("amount"));
+    j_params.insert("simulate_mode", swap_data.dialog_params.value("is_simulate"));
+    emit signalRewriteParamJson(j_params); //rewrite json-file
+    //return;
+
+    m_table->table()->item(row, NOTE_COL)->setText("try swap ...");
+    m_table->table()->item(row, NOTE_COL)->setTextColor("#DC143C");
+    m_table->resizeByContents();
+
+
+    m_table->table()->setEnabled(false);
+    QStringList tx_params;
+    tx_params << "qt_pool_swap.js" << EthersPage::inputParamsJsonFile();
     emit signalPoolAction(tx_params);
 }
 void JSPoolTab::answerMintTx(const QJsonObject &j_result)
@@ -516,6 +521,53 @@ void JSPoolTab::sendTxRecordToLog(int row, const QJsonObject &j_result)
 
     rec.pool_address = m_poolData.at(row).address;
     emit signalSendTxLog(rec);
+}
+void JSPoolTab::copyCurrentTxParams(const TxDialogData &tx_data)
+{
+    qDebug()<<QString("JSPoolTab::copyCurrentTxParams,  tx_kind = %1, params %2").arg(tx_data.tx_kind).arg(tx_data.dialog_params.count());
+    switch (tx_data.tx_kind)
+    {
+        case txSwap:
+        {
+            m_swapParamsSaved.token_addr = tx_data.token_addr;
+            m_swapParamsSaved.dialog_params.clear();
+            if (tx_data.dialog_params.contains("input_token"))
+                m_swapParamsSaved.dialog_params.insert("input_token", tx_data.dialog_params.value("input_token"));
+            if (tx_data.dialog_params.contains("amount"))
+                m_swapParamsSaved.dialog_params.insert("amount", tx_data.dialog_params.value("amount"));
+            break;
+        }
+        case txMint:
+        {
+            m_mintParamsSaved.token_addr = tx_data.token_addr;
+            m_mintParamsSaved.dialog_params.clear();
+            qDebug()<<QString("l_tick [%1]").arg(tx_data.dialog_params.value("l_tick", "?"));
+            qDebug()<<QString("h_tick [%1]").arg(tx_data.dialog_params.value("h_tick", "?"));
+            qDebug()<<QString("l_price [%1]").arg(tx_data.dialog_params.value("l_price", "?"));
+            qDebug()<<QString("h_price [%1]").arg(tx_data.dialog_params.value("h_price", "?"));
+            qDebug()<<QString("token_index [%1]").arg(tx_data.dialog_params.value("token_index", "?"));
+            if (tx_data.dialog_params.contains("l_tick") && tx_data.dialog_params.contains("h_tick"))
+            {
+                qDebug("HAS tick fields");
+                m_mintParamsSaved.dialog_params.insert("l_tick", tx_data.dialog_params.value("l_tick"));
+                m_mintParamsSaved.dialog_params.insert("h_tick", tx_data.dialog_params.value("h_tick"));
+            }
+            else if (tx_data.dialog_params.contains("l_price") && tx_data.dialog_params.contains("h_price"))
+            {
+                qDebug("HAS price fields");
+                m_mintParamsSaved.dialog_params.insert("l_price", tx_data.dialog_params.value("l_price"));
+                m_mintParamsSaved.dialog_params.insert("h_price", tx_data.dialog_params.value("h_price"));
+                m_mintParamsSaved.dialog_params.insert("token_index", tx_data.dialog_params.value("token_index", "0"));
+            }
+            if (tx_data.dialog_params.contains("token0_amount"))
+                m_mintParamsSaved.dialog_params.insert("token0_amount", tx_data.dialog_params.value("token0_amount"));
+            if (tx_data.dialog_params.contains("token1_amount"))
+                m_mintParamsSaved.dialog_params.insert("token1_amount", tx_data.dialog_params.value("token1_amount"));
+            break;
+        }
+        default: {qWarning()<<QString("JSPoolTab: invalid tx_kind (%1)"); break;}
+    }
+
 }
 
 ///////////////////////////JSPoolRecord//////////////////////////////

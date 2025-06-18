@@ -435,16 +435,17 @@ void TxRemoveLiqDialog::slotApply()
 
 
 ///////////////////TxMintPositionDialog////////////////////////////
-TxMintPositionDialog::TxMintPositionDialog(TxDialogData &data, QWidget *parent)
+TxMintPositionDialog::TxMintPositionDialog(TxDialogData &data, const TxDialogData &saved_params, QWidget *parent)
     :TxDialogBase(data, parent),
       m_mintParamsBox(NULL)
+      //m_savedParams(saved_params)
 {
     setObjectName(QString("tx_mint_dialog"));
     resize(950, 400);
 
     if (m_data.invalid()) return;
-
     init();
+    applySavedParams(saved_params);
 
     addVerticalSpacer();
     this->setCaptionsWidth(160);
@@ -581,7 +582,7 @@ void TxMintPositionDialog::init()
 
     replaceToGridLayout();
     slotRangeTypeChanged(0);
-    parseNoteText();
+    //parseNoteText();
 }
 void TxMintPositionDialog::checkMintParamsValidity(QString &err)
 {
@@ -698,6 +699,63 @@ void TxMintPositionDialog::slotAmountsChanged()
     }
     else qWarning()<<QString("TxMintPositionDialog::slotAmountsChanged() WARNING SW is NULL");
 }
+void TxMintPositionDialog::applySavedParams(const TxDialogData &saved_params)
+{
+    if (m_data.token_addr != saved_params.token_addr)
+    {qWarning("TxMintPositionDialog::applySavedParams  m_data.token_addr != saved_params.token_addr"); return;}
+
+    qDebug("--------------saved_params---------------");
+    QMap<QString, QString>::const_iterator it = saved_params.dialog_params.constBegin();
+    while (it != saved_params.dialog_params.constEnd())
+    {
+        qDebug()<<QString("key[%1]  value[%2]").arg(it.key()).arg(it.value());
+        it++;
+    }
+    qDebug("-------------------------------");
+
+    if (saved_params.dialog_params.contains("l_tick") && saved_params.dialog_params.contains("h_tick"))
+    {
+        QString key = "range";
+        const SimpleWidget *sw = this->widgetByKey(key);
+        sw->comboBox->setCurrentIndex(1);
+        this->setWidgetValue("tick1", saved_params.dialog_params.value("l_tick"));
+        this->setWidgetValue("tick2", saved_params.dialog_params.value("h_tick"));
+    }
+    else if (saved_params.dialog_params.contains("l_price") && saved_params.dialog_params.contains("h_price"))
+    {
+        this->setWidgetValue("price1", saved_params.dialog_params.value("l_price"));
+        this->setWidgetValue("price2", saved_params.dialog_params.value("h_price"));
+        int t_index = saved_params.dialog_params.value("token_index", "0").toInt();
+        if (t_index == 1)
+        {
+            QString key = "token_index";
+            const SimpleWidget *sw = this->widgetByKey(key);
+            sw->comboBox->setCurrentIndex(t_index);
+        }
+    }
+
+    bool ok;
+    float amount = -1;
+    if (saved_params.dialog_params.contains("token0_amount"))
+    {
+        amount = saved_params.dialog_params.value("token0_amount").toFloat(&ok);
+        if (ok && amount > 0)
+        {
+            this->setWidgetValue("amount0", saved_params.dialog_params.value("token0_amount"));
+            return;
+        }
+    }
+    if (saved_params.dialog_params.contains("token1_amount"))
+    {
+        amount = saved_params.dialog_params.value("token1_amount").toFloat(&ok);
+        if (ok && amount > 0)
+        {
+            this->setWidgetValue("amount1", saved_params.dialog_params.value("token1_amount"));
+            return;
+        }
+    }
+}
+/*
 void TxMintPositionDialog::parseNoteText()
 {
     qDebug("TxMintPositionDialog::parseNoteText()");
@@ -715,11 +773,6 @@ void TxMintPositionDialog::parseNoteText()
         QStringList amount_list = LString::trimSplitList(s_amounts, "/");
         if (amount_list.count() == 2)
         {
-            //const SimpleWidget *sw0 = this->widgetByKey("amount0");
-            //const SimpleWidget *sw1 = this->widgetByKey("amount1");
-            //disconnect(sw0->edit, SIGNAL(textChanged(const QString&)), this, SLOT(slotAmountsChanged()));
-            //disconnect(sw1->edit, SIGNAL(textChanged(const QString&)), this, SLOT(slotAmountsChanged()));
-
             if (amount_list.at(0).trimmed().toFloat() > 0)
             {
                 setWidgetValue("amount0", amount_list.at(0).trimmed());
@@ -728,10 +781,6 @@ void TxMintPositionDialog::parseNoteText()
             {
                 setWidgetValue("amount1", amount_list.at(1).trimmed());
             }
-
-
-            //connect(sw0->edit, SIGNAL(textChanged(const QString&)), this, SLOT(slotAmountsChanged()));
-            //connect(sw1->edit, SIGNAL(textChanged(const QString&)), this, SLOT(slotAmountsChanged()));
         }
     }
 
@@ -752,6 +801,7 @@ void TxMintPositionDialog::parseNoteText()
         }
     }
 }
+*/
 
 
 ///////////////////TxIncreaseLiqDialog////////////////////////////
