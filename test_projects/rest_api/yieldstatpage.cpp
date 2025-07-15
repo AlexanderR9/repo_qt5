@@ -116,6 +116,7 @@ void YieldStatPage::slotReceivedEvents(const QList<EventOperation> &data)
 
     m_tableBox->resizeByContents();
     m_tableBox->searchExec();
+    m_tableBox->table()->scrollToBottom();
 }
 void YieldStatPage::findStartDate(const QList<EventOperation> &data)
 {

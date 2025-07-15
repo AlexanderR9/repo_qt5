@@ -24,11 +24,13 @@ unix:!macx: LIBS += -L$$PWD/../base/build/ -llbase
 HEADERS += $$PWD/tcpserverobj.h \
 	$$PWD/tcpclientobj.h \
 	$$PWD/tcpstatuswidget.h \
-	$$PWD/tcp_global.h
+	$$PWD/tcp_global.h \
+        $$PWD/httpserverobj.h
 
 SOURCES += $$PWD/tcpserverobj.cpp \
 	$$PWD/tcpstatuswidget.cpp \
-	$$PWD/tcpclientobj.cpp
+	$$PWD/tcpclientobj.cpp \
+        $$PWD/httpserverobj.cpp
 
 FORMS += $$PWD/ui/tcpstatuswidget.ui
 

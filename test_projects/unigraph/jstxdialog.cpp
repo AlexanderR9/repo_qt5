@@ -755,53 +755,6 @@ void TxMintPositionDialog::applySavedParams(const TxDialogData &saved_params)
         }
     }
 }
-/*
-void TxMintPositionDialog::parseNoteText()
-{
-    qDebug("TxMintPositionDialog::parseNoteText()");
-    QString s_note = m_data.dialog_params.value("note", QString()).trimmed().toLower();
-    qDebug()<<s_note;
-    s_note = LString::removeSpaces(s_note);
-  //  qDebug()<<s_note;
-
-    int pos = s_note.indexOf("amount");
-    if (pos >= 0)
-    {
-       // qDebug()<<QString("find amount attr, pos=%1").arg(pos);
-        QString s_amounts = LString::strTrimLeft(s_note, pos);
-        s_amounts = LString::strBetweenStr(s_amounts, "(", ")");
-        QStringList amount_list = LString::trimSplitList(s_amounts, "/");
-        if (amount_list.count() == 2)
-        {
-            if (amount_list.at(0).trimmed().toFloat() > 0)
-            {
-                setWidgetValue("amount0", amount_list.at(0).trimmed());
-            }
-            else
-            {
-                setWidgetValue("amount1", amount_list.at(1).trimmed());
-            }
-        }
-    }
-
-    pos = s_note.indexOf("range");
-    if (pos >= 0)
-    {
-       // qDebug()<<QString("find range attr, pos=%1").arg(pos);
-        QString s_range = LString::strTrimLeft(s_note, pos);
-        s_range = LString::strBetweenStr(s_range, "[", "]");
-        QStringList tick_list = LString::trimSplitList(s_range, ";");
-        if (tick_list.count() == 2)
-        {
-            setWidgetValue("tick1", tick_list.at(0).trimmed());
-            setWidgetValue("tick2", tick_list.at(1).trimmed());
-
-            const SimpleWidget *sw = this->widgetByKey("range");
-            sw->comboBox->setCurrentIndex(1);
-        }
-    }
-}
-*/
 
 
 ///////////////////TxIncreaseLiqDialog////////////////////////////

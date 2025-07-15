@@ -70,8 +70,20 @@ void JSPosHistoryTab::loadTxLogFile(QString chain)
 {
     m_txHistoryObj->setChainName(chain.trimmed().toLower());
     m_txHistoryObj->reloadLogFile();
+
     convertLogDataToStepData();
+    sortByCloseSign();
     reloadTableData();
+}
+void JSPosHistoryTab::sortByCloseSign()
+{
+    int n = m_stepData.count();
+    for (int i=0; i<n; i++)
+    {
+        const PosLineStep &pos = m_stepData.at(i);
+        if (!pos.isClosed())
+            m_stepData.insert(0, m_stepData.takeAt(i));
+    }
 }
 void JSPosHistoryTab::convertLogDataToStepData()
 {
@@ -93,8 +105,6 @@ void JSPosHistoryTab::convertLogDataToStepData()
             addNewRecord(log_rec);
             continue;
         }
-
-
         if (log_rec.tx_kind == "decrease")
         {
             //qDebug()<<QString("find decrease point, pool [%1]").arg(log_rec.pool_address);

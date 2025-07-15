@@ -103,10 +103,18 @@ protected:
 
     void initTable();
     void reloadTableData();
+
+
+    //преобразовать массив записей из tx_history.log в массив  m_stepData.
+    //предварительно у всех транзакций должно быть запрошено состояние, т.е. результат выполнения.
     void convertLogDataToStepData();
+
     void addNewRecord(const JSTxLogRecord&);
     void decreaseRecord(const JSTxLogRecord&);
     void collectRecord(const JSTxLogRecord&);
+
+    //все записи для НЕ закрытых поз, которые находятся работе перенести в начало контейнера (для удобства просмотра в таблице)
+    void sortByCloseSign();
 
 public slots:
     void slotPosStateReceived(QString, QString);
