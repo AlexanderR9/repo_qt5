@@ -11,7 +11,7 @@
 
 
 // LHttpServerObj constructor
-LHttpServerObj::LHttpServerObj(QObject *parent)
+LHttpServerObj::LHttpServerObj(quint16 port, QObject *parent)
     :LTcpServerObj(parent),
       m_wwwPath("www")
 {
@@ -19,8 +19,15 @@ LHttpServerObj::LHttpServerObj(QObject *parent)
     qDebug("LHttpServerObj created!");
 
     setMaxServerClients(1);
-
+    setConnectionParams(QString(), port);
 }
+/*
+LHttpServerObj::LHttpServerObj(quint16 port, QObject *parent)
+    :LHttpServerObj(parent)
+{
+    setConnectionParams(QString(), port);
+}
+*/
 void LHttpServerObj::httpReqReceived(int i_socket, const QByteArray &req_data)
 {
     if (i_socket < 0)

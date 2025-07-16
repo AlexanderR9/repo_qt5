@@ -36,9 +36,11 @@ struct LHttpReqParams
 // LHttpServerObj
 class LHttpServerObj : public LTcpServerObj
 {
+    Q_OBJECT
 public:
-    LHttpServerObj(QObject *parent = NULL);
-    virtual ~LHttpServerObj() {}
+    //LHttpServerObj(QObject *parent = NULL);
+    LHttpServerObj(quint16, QObject *parent = NULL);
+   // virtual ~LHttpServerObj() {}
 
     void setWebPath(QString wpath) {m_wwwPath = wpath.trimmed();}
 
