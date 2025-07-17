@@ -40,7 +40,7 @@ class LHttpServerObj : public LTcpServerObj
 public:
     //LHttpServerObj(QObject *parent = NULL);
     LHttpServerObj(quint16, QObject *parent = NULL);
-   // virtual ~LHttpServerObj() {}
+    virtual ~LHttpServerObj() {}
 
     void setWebPath(QString wpath) {m_wwwPath = wpath.trimmed();}
 

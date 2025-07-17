@@ -22,10 +22,13 @@ LHttpServerObj::LHttpServerObj(quint16 port, QObject *parent)
     setConnectionParams(QString(), port);
 }
 /*
-LHttpServerObj::LHttpServerObj(quint16 port, QObject *parent)
-    :LHttpServerObj(parent)
+LHttpServerObj::LHttpServerObj(QObject *parent)
+    :LTcpServerObj(parent),
+      m_wwwPath("www")
 {
-    setConnectionParams(QString(), port);
+    setObjectName("lhttp_server");
+    qDebug("LHttpServerObj created!");
+
 }
 */
 void LHttpServerObj::httpReqReceived(int i_socket, const QByteArray &req_data)
