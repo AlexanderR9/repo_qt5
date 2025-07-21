@@ -59,6 +59,7 @@ protected:
     void initPopupMenu(); //инициализировать элементы всплывающего меню
     void sendIncreaseTx(const TxDialogData&, int);
     void sendDecreaseTx(const TxDialogData&, int);
+    void sendDestroyNftTx(const TxDialogData&, int);
     void sendCollectTx(const TxDialogData&, int);
     void sendTx(QString, int);
     void rereadJSPosFileData();
@@ -83,6 +84,7 @@ protected slots:
     void slotTryCollectTokens();
     void slotGetShortInfo();
     void slotLiqStateTimer();
+    void slotTryDestroyPosition(); //уничтожить NFT позиции
 
 private:
     QString cellRangeToLogFormat(QString) const; //преобразовать формат range из ячейки к формату лог файла

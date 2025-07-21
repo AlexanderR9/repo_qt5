@@ -196,6 +196,8 @@ void JSPosManagerTab::initPopupMenu()
     act_list.append(pair3);
     QPair<QString, QString> pair4("Collect tokens", TxDialogBase::iconByTXType(txCollect));
     act_list.append(pair4);
+    QPair<QString, QString> pair5("Destroy NFT", TxDialogBase::iconByTXType(txDestroy));
+    act_list.append(pair5);
 
     //init popup menu actions
     m_tablePos->popupMenuActivate(act_list);
@@ -207,6 +209,7 @@ void JSPosManagerTab::initPopupMenu()
     m_tablePos->connectSlotToPopupAction(i_menu, this, SLOT(slotTryIncreaseLiquidity())); i_menu++;
     m_tablePos->connectSlotToPopupAction(i_menu, this, SLOT(slotTryDecreaseLiquidity())); i_menu++;
     m_tablePos->connectSlotToPopupAction(i_menu, this, SLOT(slotTryCollectTokens())); i_menu++;
+    m_tablePos->connectSlotToPopupAction(i_menu, this, SLOT(slotTryDestroyPosition())); i_menu++;
 
 }
 void JSPosManagerTab::slotGetPositionState()
@@ -264,6 +267,33 @@ void JSPosManagerTab::slotTryIncreaseLiquidity()
     if (d.isApply()) sendIncreaseTx(increase_data, row);
     else emit signalMsg("operation was canceled!");
 
+}
+void JSPosManagerTab::slotTryDestroyPosition()
+{
+    qDebug("JSPosManagerTab::slotTryDestroyPosition()");
+    int row = m_tablePos->curSelectedRow();
+    if (row < 0) {emit signalError("You must select row"); return;}
+
+    QTableWidget *t = m_tablePos->table();
+    QString cur_state = t->item(row, STATE_COL)->text().trimmed();
+    if (cur_state == "-") {emit signalError("You must update state"); return;}
+
+    QString s_liq = t->item(row, LIQ_COL)->text().trimmed();
+    if (s_liq != "0") {emit signalError("Liqudity is not empty in this pos"); return;}
+
+
+    //prepare dialog params
+    TxDialogData destroy_data(txDestroy);
+    destroy_data.token_addr = t->item(row, 0)->text();
+    destroy_data.token_name = t->item(row, POOL_COL)->text();
+    destroy_data.dialog_params.insert("current_price", cur_state);
+    destroy_data.dialog_params.insert("range", t->item(row, P_RANGE_COL)->text().trimmed());
+
+    //exec dialog
+    TxRemoveLiqDialog d(destroy_data, this);
+    d.exec();
+    if (d.isApply()) sendDestroyNftTx(destroy_data, row);
+    else emit signalMsg("operation was canceled!");
 }
 void JSPosManagerTab::slotTryDecreaseLiquidity()
 {
@@ -387,6 +417,22 @@ void JSPosManagerTab::sendCollectTx(const TxDialogData &collect_data, int row)
 
     //send TX to node_js script
     sendTx("collect", row);
+}
+void JSPosManagerTab::sendDestroyNftTx(const TxDialogData &destroy_data, int row)
+{
+    emit signalMsg(QString("Try destroy NFT position, PID=%1 ...").arg(destroy_data.token_addr));
+
+    //prepare json params
+    QJsonObject j_params;
+    j_params.insert("simulate_mode", destroy_data.dialog_params.value("simulate_mode"));
+    j_params.insert("pid", destroy_data.token_addr);
+    j_params.insert("dead_line", int(30));
+    j_params.insert("pool_address", m_tablePos->table()->item(row, POOL_COL)->data(Qt::UserRole).toString().trimmed());
+    j_params.insert("tx_kind", QString("burn"));
+    emit signalRewriteParamJson(j_params); //rewrite json-file
+
+    //send TX to node_js script
+    sendTx("burn", row);
 }
 void JSPosManagerTab::sendTx(QString cmd, int row)
 {

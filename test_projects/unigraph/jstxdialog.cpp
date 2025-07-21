@@ -54,6 +54,7 @@ QString TxDialogBase::iconByTXType(int tt)
         case txIncrease: {icon_file = "list-add.svg"; break;}
         case txDecrease: {icon_file = "list-remove.svg"; break;}
         case txCollect: {icon_file = "crypto/usdc.png"; break;}
+        case txDestroy: {icon_file = "process-stop.svg"; break;}
         default: return QString();
     }
     return QString("%1%2%3").arg(path).arg(QDir::separator()).arg(icon_file);
@@ -71,6 +72,7 @@ QString TxDialogBase::captionByTXType(int tt)
         case txIncrease: return QString("INCREASE_LIQ");
         case txDecrease: return QString("DECREASE_LIQ");
         case txCollect: return QString("COLLECT_TOKENS");
+        case txDestroy: return QString("DESTROY_NFT");
         default: break;
     }
     return QString("???");
@@ -371,6 +373,12 @@ void TxRemoveLiqDialog::transformByTxKind()
 
         }
         */
+    }
+    else if (m_data.tx_kind == txDestroy)
+    {
+        groupBox->layout()->itemAt(3)->widget()->hide();
+        groupBox->layout()->itemAt(5)->widget()->hide();
+        groupBox->layout()->itemAt(6)->widget()->hide();
     }
 }
 void TxRemoveLiqDialog::init()

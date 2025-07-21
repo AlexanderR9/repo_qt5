@@ -6,7 +6,7 @@
 
 //Orepation Type
 enum TX_OrepationType {txWrap = 1401, txUnwrap, txApprove, txTransfer, txSwap,
-                       txMint, txIncrease, txDecrease, txCollect, txNone = 0};
+                       txMint, txIncrease, txDecrease, txCollect, txDestroy, txNone = 0};
 
 //TxDialogData
 struct TxDialogData
@@ -20,7 +20,7 @@ struct TxDialogData
     QMap<QString, QString> dialog_params; //параметры которые будут возвращены после закрытия диалога
 
     void reset() {token_addr.clear(); token_name.clear(); dialog_params.clear();}
-    bool invalid() const {return (tx_kind < txWrap || tx_kind > txCollect);}
+    bool invalid() const {return (tx_kind < txWrap || tx_kind > txDestroy);}
 
 };
 

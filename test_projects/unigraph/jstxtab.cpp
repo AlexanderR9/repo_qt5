@@ -114,6 +114,7 @@ void JSTxTab::reloadTable()
         else t->item(i, RESULT_COL)->setTextColor(Qt::gray);
 
         if (tx_data.at(i).kind == "mint") t->item(i, TX_KIND_COL)->setTextColor("#FF8C00");
+        if (tx_data.at(i).kind == "burn") t->item(i, TX_KIND_COL)->setTextColor("#AA0000");
     }
     m_table->resizeByContents();
     t->scrollToBottom();
