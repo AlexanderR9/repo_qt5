@@ -104,27 +104,11 @@ void JSPosManagerTab::initTables()
     m_tablePos->addSortingData(LIQ_COL, LTableWidgetBox::sdtNumeric);
     m_tablePos->addSortingData(POOL_COL, LTableWidgetBox::sdtString);
 
-/*
-    m_tableLog = new LSearchTableWidgetBox(this);
-    m_tableLog->setTitle("Pool log (closed)");
-    m_tableLog->vHeaderHide();
-    headers.clear();
-    headers << "Pool" << "Opened Date/Time" << "Closed Date/Time" << "PID" << "Price range" << "Deposited" << "Claimed" << "Rewards";
-    LTable::setTableHeaders(m_tableLog->table(), headers);
-    m_tableLog->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::SingleSelection);
-    m_tableLog->setSelectionColor("#87CEEB");
-    h_splitter->addWidget(m_tableLog);
-    m_tableLog->searchExec();
-    */
-
 }
 void JSPosManagerTab::updatePidList()
 {
     QStringList params;
-    //m_tableLog->removeAllRows();
     m_tablePos->setEnabled(false);
-    //m_tableLog->setEnabled(false);
-
     params << "qt_pidlist.js";
     emit signalPosManagerAction(params);
 }
@@ -136,9 +120,7 @@ void JSPosManagerTab::parseJSResult(const QJsonObject &j_result)
 
     emit signalMsg("\n\n\n");
     m_tablePos->setEnabled(true);
-    //m_tableLog->setEnabled(true);
     js_running = false;
-
 
     QString operation = j_result.value("type").toString().trimmed();
     if (operation == "pid_list") jsonPidListReceived(j_result);
@@ -148,16 +130,14 @@ void JSPosManagerTab::parseJSResult(const QJsonObject &j_result)
     else if (operation == "decrease") jsonTxDecreaseReceived(j_result);
     else if (operation == "increase") jsonTxIncreaseReceived(j_result);
     else if (operation == "collect") jsonTxCollectReceived(j_result);
+    else if (operation == "burn") jsonTxBurnReceived(j_result);
 
     m_tablePos->searchExec();
-    //m_tableLog->searchExec();
 }
 void JSPosManagerTab::slotScriptBroken()
 {
     m_tablePos->setEnabled(true);
-   // m_tableLog->setEnabled(true);
     m_tablePos->resizeByContents();
-   // m_tableLog->resizeByContents();
 }
 void JSPosManagerTab::reloadPidListToTable(const QJsonArray &j_arr)
 {
@@ -217,9 +197,7 @@ void JSPosManagerTab::slotGetPositionState()
    // qDebug("JSPoolTab::slotGetPoolState()");
     int row = m_tablePos->curSelectedRow();
     if (row < 0) {emit signalError("You must select row"); return;}
-
     m_tablePos->setEnabled(false);
-    //m_tableLog->setEnabled(false);
     js_running = true;
 
     QStringList params;
@@ -232,10 +210,7 @@ void JSPosManagerTab::slotGetShortInfo()
 {
     int row = m_tablePos->curSelectedRow();
     if (row < 0) {emit signalError("You must select row"); return;}
-
     m_tablePos->setEnabled(false);
-    //m_tableLog->setEnabled(false);
-
 
     QStringList params;
     QString pid = m_tablePos->table()->item(row, 0)->text().trimmed();
@@ -277,10 +252,8 @@ void JSPosManagerTab::slotTryDestroyPosition()
     QTableWidget *t = m_tablePos->table();
     QString cur_state = t->item(row, STATE_COL)->text().trimmed();
     if (cur_state == "-") {emit signalError("You must update state"); return;}
-
     QString s_liq = t->item(row, LIQ_COL)->text().trimmed();
     if (s_liq != "0") {emit signalError("Liqudity is not empty in this pos"); return;}
-
 
     //prepare dialog params
     TxDialogData destroy_data(txDestroy);
@@ -304,12 +277,9 @@ void JSPosManagerTab::slotTryDecreaseLiquidity()
     QTableWidget *t = m_tablePos->table();
     QString cur_state = t->item(row, STATE_COL)->text().trimmed();
     if (cur_state == "-") {emit signalError("You must update state"); return;}
-    //cur_state = QString("%1   UNCLAIMED(%2)").arg(cur_state).arg(t->item(row, REWARD_COL)->text());
     QString cur_assets = t->item(row, ASSETS_COL)->text();
-
     QString s_liq = t->item(row, LIQ_COL)->text().trimmed();
     if (s_liq == "0") {emit signalError("Liqudity is empty in this pos"); return;}
-
 
     //prepare dialog params
     TxDialogData decrease_data(txDecrease);
@@ -348,8 +318,6 @@ void JSPosManagerTab::slotTryCollectTokens()
     TxDialogData collect_data(txCollect);
     collect_data.token_addr = t->item(row, 0)->text();
     collect_data.token_name = t->item(row, POOL_COL)->text();
-  //  collect_data.dialog_params.insert("state", t->item(row, REWARD_COL)->text().trimmed());
-//    collect_data.dialog_params.insert("range", t->item(row, P_RANGE_COL)->text().trimmed());
     collect_data.dialog_params.insert("reward", t->item(row, REWARD_COL)->text().trimmed());
     collect_data.dialog_params.insert("assets", t->item(row, ASSETS_COL)->text().trimmed());
 
@@ -358,10 +326,6 @@ void JSPosManagerTab::slotTryCollectTokens()
     d.exec();
     if (d.isApply()) sendCollectTx(collect_data, row);
     else emit signalMsg("operation was canceled!");
-}
-void JSPosManagerTab::updateCurrentPrices()
-{
-
 }
 void JSPosManagerTab::sendIncreaseTx(const TxDialogData &increase_data, int row)
 {
@@ -460,9 +424,6 @@ void JSPosManagerTab::rereadJSPosFileData()
 }
 void JSPosManagerTab::sendTxRecordToLog(int row, const QJsonObject &j_result)
 {
-    qDebug("");
-    qDebug("JSPosManagerTab::sendTxRecordToLog");
-
     QString tx_kind = j_result.value("type").toString().trimmed().toLower();
     QString cur_chain;
     emit signalGetChainName(cur_chain);
@@ -485,6 +446,11 @@ void JSPosManagerTab::sendTxRecordToLog(int row, const QJsonObject &j_result)
     {
         tokenSizesToLogValues(t->item(row, REWARD_COL)->text(), rec);
     }
+    else if (tx_kind == "burn")
+    {
+        rec.current_price = -1;
+        rec.current_tick = -1;
+    }
     else if (tx_kind == "increase")
     {
         rec.token0_size = j_result.value("token0_amount").toString().trimmed().toFloat();
@@ -499,6 +465,33 @@ void JSPosManagerTab::sendTxRecordToLog(int row, const QJsonObject &j_result)
 
     rec.token_address = "---";
     emit signalSendTxLog(rec);
+}
+void JSPosManagerTab::setToolTipAverageRangePrice(int row)
+{
+    QTableWidget *t = m_tablePos->table();
+    if (row < 0 || row > t->rowCount()) {qWarning("JSPosManagerTab::setToolTipAverageRangePrice WARNING - invalid row"); return;}
+
+    QString t_value = t->item(row, P_RANGE_COL)->text().trimmed();
+    t_value.remove(QChar('('));
+    t_value.remove(QChar(')'));
+
+    QString s_average = "?";
+    QStringList plist = LString::trimSplitList(t_value, ";");
+    if (plist.count() == 2)
+    {
+        bool ok;
+        float p1 = plist.at(0).toFloat(&ok);
+        if (ok)
+        {
+            float p2 = plist.at(1).toFloat(&ok);
+            if (ok)
+            {
+                float a = (p2+p1)/2;
+                s_average = QString::number(a, 'f', SubGraph_CommonSettings::interfacePrecision(a));
+            }
+        }
+    }
+    t->item(row, P_RANGE_COL)->setToolTip(QString("Average: %1").arg(s_average));
 }
 QString JSPosManagerTab::cellRangeToLogFormat(QString s) const
 {
@@ -637,14 +630,11 @@ void JSPosManagerTab::jsonPosStateReceived(const QJsonObject &j_result)
     }
     else if (!p_location.contains("OUT"))
     {
-        //s_state = QString("P=%1 (IN_RANGE)").arg(j_result.value("price_current").toString());
         s_state.replace("ACTIVE", "IN_RANGE");
     }
     t->item(row, STATE_COL)->setText(s_state);
     t->item(row, STATE_COL)->setTextColor(Qt::black);
-
     sendPosStateToHistoryPage(j_result); //update state on history pos page
-
 
     ///////////////////////check need reread fdata///////////////////////////////////
     if (t->item(row, POOL_COL)->text() == "-")
@@ -686,8 +676,6 @@ void JSPosManagerTab::jsonTxDecreaseReceived(const QJsonObject &j_result)
     if (!is_simulate)
     {
         tx_hash = j_result.value("tx_hash").toString().trimmed().toLower();
-        //t->item(row, ASSETS_COL)->setText("?");
-        //t->item(row, REWARD_COL)->setText("?");
         t->item(row, LIQ_COL)->setTextColor("#DC143C");
         emit signalMsg(QString("TX_HASH: %1").arg(tx_hash));
         t->item(row, LIQ_COL)->setText(tx_hash);
@@ -729,6 +717,7 @@ void JSPosManagerTab::jsonPosFileDataReceived(const QJsonObject &j_result)
 
         t->item(i, P_RANGE_COL)->setText(pos_data[2].remove("price_range"));
         t->item(i, T_RANGE_COL)->setText(pos_data[3].remove("tick_range"));
+        setToolTipAverageRangePrice(i);
 
         QString liq = pos_data.last().trimmed();
         t->item(i, LIQ_COL)->setText(liq);
@@ -737,8 +726,33 @@ void JSPosManagerTab::jsonPosFileDataReceived(const QJsonObject &j_result)
 
         t->item(i, STATE_COL)->setTextColor(Qt::black);
     }
+}
+void JSPosManagerTab::jsonTxBurnReceived(const QJsonObject &j_result)
+{
+    qDebug("JSPosManagerTab::jsonTxBurnReceived");
+    emit signalMsg("JSON_ANSWER RECEIVED: collect TX");
+    int row = m_tablePos->curSelectedRow();
+    QTableWidget *t = m_tablePos->table();
+    emit signalMsg(QString("PID: %1").arg(j_result.value("pid").toString()));
 
-    updateCurrentPrices();
+    bool is_simulate = (j_result.value("is_simulate").toString().trimmed().toLower() == "true");
+    QString tx_hash("IS_SIMULATE_MODE");
+    if (!is_simulate)
+    {
+        tx_hash = j_result.value("tx_hash").toString().trimmed().toLower();
+        t->item(row, LIQ_COL)->setTextColor("#DC143C");
+        emit signalMsg(QString("TX_HASH: %1").arg(tx_hash));
+        t->item(row, LIQ_COL)->setText(tx_hash);
+        t->item(row, STATE_COL)->setText("-");
+        LTable::setTableRowColor(t, row, Qt::red);
+
+        sendTxRecordToLog(row, j_result);
+    }
+    else
+    {
+        t->item(row, STATE_COL)->setText("BURN_SIMULATE_MODE");
+        emit signalMsg(QString("IS_SIMULATE_MODE"));
+    }
 }
 void JSPosManagerTab::jsonTxCollectReceived(const QJsonObject &j_result)
 {
@@ -753,8 +767,6 @@ void JSPosManagerTab::jsonTxCollectReceived(const QJsonObject &j_result)
     if (!is_simulate)
     {
         tx_hash = j_result.value("tx_hash").toString().trimmed().toLower();
-        //t->item(row, ASSETS_COL)->setText("?");
-        //t->item(row, REWARD_COL)->setText("?");
         t->item(row, LIQ_COL)->setTextColor("#DC143C");
         emit signalMsg(QString("TX_HASH: %1").arg(tx_hash));
         t->item(row, LIQ_COL)->setText(tx_hash);

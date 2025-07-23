@@ -54,7 +54,7 @@ protected:
 
     void initTables();
     void reloadPidListToTable(const QJsonArray&);
-    void updateCurrentPrices(); //запросить со страницы кошелька текущие цены активов
+    //void updateCurrentPrices(); //запросить со страницы кошелька текущие цены активов
 
     void initPopupMenu(); //инициализировать элементы всплывающего меню
     void sendIncreaseTx(const TxDialogData&, int);
@@ -76,6 +76,8 @@ protected:
     void jsonTxIncreaseReceived(const QJsonObject&);
     void jsonTxDecreaseReceived(const QJsonObject&);
     void jsonTxCollectReceived(const QJsonObject&);
+    void jsonTxBurnReceived(const QJsonObject&);
+
 
 protected slots:
     void slotGetPositionState();
@@ -89,6 +91,7 @@ protected slots:
 private:
     QString cellRangeToLogFormat(QString) const; //преобразовать формат range из ячейки к формату лог файла
     void tokenSizesToLogValues(QString, JSTxLogRecord&) const; //преобразовать формат объемов токенов из ячейки к полям записи JSTxLogRecord
+    void setToolTipAverageRangePrice(int); //задать ячейке с ценовым диапазоном всплывающую подсказку средней цены
 
 public slots:
     void slotScriptBroken(); //скрипт не выполнился, произошла ошибка и ответ содержит поле 'error'

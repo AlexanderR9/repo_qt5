@@ -130,6 +130,8 @@ protected slots:
     void slotApply();
     void slotRangeTypeChanged(int);
     void slotAmountsChanged();
+    void slotCalcAverageRangePrice();
+
 };
 
 

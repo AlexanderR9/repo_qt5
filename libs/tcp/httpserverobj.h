@@ -11,6 +11,7 @@ class QTcpSocket;
 struct LHttpReqParams
 {
     LHttpReqParams() {reset();}
+    LHttpReqParams(QString k, QString p) {reset(); kind = k; path = p;}
 
     QString kind; // get or post
     QString path; // example: some page.html or js file
@@ -24,21 +25,16 @@ struct LHttpReqParams
 };
 
 
-
-
 //класс LHttpServerObj нужен для обработки запросов http получаемых от обычного браузера для просмотра web страниц.
 //по сути реализует web сервер, который отдает страницы сайта для просмотра.
 //перед запуском прослушивания необходимо задать порт и переменную m_wwwPath (папка где лежит весь контент сайта).
 //processHttpReq - функция где происходит отбработка запроса и выдача ответа подключенному сокету, ее можно переопределить под свои задачи.
 //соединение между браузером и сервером строится на базе привычной связки  QTcpServer/QTcpSocket
-
-
 // LHttpServerObj
 class LHttpServerObj : public LTcpServerObj
 {
     Q_OBJECT
 public:
-    //LHttpServerObj(QObject *parent = NULL);
     LHttpServerObj(quint16, QObject *parent = NULL);
     virtual ~LHttpServerObj() {}
 
@@ -51,15 +47,12 @@ protected:
     virtual void parseHttpHeaders(const QStringList&, LHttpReqParams&); //обработать заголовки запроса и записать необходимые поля в структуру
     virtual void processHttpReq(const LHttpReqParams&); //обработать заголовки запроса и отправить страницу обратно в браузер по указанному сокету
 
-
 protected slots:
     virtual void slotServerNewConnection(); //произошло новое подключение к серверу
     virtual void slotServerError(); //произошла сетевая ошибка
     virtual void slotSocketDisconnected(); //выполняется когда клиент отключился
     virtual void slotSocketError(); //выполняется когда произошла сетевая ошибка у подключенного сокета
     virtual void slotSocketReadyRead(); //выполняется когда в сокет пришли данные от одного(любого) из подключенных сокетов
-
-
 
 };
 

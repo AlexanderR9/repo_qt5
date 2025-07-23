@@ -9,7 +9,6 @@
 #include <QDir>
 
 
-
 // LHttpServerObj constructor
 LHttpServerObj::LHttpServerObj(quint16 port, QObject *parent)
     :LTcpServerObj(parent),
@@ -21,16 +20,6 @@ LHttpServerObj::LHttpServerObj(quint16 port, QObject *parent)
     setMaxServerClients(1);
     setConnectionParams(QString(), port);
 }
-/*
-LHttpServerObj::LHttpServerObj(QObject *parent)
-    :LTcpServerObj(parent),
-      m_wwwPath("www")
-{
-    setObjectName("lhttp_server");
-    qDebug("LHttpServerObj created!");
-
-}
-*/
 void LHttpServerObj::httpReqReceived(int i_socket, const QByteArray &req_data)
 {
     if (i_socket < 0)
@@ -51,7 +40,7 @@ void LHttpServerObj::httpReqReceived(int i_socket, const QByteArray &req_data)
     }
 
     QString str_req = QString::fromUtf8(req_data).trimmed().toLower();
-    qDebug()<<QString("STR_REQ: %1").arg(str_req);
+   // qDebug()<<QString("STR_REQ: %1").arg(str_req);
     QStringList headers = LString::trimSplitList(str_req, "\r\n"); //разделить заголовки запроса
     if (headers.count() < 3)
     {
@@ -67,8 +56,11 @@ void LHttpServerObj::httpReqReceived(int i_socket, const QByteArray &req_data)
     parseHttpHeaders(headers, params);
 
     //diag debug
-    qDebug()<<QString("req headers %1").arg(headers.count());
-    foreach (const QString &v, headers) qDebug()<<"   "<<v;
+    //qDebug()<<QString("req headers %1").arg(headers.count());
+    //foreach (const QString &v, headers) qDebug()<<"   "<<v;
+    qDebug()<<QString("HEADERS: ");
+    if (headers.count() >= 2) {qDebug() << headers.at(0) << "\n" << headers.at(1);}
+
 
     processHttpReq(params);
 }
@@ -158,20 +150,15 @@ void LHttpServerObj::slotSocketError()
 }
 void LHttpServerObj::slotSocketReadyRead()
 {
+    qDebug("");
     QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
     if (!socket) qWarning("LHttpServerObj::slotSocketReadyRead() - WARNING: socket is null");
 
     QByteArray ba = socket->readAll();
     qDebug()<<QString("LHttpServerObj::slotSocketReadyRead(), socket[%1], data_size %2 bytes").arg(socket->objectName()).arg(ba.size());
     int i_socket = socketIndexOf(socket->objectName());
-    //emit signalMsg(QString("%0: readed bytes %1").arg(name()).arg(ba.count()));
-    //emit signalPackReceived(ba);
-
     httpReqReceived(i_socket, ba);
 }
-
-
-
 
 
 /////////////////////////////////////////////////////////
@@ -183,6 +170,8 @@ QString LHttpReqParams::replyContentType() const
     else if (path.endsWith(".css")) contentType = "text/css";
     else if (path.endsWith(".json")) contentType = "application/json";
     else if (path.endsWith(".png")) contentType = "image/png";
+    else if (path.endsWith(".svg")) contentType = "image/svg+xml";
+    else if (path.endsWith(".ico")) contentType = "image/x-icon";
     else if (path.endsWith(".jpg") || path.endsWith(".jpeg")) contentType = "image/jpeg";
     return contentType;
 }

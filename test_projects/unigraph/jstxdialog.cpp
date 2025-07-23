@@ -568,6 +568,16 @@ void TxMintPositionDialog::initMintFields()
     sw->comboBox->addItem(QString::number(0));
     sw->comboBox->addItem(QString::number(1));
 
+    //init price widgets
+    key = "avr_price";
+    this->addSimpleWidget("Average price", LSimpleDialog::sdtString, key, 2);
+    this->setWidgetValue(key, "0.0");
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+    QPalette plt = sw->edit->palette();
+    plt.setColor(QPalette::Base, "#F0E68C");
+    sw->edit->setPalette(plt);
+
     key = "price2";
     this->addSimpleWidget("Upper price", LSimpleDialog::sdtString, key, 2);
     this->setWidgetValue(key, "1.00");
@@ -581,6 +591,13 @@ void TxMintPositionDialog::initMintFields()
     sw->comboBox->addItem("price");
     sw->comboBox->addItem("tick");
     connect(sw->comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotRangeTypeChanged(int)));
+
+    key = "price1";
+    sw = this->widgetByKey(key);
+    connect(sw->edit, SIGNAL(textChanged(const QString&)), this, SLOT(slotCalcAverageRangePrice()));
+    key = "price2";
+    sw = this->widgetByKey(key);
+    connect(sw->edit, SIGNAL(textChanged(const QString&)), this, SLOT(slotCalcAverageRangePrice()));
 
 }
 void TxMintPositionDialog::init()
@@ -667,18 +684,37 @@ void TxMintPositionDialog::slotRangeTypeChanged(int index)
     qDebug()<<QString("TxMintPositionDialog::slotRangeTypeChanged  index %1").arg(index);
     if (index == 0)
     {
-        for (int i=4; i<=5; i++)
+        for (int i=5; i<=6; i++)
             m_mintParamsBox->layout()->itemAt(i)->widget()->hide();
-        for (int i=1; i<=3; i++)
+        for (int i=1; i<=4; i++)
             m_mintParamsBox->layout()->itemAt(i)->widget()->show();
     }
     else
     {
-        for (int i=4; i<=5; i++)
+        for (int i=5; i<=6; i++)
             m_mintParamsBox->layout()->itemAt(i)->widget()->show();
-        for (int i=1; i<=3; i++)
+        for (int i=1; i<=4; i++)
             m_mintParamsBox->layout()->itemAt(i)->widget()->hide();
     }
+}
+void TxMintPositionDialog::slotCalcAverageRangePrice()
+{
+    QString s_p1 = this->widgetValue("price1").toString();
+    QString s_p2 = this->widgetValue("price2").toString();
+
+    bool ok;
+    float p1 = s_p1.toFloat(&ok);
+    if (ok && p1 > 0)
+    {
+        float p2 = s_p2.toFloat(&ok);
+        if (ok && p2 > 0)
+        {
+            float a = (p1+p2)/2;
+            this->setWidgetValue("avr_price", QString::number(a, 'f', SubGraph_CommonSettings::interfacePrecision(a)));
+            return;
+        }
+    }
+    this->setWidgetValue("avr_price", QString("?"));
 }
 void TxMintPositionDialog::slotAmountsChanged()
 {
