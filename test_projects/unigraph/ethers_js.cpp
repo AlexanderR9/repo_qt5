@@ -447,9 +447,17 @@ void EthersPage::slotGetStateLiqPos()
 {
     qDebug("EthersPage::slotGetStateLiqPos()");
     emit signalMsg("");
-    emit signalMsg("Try get state of all liquitity positions ........");
-    m_tab->tab()->setCurrentWidget(m_posManagerPage);
-    m_posManagerPage->getAllLiqStates();
+    if (txPageNow())
+    {
+        emit signalMsg("Try get state of all waiting TX records ........");
+        m_txPage->getAllWaitingStates();
+    }
+    else
+    {
+        emit signalMsg("Try get state of all liquitity positions ........");
+        m_tab->tab()->setCurrentWidget(m_posManagerPage);
+        m_posManagerPage->getAllLiqStates();
+    }
 }
 
 

@@ -132,7 +132,8 @@ void JSPosManagerTab::parseJSResult(const QJsonObject &j_result)
     else if (operation == "collect") jsonTxCollectReceived(j_result);
     else if (operation == "burn") jsonTxBurnReceived(j_result);
 
-    m_tablePos->searchExec();
+    m_tablePos->resizeByContents();
+    //m_tablePos->searchExec();
 }
 void JSPosManagerTab::slotScriptBroken()
 {

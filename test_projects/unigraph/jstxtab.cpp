@@ -12,6 +12,7 @@
 #include <QTableWidgetItem>
 #include <QSplitter>
 #include <QDir>
+#include <QTimer>
 #include <QDebug>
 #include <QJsonObject>
 #include <QJsonValue>
@@ -23,11 +24,15 @@
 #define RESULT_COL              7
 #define FEE_COL                 6
 
+#define CHECK_STATE_TIMER_INTERVAL  700
+
 
 // JSTxTab
 JSTxTab::JSTxTab(QWidget *parent)
     :LSimpleWidget(parent, 10),
-      m_table(NULL)
+      m_table(NULL),
+      m_checkStateTimer(NULL),
+      js_running(false)
 {
     setObjectName("js_tx_tab");
 
@@ -36,6 +41,13 @@ JSTxTab::JSTxTab(QWidget *parent)
 
     // init context menu
     initPopupMenu();
+
+    //init state timer
+    m_checkStateTimer = new QTimer(this);
+    m_checkStateTimer->setInterval(CHECK_STATE_TIMER_INTERVAL);
+    m_checkStateTimer->stop();
+    connect(m_checkStateTimer, SIGNAL(timeout()), this, SLOT(slotCheckStateTimer()));
+
 
 }
 void JSTxTab::initTable()
@@ -212,7 +224,14 @@ void JSTxTab::slotTxStatus()
 {
   //  qDebug("JSTxTab::slotTxStatus()");
     int row = m_table->curSelectedRow();
-    if (row < 0) {emit signalError("You must select row"); return;}
+    if (row < 0)
+    {
+        emit signalError("You must select row");
+        if (m_checkStateTimer->isActive()) m_checkStateTimer->stop();
+        return;
+    }
+
+    js_running = true;
 
     QTableWidget *t = m_table->table();
     QString hash = t->item(row, HASH_COL)->text().trimmed();
@@ -245,6 +264,11 @@ void JSTxTab::parseJSResult(const QJsonObject &j_result)
     m_table->resizeByContents();
 
     addRecToLocalFile(rec);
+
+//--------------------------------------------------
+
+    emit signalMsg("\n\n\n");
+    js_running = false;
 }
 void JSTxTab::addRecToLocalFile(const JSTxRecord *rec)
 {
@@ -282,7 +306,55 @@ void JSTxTab::slotCheckTxResult(const QString &tx_hash, bool &ok)
         }
     }
 }
+void JSTxTab::getAllWaitingStates()
+{
+    qDebug("JSTxTab::getAllWaitingStates()");
+    if (tx_data.isEmpty())
+    {
+        emit signalError("TX list is empty");
+        emit signalEnableControls(false);
+        return;
+    }
 
+    js_running = false;
+    m_checkStateTimer->start();
+}
+void JSTxTab::slotCheckStateTimer()
+{
+    if (js_running) {qDebug("js_running"); return;}
+
+    QString next_hash = QString();
+    foreach (const JSTxRecord &rec, tx_data)
+    {
+        if (rec.txUnknown()) {next_hash = rec.hash; break;}
+    }
+    if (next_hash.isEmpty())
+    {
+        m_checkStateTimer->stop();
+        emit signalMsg("Getting TX states finished!");
+        emit signalEnableControls(true);
+        return;
+    }
+
+    emit signalMsg(QString("next TX_HASH: %1").arg(next_hash));
+    selectRowByHash(next_hash);
+    slotTxStatus();
+}
+void JSTxTab::selectRowByHash(const QString &v)
+{
+    QTableWidget *t = m_table->table();
+    t->clearSelection();
+    int n_row = t->rowCount();
+    for (int i=0; i<n_row; i++)
+    {
+        QString t_hash = t->item(i, HASH_COL)->text().trimmed();
+        if (t_hash == v.trimmed())
+        {
+            t->selectRow(i);
+            break;
+        }
+    }
+}
 
 
 ////////////////JSTxRecord//////////////////////

@@ -7,7 +7,7 @@
 
 class LTableWidgetBox;
 class QJsonObject;
-
+class QTimer;
 
 
 //JSTxRecord
@@ -52,10 +52,13 @@ public:
     void loadTxFromFile(QString); //загрузить список hash из файла
     inline int txCount() const {return tx_data.count();}
     void parseJSResult(const QJsonObject&);
+    void getAllWaitingStates(); //запросить состояние у всех записей, которые в режиме ожидания
 
 protected:
     LTableWidgetBox     *m_table;
     QList<JSTxRecord>    tx_data;
+    QTimer              *m_checkStateTimer; //таймер для опроса всех записей, которые в режиме ожидания
+    bool                 js_running;
 
 
     //информация загруженная из локального файла, содержит информацию только о завершенных транзакциях.
@@ -70,15 +73,20 @@ protected:
     JSTxRecord* recordByHash(QString);
     void updateTableRowByRecord(const JSTxRecord*);
     void addRecToLocalFile(const JSTxRecord *rec); //после получения ответа от nodejs добавить информацию в локальный файл
+    void selectRowByHash(const QString&);
+
+
 
 public slots:
     void slotCheckTxResult(const QString&, bool&); //выполняется для проверки успешности выполнения транзакции
 
 protected slots:
     void slotTxStatus();
+    void slotCheckStateTimer();
 
 signals:
     void signalCheckTx(const QStringList&);
+    void signalEnableControls(bool);
 
 };
 
