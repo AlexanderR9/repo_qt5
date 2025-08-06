@@ -599,6 +599,8 @@ void JSPosManagerTab::jsonPidListReceived(const QJsonObject &j_result)
 
     //next req, get pos_data from file
     rereadJSPosFileData();
+
+    m_tablePos->searchExec();
 }
 void JSPosManagerTab::jsonPosStateReceived(const QJsonObject &j_result)
 {

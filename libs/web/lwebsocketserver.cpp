@@ -159,6 +159,20 @@ quint8 LWebSocketServer::nextSocketNumber() const
 {
     if (m_clients.isEmpty()) return 1;
 
+    bool ok = false;
+    int max = 0;
+    foreach (const QWebSocket *socket, m_clients)
+    {
+        QString s_name = socket->objectName().trimmed();
+        int pos = s_name.lastIndexOf("_");
+        if (pos > 0)
+        {
+            quint8 n = LString::strTrimLeft(s_name, pos+1).trimmed().toUInt(&ok);
+            if (ok && n > max) return max = n;
+        }
+    }
+    return (max+1);
+    /*
     const QWebSocket *socket = m_clients.last();
     if (!socket) return 1;
     QString s_name = socket->objectName().trimmed();
@@ -169,6 +183,7 @@ quint8 LWebSocketServer::nextSocketNumber() const
     quint8 n = LString::strTrimLeft(s_name, pos+1).trimmed().toUInt(&ok);
     if (!ok || n < 1) return 1;
     return (n + 1);
+    */
 }
 QString LWebSocketServer::nextSocketName() const
 {
