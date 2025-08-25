@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QColor>
+#include <QDateTime>
 
 
 class QTableWidget;
@@ -45,6 +46,17 @@ public:
     //в 3-й параметр запишется индекс строки с найденным значением.
     static double minNumericColValue(QTableWidget*, int, int&, int row_first = -1);
     static double maxNumericColValue(QTableWidget*, int, int&, int row_first = -1);
+
+    //найти минимальное/максимальное значение QDateTime в заданном столбце.
+    //если row_first > 0 то поиск начинается с этой строки.
+    //значения в столбце должны быть датой и временем, некорректные значения игнорируются.
+    //в 3-й параметр запишется индекс строки с найденным значением.
+    //dt_mask необходимо задавать в формате из двух частей d[<date mask>] и d[<time mask>], причем слагаемых может быть только одно(любое),
+    //а так же важна последовательность этих двух слагаемых маски.
+    //вслучае невалидных параметров вернет пустую QDateTime()
+    //в ячейках перед преведением значения даты/время всякие посмотронние символы типа '(' будут удаляться
+    static QDateTime minDTColValue(QTableWidget*, int, int&, int row_first = -1, QString dt_mask = "d[dd.MM.yyyy] t[hh:mm]");
+    static QDateTime maxDTColValue(QTableWidget*, int, int&, int row_first = -1, QString dt_mask = "d[dd.MM.yyyy] t[hh:mm]");
 
 };
 

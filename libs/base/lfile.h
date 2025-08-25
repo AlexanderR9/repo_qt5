@@ -42,6 +42,16 @@ public:
     static QString fileExtension(QString);
     //возращает путь к файлу или пустую строку если файл указан некорректно
     static QString filePath(QString);
+    //вернет true если файл с рассширением '.xml'
+    static bool isXmlFile(QString);
+    //вернет true если файл с рассширением '.txt'
+    static bool isTxtFile(QString);
+    //вернет true если файл с рассширением '.js'
+    static bool isJsFile(QString);
+    //вернет true если файл с рассширением '.json'
+    static bool isJsonFile(QString);
+    //вернет true если файл с рассширением '.html'
+    static bool isHtmlFile(QString);
 
     //возвращает путь запуска своего приложения
     static QString appPath();

@@ -6,6 +6,9 @@
 #include <QTime>
 #include <QDebug>
 #include <QtMath>
+#include <QCryptographicHash>
+#include <QByteArray>
+
 
 
 /////////////////////////////////
@@ -247,7 +250,30 @@ quint64 LMath::rolloverOrderUint64(quint64 a)
     }
     return b;
 }
+QByteArray LMath::calcHMACSha256(QByteArray key, QByteArray baseString)
+{
+    QCryptographicHash::Algorithm metod = QCryptographicHash::Sha256;
+    int blockSize = 64; // HMAC-SHA-1 block size, defined in SHA-1 standard
+    if (key.length() > blockSize) // if key is longer than block size (64), reduce key length with SHA-1 compression
+    {
+        //qDebug("key.length() > blockSize");
+        key = QCryptographicHash::hash(key, metod);
+    }
 
+    QByteArray innerPadding(blockSize, char(0x36)); // initialize inner padding with char "6"
+    QByteArray outerPadding(blockSize, char(0x5c)); // initialize outer padding with char "quot;
+    for (int i = 0; i < key.length(); i++)
+    {
+        innerPadding[i] = innerPadding[i] ^ key.at(i); // XOR operation between every byte in key and innerpadding, of key length
+        outerPadding[i] = outerPadding[i] ^ key.at(i); // XOR operation between every byte in key and outerpadding, of key length
+    }
+
+     QByteArray total = outerPadding;
+     QByteArray part = innerPadding;
+     part.append(baseString);
+     total.append(QCryptographicHash::hash(part, metod));
+     return QCryptographicHash::hash(total, metod);
+}
 
 quint16 LMath::uint16FromBA(const QByteArray &ba, quint16 pos)
 {

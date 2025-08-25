@@ -1,10 +1,12 @@
 #include "ltable.h"
+#include "lstring.h"
 
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QStringList>
 #include <QColor>
 #include <QDebug>
+#include <QDateTime>
 
 
 void LTable::insertTableRow(int index, QTableWidget *table, const QStringList &list, int align, QColor cf, QColor cb)
@@ -252,6 +254,7 @@ double LTable::minNumericColValue(QTableWidget *table, int col, int &value_row, 
         QString s = table->item(i, col)->text().trimmed();
         s.replace(QString("%"), QString());
         s.replace(QString("+"), QString());
+        s.replace(QString("days"), QString());
         double v = s.toDouble(&ok);
         if (!ok) qWarning()<<QString("LTable::minNumericColValue WARNING - invalid numeric value %1, row %2").arg(table->item(i, col)->text()).arg(i);
         else if (!find_first) {min = v; value_row = i; find_first = true;}
@@ -277,9 +280,105 @@ double LTable::maxNumericColValue(QTableWidget *table, int col, int &value_row, 
         QString s = table->item(i, col)->text().trimmed();
         s.replace(QString("%"), QString());
         s.replace(QString("+"), QString());
+        s.replace(QString("days"), QString());
         double v = s.toDouble(&ok);
         if (!ok) qWarning()<<QString("LTable::maxNumericColValue WARNING - invalid numeric value %1, row %2").arg(table->item(i, col)->text()).arg(i);
         else if (!find_first) {max = v; value_row = i; find_first = true;}
+        else if (v > max) {max = v; value_row = i;}
+    }
+    return max;
+}
+QDateTime LTable::minDTColValue(QTableWidget *table, int col, int &value_row, int row_first, QString dt_mask)
+{
+    value_row = -1;
+    if (!table || col < 0 || col >= table->columnCount() || dt_mask.trimmed().isEmpty()) return QDateTime();
+    int n = table->rowCount();
+    if (n <= 0 || row_first >= n)  return QDateTime();
+
+    int start_row = 0;
+    if (row_first > 0) start_row = row_first;
+
+    int pos1 = dt_mask.indexOf("d[");
+    int pos2 = dt_mask.indexOf("t[");
+    if (pos1 < 0 && pos2 < 0) return QDateTime();
+    //qDebug()<<QString("dt_mask[%1]  pos1=%2  pos2=%3").arg(dt_mask).arg(pos1).arg(pos2);
+
+    QString t_mask = LString::strBetweenStr(dt_mask, "t[", "]").trimmed();
+    QString d_mask = LString::strBetweenStr(dt_mask, "d[", "]").trimmed();
+    if (d_mask.isEmpty() && t_mask.isEmpty()) return QDateTime();
+
+    if (d_mask.isEmpty()) dt_mask = t_mask.trimmed();
+    else if (t_mask.isEmpty()) dt_mask = d_mask.trimmed();
+    else
+    {
+        if (pos1 < pos2) dt_mask = QString("%1 %2").arg(d_mask.trimmed()).arg(t_mask.trimmed());
+        else  dt_mask = QString("%1 %2").arg(t_mask.trimmed()).arg(d_mask.trimmed());
+    }
+
+    ////////////////////////////////////////////////
+    // check table cells
+    QDateTime min = QDateTime();
+    for (int i=start_row; i<n; i++)
+    {
+        QString s = table->item(i, col)->text().trimmed();
+        s.replace(QString("days"), QString());
+        s.replace(QString("("), QString());
+        s.replace(QString(")"), QString());
+        s.replace(QString("["), QString());
+        s.replace(QString("]"), QString());
+        s = LString::removeLongSpaces(s);
+        QDateTime v = QDateTime::fromString(s, dt_mask);
+        if (!v.isValid())
+        {
+            //qDebug()<<QString("result date mask [%1]  d_mask[%2]   t_mask[%3]").arg(dt_mask).arg(d_mask).arg(t_mask);
+            qWarning()<<QString("LTable::minDTColValue WARNING - invalid DT value %1(%2), row %3").arg(table->item(i, col)->text()).arg(s).arg(i);
+        }
+        else if (!min.isValid()) {min = v; value_row = i;}
+        else if (v < min) {min = v; value_row = i;}
+    }
+    return min;
+}
+QDateTime LTable::maxDTColValue(QTableWidget *table, int col, int &value_row, int row_first, QString dt_mask)
+{
+    value_row = -1;
+    if (!table || col < 0 || col >= table->columnCount() || dt_mask.trimmed().isEmpty()) return QDateTime();
+    int n = table->rowCount();
+    if (n <= 0 || row_first >= n)  return QDateTime();
+
+    int start_row = 0;
+    if (row_first > 0) start_row = row_first;
+
+    int pos1 = dt_mask.indexOf("d[");
+    int pos2 = dt_mask.indexOf("t[");
+    if (pos1 < 0 && pos2 < 0) return QDateTime();
+
+    QString d_mask = LString::strBetweenStr(dt_mask, "d[", "]").trimmed();
+    QString t_mask = LString::strBetweenStr(dt_mask, "t[", "]").trimmed();
+    if (d_mask.isEmpty() && t_mask.isEmpty()) return QDateTime();
+
+    if (d_mask.isEmpty()) dt_mask = t_mask.trimmed();
+    else if (t_mask.isEmpty()) dt_mask = d_mask.trimmed();
+    else
+    {
+        if (pos1 < pos2) dt_mask = QString("%1 %2").arg(d_mask.trimmed()).arg(t_mask.trimmed());
+        else  dt_mask = QString("%1 %2").arg(t_mask.trimmed()).arg(d_mask.trimmed());
+    }
+
+    ////////////////////////////////////////////////
+    // check table cells
+    QDateTime max = QDateTime();
+    for (int i=start_row; i<n; i++)
+    {
+        QString s = table->item(i, col)->text().trimmed();
+        s.replace(QString("days"), QString());
+        s.replace(QString("("), QString());
+        s.replace(QString(")"), QString());
+        s.replace(QString("["), QString());
+        s.replace(QString("]"), QString());
+        s = LString::removeLongSpaces(s);
+        QDateTime v = QDateTime::fromString(s, dt_mask);
+        if (!v.isValid()) qWarning()<<QString("LTable::maxDTColValue WARNING - invalid DT value %1, row %2").arg(table->item(i, col)->text()).arg(i);
+        else if (!max.isValid()) {max = v; value_row = i;}
         else if (v > max) {max = v; value_row = i;}
     }
     return max;

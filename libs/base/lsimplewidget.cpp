@@ -260,6 +260,29 @@ void LTableWidgetBox::slotSortNumeric(quint8 col, int order)
         }
     }
 }
+void LTableWidgetBox::slotSortDate(quint8 col, int order)
+{
+    int row = -1;
+    int n_rows = m_table->rowCount();
+    if (order == 0)
+    {
+        QDateTime min;
+        for (int i=0; i<n_rows; i++)
+        {
+            min = LTable::minDTColValue(m_table, col, row, i);
+            if (min.isValid() && row > 0) LTable::shiftTableRowToBegin(m_table, row);
+        }
+    }
+    else
+    {
+        QDateTime max;
+        for (int i=0; i<n_rows; i++)
+        {
+            max = LTable::maxDTColValue(m_table, col, row, i);
+            if (max.isValid() && row > 0) LTable::shiftTableRowToBegin(m_table, row);
+        }
+    }
+}
 void LTableWidgetBox::slotSortByColumn(int col)
 {
   //  qDebug()<<QString("slotSortByColumn %1").arg(col);
@@ -277,6 +300,8 @@ void LTableWidgetBox::slotSortByColumn(int col)
     {
         case sdtString: {slotSortString(col, sort_order); break;}
         case sdtNumeric: {slotSortNumeric(col, sort_order); break;}
+        case sdtDate: {slotSortDate(col, sort_order); break;}
+        case sdtCustom: {slotSortCustom(col, sort_order); break;}
         default: {qWarning()<<QString("LTableWidgetBox::slotSortByColumn WARNING invalid sort_type %1").arg(m_sortingData.value(col)); break;}
     }
 
@@ -451,6 +476,14 @@ void LListWidgetBox::setBaseColor(QString bg_color, QString text_color)
     if (m_listWidget)
     {
         QString style_value = QString("color: %1; background-color: %2;").arg(text_color).arg(bg_color);
+        m_listWidget->setStyleSheet(style_value);
+    }
+}
+void LListWidgetBox::setFontSizeItems(int fs)
+{
+    if (m_listWidget)
+    {
+        QString style_value = QString("font-size: %1px; ").arg(fs);
         m_listWidget->setStyleSheet(style_value);
     }
 }
@@ -829,4 +862,12 @@ int LTabWidgetBox::pageCount() const
 {
     return m_tab->count();
 }
+void LTabWidgetBox::setBorderNone()
+{
+    this->setTitle(QString());
+    this->setFlat(true);
+    this->setContentsMargins(0, 0, 0, 0);
+    m_tab->setContentsMargins(0, 0, 0, 0);
+}
+
 

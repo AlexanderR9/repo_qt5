@@ -108,7 +108,7 @@ class LTableWidgetBox : public QGroupBox
 {
     Q_OBJECT
 public:
-    enum SortingDataType {sdtString = 555, sdtNumeric};
+    enum SortingDataType {sdtString = 555, sdtNumeric, sdtDate, sdtCustom};
 
     LTableWidgetBox(QWidget *parent = NULL, int type = 1);
     virtual ~LTableWidgetBox() {destroyPopupMenu();}
@@ -136,8 +136,10 @@ protected:
     QList<QAction*> m_popupMenuActions; //пункты всплывающего меню, поумолчанию список пуст, активируются методом popumMenuActivate
 
     void init();
-    void slotSortString(quint8 col, int order);
-    void slotSortNumeric(quint8 col, int order);
+    virtual void slotSortString(quint8 col, int order);
+    virtual void slotSortNumeric(quint8 col, int order);
+    virtual void slotSortDate(quint8 col, int order);
+    virtual void slotSortCustom(quint8 col, int order) {} //какая-то необычная сортировка, нужно переопределить в классе своего проекта
 
     virtual void destroyPopupMenu(); //уничтожает реализацию вплывающего меню (если она была активирована)
     virtual void connectPopupActionSlots() {qDebug("invoke connectPopupActionSlots()");} //эту функцию необходимо переопределить если активировано всплывающее меню, нужно подключить свои слоты к элементам m_popupMenuActions
@@ -191,6 +193,7 @@ public:
     void setRowTextColor(quint16, QString);
     void setSelectionColor(QString background_color, QString text_color = "#000000");
     void setBaseColor(QString background_color, QString text_color = "#000000");
+    void setFontSizeItems(int);
     void addItem(QString text, QString icon_path = QString());
     void removeItemByValue(QString text);
     void setSelectionMode(int, int); //params: SelectionBehavior, SelectionMode
@@ -293,6 +296,7 @@ public:
 
     QTabWidget* tab() const {return m_tab;}
     void removeAllPages(); //уничтожает объекты-страницы из памяти и очищает сам m_tab
+    void setBorderNone(); // удаляет рамку QGroupBox и отступы margin, растягивая m_tab на всю площадь
     int pageCount() const;
     inline bool hasPages() const {return (pageCount() > 0);}
 

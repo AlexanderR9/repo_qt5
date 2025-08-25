@@ -1,0 +1,12 @@
+pool_v3.pro.user
+*.debug
+.qmake.stash
+moc
+obj
+Makefile
+full_clear
+data
+save
+*.tar.gz
+poolsv3
+

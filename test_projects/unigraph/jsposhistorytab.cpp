@@ -61,9 +61,9 @@ void JSPosHistoryTab::initTable()
     h_splitter->addWidget(m_table);
     m_table->searchExec();
 
-   // m_table->sortingOn();
-   // m_table->addSortingData(LIQ_COL, LTableWidgetBox::sdtNumeric);
-   // m_table->addSortingData(POOL_COL, LTableWidgetBox::sdtString);
+    m_table->sortingOn();
+    m_table->addSortingData(OPEN_TIME_COL, LTableWidgetBox::sdtDate);
+    m_table->addSortingData(T_LIFE_COL, LTableWidgetBox::sdtNumeric);
 
 }
 void JSPosHistoryTab::loadTxLogFile(QString chain)

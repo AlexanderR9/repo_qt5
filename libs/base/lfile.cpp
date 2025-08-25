@@ -102,6 +102,31 @@ QString LFile::fileExtension(QString full_name)
     if (pos < 0 || pos == (fname.length()-1)) return QString();
     return fname.right(fname.length()-pos-1);
 }
+bool LFile::isXmlFile(QString full_name)
+{
+    if (full_name.trimmed().length() < 4) return false;
+    return (LFile::fileExtension(full_name) == "xml");
+}
+bool LFile::isTxtFile(QString full_name)
+{
+    if (full_name.trimmed().length() < 4) return false;
+    return (LFile::fileExtension(full_name) == "txt");
+}
+bool LFile::isJsFile(QString full_name)
+{
+    if (full_name.trimmed().length() < 4) return false;
+    return (LFile::fileExtension(full_name) == "js");
+}
+bool LFile::isJsonFile(QString full_name)
+{
+    if (full_name.trimmed().length() < 5) return false;
+    return (LFile::fileExtension(full_name) == "json");
+}
+bool LFile::isHtmlFile(QString full_name)
+{
+    if (full_name.trimmed().length() < 5) return false;
+    return (LFile::fileExtension(full_name) == "html");
+}
 QString LFile::rootPath(QString full_name)
 {
     if (full_name.trimmed().isEmpty()) return QString();

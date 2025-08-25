@@ -1,0 +1,13 @@
+#!/bin/bash
+
+L_PATH=../../libs
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$L_PATH/base/build
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$L_PATH/web/build
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$L_PATH/process/build
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$L_PATH/uniswap/build
+
+#export PATH LD_LIBRARY_PATH
+export LD_LIBRARY_PATH
+
+
+./poolsv3

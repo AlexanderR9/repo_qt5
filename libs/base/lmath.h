@@ -5,6 +5,8 @@
  #include "qlist.h"
  #include "qvector.h"
 
+class QByteArray;
+
 union floatUnion
 {
     float f;
@@ -94,6 +96,9 @@ public:
     static float floatFromBA(const QByteArray&, quint16);
     static double doubleFromBA(const QByteArray&, quint16);
 
+
+    //рассчет подписи для идентификации
+    static QByteArray calcHMACSha256(QByteArray, QByteArray);
 
 private:
     static QString alignStrBA(const QString&, int, bool);
