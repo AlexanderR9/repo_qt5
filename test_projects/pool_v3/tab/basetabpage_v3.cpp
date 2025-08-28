@@ -1,5 +1,6 @@
 #include "basetabpage_v3.h"
 #include "deficonfig.h"
+#include "appcommonsettings.h"
 
 #include <QSettings>
 #include <QSplitter>
@@ -17,18 +18,6 @@ BaseTabPage_V3::BaseTabPage_V3(QWidget *parent, int t_lay, int page_kind)
 {
     setObjectName("v3_chain_tab_page");
     m_userSign = page_kind;
-
-    /*
-    m_reqData = new UG_APIReqParams();
-    m_reqData->req_type = m_userSign;
-
-    m_updateTime = QTime();
-
-    m_timer = new QTimer();
-    connect(m_timer, SIGNAL(timeout()), this, SLOT(slotTimer()));
-    m_timer->stop();
-    */
-
 }
 void BaseTabPage_V3::setChain(int chain_id)
 {
@@ -56,4 +45,19 @@ void BaseTabPage_V3::save(QSettings &settings)
     if (h_splitter)
         settings.setValue(QString("%1/%2/h_spltitter_state").arg(userData()).arg(objectName()), h_splitter->saveState());
 }
+void BaseTabPage_V3::sendReadNodejsRequest(const QJsonObject &j_params)
+{
+    emit signalRewriteJsonFile(j_params, AppCommonSettings::readParamsNodeJSFile()); //rewrite params json-file
 
+    QStringList args;
+    args << "reader.js" << AppCommonSettings::readParamsNodeJSFile();
+    emit signalRunNodejsBridge(j_params.value(AppCommonSettings::nodejsReqFieldName()).toString(), args);
+}
+void BaseTabPage_V3::sendTxNodejsRequest(const QJsonObject &j_params)
+{
+    emit signalRewriteJsonFile(j_params, AppCommonSettings::txParamsNodeJSFile()); //rewrite params json-file
+
+    QStringList args;
+    args << "tx_writer.js" << AppCommonSettings::txParamsNodeJSFile();
+    emit signalRunNodejsBridge(j_params.value(AppCommonSettings::nodejsReqFieldName()).toString(), args);
+}

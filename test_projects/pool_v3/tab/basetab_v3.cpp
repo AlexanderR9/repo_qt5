@@ -10,6 +10,10 @@
 #include <QSplitter>
 #include <QTabWidget>
 #include <QJsonObject>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
 
 
 #define STATE_TIMER_INTERVAL        700 //ms
@@ -30,7 +34,9 @@ DefiChainTabV3::DefiChainTabV3(QWidget *parent, int chain_id)
 
     //this->setContentsMargins(0, 0, 0, 0);
     initTab();
+    initReqStateWidget();
     initJsBridgeObj();
+    this->layout()->setMargin(0);
 
     m_timer = new QTimer(this);
     m_timer->setInterval(STATE_TIMER_INTERVAL);
@@ -47,19 +53,26 @@ void DefiChainTabV3::initJsBridgeObj()
     //connect(js_bridge, SIGNAL(signalNodejsReply(const QJsonObject&)), this, SLOT(slotNodejsReply(const QJsonObject&)));
 
 }
-/*
-void DefiChainTabV3::slotNodejsReply(const QJsonObject &js_reply)
-{
-
-}
-*/
-
 void DefiChainTabV3::slotJSScriptFinished(int code)
 {
     qDebug("DefiChainTabV3::slotJSScriptFinished()");
     qDebug()<<QString("result code %1").arg(code);
     stopUpdating();
 
+    QPalette p = m_reqStateEdit->palette();
+    QString result = "OK";
+    if (code != 0)
+    {
+        emit signalError("DefiChainTabV3: js_bridge finished code fault");
+        result = "FAULT";
+        p.setColor(QPalette::Text, Qt::red);
+    }
+    else
+    {
+        p.setColor(QPalette::Text, Qt::blue);
+    }
+    m_reqStateEdit->setPalette(p);
+    m_reqStateEdit->setText(QString("script finished, result %1").arg(result));
 }
 void DefiChainTabV3::slotTabsPricesUpdate()
 {
@@ -113,10 +126,30 @@ void DefiChainTabV3::initTab()
 {
     m_tab = new LTabWidgetBox(this);
     m_tab->removeAllPages();
-    m_tab->setBorderNone();
+    m_tab->setTitle("Chain page");
+    //m_tab->setBorderNone();
     tabWidget()->setObjectName(QString("tab_widget_%1").arg(chainId()));
 
     h_splitter->addWidget(m_tab);
+    //m_tab->layout()->setMargin(4);
+    m_tab->layout()->setSpacing(0);
+}
+void DefiChainTabV3::initReqStateWidget()
+{
+    QWidget *req_w = new QWidget(this);
+    m_tab->layout()->addWidget(req_w);
+
+    if (req_w->layout()) delete req_w->layout();
+    req_w->setLayout(new QHBoxLayout(0));
+    m_tab->layout()->setMargin(0);
+
+    req_w->layout()->addWidget(new QLabel("REQUEST STATE:"));
+
+    m_reqStateEdit = new QLineEdit(this);
+    m_reqStateEdit->setReadOnly(true);
+    req_w->layout()->addWidget(m_reqStateEdit);
+    //req_w->layout()->setContentsMargins(10, 0, 10, 4);
+    req_w->layout()->setMargin(2);
 }
 QTabWidget* DefiChainTabV3::tabWidget() const
 {
@@ -142,10 +175,12 @@ void DefiChainTabV3::startUpdating()
     BaseTabPage_V3 *page = qobject_cast<BaseTabPage_V3*>(tabWidget()->currentWidget());
     if (!page) {emit signalError("current tab page is null"); return;}
 
-
+    /*
+    if (js_bridge->buzy())  {emit signalError("nodejs bridge is buzy"); return;}
     emit signalEnableControls(false);
     m_timerCounter = 0;
     m_timer->start();
+    */
 
     page->sendUpdateDataRequest();
 }
@@ -162,13 +197,37 @@ void DefiChainTabV3::connectPageSignals()
         BaseTabPage_V3 *w = qobject_cast<BaseTabPage_V3*>(tabWidget()->widget(i));
         if (w)
         {
+            w->setChain(chainId());
             connect(w, SIGNAL(signalRewriteJsonFile(const QJsonObject&, QString)), this, SIGNAL(signalRewriteJsonFile(const QJsonObject&, QString)));
-            connect(w, SIGNAL(signalRunNodejsBridge(const QStringList&)), js_bridge, SLOT(slotRunScriptArgs(const QStringList&)));
+            //connect(w, SIGNAL(signalRunNodejsBridge(const QStringList&)), js_bridge, SLOT(slotRunScriptArgs(const QStringList&)));
+            connect(w, SIGNAL(signalRunNodejsBridge(QString, const QStringList&)), this, SLOT(slotPageSendReq(QString, const QStringList&)));
             connect(js_bridge, SIGNAL(signalNodejsReply(const QJsonObject&)), w, SLOT(slotNodejsReply(const QJsonObject&)));
         }
     }
 }
+void DefiChainTabV3::slotPageSendReq(QString req_name, const QStringList &js_args)
+{
+    QPalette p = m_reqStateEdit->palette();
+    if (js_bridge->buzy())
+    {
+        emit signalError("nodejs bridge is buzy");
+        p.setColor(QPalette::Text, Qt::red);
+        m_reqStateEdit->setPalette(p);
+        m_reqStateEdit->setText("nodejs bridge is buzy");
+        return;
+    }
 
+    p.setColor(QPalette::Text, "#A0A080");
+    m_reqStateEdit->setPalette(p);
+    m_reqStateEdit->setText(QString("start, req_name=%1 ..........").arg(req_name));
+
+    emit signalEnableControls(false);
+    m_timerCounter = 0;
+    m_timer->start();
+
+    emit signalMsg("\n\n\n[STARTED PAGE JS_REQUEST]");
+    js_bridge->slotRunScriptArgs(js_args);
+}
 
 void DefiChainTabV3::load(QSettings &settings)
 {
@@ -195,33 +254,6 @@ void DefiChainTabV3::save(QSettings &settings)
     }
 }
 
-
-/*
-bool UG_BasePage::updatingRunning() const
-{
-    return m_timer->isActive();
-}
-void UG_BasePage::reset()
-{
-    if (m_reqData) {delete m_reqData; m_reqData = NULL;}
-}
-void UG_BasePage::sendRequest(QString name_extra)
-{
-    m_reqData->name = UG_APIReqParams::strReqTypeByType(m_reqData->req_type, name_extra);
-    //m_reqData->is_running = true;
-    emit signalMsg(QString("QUERY: %1").arg(m_reqData->query));
-    emit signalSendReq(m_reqData);
-}
-bool UG_BasePage::updateTimeOver(bool forcibly)
-{
-    QTime ct = QTime::currentTime();
-    if (minUpdatingInterval() < 3) return false;
-    if (!m_updateTime.isValid() || forcibly) {m_updateTime = ct; return true;}
-    if (m_updateTime.secsTo(ct) > minUpdatingInterval()) {m_updateTime = ct; return true;}
-    return false;
-}
-
-*/
 
 
 

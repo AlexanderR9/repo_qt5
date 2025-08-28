@@ -124,7 +124,7 @@ public:
     int curSelectedRow() const; //индекс текущей выделенной строки или -1, если выделено несколько строк, то вернет индекс 1-й из них
 
     //реализация всплывающего меню для таблицы по клику ПКМ  (поумолчанию эта функциональность отключена)
-    virtual void popupMenuActivate(const QList< QPair<QString, QString> >&); //активация всплывающего меню, необходимо передать набор пар <название, путь к иконке> , путь к иконке может быть пустым
+    virtual void popupMenuActivate(const QList< QPair<QString, QString> >&, bool need_row_selection = true); //активация всплывающего меню, необходимо передать набор пар <название, путь к иконке> , путь к иконке может быть пустым
     inline int popupMenuSize() const {return m_popupMenuActions.count();} //количество инициализированных пуктов меню
     void connectSlotToPopupAction(int, QObject*, const char*); //для соединения со слотами внешнего объекта-хозяина необходимо вызвать этот метод для каждого пункта меню, указав индекс пункта
 
@@ -134,12 +134,13 @@ protected:
     QTableWidget    *m_table;
     QMap<quint8, SortingDataType> m_sortingData; //данные которые указывают какие столбцы должны реагировать на сортировку
     QList<QAction*> m_popupMenuActions; //пункты всплывающего меню, поумолчанию список пуст, активируются методом popumMenuActivate
+    bool m_popupNeedSelection; // признак, нужно ли выделять строки при активации всплывающего меню (иначе меню работает для всей таблицы)
 
     void init();
     virtual void slotSortString(quint8 col, int order);
     virtual void slotSortNumeric(quint8 col, int order);
     virtual void slotSortDate(quint8 col, int order);
-    virtual void slotSortCustom(quint8 col, int order) {} //какая-то необычная сортировка, нужно переопределить в классе своего проекта
+    virtual void slotSortCustom(quint8, int) {} //какая-то необычная сортировка, нужно переопределить в классе своего проекта
 
     virtual void destroyPopupMenu(); //уничтожает реализацию вплывающего меню (если она была активирована)
     virtual void connectPopupActionSlots() {qDebug("invoke connectPopupActionSlots()");} //эту функцию необходимо переопределить если активировано всплывающее меню, нужно подключить свои слоты к элементам m_popupMenuActions

@@ -2,6 +2,8 @@
 #include "deficonfig.h"
 #include "basetab_v3.h"
 #include "wallettabpage.h"
+#include "approvepage.h"
+#include "txpage.h"
 #include "appcommonsettings.h"
 #include "lfile.h"
 #include "lhttp_types.h"
@@ -35,7 +37,6 @@ CentralWidgetV3::CentralWidgetV3(QWidget *parent)
     setObjectName("central_widget_v3");
 
     init();
-
 }
 void CentralWidgetV3::initHttpRequester()
 {
@@ -60,13 +61,6 @@ void CentralWidgetV3::slotSendHttpReq()
     QString params;
     int pos = LString::strIndexOfByEnd(AppCommonSettings::bbGetPricesUri(), "?");
     if (pos > 0) params = LString::strTrimLeft(AppCommonSettings::bbGetPricesUri(), pos);
-
-
-    //QString symbol_params = "symbol=LDOUSDTPOLUSDT";
-    //QString symbol_params = "symbol=POLUSDT&val2=ETHUSDT&val3=LDOUSDT";
-    //params = QString("%1&%2").arg(params).arg(symbol_params);
-    //http_requester->setUri(QString("%1&%2").arg(AppCommonSettings::bbGetPricesUri()).arg(symbol_params));
-
 
     // prepare/update headers
     qint64 ts = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
@@ -232,7 +226,7 @@ void CentralWidgetV3::loadDefiData()
         connect(tab, SIGNAL(signalRewriteJsonFile(const QJsonObject&, QString)), this, SLOT(slotRewriteJsonFile(const QJsonObject&, QString)));
         connect(tab, SIGNAL(signalEnableControls(bool)), this, SIGNAL(signalEnableControls(bool)));
         connect(this, SIGNAL(signalTabsPricesUpdate()), tab, SLOT(slotTabsPricesUpdate()));
-        connect(tab, SIGNAL(signalGetPrices()), this, SLOT(slotSendHttpReq()));
+        //connect(tab, SIGNAL(signalGetPrices()), this, SLOT(slotSendHttpReq()));
     }
 }
 void CentralWidgetV3::createTabPages(int chain_id)
@@ -244,13 +238,21 @@ void CentralWidgetV3::createTabPages(int chain_id)
     int i_chain = defi_config.chainIndexOf(chain_id);
     if (i_chain >= 0) chain_icon = defi_config.chains.at(i_chain).fullIconPath();
 
-    //create pages
-    DefiWalletTabPage *page = new DefiWalletTabPage(this);
-    page->setChain(chain_id);
-    tab->tabWidget()->addTab(page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(page->kind()));
-    page->initTokenList(chain_id);
+    //////////////// create pages /////////////////////
 
-    connect(page, SIGNAL(signalGetPrices()), tab, SIGNAL(signalGetPrices()));
+    //wallet
+    DefiWalletTabPage *w_page = new DefiWalletTabPage(this);
+    tab->tabWidget()->addTab(w_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(w_page->kind()));
+    //connect(w_page, SIGNAL(signalGetPrices()), tab, SIGNAL(signalGetPrices()));
+    connect(w_page, SIGNAL(signalGetPrices()), this, SLOT(slotSendHttpReq()));
+
+    //approve
+    DefiApproveTabPage *a_page = new DefiApproveTabPage(this);
+    tab->tabWidget()->addTab(a_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(a_page->kind()));
+
+    //tx
+    DefiTxTabPage *tx_page = new DefiTxTabPage(this);
+    tab->tabWidget()->addTab(tx_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(tx_page->kind()));
 
 }
 const DefiChainTabV3* CentralWidgetV3::tabByChain(int chain_id) const

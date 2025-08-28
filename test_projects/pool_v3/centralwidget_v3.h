@@ -49,9 +49,6 @@ protected slots:
 
 public slots:
     void slotSendHttpReq(); //выполнить запрос цен
-    //void slotEnableControls(bool);
-    //void slotBreakUpdating();
-
 
 signals:
     void signalEnableControls(bool);

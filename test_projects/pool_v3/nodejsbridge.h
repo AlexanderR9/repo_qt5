@@ -9,12 +9,6 @@ class QStringList;
 
 
 
-//описание всех возможных запросов к сети на чтение
-enum NodejsReadCommand {nrcBalance = 1320, nrcTXCount, nrcApproved, nrcGasPrice, nrcChainID,
-                        nrcTXStatus};
-
-
-
 //класс для взаимодействия со скриптами nodejs.
 //NodejsBridge
 class NodejsBridge : public LSimpleObject
@@ -23,6 +17,8 @@ class NodejsBridge : public LSimpleObject
 public:
     NodejsBridge(QObject*, int);
     virtual ~NodejsBridge() {}
+
+    bool buzy() const;
 
     static QString jsonCommandValue(int); //значение поля 'req_name' в файле-параметрах  по коду команды
 
@@ -47,7 +43,6 @@ public slots:
 
 signals:
     void signalFinished(int); // признак завершения работы скрипта, в том числе и неудачно, выполняется всегда при завершении nodejs скрипта
-    //void signalFinishedFault(); // признак завершения работы скрипта с ошибкой
     void signalNodejsReply(const QJsonObject&); //выполняется при завершении скрипта и при этом был получен нормальный ответ (без ошибок)
 
 

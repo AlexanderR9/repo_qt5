@@ -133,8 +133,8 @@ bool LSimpleWidget::onlyHorizontal() const
 //LTableWidgetBox
 LTableWidgetBox::LTableWidgetBox(QWidget *parent, int t)
     :QGroupBox("Table Box", parent),
-      m_table(NULL)
-      //m_lastSortOrder(0)
+      m_table(NULL),
+      m_popupNeedSelection(true)
 {
     setObjectName("ltable_widget_box");
 
@@ -309,12 +309,13 @@ void LTableWidgetBox::slotSortByColumn(int col)
     m_table->scrollToTop();
     //m_table->selectRow(0);
 }
-void LTableWidgetBox::popupMenuActivate(const QList< QPair<QString, QString> > &list)
+void LTableWidgetBox::popupMenuActivate(const QList< QPair<QString, QString> > &list, bool need_row_selection)
 {
    // qDebug()<<QString("LTableWidgetBox::popupMenuActivate  acts size %1").arg(list.count());
     destroyPopupMenu();
     if (list.isEmpty()) return;
 
+    m_popupNeedSelection = need_row_selection;
     int n = list.count();
     for (int i=0; i<n; i++)
     {
@@ -340,7 +341,7 @@ void LTableWidgetBox::slotContextMenu(QPoint p)
 {
  //   qDebug()<<QString("LTableWidgetBox::slotContextMenu  %1/%2").arg(p.x()).arg(p.y());
     if (m_popupMenuActions.isEmpty()) return;
-    if (LTable::selectedRows(m_table).count() != 1) return;
+    if (m_popupNeedSelection && (LTable::selectedRows(m_table).count() != 1)) return;
 
     QMenu *menu = new QMenu(this);
     foreach (QAction *act, m_popupMenuActions)

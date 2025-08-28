@@ -28,6 +28,11 @@ NodejsBridge::NodejsBridge(QObject *parent, int cid)
 
     initProcessObj();
 }
+bool NodejsBridge::buzy() const
+{
+    if (!m_procObj) return false;
+    return m_procObj->isRunning();
+}
 void NodejsBridge::initProcessObj()
 {
     m_procObj = new LProcessObj(this);
@@ -47,6 +52,12 @@ QString NodejsBridge::jsonCommandValue(int cmd)
         case nrcGasPrice:   return QString("gas_price");
         case nrcChainID:    return QString("chain_id");
         case nrcTXStatus:   return QString("tx_status");
+
+
+        case txWrap:    return QString("wrap");
+        case txUnwrap:    return QString("unwrap");
+
+
         default: break;
     }
     return QString("cmd_invalid");
@@ -107,6 +118,7 @@ void NodejsBridge::parseJsReply(const QString &js_reply, int &code)
         return;
     }
 
+    //reply OK, send reply to current page
     emit signalNodejsReply(resultObj);
 }
 void NodejsBridge::slotRunScriptArgs(const QStringList &args)
@@ -150,7 +162,7 @@ QString NodejsBridge::transformJsonResult(const QString &str_json) const
     //определяем длину полезных данных JSON
     len = s.length();
     if (s.at(len-1) == ',') {s = LString::strTrimRight(s, 1); s = s.trimmed(); len = s.length();}
-    qDebug()<<QString("trimed JSON: |%1|").arg(s);
+   // qDebug()<<QString("trimed JSON: |%1|").arg(s);
     //строка готова к разметке позиций пар ключ/значение.
 
 

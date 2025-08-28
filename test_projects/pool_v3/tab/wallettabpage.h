@@ -19,45 +19,41 @@ public:
     DefiWalletTabPage(QWidget*);
     virtual ~DefiWalletTabPage() {}
 
-    void initTokenList(int); // загрузить список токенов из конфигурации для указанной сети
-
-    virtual void sendUpdateDataRequest();
+    virtual void setChain(int);
+    virtual void sendUpdateDataRequest(); //срабатывает по нажатию пользователем кнопки в тулбаре
     void updatePrices() const;
-
-    /*
-    void getBalacesArgs(QStringList&); // список аргументв для получения балансов активов
-    int assetsCount() const;
-    QMap<QString, QString> assetsTokens() const; //key - ticker, value - token_address
-    QMap<QString, float> assetsBalances() const; //key - token_address, value - cur_balance
-    void parseJSResult(const QJsonObject&);
-    void updateChain(); //вызвать скрипт, который вернет название текущей сети
-
-    inline QString chainName() const {return m_currentChain;}
-    */
 
 protected:
     void initTable();
-
     void updateAmounts(const QJsonObject&);
+    void updateIntegratedTable(QString, const QJsonObject&);
+
     void updateBalance(int) const;
     void updateTotalBalance() const;
+    void initTokenList(int); // загрузить список токенов из конфигурации для указанной сети
+    void initPopupMenu(); //инициализировать элементы всплывающего меню
 
 public slots:
     void slotNodejsReply(const QJsonObject&); //получен успешный ответ от скрипта nodejs
+
+protected slots:
+    void slotWrap();
+    void slotUnwrap();
+    void slotTransfer();
+    void slotGetTxCount();
+    void slotGetGasPrice();
+    void slotGetChainID();
+    void slotGetAssetPrices() {emit signalGetPrices();}
 
 signals:
     void signalGetPrices();
 
     /*
-    LTableWidgetBox     *m_table;
-    LHttpApiRequester   *m_priceRequester;
     WalletBalanceHistory    *m_balanceHistory;
-    QString m_currentChain; //название сети в которой идет работа
 
     void addTokenToTable(const QStringList&);
     void loadAssetIcons();
     void updateTokenBalance(const QString&, const QString&);
-    void initPopupMenu(); //инициализировать элементы всплывающего меню
     void updateBalances(const QJsonObject&);
     void lookTxAnswer(const QJsonObject&);
     void initHttpRequester();
@@ -75,11 +71,6 @@ private:
     float findTokenPrice(QString) const; //ищет текущую цену токена в таблице, параметр может быть как имя токена так и адрес, в случае ошибки вернет -1
 
 
-protected slots:
-    void slotWrap();
-    void slotUnwrap();
-    void slotTransfer();
-    void slotHttpReqFinished(int);
 
 public slots:
     void slotScriptBroken();

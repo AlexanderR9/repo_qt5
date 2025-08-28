@@ -4,6 +4,8 @@
 #include "ltable.h"
 #include "lfile.h"
 #include "lstring.h"
+#include "txdialog.h"
+#include "nodejsbridge.h"
 
 
 /*
@@ -47,17 +49,24 @@ DefiWalletTabPage::DefiWalletTabPage(QWidget *parent)
     //init table
     initTable();
 
-    /*
-
-    // init context menu
+    //init context menu
     initPopupMenu();
 
-    //init http obj
-    initHttpRequester();
+    /*
+
+
 
     //init BalanceHistory
     initBalanceHistoryObj();
     */
+}
+void DefiWalletTabPage::setChain(int cid)
+{
+    BaseTabPage_V3::setChain(cid);
+    initTokenList(cid);
+
+    m_table->resizeByContents();
+    m_integratedTable->resizeByContents();
 }
 void DefiWalletTabPage::updatePrices() const
 {
@@ -78,8 +87,10 @@ void DefiWalletTabPage::updatePrices() const
 
         updateBalance(i);
     }
-    m_table->resizeByContents();
     updateTotalBalance();
+
+    m_table->resizeByContents();
+    m_integratedTable->resizeByContents();
 }
 void DefiWalletTabPage::initTokenList(int cid)
 {
@@ -136,7 +147,6 @@ void DefiWalletTabPage::initTokenList(int cid)
 
 
     t->setIconSize(QSize(24, 24));
-    m_table->resizeByContents();
     m_integratedTable->table()->item(1, 0)->setText(QString::number(t->rowCount()));
 
 }
@@ -145,23 +155,52 @@ void DefiWalletTabPage::sendUpdateDataRequest()
     qDebug("DefiWalletTabPage::sendUpdateDataRequest()");
     //prepare json params
     QJsonObject j_params;
-    j_params.insert(AppCommonSettings::nodejsReqFieldName(), "balance");
-    emit signalRewriteJsonFile(j_params, AppCommonSettings::readParamsNodeJSFile()); //rewrite json-file
-
-    QStringList args;
-    args << "reader.js" << AppCommonSettings::readParamsNodeJSFile();
-    emit signalRunNodejsBridge(args);
+    j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcBalance));
+    sendReadNodejsRequest(j_params);
 }
 void DefiWalletTabPage::slotNodejsReply(const QJsonObject &js_reply)
 {
     QString req = js_reply.value(AppCommonSettings::nodejsReqFieldName()).toString();
     qDebug()<<QString("req kind: [%1]").arg(req);
 
-    if (req == "balance")
-    {
-        updateAmounts(js_reply);
-    }
+    if (req == NodejsBridge::jsonCommandValue(nrcBalance)) updateAmounts(js_reply);
+    else if (req == NodejsBridge::jsonCommandValue(nrcTXCount)) updateIntegratedTable(req, js_reply);
+    else if (req == NodejsBridge::jsonCommandValue(nrcGasPrice)) updateIntegratedTable(req, js_reply);
+    else if (req == NodejsBridge::jsonCommandValue(nrcChainID)) updateIntegratedTable(req, js_reply);
 
+    m_table->resizeByContents();
+    m_integratedTable->resizeByContents();
+}
+void DefiWalletTabPage::updateIntegratedTable(QString req, const QJsonObject &js_reply)
+{
+    QTableWidget *t_int = m_integratedTable->table();
+    if (req == NodejsBridge::jsonCommandValue(nrcTXCount))
+    {
+        if (!js_reply.contains("data"))
+        {
+            t_int->item(2, 0)->setText("err");
+            t_int->item(2, 0)->setTextColor(Qt::red);
+        }
+        else t_int->item(2, 0)->setText(js_reply.value("data").toString());
+    }
+    else if (req == NodejsBridge::jsonCommandValue(nrcGasPrice))
+    {
+        if (!js_reply.contains("data"))
+        {
+            t_int->item(3, 0)->setText("err");
+            t_int->item(3, 0)->setTextColor(Qt::red);
+        }
+        else t_int->item(3, 0)->setText(js_reply.value("data").toString());
+    }
+    else if (req == NodejsBridge::jsonCommandValue(nrcChainID))
+    {
+        if (!js_reply.contains("data"))
+        {
+            t_int->item(4, 0)->setText("err");
+            t_int->item(4, 0)->setTextColor(Qt::red);
+        }
+        else t_int->item(4, 0)->setText(js_reply.value("data").toString());
+    }
 }
 void DefiWalletTabPage::updateAmounts(const QJsonObject &js_reply)
 {
@@ -186,7 +225,6 @@ void DefiWalletTabPage::updateAmounts(const QJsonObject &js_reply)
 
         updateBalance(i);
     }
-    m_table->resizeByContents();
 
     if (t->item(0, PRICE_COL)->text() ==  "---") emit signalGetPrices();
     else updateTotalBalance();
@@ -234,10 +272,95 @@ void DefiWalletTabPage::updateTotalBalance() const
 
     if (tb >= 0)
     {
-        t_int->item(0, 0)->setText(QString::number(tb, 'f', 1));
+        t_int->item(0, 0)->setText(QString("%1 USDT").arg(QString::number(tb, 'f', 1)));
         t_int->item(0, 0)->setTextColor(Qt::darkGreen);
     }
 }
+void DefiWalletTabPage::initPopupMenu()
+{
+    QString path = AppCommonSettings::commonIconsPath(); // icons path
+
+    //prepare menu actions data for assets table
+    QList< QPair<QString, QString> > act_list;
+    QPair<QString, QString> pair1("Wrap", TxDialogBase::iconByTXType(txWrap));
+    act_list.append(pair1);
+    QPair<QString, QString> pair2("Unwrap", TxDialogBase::iconByTXType(txUnwrap));
+    act_list.append(pair2);
+    QPair<QString, QString> pair3("Transfer", TxDialogBase::iconByTXType(txTransfer));
+    act_list.append(pair3);
+    QPair<QString, QString> pair4("Get prices", QString("%1%2coin.svg").arg(path).arg(QDir::separator()));
+    act_list.append(pair4);
+
+    //init popup menu actions
+    m_table->popupMenuActivate(act_list);
+
+    //connect OWN slots to popup actions
+    int i_menu = 0;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotWrap())); i_menu++;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotUnwrap())); i_menu++;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotTransfer())); i_menu++;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotGetAssetPrices())); i_menu++;
+
+    /////////////////////////////////////////////////////////
+
+    //prepare menu actions data for integrated table
+    //act_list.clear();
+    act_list[0].first = "TX count";
+    act_list[0].second = QString("%1%2crc.png").arg(path).arg(QDir::separator());
+    act_list[1].first = "Gas price";
+    act_list[1].second = QString("%1%2gas.png").arg(path).arg(QDir::separator());
+    act_list[2].first = "Chain ID";
+    act_list[2].second = QString("%1%2chain.svg").arg(path).arg(QDir::separator());
+    act_list.removeLast();
+    m_integratedTable->popupMenuActivate(act_list, false);
+
+    //connect OWN slots to popup actions
+    i_menu = 0;
+    m_integratedTable->connectSlotToPopupAction(i_menu, this, SLOT(slotGetTxCount())); i_menu++;
+    m_integratedTable->connectSlotToPopupAction(i_menu, this, SLOT(slotGetGasPrice())); i_menu++;
+    m_integratedTable->connectSlotToPopupAction(i_menu, this, SLOT(slotGetChainID())); i_menu++;
+
+}
+void DefiWalletTabPage::slotWrap()
+{
+    qDebug("DefiWalletTabPage::slotWrap()");
+    QJsonObject j_params;
+    //j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcTXCount));
+    //sendTxNodejsRequest(j_params);
+}
+void DefiWalletTabPage::slotUnwrap()
+{
+    qDebug("DefiWalletTabPage::slotUnwrap()");
+
+}
+void DefiWalletTabPage::slotTransfer()
+{
+    qDebug("DefiWalletTabPage::slotTransfer()");
+
+}
+void DefiWalletTabPage::slotGetTxCount()
+{
+    qDebug("DefiWalletTabPage::slotGetTxCount()");
+    QJsonObject j_params;
+    j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcTXCount));
+    sendReadNodejsRequest(j_params);
+}
+void DefiWalletTabPage::slotGetGasPrice()
+{
+    qDebug("DefiWalletTabPage::slotGetGasPrice()");
+    QJsonObject j_params;
+    j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcGasPrice));
+    sendReadNodejsRequest(j_params);
+}
+void DefiWalletTabPage::slotGetChainID()
+{
+    qDebug("DefiWalletTabPage::slotGetChainID()");
+    QJsonObject j_params;
+    j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcChainID));
+    sendReadNodejsRequest(j_params);
+}
+
+
 
 
 /*
@@ -269,27 +392,12 @@ void JSWalletTab::loadAssetIcons()
     }
     t->setIconSize(QSize(24, 24));
 }
-void JSWalletTab::initPopupMenu()
-{
-    //prepare menu actions data
-    QList< QPair<QString, QString> > act_list;
-    QPair<QString, QString> pair1("Wrap", TxDialogBase::iconByTXType(txWrap));
-    act_list.append(pair1);
-    QPair<QString, QString> pair2("Unwrap", TxDialogBase::iconByTXType(txUnwrap));
-    act_list.append(pair2);
-    QPair<QString, QString> pair3("Transfer", TxDialogBase::iconByTXType(txTransfer));
-    act_list.append(pair3);
+*/
 
-    //init popup menu actions
-    m_table->popupMenuActivate(act_list);
 
-    //connect OWN slots to popup actions
-    int i_menu = 0;
-    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotWrap())); i_menu++;
-    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotUnwrap())); i_menu++;
-    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotTransfer())); i_menu++;
 
-}
+
+/*
 void JSWalletTab::slotHttpReqFinished(int result)
 {
     qDebug()<<QString("JSWalletTab::slotHttpReqFinished: REQUEST FINISHED result=%1").arg(result);
@@ -381,6 +489,7 @@ void JSWalletTab::prepareCoingeckoParams(QString &uri)
 
     uri+=QString("&vs_currencies=usd");
 }
+
 void JSWalletTab::slotWrap()
 {
     int row = m_table->curSelectedRow();
@@ -573,7 +682,7 @@ void DefiWalletTabPage::initTable()
     m_table->setSelectionColor("#BDFF4F");
 
     h_splitter->addWidget(m_table);
-    m_table->resizeByContents();
+    //m_table->resizeByContents();
 
     /////////////////////////////////////////
 
@@ -590,7 +699,6 @@ void DefiWalletTabPage::initTable()
     LTable::createAllItems(m_integratedTable->table());
 
     h_splitter->addWidget(m_integratedTable);
-    m_integratedTable->resizeByContents();
 
 }
 /*

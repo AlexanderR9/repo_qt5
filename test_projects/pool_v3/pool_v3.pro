@@ -37,11 +37,15 @@ unix:!macx: LIBS += -L$$PWD/../../libs/uniswap/build/ -lluniswap
 HEADERS += $$PWD/mainform.h \
         $$PWD/centralwidget_v3.h \
         $$PWD/deficonfig.h \
+        $$PWD/txlogger.h \
+        $$PWD/txdialog.h \
         $$PWD/tab/basetab_v3.h \
         $$PWD/deficonfigloader.h \
 	$$PWD/appcommonsettings.h \
 	$$PWD/tab/basetabpage_v3.h \
         $$PWD/tab/wallettabpage.h \
+        $$PWD/tab/approvepage.h \
+        $$PWD/tab/txpage.h \
         $$PWD/nodejsbridge.h
 
 
@@ -49,11 +53,15 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/mainform.cpp \
         $$PWD/centralwidget_v3.cpp \
         $$PWD/deficonfig.cpp \
+        $$PWD/txlogger.cpp \
+        $$PWD/txdialog.cpp \
         $$PWD/tab/basetab_v3.cpp \
         $$PWD/deficonfigloader.cpp \
 	$$PWD/appcommonsettings.cpp \
 	$$PWD/tab/basetabpage_v3.cpp \
 	$$PWD/tab/wallettabpage.cpp \
+        $$PWD/tab/approvepage.cpp \
+        $$PWD/tab/txpage.cpp \
         $$PWD/nodejsbridge.cpp
 
 

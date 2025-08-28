@@ -95,6 +95,8 @@
         <file>images/folders_struct.png</file>
         <file>images/modbus.png</file>
         <file>images/server.png</file>
+        <file>images/gas.png</file>
+        <file>images/gas2.png</file>
 
     </qresource>
 </RCC>
