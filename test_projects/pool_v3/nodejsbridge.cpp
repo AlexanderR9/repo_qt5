@@ -46,6 +46,7 @@ QString NodejsBridge::jsonCommandValue(int cmd)
 {
     switch (cmd)
     {
+        //read reqs
         case nrcBalance:    return QString("balance");
         case nrcTXCount:    return QString("tx_count");
         case nrcApproved:   return QString("approved");
@@ -53,10 +54,12 @@ QString NodejsBridge::jsonCommandValue(int cmd)
         case nrcChainID:    return QString("chain_id");
         case nrcTXStatus:   return QString("tx_status");
 
-
-        case txWrap:    return QString("wrap");
-        case txUnwrap:    return QString("unwrap");
-
+        //tx reqs
+        case txWrap:        return QString("wrap");
+        case txUnwrap:      return QString("unwrap");
+        case txTransfer:    return QString("transfer");
+        case txApprove:     return QString("approve");
+        case txSwap:        return QString("swap");
 
         default: break;
     }

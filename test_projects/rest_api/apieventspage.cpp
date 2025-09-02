@@ -664,6 +664,10 @@ void APIEventsPage::syncRecByFile(const EventOperation &rec)
 
     //add data
     m_events.append(rec);
+
+    //check date
+    if (rec.date.date() == QDate::currentDate()) return; // it is rec was received today (fresh)
+
     QString fline(rec.toStr());
     emit signalMsg(QString("Add new EVENT record: %1").arg(fline));
     err = LFile::appendFile(fname, QString("%1.  %2 \n").arg(m_events.count()).arg(fline));

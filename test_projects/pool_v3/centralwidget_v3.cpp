@@ -10,6 +10,8 @@
 #include "lhttpapirequester.h"
 #include "lstring.h"
 #include "lmath.h"
+#include "lsplash.h"
+#include "tokenpricelogger.h"
 
 
 #include <QStackedWidget>
@@ -32,11 +34,16 @@ CentralWidgetV3::CentralWidgetV3(QWidget *parent)
     :LSimpleWidget(parent, 22),
     w_list(NULL),
     w_stack(NULL),
-    http_requester(NULL)
+    http_requester(NULL),
+    m_splashWidget(NULL),
+    m_priceLogger(NULL)
 {
     setObjectName("central_widget_v3");
 
     init();
+    initSplash();
+
+
 }
 void CentralWidgetV3::initHttpRequester()
 {
@@ -115,6 +122,24 @@ void CentralWidgetV3::setEnableControl(bool b)
     DefiChainTabV3 *tab = currentTab();
     if (tab) tab->tabWidget()->setEnabled(b);
 }
+void CentralWidgetV3::initPriceLogger()
+{
+    m_priceLogger = new TokenPriceLogger(this);
+    connect(m_priceLogger, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
+    connect(m_priceLogger, SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
+
+    m_priceLogger->loadLogFile();
+
+    //restore last prices to defi_config.tokens
+    for (int i=0; i<defi_config.tokens.count(); i++)
+    {
+        if (defi_config.tokens.at(i).is_stable) continue;
+
+        QString t_name = defi_config.tokens.at(i).name;
+        QString t_addr = defi_config.tokens.at(i).address;
+        defi_config.tokens[i].last_price = m_priceLogger->getLastPrice(t_name, t_addr);
+    }
+}
 void CentralWidgetV3::init()
 {
     w_list = new LListWidgetBox(this);
@@ -136,6 +161,17 @@ void CentralWidgetV3::init()
     connect(w_list->listWidget(), SIGNAL(currentRowChanged(int)), this, SLOT(slotChainChanged(int)));
 
 }
+void CentralWidgetV3::initSplash()
+{
+    m_splashWidget = new LSplash(this);
+    m_splashWidget->resize(400, 100);
+    m_splashWidget->initProgress(30);
+    m_splashWidget->setTextSize(16);
+    m_splashWidget->setTextColor("#008080");
+
+    connect(m_splashWidget, SIGNAL(signalProgressFinished()), this, SLOT(slotTXDelayFinished()));
+}
+
 void CentralWidgetV3::newPricesReceived(const QJsonArray &j_arr)
 {
     bool ok = false;
@@ -158,6 +194,7 @@ void CentralWidgetV3::newPricesReceived(const QJsonArray &j_arr)
             if (t_name == symbol) defi_config.tokens[j].last_price = prs;
         }
     }
+    m_priceLogger->checkLastPrices();
 
     emit signalTabsPricesUpdate();
 }
@@ -176,6 +213,7 @@ void CentralWidgetV3::load(QSettings &settings)
     LSimpleWidget::load(settings);
 
     initHttpRequester();
+    initPriceLogger();
     loadDefiData();
 
     int chain_index = settings.value(QString("%1/%2/index").arg(objectName()).arg(w_list->objectName()), 0).toInt();
@@ -243,7 +281,6 @@ void CentralWidgetV3::createTabPages(int chain_id)
     //wallet
     DefiWalletTabPage *w_page = new DefiWalletTabPage(this);
     tab->tabWidget()->addTab(w_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(w_page->kind()));
-    //connect(w_page, SIGNAL(signalGetPrices()), tab, SIGNAL(signalGetPrices()));
     connect(w_page, SIGNAL(signalGetPrices()), this, SLOT(slotSendHttpReq()));
 
     //approve
@@ -253,6 +290,7 @@ void CentralWidgetV3::createTabPages(int chain_id)
     //tx
     DefiTxTabPage *tx_page = new DefiTxTabPage(this);
     tab->tabWidget()->addTab(tx_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(tx_page->kind()));
+    connect(tx_page, SIGNAL(signalStartTXDelay()), this, SLOT(slotStartTXDelay()));
 
 }
 const DefiChainTabV3* CentralWidgetV3::tabByChain(int chain_id) const
@@ -317,4 +355,24 @@ void CentralWidgetV3::breakUpdating()
     if (tab) tab->stopUpdating();
 
 }
+void CentralWidgetV3::slotTXDelayFinished()
+{
+    qDebug("EthersPage::slotTXDelayFinished()");
+    this->setEnabled(true);
+    m_splashWidget->setTextSize(16);
+    m_splashWidget->setTextColor("#008080");
+}
+void CentralWidgetV3::slotStartTXDelay()
+{
+    qDebug()<<QString("EthersPage::slotStartTXDelay() delay %1 seconds").arg(defi_config.delayAfterTX);
+    m_splashWidget->setTextSize(14, true);
+    m_splashWidget->setTextColor("#DD4500");
+    m_splashWidget->updateProgressDelay(defi_config.delayAfterTX);
+
+    this->setEnabled(false);
+    QString text = QString("Going delay after TX, %1 seconds!").arg(defi_config.delayAfterTX);
+    m_splashWidget->startProgress(text);
+}
+
+
 

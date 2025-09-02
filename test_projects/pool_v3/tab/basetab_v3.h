@@ -9,6 +9,7 @@ class QJsonObject;
 class NodejsBridge;
 class DefiWalletTabPage;
 class QLineEdit;
+class DefiTxTabPage;
 
 
 //главный таб для работы в одной сети
@@ -45,7 +46,9 @@ protected:
     void initTab();
     void initJsBridgeObj();
     void initReqStateWidget();
+
     const DefiWalletTabPage* walletPage() const;
+    const DefiTxTabPage* txPage() const;
 
 protected slots:
     void slotTimer(); // когда запускается некий сценарий запросов начинает работать m_timer и этот слот выполняется каждый его тик для оценки текщего состояния выполнения запросов

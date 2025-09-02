@@ -3,14 +3,11 @@
 #include "ltime.h"
 #include "lstring.h"
 #include "appcommonsettings.h"
+#include "deficonfig.h"
 
 
 #include <QDir>
 #include <QDebug>
-
-#define TOKEN_SIZE_PRECISION        4
-#define PRICE_PRECISION             6
-
 
 
 
@@ -31,6 +28,7 @@ void DefiTxLogger::reloadLogFiles()
     loadTxListFile();
     loadTxDetailsFile();
     loadTxStateFile();
+    //qDebug("reloadLogFiles finished");
 }
 void DefiTxLogger::loadTxListFile()
 {
@@ -43,14 +41,15 @@ void DefiTxLogger::loadTxListFile()
     if (!err.isEmpty()) {emit signalError(QString("DefiTxLogger: %1").arg(err)); return;}
 
     //parse file list
-    foreach (const QString fline, fdata)
+    foreach (const QString &fline, fdata)
     {
         if (fline.trimmed().isEmpty()) continue;
         if (fline.trimmed().at(0) == QChar('#')) continue;
+
         QStringList rec_data = LString::trimSplitList(fline, "/");
         if (rec_data.count() != 5) continue;
 
-        DefiTxLogRecord tx(rec_data.last(), rec_data.at(3));
+        TxLogRecord tx(rec_data.last(), rec_data.at(3));
         if (tx.chain_name != m_chain) continue;
         tx.tx_hash = rec_data.first();
         tx.setDateTime(rec_data.at(1), rec_data.at(2));
@@ -78,6 +77,77 @@ void DefiTxLogger::loadTxDetailsFile()
     QString err = LFile::readFileSL(fname, fdata);
     if (!err.isEmpty()) {emit signalError(QString("DefiTxLogger: %1").arg(err)); return;}
 
+    //parse file data
+    foreach (const QString &fline, fdata)
+    {
+        if (fline.trimmed().isEmpty()) continue;
+        if (fline.trimmed().at(0) == QChar('#')) continue;
+        QStringList rec_data = LString::trimSplitList(fline, "/");
+        if (rec_data.count() != 3) continue;
+
+        QString tx_hash = rec_data.first();
+        for (int i=0; i<m_logData.count(); i++)
+        {
+            if (m_logData.at(i).tx_hash == tx_hash)
+            {
+                m_logData[i].parseDetails(rec_data.last());
+                break;
+            }
+        }
+    }
+}
+void DefiTxLogger::addNewRecord(const TxLogRecord &rec)
+{
+    QString tx_base = (rec.listFileLine().trimmed() + "\n");
+    QString tx_details = (rec.detailsFileLine().trimmed() + "\n");
+    if (tx_base.isEmpty() || tx_details.isEmpty()) {emit signalError("DefiTxLogger: can't add new tx_record to log-files"); return;}
+
+    QString err;
+    QString fname = QString("%1%2%3").arg(AppCommonSettings::appDataPath()).arg(QDir::separator()).arg(AppCommonSettings::txListFile());
+    if (!LFile::fileExists(fname)) err = LFile::writeFile(fname, tx_base);
+    else err = LFile::appendFile(fname, tx_base);
+    if (!err.isEmpty()) {emit signalError(QString("DefiTxLogger: can't add new tx_record to: %1").arg(fname)); return;}
+
+    fname = QString("%1%2%3").arg(AppCommonSettings::appDataPath()).arg(QDir::separator()).arg(AppCommonSettings::txDetailsFile());
+    if (!LFile::fileExists(fname)) err = LFile::writeFile(fname, tx_details);
+    else err = LFile::appendFile(fname, tx_details);
+    if (!err.isEmpty()) {emit signalError(QString("DefiTxLogger: can't add new tx_record to: %1").arg(fname)); return;}
+}
+void DefiTxLogger::updateRecStatus(const QString &hash, QString status, float fee_native, quint32 gas_used)
+{
+    if (logEmpty()) return;
+
+    int n = logSize();
+    for (int i=n-1; i>=0; i--)
+    {
+        if (m_logData.at(i).tx_hash == hash)
+        {
+            m_logData[i].status.result = status;
+            m_logData[i].status.fee_coin = fee_native;
+            m_logData[i].status.gas_used = gas_used;
+
+            float p = defi_config.lastPriceByTokenName(defi_config.nativeTokenName(m_chain));
+            qDebug()<<QString("DefiTxLogger::updateRecStatus - cur price nativeTokenName %1").arg(p);
+            if (p > 0) m_logData[i].status.fee_cent = (p*fee_native*float(100));
+            else m_logData[i].status.fee_cent = -1;
+
+            rewriteFileLineByRec(m_logData.at(i));
+
+            break;
+        }
+    }
+}
+void DefiTxLogger::rewriteFileLineByRec(const TxLogRecord &rec)
+{
+
+}
+const TxLogRecord* DefiTxLogger::recByHash(const QString &hash) const
+{
+    if (logEmpty()) return NULL;
+
+    foreach (const TxLogRecord &v, m_logData)
+        if (v.tx_hash == hash) return &v;
+    return NULL;
 }
 
 
@@ -131,50 +201,6 @@ void JSTxLogger::reloadLogFile()
 }
 */
 
-
-
-
-///////////////DefiTxLogRecord//////////////////
-DefiTxLogRecord::DefiTxLogRecord(QString type, QString chain)
-{
-    reset();
-    tx_kind = type;
-    chain_name = chain;
-    dt = QDateTime::currentDateTime();
-}
-void DefiTxLogRecord::reset()
-{
-    tx_hash.clear();
-    tx_kind = "unknown";
-    chain_name = "?";
-    dt = QDateTime();
-    note = "empty";
-
-    status.reset();
-    wallet.reset();
-    pool.reset();
-}
-bool DefiTxLogRecord::invalid()
-{
-    if (tx_hash.length() < 30 || tx_hash.left(2) != "0x") return true;
-    if (tx_kind.isEmpty() || tx_kind == "unknown") return true;
-    if (chain_name.length()< 3) return true;
-    if (!dt.isValid() || dt.date().year() < 2023) return true;
-    return false;
-}
-void DefiTxLogRecord::setDateTime(QString s_date, QString s_time)
-{
-    if (!s_date.trimmed().isEmpty())
-    {
-        QDate d = QDate::fromString(s_date.trimmed(), AppCommonSettings::dateUserMask());
-        dt.setDate(d);
-    }
-    if (!s_time.trimmed().isEmpty())
-    {
-        QTime t = QTime::fromString(s_time.trimmed(), AppCommonSettings::timeUserMask());
-        dt.setTime(t);
-    }
-}
 
 
 

@@ -5,6 +5,10 @@
 #include "lsimplewidget.h"
 
 class QJsonObject;
+struct TxLogRecord;
+struct TxDialogData;
+
+
 
 
 // BaseTabPage_V3
@@ -21,6 +25,7 @@ public:
     virtual void save(QSettings&);
 
     virtual void setChain(int);
+    virtual QString curChainName() {return userData();}
 
     //выполняется запрос к сети(read only) для обновления данных на странице.
     //выполняется когда пользователь в тулбаре нажимает кнопку "Update"
@@ -31,7 +36,7 @@ protected:
     LTableWidgetBox     *m_integratedTable;
 
     virtual void sendReadNodejsRequest(const QJsonObject&); // отаправить команду в nodejs_bridge для запроса на чтение из сети
-    virtual void sendTxNodejsRequest(const QJsonObject&); // отаправить команду в nodejs_bridge для запроса на запись транзакции в сеть
+    virtual void sendTxNodejsRequest(const TxDialogData& /*const QJsonObject&*/); // отаправить команду в nodejs_bridge для запроса на запись транзакции в сеть
 
 public slots:
     virtual void slotNodejsReply(const QJsonObject&) = 0; //получен успешный ответ от скрипта nodejs
@@ -39,6 +44,7 @@ public slots:
 signals:
     void signalRewriteJsonFile(const QJsonObject&, QString);
     void signalRunNodejsBridge(QString, const QStringList&);
+    void signalNewTx(const TxLogRecord&); // отправляется странице DefiTxTabPage после успешного получения в ответе tx_hash
 
 };
 

@@ -32,6 +32,7 @@ public:
     static QString txListFile() {return "tx_list.txt";}
     static QString txStateFile() {return "tx_state.txt";}
     static QString txDetailsFile() {return "tx_details.txt";}
+    static QString priceLogFile() {return "prices_history.log";}
     static QString timeUserMask() {return "hh:mm:ss";}
     static QString dateUserMask() {return "dd.MM.yyyy";}
 
@@ -42,6 +43,8 @@ public:
     static QString readParamsNodeJSFile() {return "read_params.json";}
     static QString txParamsNodeJSFile() {return "tx_params.json";}
     static QString nodejsReqFieldName() {return "req_name";} //название основного поля в параметрах nodejs скрипта
+    static QString nodejsTxSimulateFieldName() {return "simulate_mode";} //название поля в параметрах nodejs для указания режима симуляции TX
+    static QString nodejsTxHashFieldName() {return "tx_hash";} //название поля в ответе nodejs которое содержит хеш отправленной TX
 
     //setters
     static void setNodejsPath(QString p) {m_nodejsPath = p.trimmed();}

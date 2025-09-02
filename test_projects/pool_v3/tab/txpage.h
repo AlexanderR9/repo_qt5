@@ -9,6 +9,7 @@
 class QJsonObject;
 //class QTimer;
 class DefiTxLogger;
+struct TxLogRecord;
 
 
 //DefiTxTabPage
@@ -21,7 +22,7 @@ public:
     DefiTxTabPage(QWidget*);
     virtual ~DefiTxTabPage() {}
 
-    virtual void sendUpdateDataRequest() {};
+    virtual void sendUpdateDataRequest() {}; //срабатывает по нажатию пользователем кнопки в тулбаре
     virtual void setChain(int);
 
     /*
@@ -35,6 +36,12 @@ protected:
 
     void initTable();
     void reloadTables();
+    void initPopupMenu(); //инициализировать элементы всплывающего меню
+    void selectRowByHash(const QString&);
+
+    // после получения статуса транзакции и обновления самой записи в m_logger необходимо обновить соответствующую строку в таблице
+    void updateTableRowByRecord(const QString&);
+
 
     /*
     LTableWidgetBox     *m_table;
@@ -47,35 +54,33 @@ protected:
     //вид строки: hash / fee_size / status (OK/FAULT)
     QStringList          m_locData;
 
-    void initTable();
-    void reloadTable();
     void applyLocalData();
     void loadLocalData(); //from local defi file
-    void initPopupMenu(); //инициализировать элементы всплывающего меню
     JSTxRecord* recordByHash(QString);
     void updateTableRowByRecord(const JSTxRecord*);
     void addRecToLocalFile(const JSTxRecord *rec); //после получения ответа от nodejs добавить информацию в локальный файл
-    void selectRowByHash(const QString&);
 
 
 
 public slots:
     void slotCheckTxResult(const QString&, bool&); //выполняется для проверки успешности выполнения транзакции
 */
-public slots:
-    virtual void slotNodejsReply(const QJsonObject&) {}; //получен успешный ответ от скрипта nodejs
 
-/*
+
+public slots:
+    void slotNodejsReply(const QJsonObject&); //получен успешный ответ от скрипта nodejs
+
+    // выполняется после успешного получения в ответе tx_hash на любой другой странице.
+    // теперь эту запись необходимо добавить в лог-файлы tx_*.txt
+    void slotNewTx(const TxLogRecord&);
+
+
 protected slots:
     void slotTxStatus();
-    void slotCheckStateTimer();
+//    void slotCheckStateTimer();
 
 signals:
-    void signalCheckTx(const QStringList&);
-    void signalEnableControls(bool);
-    */
-
-
+    void signalStartTXDelay(); //запустить диалоговое окно для блокировки интерфейса на определенную задержку
 
 };
 

@@ -21,6 +21,7 @@ public:
     void setMaxLines(int);
     void clearProtocol();
     void addSpace();
+    void moveScrollDown() const;
 
     qint64 currentLineCount() const;
 

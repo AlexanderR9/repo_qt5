@@ -5,24 +5,30 @@
 
 
 //TxDialogData
+//универсальная структура данных для задания параметров транзакции(любой),
+//считывая поля этой структуры генерится файл tx_params.json перед вызовом nodejs скрипта.
 struct TxDialogData
 {
-
-    TxDialogData() :tx_kind(-1) {reset();}
-    TxDialogData(int t) :tx_kind(t) {reset();}
+    TxDialogData() :tx_kind(-1), chain_name(QString("???")) {reset();}
+    TxDialogData(int t, QString chain) :tx_kind(t), chain_name(chain)  {reset();}
 
     int tx_kind; //enum NodejsTxCommand
     QString pool_addr;
     QString token_addr;
-    QString token_name;
-    QMap<QString, QString> dialog_params; //параметры которые будут возвращены после закрытия диалога
+    QString chain_name; //current chain
+    //bool is_simulate; // признак что транзакцию нужно выполнить в режиме симуляции
 
-    void reset() {token_addr.clear(); token_name.clear(); dialog_params.clear(); pool_addr.clear();}
-    bool invalid() const; // {return (tx_kind < txWrap || tx_kind > txDestroy);}
+    //параметры которые будут возвращены после закрытия диалога.
+    //если в контейнере присутствует поле 'error', то значит параметры заданы не корректно и текст этой ошибки вывести в протокол.
+    QMap<QString, QString> dialog_params;
+
+    void reset() {token_addr.clear(); /*token_name.clear();*/ dialog_params.clear(); pool_addr.clear(); /*is_simulate = true; */}
+    bool invalid() const;
 };
 
 
 //TxDialogBase
+//пользовательский диалоговый интерфейс для настройки полей структуры TxDialogData перед совершением совершением транзакции
 class TxDialogBase : public LSimpleDialog
 {
     Q_OBJECT
@@ -37,9 +43,32 @@ protected:
     TxDialogData&     m_data;
 
     virtual void updateTitle();
+    virtual QString findTokenName() const;
+    virtual void addErrorField(QString);
+    virtual void checkFields(QString&) = 0;
+    virtual void addSimulateField();
+
+protected slots:
+    virtual void slotApply();
 
 };
 
+//TxWrapDialog
+class TxWrapDialog : public TxDialogBase
+{
+    Q_OBJECT
+public:
+    TxWrapDialog(TxDialogData&, QWidget*);
+    virtual ~TxWrapDialog() {}
+
+protected:
+    void init();
+    virtual void checkFields(QString&);
+
+protected slots:
+    void slotApply();
+
+};
 
 
 /*
@@ -59,20 +88,6 @@ protected slots:
     void slotApply();
 };
 
-//TxWrapDialog
-class TxWrapDialog : public TxDialogBase
-{
-    Q_OBJECT
-public:
-    TxWrapDialog(TxDialogData&, QWidget*);
-    virtual ~TxWrapDialog() {}
-
-protected:
-    void init();
-
-protected slots:
-    void slotApply();
-};
 
 //TxTransferDialog
 class TxTransferDialog : public TxDialogBase

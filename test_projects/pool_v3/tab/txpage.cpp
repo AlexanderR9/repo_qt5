@@ -3,11 +3,10 @@
 #include "lfile.h"
 #include "lstring.h"
 #include "ltime.h"
-//#include "subcommonsettings.h"
-//#include "jstxdialog.h"
 #include "deficonfig.h"
 #include "appcommonsettings.h"
 #include "txlogger.h"
+#include "nodejsbridge.h"
 
 
 
@@ -20,14 +19,17 @@
 #include <QJsonObject>
 #include <QJsonValue>
 
-#define JS_TX_FILE          "tx.log"
-#define LOCAL_TX_FILE       "defi/tx.txt"
-#define HASH_COL                4
-#define TX_KIND_COL             5
+#define HASH_COL                0
+#define TX_KIND_COL             3
+#define GAS_USED_COL            4
 #define RESULT_COL              7
-#define FEE_COL                 6
+#define FEE_NATIVE_COL          5
+#define FEE_CENT_COL            6
 
-#define CHECK_STATE_TIMER_INTERVAL  700
+
+//#define CHECK_STATE_TIMER_INTERVAL  700
+#define FEE_COIN_PRECISION          8
+#define FEE_CENT_PRECISION          4
 
 
 // DefiTxTabPage
@@ -42,20 +44,25 @@ DefiTxTabPage::DefiTxTabPage(QWidget *parent)
     //init table
     initTable();
 
-    // init context menu
-    //initPopupMenu();
-
-
+    //init context menu
+    initPopupMenu();
+}
+void DefiTxTabPage::slotNewTx(const TxLogRecord &rec)
+{
+    m_logger->addNewRecord(rec);
+    emit signalStartTXDelay();
 }
 void DefiTxTabPage::setChain(int cid)
 {
     BaseTabPage_V3::setChain(cid);
 
-    m_logger = new DefiTxLogger(userData(), this);
+    m_logger = new DefiTxLogger(curChainName(), this);
     connect(m_logger, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(m_logger, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
 
     m_logger->reloadLogFiles();
+    emit signalMsg(QString("Loaded %1 TX records").arg(m_logger->logSize()));
+    //return;
     reloadTables();
 
     m_table->resizeByContents();
@@ -67,10 +74,10 @@ void DefiTxTabPage::initTable()
     m_table->setTitle("Transactions");
     m_table->vHeaderHide();
     QStringList headers;
-    headers << "Hash" << "Date" << "Time" << "Kind" << "Fee (native)" << "Fee (cents)" << "Result";
+    headers << "Hash" << "Date" << "Time" << "Kind" << "Gas used" << "Fee (native)" << "Fee (cents)" << "Result";
     LTable::setTableHeaders(m_table->table(), headers);
     m_table->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::SingleSelection);
-    m_table->setSelectionColor("#9D9F4F");
+    m_table->setSelectionColor("#B7F8F9");
     h_splitter->addWidget(m_table);
 
     /////////////////////////////////////////
@@ -92,30 +99,110 @@ void DefiTxTabPage::reloadTables()
     m_table->removeAllRows();
     if (m_logger->logEmpty()) return;
 
+    QTableWidget *t = m_table->table();
+
+
     int n = m_logger->logSize();
+    //qDebug()<<QString("logSize %1").arg(n);
     QStringList row_data;
-    for (int i=0; i<n; i++)
+    int last_row = 0;
+    for (int i=n-1; i>=0; i--)
     {
-
-        /*
+        //qDebug()<<QString("i %1").arg(1);
         row_data.clear();
-        const JSTxRecord &rec = tx_data.at(i);
-        row_data << QString::number(i+1) << rec.chain << rec.strDate() << rec.strTime();
-        row_data << rec.hash << rec.kind << rec.strFee() << rec.strResult();
+        const TxLogRecord &rec = m_logger->recordAt(i);
+        row_data << rec.tx_hash << rec.strDate() << rec.strTime() << rec.tx_kind;
+        row_data << QString::number(rec.status.gas_used) << QString::number(rec.status.fee_coin) << QString::number(rec.status.fee_cent);
+        row_data << rec.status.result;
         LTable::addTableRow(t, row_data);
+        //qDebug()<<QString("2");
 
-        if (tx_data.at(i).txOk()) t->item(i, RESULT_COL)->setTextColor(Qt::darkGreen);
-        else if (tx_data.at(i).txFault()) t->item(i, RESULT_COL)->setTextColor(Qt::red);
-        else t->item(i, RESULT_COL)->setTextColor(Qt::gray);
+        if (rec.resultOk()) t->item(last_row, RESULT_COL)->setTextColor(Qt::darkGreen);
+        else if (rec.resultFault()) t->item(last_row, RESULT_COL)->setTextColor(Qt::red);
+        else t->item(last_row, RESULT_COL)->setTextColor(Qt::gray);
 
-        if (tx_data.at(i).kind == "mint") t->item(i, TX_KIND_COL)->setTextColor("#FF8C00");
-        if (tx_data.at(i).kind == "burn") t->item(i, TX_KIND_COL)->setTextColor("#AA0000");
-        */
+        if (rec.tx_kind == "mint") t->item(last_row, TX_KIND_COL)->setTextColor("#FF8C00");
+        if (rec.tx_kind == "burn") t->item(last_row, TX_KIND_COL)->setTextColor("#AA0000");
+        last_row++;
+        //qDebug()<<QString("3");
     }
-
 }
+void DefiTxTabPage::initPopupMenu()
+{
+    //prepare menu actions data
+    QList< QPair<QString, QString> > act_list;
+    QPair<QString, QString> pair1("Check TX status", QString("%1/emblem-ok.svg").arg(AppCommonSettings::commonIconsPath()));
+    act_list.append(pair1);
 
+    //init popup menu actions
+    m_table->popupMenuActivate(act_list);
 
+    //connect OWN slots to popup actions
+    int i_menu = 0;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotTxStatus())); i_menu++;
+}
+void DefiTxTabPage::slotTxStatus()
+{
+  //  qDebug("JSTxTab::slotTxStatus()");
+    int row = m_table->curSelectedRow();
+    if (row < 0) {emit signalError("You must select row"); return;}
+
+    QString hash = m_table->table()->item(row, HASH_COL)->text().trimmed();
+    QJsonObject j_params;
+    j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcTXStatus));
+    j_params.insert(AppCommonSettings::nodejsTxHashFieldName(), hash);
+    sendReadNodejsRequest(j_params);
+}
+void DefiTxTabPage::slotNodejsReply(const QJsonObject &js_reply)
+{
+    QString req = js_reply.value(AppCommonSettings::nodejsReqFieldName()).toString();
+    qDebug()<<QString("DefiTxTabPage::slotNodejsReply - req kind: [%1]").arg(req);
+
+    if (req == NodejsBridge::jsonCommandValue(nrcTXStatus))
+    {
+        if (js_reply.contains(AppCommonSettings::nodejsTxHashFieldName()))
+        {
+            // TX was finished, now we can look status
+            QString hash = js_reply.value(AppCommonSettings::nodejsTxHashFieldName()).toString();
+            quint32 gas_used = js_reply.value("gas_used").toString().toUInt();
+            float fee_native = js_reply.value("fee").toString().toFloat();
+            QString status = js_reply.value("status").toString();
+            m_logger->updateRecStatus(hash, status, fee_native, gas_used);
+
+            updateTableRowByRecord(hash);
+        }
+    }
+}
+void DefiTxTabPage::updateTableRowByRecord(const QString &hash)
+{
+    selectRowByHash(hash);
+    const TxLogRecord *rec = m_logger->recByHash(hash);
+    if (!rec) {emit signalError(QString("DefiTxTabPage: TxLogRecord is null by hash [%1]").arg(hash)); return;}
+
+    int row = m_table->curSelectedRow();
+    if (row < 0) {emit signalError(QString("DefiTxTabPage: can't select row by hash [%1]").arg(hash)); return;}
+
+    QTableWidget *t = m_table->table();
+    t->item(row, GAS_USED_COL)->setText(QString::number(rec->status.gas_used));
+    t->item(row, FEE_NATIVE_COL)->setText(QString::number(rec->status.fee_coin, 'f', FEE_COIN_PRECISION));
+    t->item(row, FEE_CENT_COL)->setText(QString::number(rec->status.fee_cent, 'f', FEE_CENT_PRECISION));
+    t->item(row, RESULT_COL)->setText(rec->status.result);
+}
+void DefiTxTabPage::selectRowByHash(const QString &v)
+{
+    QTableWidget *t = m_table->table();
+    t->clearSelection();
+    int n_row = t->rowCount();
+    for (int i=0; i<n_row; i++)
+    {
+        QString t_hash = t->item(i, HASH_COL)->text().trimmed();
+        if (t_hash == v.trimmed())
+        {
+            t->selectRow(i);
+            break;
+        }
+    }
+}
 
 /*
 void JSTxTab::loadTxFromFile(QString chain_name)
@@ -261,42 +348,11 @@ JSTxRecord* JSTxTab::recordByHash(QString hash_value)
     }
     return NULL;
 }
-void JSTxTab::initPopupMenu()
-{
-    //prepare menu actions data
-    QList< QPair<QString, QString> > act_list;
-    QPair<QString, QString> pair1("Check TX status", QString("%1/emblem-ok.svg").arg(SubGraph_CommonSettings::commonIconsPath()));
-    act_list.append(pair1);
+*/
 
-    //init popup menu actions
-    m_table->popupMenuActivate(act_list);
 
-    //connect OWN slots to popup actions
-    int i_menu = 0;
-    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotTxStatus())); i_menu++;
-}
-void JSTxTab::slotTxStatus()
-{
-  //  qDebug("JSTxTab::slotTxStatus()");
-    int row = m_table->curSelectedRow();
-    if (row < 0)
-    {
-        emit signalError("You must select row");
-        if (m_checkStateTimer->isActive()) m_checkStateTimer->stop();
-        return;
-    }
 
-    js_running = true;
-
-    QTableWidget *t = m_table->table();
-    QString hash = t->item(row, HASH_COL)->text().trimmed();
-   // qDebug()<<QString("TX_HASH: %1").arg(hash);
-
-    QStringList params;
-    params << "qt_tx.js" << hash;
-    t->setEnabled(false);
-    emit signalCheckTx(params);
-}
+/*
 void JSTxTab::parseJSResult(const QJsonObject &j_result)
 {
   //  qDebug("JSTxTab::parseJSResult");
@@ -395,22 +451,10 @@ void JSTxTab::slotCheckStateTimer()
     selectRowByHash(next_hash);
     slotTxStatus();
 }
-void JSTxTab::selectRowByHash(const QString &v)
-{
-    QTableWidget *t = m_table->table();
-    t->clearSelection();
-    int n_row = t->rowCount();
-    for (int i=0; i<n_row; i++)
-    {
-        QString t_hash = t->item(i, HASH_COL)->text().trimmed();
-        if (t_hash == v.trimmed())
-        {
-            t->selectRow(i);
-            break;
-        }
-    }
-}
+*/
 
+
+/*
 
 ////////////////JSTxRecord//////////////////////
 QString JSTxRecord::toLocalFileLine() const

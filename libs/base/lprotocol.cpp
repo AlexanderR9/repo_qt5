@@ -6,6 +6,7 @@
 #include <QTextEdit>
 #include <QDebug>
 #include <QTextCursor>
+#include <QScrollBar>
 
 
 #define CHECK_LINES_INTERVAL        14*1000
@@ -59,6 +60,19 @@ void LProtocolBox::slotCheckMaxLines()
         tc.removeSelectedText();
         tc.deletePreviousChar(); // clean up new line
         m_protocol->moveCursor(QTextCursor::End);
+    }
+}
+void LProtocolBox::moveScrollDown() const
+{
+    if (m_protocol)
+    {
+        QScrollBar *scrollbar = m_protocol->verticalScrollBar();
+        if (scrollbar)
+        {
+            int cur_pos = scrollbar->value();
+            if (cur_pos < (scrollbar->maximum() - 4));
+                scrollbar->setValue(scrollbar->maximum());
+        }
     }
 }
 void LProtocolBox::addText(QString text, int type)

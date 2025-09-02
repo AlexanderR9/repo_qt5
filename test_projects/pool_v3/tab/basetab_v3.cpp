@@ -4,6 +4,7 @@
 #include "basetabpage_v3.h"
 #include "nodejsbridge.h"
 #include "wallettabpage.h"
+#include "txpage.h"
 
 #include <QDebug>
 #include <QTimer>
@@ -50,7 +51,6 @@ void DefiChainTabV3::initJsBridgeObj()
     connect(js_bridge, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
     connect(js_bridge, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
     connect(js_bridge, SIGNAL(signalFinished(int)), this, SLOT(slotJSScriptFinished(int)));
-    //connect(js_bridge, SIGNAL(signalNodejsReply(const QJsonObject&)), this, SLOT(slotNodejsReply(const QJsonObject&)));
 
 }
 void DefiChainTabV3::slotJSScriptFinished(int code)
@@ -95,6 +95,23 @@ const DefiWalletTabPage* DefiChainTabV3::walletPage() const
     }
     return NULL;
 }
+const DefiTxTabPage* DefiChainTabV3::txPage() const
+{
+    int n = m_tab->pageCount();
+    for (int i=0; i<n; i++)
+    {
+        const BaseTabPage_V3 *page = qobject_cast<const BaseTabPage_V3*>(tabWidget()->widget(i));
+        if (page)
+        {
+            if (page->kind() == dpkTx)
+                return (qobject_cast<const DefiTxTabPage*>(page));
+        }
+    }
+    return NULL;
+}
+
+
+
 void DefiChainTabV3::tabActivated()
 {
     qDebug("DefiChainTabV3::tabActivated()");
@@ -192,16 +209,26 @@ void DefiChainTabV3::stopUpdating()
 }
 void DefiChainTabV3::connectPageSignals()
 {
+    const DefiTxTabPage *tx_page =  txPage();
+    if (!tx_page) {emit signalError("DefiChainTabV3: tx_page is NULL");  return;}
+
     for (int i=0; i<tabWidget()->count(); i++)
     {
         BaseTabPage_V3 *w = qobject_cast<BaseTabPage_V3*>(tabWidget()->widget(i));
         if (w)
         {
             w->setChain(chainId());
+            connect(w, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
+            connect(w, SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
+
             connect(w, SIGNAL(signalRewriteJsonFile(const QJsonObject&, QString)), this, SIGNAL(signalRewriteJsonFile(const QJsonObject&, QString)));
-            //connect(w, SIGNAL(signalRunNodejsBridge(const QStringList&)), js_bridge, SLOT(slotRunScriptArgs(const QStringList&)));
             connect(w, SIGNAL(signalRunNodejsBridge(QString, const QStringList&)), this, SLOT(slotPageSendReq(QString, const QStringList&)));
             connect(js_bridge, SIGNAL(signalNodejsReply(const QJsonObject&)), w, SLOT(slotNodejsReply(const QJsonObject&)));
+
+            if (w->kind() != dpkTx)
+            {
+                connect(w, SIGNAL(signalNewTx(const TxLogRecord&)), tx_page, SLOT(slotNewTx(const TxLogRecord&)));
+            }
         }
     }
 }

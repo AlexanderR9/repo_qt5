@@ -1,6 +1,8 @@
 #include "txdialog.h"
 #include "appcommonsettings.h"
 #include "lstring.h"
+#include "deficonfig.h"
+#include "nodejsbridge.h"
 
 #include <QDebug>
 #include <QDialogButtonBox>
@@ -14,6 +16,7 @@
 #include <QGridLayout>
 #include <QMessageBox>
 
+#define ERROR_KEY       QString("error")
 
 //TxDialogBase
 TxDialogBase::TxDialogBase(TxDialogData &data, QWidget *parent)
@@ -79,10 +82,147 @@ QString TxDialogBase::captionByTXType(int tt)
 }
 void TxDialogBase::updateTitle()
 {
-    setWindowTitle(QString("TX operation: %1").arg(captionByTXType(m_data.tx_kind)));
+    setWindowTitle(QString("TX operation: %1  (%2)").arg(captionByTXType(m_data.tx_kind)).arg(m_data.chain_name.toUpper()));
     setWindowIcon(QIcon(TxDialogBase::iconByTXType(m_data.tx_kind)));
     setBoxTitle("Parameters");
 }
+QString TxDialogBase::findTokenName() const
+{
+    int cid = defi_config.getChainID(m_data.chain_name);
+    if (cid < 0) return "?";
+
+    if (m_data.token_addr == AppCommonSettings::nativeTokenAddress())
+        return defi_config.nativeTokenName(m_data.chain_name);
+
+    foreach (const DefiToken &v, defi_config.tokens)
+        if (v.chain_id == cid && v.address == m_data.token_addr) return v.name;
+    return "?";
+}
+void TxDialogBase::addErrorField(QString err_text)
+{
+    QString key = "err";
+    this->addSimpleWidget("Error", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, err_text);
+    const SimpleWidget *sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+    QString color = "#FF0000";
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg(color));
+    sw->label->setStyleSheet(QString("QLabel {color: %1;}").arg(color));
+
+    this->buttonBox->setEnabled(false);
+}
+void TxDialogBase::addSimulateField()
+{
+    QString key = "is_simulate";
+    this->addSimpleWidget("Simulate mode", LSimpleDialog::sdtBool, key);
+    const SimpleWidget *sw = this->widgetByKey(key);
+    if (!sw) return;
+    sw->checkBox->setChecked(true);
+}
+void TxDialogBase::slotApply()
+{
+    m_data.dialog_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(m_data.tx_kind));
+    bool sim = widgetValue("is_simulate").toBool();
+    m_data.dialog_params.insert(AppCommonSettings::nodejsTxSimulateFieldName(), (sim ? "yes" : "no"));
+    LSimpleDialog::slotApply();
+}
+
+
+///////////////////TxWrapDialog////////////////////////////
+TxWrapDialog::TxWrapDialog(TxDialogData &data, QWidget *parent)
+    :TxDialogBase(data, parent)
+{
+    setObjectName(QString("tx_wrap_dialog"));
+    resize(700, 300);
+
+    if (m_data.invalid()) return;
+
+    init();
+    addVerticalSpacer();
+
+    this->setCaptionsWidth(220);
+    setExpandWidgets();
+}
+void TxWrapDialog::checkFields(QString &err)
+{
+    err.clear();
+    switch (m_data.tx_kind)
+    {
+        case txWrap:
+        {
+            if (m_data.token_addr != AppCommonSettings::nativeTokenAddress())
+                err = QString("TX only native token (%1)").arg(defi_config.nativeTokenName(m_data.chain_name));
+            break;
+        }
+        case txUnwrap:
+        {
+            QString native_token = defi_config.nativeTokenName(m_data.chain_name);
+            QString cur_token = widgetValue("token_name").toString().trimmed();
+            if (QString("W%1").arg(native_token) != cur_token)
+                err = QString("TX only wraped native token (W%1)").arg(native_token);
+            break;
+        }
+        default:
+        {
+            err = QString("invalid operation %1 for this dialog").arg(m_data.tx_kind);
+            break;
+        }
+    }
+}
+void TxWrapDialog::init()
+{
+    QString key = "token_addr";
+    this->addSimpleWidget("Token address", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.token_addr);
+    const SimpleWidget *sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+    QString color = "#000080";
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg(color));
+
+    key = "token_name";
+    this->addSimpleWidget("Token name", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, findTokenName());
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+    sw->edit->setStyleSheet(QString("QLineEdit {color: #5F9EA0;}"));
+
+    key = "balance";
+    this->addSimpleWidget("Current balance", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value("balance", "-1"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    QString err;
+    checkFields(err);
+    if (!err.isEmpty()) {addErrorField(err); return;}
+
+    key = "amount";
+    QString s = "Amount of wraping token";
+    if (m_data.tx_kind == txUnwrap)  s = "Amount of unwraping token";
+    this->addSimpleWidget(s, LSimpleDialog::sdtString, key, 2);
+    this->setWidgetValue(key, "1.0");
+
+    addSimulateField();
+}
+void TxWrapDialog::slotApply()
+{
+    m_data.dialog_params.clear();
+    bool ok = true;
+    QString key = "amount";
+    float sum = this->widgetValue(key).toFloat(&ok);
+    if (!ok)
+        m_data.dialog_params.insert(ERROR_KEY, QString("invalid amount value (%1)").arg(widgetValue(key).toString()));
+    if (sum < 0.01 || sum > 10000)
+        m_data.dialog_params.insert(ERROR_KEY, QString("amount value out of range (%1) [sum < 0.01 || sum > 10000]").arg(widgetValue(key).toString()));
+    if (sum >= widgetValue("balance").toFloat())
+        m_data.dialog_params.insert(ERROR_KEY, QString("amount value over balance (%1)").arg(widgetValue(key).toString()));
+
+    m_data.dialog_params.insert(key, QString::number(sum, 'f', 4));
+
+    TxDialogBase::slotApply();
+}
+
+
 
 
 //TxDialogData
@@ -147,51 +287,6 @@ void TxApproveDialog::slotApply()
     LSimpleDialog::slotApply();
 }
 
-
-
-///////////////////TxWrapDialog////////////////////////////
-TxWrapDialog::TxWrapDialog(TxDialogData &data, QWidget *parent)
-    :TxDialogBase(data, parent)
-{
-    setObjectName(QString("tx_wrap_dialog"));
-    resize(500, 300);
-
-    if (m_data.invalid()) return;
-
-    init();
-    addVerticalSpacer();
-
-    this->setCaptionsWidth(220);
-    setExpandWidgets();
-}
-void TxWrapDialog::init()
-{
-    QString key = "token";
-    this->addSimpleWidget("Token name", LSimpleDialog::sdtString, key);
-    this->setWidgetValue(key, m_data.token_name);
-    const SimpleWidget *sw = this->widgetByKey(key);
-    if (!sw) return;
-    sw->edit->setReadOnly(true);
-    QString color = "#000080";
-    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg(color));
-
-    key = "amount";
-    QString s = "Amount of wraping token";
-    if (m_data.tx_kind == txUnwrap)  s = "Amount of unwraping token";
-    this->addSimpleWidget(s, LSimpleDialog::sdtString, key, 2);
-    this->setWidgetValue(key, "1.0");
-}
-void TxWrapDialog::slotApply()
-{
-    m_data.dialog_params.clear();
-    bool ok = true;
-    QString key = "amount";
-    float sum = this->widgetValue(key).toFloat(&ok);
-    if (!ok || sum < 0.01) m_data.dialog_params.insert(key, QString("invalid"));
-    else m_data.dialog_params.insert(key, QString::number(sum, 'f', 4));
-
-    LSimpleDialog::slotApply();
-}
 
 
 

@@ -250,10 +250,12 @@ void MainForm::slotAppSettingsChanged(QStringList list)
 void MainForm::slotError(const QString &text)
 {
     m_protocol->addText(text, LProtocolBox::ttErr);
+    m_protocol->moveScrollDown();
 }
 void MainForm::slotMsg(const QString &text)
 {
     m_protocol->addText(text, LProtocolBox::ttText);
+    m_protocol->moveScrollDown();
 }
 
 

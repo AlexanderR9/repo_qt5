@@ -6,19 +6,7 @@
 #include "lstring.h"
 #include "txdialog.h"
 #include "nodejsbridge.h"
-
-
-/*
-#include "ltable.h"
-#include "lfile.h"
-#include "lstring.h"
-#include "subcommonsettings.h"
-#include "jstxdialog.h"
-#include "lhttp_types.h"
-#include "lhttpapirequester.h"
-#include "walletbalancehistory.h"
-#include "jstxlogger.h"
-*/
+#include "txlogrecord.h"
 
 
 #include <QTableWidget>
@@ -59,6 +47,34 @@ DefiWalletTabPage::DefiWalletTabPage(QWidget *parent)
     //init BalanceHistory
     initBalanceHistoryObj();
     */
+}
+void DefiWalletTabPage::initTable()
+{
+    m_table = new LTableWidgetBox(this);
+    m_table->setTitle("Assets list");
+    m_table->vHeaderHide();
+    m_table->setObjectName("wallet_table");
+    QStringList headers;
+    headers << "Token" << "Address" << "Decimal" << "Amount" << "Price" << "Balance";
+    LTable::setTableHeaders(m_table->table(), headers);
+    m_table->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::SingleSelection);
+    m_table->setSelectionColor("#BDFF4F");
+    h_splitter->addWidget(m_table);
+
+    /////////////////////////////////////////
+
+    m_integratedTable = new LTableWidgetBox(this);
+    m_integratedTable->setTitle("Integrated state");
+    m_integratedTable->setObjectName("wallet_integrated_table");
+    headers.clear();
+    headers << "Value";
+    LTable::setTableHeaders(m_integratedTable->table(), headers);
+    headers.clear();
+    headers << "Balance" << "N assets" << "TX count" <<  "Gas price" << "Chain ID";
+    LTable::setTableHeaders(m_integratedTable->table(), headers, Qt::Vertical);
+    m_integratedTable->setSelectionMode(QAbstractItemView::NoSelection, QAbstractItemView::NoSelection);
+    LTable::createAllItems(m_integratedTable->table());
+    h_splitter->addWidget(m_integratedTable);
 }
 void DefiWalletTabPage::setChain(int cid)
 {
@@ -161,12 +177,15 @@ void DefiWalletTabPage::sendUpdateDataRequest()
 void DefiWalletTabPage::slotNodejsReply(const QJsonObject &js_reply)
 {
     QString req = js_reply.value(AppCommonSettings::nodejsReqFieldName()).toString();
-    qDebug()<<QString("req kind: [%1]").arg(req);
+    qDebug()<<QString("DefiWalletTabPage::slotNodejsReply - req kind: [%1]").arg(req);
 
     if (req == NodejsBridge::jsonCommandValue(nrcBalance)) updateAmounts(js_reply);
     else if (req == NodejsBridge::jsonCommandValue(nrcTXCount)) updateIntegratedTable(req, js_reply);
     else if (req == NodejsBridge::jsonCommandValue(nrcGasPrice)) updateIntegratedTable(req, js_reply);
     else if (req == NodejsBridge::jsonCommandValue(nrcChainID)) updateIntegratedTable(req, js_reply);
+    else if (req == NodejsBridge::jsonCommandValue(txWrap)) checkTxResult(req, js_reply);
+    else if (req == NodejsBridge::jsonCommandValue(txUnwrap)) checkTxResult(req, js_reply);
+    else return;
 
     m_table->resizeByContents();
     m_integratedTable->resizeByContents();
@@ -228,6 +247,13 @@ void DefiWalletTabPage::updateAmounts(const QJsonObject &js_reply)
 
     if (t->item(0, PRICE_COL)->text() ==  "---") emit signalGetPrices();
     else updateTotalBalance();
+}
+bool DefiWalletTabPage::hasBalances() const
+{
+    bool ok = false;
+    if (m_table->table()->rowCount() <= 0) return ok;
+    m_table->table()->item(0, AMOUNT_COL)->text().toFloat(&ok);
+    return ok;
 }
 void DefiWalletTabPage::updateBalance(int row) const
 {
@@ -323,15 +349,62 @@ void DefiWalletTabPage::initPopupMenu()
 }
 void DefiWalletTabPage::slotWrap()
 {
-    qDebug("DefiWalletTabPage::slotWrap()");
-    QJsonObject j_params;
-    //j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcTXCount));
-    //sendTxNodejsRequest(j_params);
+    if (!hasBalances()) {emit signalError("DefiWalletTabPage: Balances must updated"); return;}
+
+    int row = m_table->curSelectedRow();
+    if (row < 0) {emit signalError("DefiWalletTabPage: You must select row"); return;}
+    QTableWidget *t = m_table->table();
+
+    TxDialogData data(txWrap, curChainName());
+    data.token_addr = t->item(row, ADDRESS_COL)->text().trimmed();
+    data.dialog_params.insert("balance", t->item(row, AMOUNT_COL)->text());
+    TxWrapDialog d(data, this);
+    d.exec();
+    if (d.isApply())
+    {
+        sendTxNodejsRequest(data);
+
+        /*
+        emit signalMsg(QString("Try send TX [%1]").arg(NodejsBridge::jsonCommandValue(data.tx_kind)));
+        if (data.dialog_params.contains("error")) {emit signalError(data.dialog_params.value("error")); return;}
+
+        QJsonObject j_params;
+        QStringList keys(data.dialog_params.keys());
+        foreach (const QString &v, keys)
+            j_params.insert(v, data.dialog_params.value(v));
+        sendTxNodejsRequest(j_params);
+        */
+    }
+    else emit signalMsg("operation was canceled!");
 }
 void DefiWalletTabPage::slotUnwrap()
 {
-    qDebug("DefiWalletTabPage::slotUnwrap()");
+    if (!hasBalances()) {emit signalError("DefiWalletTabPage: Balances must updated"); return;}
 
+    int row = m_table->curSelectedRow();
+    if (row < 0) {emit signalError("DefiWalletTabPage: You must select row"); return;}
+    QTableWidget *t = m_table->table();
+
+    TxDialogData data(txUnwrap, curChainName());
+    data.token_addr = t->item(row, ADDRESS_COL)->text().trimmed();
+    data.dialog_params.insert("balance", t->item(row, AMOUNT_COL)->text());
+    TxWrapDialog d(data, this);
+    d.exec();
+    if (d.isApply())
+    {
+        sendTxNodejsRequest(data);
+        /*
+        emit signalMsg(QString("Try send TX [%1]").arg(NodejsBridge::jsonCommandValue(data.tx_kind)));
+        if (data.dialog_params.contains("error")) {emit signalError(data.dialog_params.value("error")); return;}
+
+        QJsonObject j_params;
+        QStringList keys(data.dialog_params.keys());
+        foreach (const QString &v, keys)
+            j_params.insert(v, data.dialog_params.value(v));
+        sendTxNodejsRequest(j_params);
+        */
+    }
+    else emit signalMsg("operation was canceled!");
 }
 void DefiWalletTabPage::slotTransfer()
 {
@@ -359,6 +432,33 @@ void DefiWalletTabPage::slotGetChainID()
     j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcChainID));
     sendReadNodejsRequest(j_params);
 }
+void DefiWalletTabPage::checkTxResult(QString req, const QJsonObject &js_reply)
+{
+    bool is_simulate = (js_reply.value(AppCommonSettings::nodejsTxSimulateFieldName()).toString() == "yes");
+    emit signalMsg("");
+    emit signalMsg(QString("//////////// REPLY form TX request [%1] ///////////////").arg(req));
+    int result_code = js_reply.value("code").toString().toInt();
+    emit signalMsg(QString("simulate_mode = %1").arg(is_simulate?"YES":"NO"));
+    emit signalMsg(QString("result_code = %1").arg(result_code));
+
+    if (is_simulate)
+    {
+        emit signalMsg(QString("estimated_gas = %1").arg(js_reply.value("estimated_gas").toString()));
+    }
+    else if (js_reply.contains(AppCommonSettings::nodejsTxHashFieldName()))
+    {
+        TxLogRecord tx_rec(req, curChainName());
+        tx_rec.tx_hash = js_reply.value(AppCommonSettings::nodejsTxHashFieldName()).toString().trimmed().toLower();
+
+        if (req == NodejsBridge::jsonCommandValue(txWrap))
+        {
+            tx_rec.wallet.token_addr = js_reply.value("token_address").toString();
+            tx_rec.wallet.token_amount = js_reply.value("amount").toString().toFloat();
+            tx_rec.note = QString("wrap %1").arg(defi_config.nativeTokenName(curChainName()));
+        }
+        emit signalNewTx(tx_rec);
+    }
+}
 
 
 
@@ -371,124 +471,14 @@ void JSWalletTab::initBalanceHistoryObj()
     connect(m_balanceHistory, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
 
 }
-void JSWalletTab::loadAssetIcons()
-{
-    QTableWidget *t = m_table->table();
-    int n_rows = t->rowCount();
-    for (int i=0; i<n_rows; i++)
-    {
-        QString ticker = t->item(i, TOKEN_COL)->text().trimmed();
-        int pos = ticker.indexOf("(");
-        if (pos > 0) ticker = ticker.left(pos).trimmed();
-        QString icon_name = QString("%1.png").arg(ticker.toLower());
-        QString icon_path = QString("%1/crypto/%2").arg(SubGraph_CommonSettings::commonIconsPath()).arg(icon_name);
 
-        QTableWidgetItem *item = t->item(i, 0);
-        if (item) item->setIcon(QIcon(icon_path));
-
-        //set token_id coingecko
-        QString ids = SubGraph_CommonSettings::tokenIdCoingecko(ticker);
-        t->item(i, PRICE_COL)->setData(Qt::UserRole, ids);
-    }
-    t->setIconSize(QSize(24, 24));
-}
 */
 
 
 
 
 /*
-void JSWalletTab::slotHttpReqFinished(int result)
-{
-    qDebug()<<QString("JSWalletTab::slotHttpReqFinished: REQUEST FINISHED result=%1").arg(result);
-    emit signalMsg(QString("price request finished, result %1").arg(result));
 
-    const LHttpApiReplyData& r = m_priceRequester->lastReply();
-    if (r.data.isEmpty()) emit signalMsg("WARNING: REPLY JSON IS EMPTY");
-    if (r.isOk())
-    {
-        qDebug("parse HTTP response");
-        parseHttpResponse(r.data);
-        m_table->resizeByContents();
-    }
-    else emit signalError("request fault");
-}
-void JSWalletTab::parseHttpResponse(const QJsonObject &j_obj)
-{
-    QStringList keys(j_obj.keys());
-    if (keys.isEmpty()) {emit signalError("JSWalletTab: coingecko response is empty"); return;}
-
-    foreach (const QString &v, keys)
-    {
-        qDebug()<<QString("parseHttpResponse %1").arg(v);
-        const QJsonValue &j_data = j_obj.value(v);
-        if (j_data.isObject())
-        {
-            QJsonValue j_price = j_data.toObject().value("usd");
-            double price = j_price.toDouble();
-            updatePriceItem(v, price);
-        }
-        else qWarning("WARNING j_data is not jobj");
-    }
-
-    QTableWidget *t = m_table->table();
-    int n_rows = t->rowCount();
-    for (int i=0; i<n_rows; i++)
-        if (t->item(i, PRICE_COL)->text() == "---")
-            t->item(i, PRICE_COL)->setTextColor(Qt::lightGray);
-}
-void JSWalletTab::updatePriceItem(QString ids, double value)
-{
-    QTableWidget *t = m_table->table();
-    int n_rows = t->rowCount();
-    for (int i=0; i<n_rows; i++)
-    {
-        QString item_ids = t->item(i, PRICE_COL)->data(Qt::UserRole).toString().trimmed();
-        if (item_ids == ids)
-        {
-            t->item(i, PRICE_COL)->setText(QString::number(value, 'f', 3));
-            t->item(i, PRICE_COL)->setTextColor(Qt::darkBlue);
-        }
-    }
-}
-void JSWalletTab::sendHttpReq()
-{
-    qDebug("\n\n");
-    qDebug("JSWalletTab::sendHttpReq() ..............");
-    QString uri = "api/v3/simple/price?";
-    prepareCoingeckoParams(uri);
-    if (uri.isEmpty()) {signalError("JSWalletTab coingecko ids is empty"); return;}
-    m_priceRequester->setUri(uri);
-
-    qDebug("-------------------------------------------");
-    emit signalMsg(QString("Send price request URL: %1").arg(m_priceRequester->fullUrl()));
-    qDebug()<<m_priceRequester->metadata();
-//    emit signalEnableControls(false);
-    m_priceRequester->start(hrmGet);
-}
-void JSWalletTab::prepareCoingeckoParams(QString &uri)
-{
-    QStringList id_tokens;
-    QTableWidget *t = m_table->table();
-    int n_rows = t->rowCount();
-    for (int i=0; i<n_rows; i++)
-    {
-        QString ticker = t->item(i, TOKEN_COL)->text().trimmed();
-        if (SubGraph_CommonSettings::isStableToken(ticker)) continue;
-        //if (SubGraph_CommonSettings::isWrapedToken(ticker)) ticker = LString::strTrimLeft(ticker, 1);
-
-        QString id = SubGraph_CommonSettings::tokenIdCoingecko(ticker).trimmed();
-        if (!id.isEmpty() && !id_tokens.contains(id)) id_tokens.append(id);
-    }
-    if (id_tokens.isEmpty()) {uri.clear(); return;}
-
-    uri+=QString("ids=");
-    foreach (const QString &v, id_tokens)
-        uri = QString("%1%2,").arg(uri).arg(v);
-    uri = LString::strTrimRight(uri, 1);
-
-    uri+=QString("&vs_currencies=usd");
-}
 
 void JSWalletTab::slotWrap()
 {
@@ -669,38 +659,9 @@ void JSWalletTab::loadAssetsFromFile()
     m_table->resizeByContents();
 }
 */
-void DefiWalletTabPage::initTable()
-{
-    m_table = new LTableWidgetBox(this);
-    m_table->setTitle("Assets list");
-    m_table->vHeaderHide();
-    m_table->setObjectName("wallet_table");
-    QStringList headers;
-    headers << "Token" << "Address" << "Decimal" << "Amount" << "Price" << "Balance";
-    LTable::setTableHeaders(m_table->table(), headers);
-    m_table->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::SingleSelection);
-    m_table->setSelectionColor("#BDFF4F");
 
-    h_splitter->addWidget(m_table);
-    //m_table->resizeByContents();
 
-    /////////////////////////////////////////
 
-    m_integratedTable = new LTableWidgetBox(this);
-    m_integratedTable->setTitle("Integrated state");
-    m_integratedTable->setObjectName("wallet_integrated_table");
-    headers.clear();
-    headers << "Value";
-    LTable::setTableHeaders(m_integratedTable->table(), headers);
-    headers.clear();
-    headers << "Balance" << "N assets" << "TX count" <<  "Gas price" << "Chain ID";
-    LTable::setTableHeaders(m_integratedTable->table(), headers, Qt::Vertical);
-    m_integratedTable->setSelectionMode(QAbstractItemView::NoSelection, QAbstractItemView::NoSelection);
-    LTable::createAllItems(m_integratedTable->table());
-
-    h_splitter->addWidget(m_integratedTable);
-
-}
 /*
 void JSWalletTab::initHttpRequester()
 {

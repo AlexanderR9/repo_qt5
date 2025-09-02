@@ -32,6 +32,10 @@ protected:
     void updateTotalBalance() const;
     void initTokenList(int); // загрузить список токенов из конфигурации для указанной сети
     void initPopupMenu(); //инициализировать элементы всплывающего меню
+    bool hasBalances() const; // проверка что балансы кошелька были получены
+
+    //check nodejs reply after TX
+    void checkTxResult(QString, const QJsonObject&);
 
 public slots:
     void slotNodejsReply(const QJsonObject&); //получен успешный ответ от скрипта nodejs
@@ -50,39 +54,11 @@ signals:
 
     /*
     WalletBalanceHistory    *m_balanceHistory;
-
-    void addTokenToTable(const QStringList&);
-    void loadAssetIcons();
-    void updateTokenBalance(const QString&, const QString&);
-    void updateBalances(const QJsonObject&);
-    void lookTxAnswer(const QJsonObject&);
-    void initHttpRequester();
-    void sendHttpReq();
-    void parseHttpResponse(const QJsonObject&);
     void initBalanceHistoryObj();
-    void loadAssetsFromFile(); //загрузить список активов из файла
-    void sendTxRecordToLog(const QJsonObject&); //подготовить и отправить запись о выполненной транзакции в JSTxLogger для добавления в журнал
-
-
-private:
-    void initNativeToken();
-    void prepareCoingeckoParams(QString&);
-    void updatePriceItem(QString, double);
-    float findTokenPrice(QString) const; //ищет текущую цену токена в таблице, параметр может быть как имя токена так и адрес, в случае ошибки вернет -1
-
-
-
 public slots:
     void slotScriptBroken();
-    void slotGetTokenPrice(const QString&, float&) const;
-    void slotGetChainName(QString&);
-
 signals:
-    void signalWalletTx(const QStringList&);
     void signalBalancesUpdated(QString);
-    void signalChainUpdated();
-    void signalSendTxLog(const JSTxLogRecord&);
-    //void signalStartTXDelay();
     */
 
 

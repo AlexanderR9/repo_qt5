@@ -77,9 +77,13 @@ struct DefiConfiguration
     QList<DefiToken> tokens;
     QList<DefiPoolV3> pools;
     BybitSettings bb_settings;
+    quint16 delayAfterTX; // seconds
 
     void reset();
     int chainIndexOf(int) const; // возврвщает индекс элемента chains по указанному id или -1
+    int getChainID(QString) const; //получить id сети по ее названию, в случае ошибки вернет -1
+    QString nativeTokenName(QString) const; //получить имя нативного токена для указанной сети
+    float lastPriceByTokenName(QString) const; // получить последнюю цену по тикеру токена
 
 };
 

@@ -17,12 +17,39 @@ void DefiConfiguration::reset()
     chains.clear();
     tokens.clear();
     pools.clear();
+    delayAfterTX = 8;
 }
 int DefiConfiguration::DefiConfiguration::chainIndexOf(int cid) const
 {
     if (chains.isEmpty()) return -1;
     for (int i=0; i<chains.count(); i++)
         if (chains.at(i).chain_id == cid) return i;
+    return -1;
+}
+int DefiConfiguration::getChainID(QString chain_name) const
+{
+    chain_name = chain_name.trimmed().toLower();
+    foreach (const DefiChain &v, chains)
+        if (v.name == chain_name) return v.chain_id;
+    return -1;
+}
+QString DefiConfiguration::nativeTokenName(QString chain_name) const
+{
+    chain_name = chain_name.trimmed().toLower();
+    foreach (const DefiChain &v, chains)
+        if (v.name == chain_name) return v.coin;
+    return "?";
+}
+float DefiConfiguration::lastPriceByTokenName(QString t_name) const
+{
+    t_name = t_name.trimmed();
+    if (t_name.length() < 2) return -1;
+
+    foreach (const DefiToken &v, tokens)
+    {
+        if (v.name == t_name) return v.last_price;
+        if (v.name == QString("W%1").arg(t_name)) return v.last_price;
+    }
     return -1;
 }
 

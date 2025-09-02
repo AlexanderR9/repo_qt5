@@ -1,6 +1,8 @@
 #include "basetabpage_v3.h"
 #include "deficonfig.h"
 #include "appcommonsettings.h"
+#include "txdialog.h"
+#include "nodejsbridge.h"
 
 #include <QSettings>
 #include <QSplitter>
@@ -53,8 +55,18 @@ void BaseTabPage_V3::sendReadNodejsRequest(const QJsonObject &j_params)
     args << "reader.js" << AppCommonSettings::readParamsNodeJSFile();
     emit signalRunNodejsBridge(j_params.value(AppCommonSettings::nodejsReqFieldName()).toString(), args);
 }
-void BaseTabPage_V3::sendTxNodejsRequest(const QJsonObject &j_params)
+void BaseTabPage_V3::sendTxNodejsRequest(const TxDialogData &tx_data /*const QJsonObject &j_params*/)
 {
+    emit signalMsg(QString("Try send TX [%1]").arg(NodejsBridge::jsonCommandValue(tx_data.tx_kind)));
+    if (tx_data.dialog_params.contains("error")) {emit signalError(tx_data.dialog_params.value("error")); return;}
+
+    QJsonObject j_params;
+    QStringList keys(tx_data.dialog_params.keys());
+    foreach (const QString &v, keys)
+        j_params.insert(v, tx_data.dialog_params.value(v));
+
+
+    // second part
     emit signalRewriteJsonFile(j_params, AppCommonSettings::txParamsNodeJSFile()); //rewrite params json-file
 
     QStringList args;
