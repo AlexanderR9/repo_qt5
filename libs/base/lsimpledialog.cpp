@@ -17,6 +17,7 @@
  #include <QDoubleValidator>
  #include <QSpacerItem>
  #include <QColorDialog>
+ #include <QFrame>
 
 
 /////////////LSimpleDialog/////////////////////////
@@ -74,6 +75,15 @@ void LSimpleDialog::addVerticalSpacer()
 
     QSpacerItem *verticalSpacer = new QSpacerItem(20, 30, QSizePolicy::Minimum, QSizePolicy::Expanding);
     lay->addItem(verticalSpacer);
+}
+void LSimpleDialog::addLineSeparator(quint8 w, QString color)
+{
+    QFrame* myFrame = new QFrame(this);
+    myFrame->setFrameShape(QFrame::HLine);
+    myFrame->setLineWidth(w);
+    myFrame->setStyleSheet(QString("QFrame {color: %1;}").arg(color));
+    QVBoxLayout *lay = qobject_cast<QVBoxLayout*>(groupBox->layout());
+    if (lay) lay->addWidget(myFrame);
 }
 void LSimpleDialog::addSimpleWidget(QString caption, int dataType, QString key, int precision)
 {

@@ -154,6 +154,7 @@ QString LMainWidget::actionIconName(int type)
         case atClock: return QString("clock");
         case atOpen: return QString("document-open");
         case atSave: return QString("document-save");
+        case atNewProject: return QString("document-new");
         case atSearch: return QString("system-search");
         case atUp: return QString("up");
         case atDown: return QString("down");
@@ -210,6 +211,7 @@ QString LMainWidget::actionText(int type)
         case atClock: return QString("Clock");
         case atOpen: return QString("Open");
         case atSave: return QString("Save");
+        case atNewProject: return QString("New project");
         case atSearch: return QString("Search");
         case atUp: return QString("Up");
         case atDown: return QString("Down");

@@ -74,6 +74,7 @@ protected:
     const SimpleWidget* widgetByKey(QString) const; //key
     void placeSimpleWidget(const SimpleWidget&);
     void addVerticalSpacer();
+    void addLineSeparator(quint8 w = 1, QString color = "#696969");
     virtual void save() {}
     virtual void closeEvent(QCloseEvent*) {save();}
 

@@ -25,12 +25,8 @@ public:
     virtual void sendUpdateDataRequest() {}; //срабатывает по нажатию пользователем кнопки в тулбаре
     virtual void setChain(int);
 
-    /*
-    void loadTxFromFile(QString); //загрузить список hash из файла
-    inline int txCount() const {return tx_data.count();}
-    void parseJSResult(const QJsonObject&);
-    void getAllWaitingStates(); //запросить состояние у всех записей, которые в режиме ожидания
-*/
+    void checkStatusLastTx(); // после выполнения транзакции и зпдержки после нее, необходимо автоматом проверить статус выполнения
+
 protected:
     DefiTxLogger    *m_logger; //managet tx records
 
@@ -41,6 +37,8 @@ protected:
 
     // после получения статуса транзакции и обновления самой записи в m_logger необходимо обновить соответствующую строку в таблице
     void updateTableRowByRecord(const QString&);
+
+    void updateRowColor(int); // обновить цвета  некоторых ячеек строки (tx_kind/status)
 
 
     /*

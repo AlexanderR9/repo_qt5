@@ -18,6 +18,16 @@
 
 #define ERROR_KEY       QString("error")
 
+
+//TxDialogData
+bool TxDialogData::invalid() const
+{
+    return (tx_kind < txWrap || tx_kind > txBurn);
+}
+
+
+//////////////////////////DIALOGS/////////////////////////////////////
+
 //TxDialogBase
 TxDialogBase::TxDialogBase(TxDialogData &data, QWidget *parent)
     :LSimpleDialog(parent),
@@ -196,6 +206,9 @@ void TxWrapDialog::init()
     checkFields(err);
     if (!err.isEmpty()) {addErrorField(err); return;}
 
+    addLineSeparator(2, "#2F4F4F");
+
+
     key = "amount";
     QString s = "Amount of wraping token";
     if (m_data.tx_kind == txUnwrap)  s = "Amount of unwraping token";
@@ -223,13 +236,87 @@ void TxWrapDialog::slotApply()
 }
 
 
-
-
-//TxDialogData
-bool TxDialogData::invalid() const
+///////////////////TxTransferDialog////////////////////////////
+TxTransferDialog::TxTransferDialog(TxDialogData &data, QWidget *parent)
+    :TxDialogBase(data, parent)
 {
-    return (tx_kind < txWrap || tx_kind > txBurn);
+    setObjectName(QString("tx_transfer_dialog"));
+    resize(700, 300);
+
+    if (m_data.invalid()) return;
+
+    init();
+    addVerticalSpacer();
+
+    this->setCaptionsWidth(220);
+    setExpandWidgets();
 }
+void TxTransferDialog::init()
+{
+    QString key = "token_name";
+    this->addSimpleWidget("Transfering token name", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, findTokenName());
+    const SimpleWidget *sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+    sw->edit->setStyleSheet(QString("QLineEdit {color: #5F9EA0;}"));
+
+    key = "token_addr";
+    this->addSimpleWidget("Token address", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.token_addr);
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+    QString color = "#000080";
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg(color));
+
+    key = "balance";
+    this->addSimpleWidget("Current balance", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value("balance", "-1"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    addLineSeparator(2, "#2F4F4F");
+
+    key = "amount";
+    QString s = "Amount of wraping token";
+    if (m_data.tx_kind == txUnwrap)  s = "Amount of unwraping token";
+    this->addSimpleWidget(s, LSimpleDialog::sdtString, key, 2);
+    this->setWidgetValue(key, "1.0");
+
+    key = "to_wallet";
+    this->addSimpleWidget("TO wallet address", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, "0x");
+
+    addSimulateField();
+
+}
+void TxTransferDialog::slotApply()
+{
+    m_data.dialog_params.clear();
+    bool ok = true;
+
+    //check amount
+    QString key = "amount";
+    float sum = this->widgetValue(key).toFloat(&ok);
+    if (!ok)
+        m_data.dialog_params.insert(ERROR_KEY, QString("invalid amount value (%1)").arg(widgetValue(key).toString()));
+    if (sum < 0.01 || sum > 10000)
+        m_data.dialog_params.insert(ERROR_KEY, QString("amount value out of range (%1) [sum < 0.01 || sum > 10000]").arg(widgetValue(key).toString()));
+    if (sum >= widgetValue("balance").toFloat())
+        m_data.dialog_params.insert(ERROR_KEY, QString("amount value over balance (%1)").arg(widgetValue(key).toString()));
+    m_data.dialog_params.insert(key, QString::number(sum, 'f', 4));
+
+    //check walet
+    key = "to_wallet";
+    QString w_addr(this->widgetValue(key).toString().trimmed());
+    if (w_addr.length() > 20) m_data.dialog_params.insert(key, w_addr);
+    else m_data.dialog_params.insert(ERROR_KEY, QString("target wallet address incorrect (%1)").arg(w_addr));
+
+    m_data.dialog_params.insert("token_address", widgetValue("token_addr").toString().trimmed());
+    TxDialogBase::slotApply();
+}
+
+
+
 
 /*
 
@@ -288,61 +375,6 @@ void TxApproveDialog::slotApply()
 }
 
 
-
-
-///////////////////TxTransferDialog////////////////////////////
-TxTransferDialog::TxTransferDialog(TxDialogData &data, QWidget *parent)
-    :TxDialogBase(data, parent)
-{
-    setObjectName(QString("tx_transfer_dialog"));
-    resize(700, 300);
-
-    if (m_data.invalid()) return;
-
-    init();
-    addVerticalSpacer();
-
-    this->setCaptionsWidth(220);
-    setExpandWidgets();
-}
-void TxTransferDialog::init()
-{
-    QString key = "token";
-    this->addSimpleWidget("Transfering token", LSimpleDialog::sdtString, key);
-    QString t_value = (m_data.token_addr.isEmpty() ? m_data.token_name : m_data.token_addr);
-    this->setWidgetValue(key, t_value);
-    const SimpleWidget *sw = this->widgetByKey(key);
-    if (!sw) return;
-    sw->edit->setReadOnly(true);
-    QString color = "#000080";
-    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg(color));
-
-    key = "amount";
-    this->addSimpleWidget("Amount of token", LSimpleDialog::sdtString, key, 2);
-    this->setWidgetValue(key, "1.0");
-
-    key = "to_wallet";
-    this->addSimpleWidget("TO wallet address", LSimpleDialog::sdtString, key);
-    this->setWidgetValue(key, "0x");
-}
-void TxTransferDialog::slotApply()
-{
-    m_data.dialog_params.clear();
-    bool ok = true;
-    QString key = "amount";
-    float sum = this->widgetValue(key).toFloat(&ok);
-    if (!ok || sum < 0.01) m_data.dialog_params.insert(key, QString("invalid"));
-    else m_data.dialog_params.insert(key, QString::number(sum, 'f', 4));
-
-    key = "to_wallet";
-    QString w_addr(this->widgetValue(key).toString().trimmed());
-    if (w_addr.length() > 20) m_data.dialog_params.insert(key, w_addr);
-
-    key = "token";
-    m_data.dialog_params.insert(key, widgetValue(key).toString().trimmed());
-
-    LSimpleDialog::slotApply();
-}
 
 
 

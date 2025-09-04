@@ -27,7 +27,7 @@ public:
     virtual void save(QSettings&);
 
     void startUpdating(); // запустить сценарий запросов для обновления данных на текущей странице
-    void breakUpdating(); // принудительный останов сценария запросов по кнопке
+    //void breakUpdating(); // принудительный останов сценария запросов по кнопке
     void setEnableControl(bool);
 
 protected:
@@ -55,7 +55,7 @@ protected slots:
     void slotRewriteJsonFile(const QJsonObject&, QString);
     void slotHttpReqFinished(int); //выполняется всякий раз когда завершился очередной запрос http_requester, независимо от кода успешности
     void slotTXDelayFinished(); //выполняется когда принудительная задержка после транзакции истекла
-    void slotStartTXDelay(); //запустить принудительную задержку после выполнения транзакции
+    void slotStartTXDelay(); //запустить принудительную задержку после выполнения реальной транзакции
 
 public slots:
     void slotSendHttpReq(); //выполнить запрос цен

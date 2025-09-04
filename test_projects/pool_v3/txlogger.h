@@ -72,9 +72,9 @@ protected:
     void loadTxDetailsFile(); //load tx_details.txt
 
     // после получения обновленной инфы по некоторой записи (например status или PID position) .
-    // эти правки нужно внести в соответствующих строках в файлах tx_state.txt / tx_details.txt.
+    // эти правки нужно внести в соответствующих строках в файлах tx_state.txt / tx_details.txt (т.е. просто переписать их).
     // т.е. предполагается что базовая инфа уже была добавлена ранее в tx_list.txt / tx_details.txt.
-    void rewriteFileLineByRec(const TxLogRecord&);
+    void rewriteStatusFiles();
 
 };
 

@@ -1,6 +1,7 @@
 #include "txlogrecord.h"
 #include "appcommonsettings.h"
 #include "lstring.h"
+#include "nodejsbridge.h"
 
 
 #define FEE_COIN_PRECISION          8
@@ -38,7 +39,7 @@ bool TxLogRecord::resultFault() const
 }
 bool TxLogRecord::isFinishedStatus() const
 {
-    return (!resultOk() && !resultFault());
+    return (resultOk() || resultFault());
 }
 void TxLogRecord::parseDetails(const QString &fdata)
 {
@@ -53,6 +54,14 @@ void TxLogRecord::parseDetails(const QString &fdata)
             parseDetail(f_name, f_value);
         }
     }
+}
+void TxLogRecord::parseStatus(const QStringList &rec_data)
+{
+    //   записи в файле имеют вид: tx_hash / STATUS(OK/FAULT) / gas_used / gas_fee_coin / gas_fee_usd_cents
+    status.result = rec_data.at(1);
+    status.gas_used = rec_data.at(2).toUInt();
+    status.fee_coin = rec_data.at(3).toFloat();
+    status.fee_cent = rec_data.at(4).toFloat();
 }
 void TxLogRecord::parseDetail(QString field, QString value)
 {
@@ -103,7 +112,7 @@ QString TxLogRecord::listFileLine() const
 QString TxLogRecord::statusFileLine() const
 {
     if (invalid()) return QString();
-    if (!isFinishedStatus()) return QString();
+    //if (!isFinishedStatus()) return QString();
 
     //   записи в файле имеют вид: tx_hash / STATUS(OK/FAULT) / gas_used / gas_fee_coin / gas_fee_usd_cents
     QString s = QString("%1 / %2 / %3").arg(tx_hash).arg(status.result).arg(status.gas_used);
@@ -118,9 +127,14 @@ QString TxLogRecord::detailsFileLine() const
     //    записи в файле имеют вид: tx_hash / status / (набор полей, соответствующий tx_kind, через ';')
     QString s = QString("%1 / %2").arg(tx_hash).arg(status.result);
     QString additions;
-    if (tx_kind == "wrap" || tx_kind == "unwrap")
+    if (tx_kind == NodejsBridge::jsonCommandValue(txWrap) || tx_kind == NodejsBridge::jsonCommandValue(txUnwrap))
     {
         additions = QString("token_addr[%1]; token_amount[%2];").arg(wallet.token_addr).arg(wallet.token_amount);
+    }
+    else if (tx_kind == NodejsBridge::jsonCommandValue(txTransfer) )
+    {
+        additions = QString("token_addr[%1]; token_amount[%2];").arg(wallet.token_addr).arg(wallet.token_amount);
+        additions = QString("%1 to_wallet[%2]").arg(additions).arg(wallet.target_wallet);
     }
     additions = QString("%1 note[%2]").arg(additions).arg(note);
 

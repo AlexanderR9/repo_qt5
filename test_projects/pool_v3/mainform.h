@@ -31,7 +31,7 @@ protected:
     void save();
     void load();
 
-    void actStop(); //break requests line
+  //  void actStop(); //break requests line
     void actStartUpdating(); //send many request by timer
 
 protected slots:

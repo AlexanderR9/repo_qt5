@@ -31,7 +31,7 @@ void MainForm::initActions()
     //addAction(LMainWidget::atStart);
     addAction(LMainWidget::atRefresh);
     //addAction(LMainWidget::atMonitoring);
-    addAction(LMainWidget::atStop);
+    //addAction(LMainWidget::atStop);
     addAction(LMainWidget::atClear);
     //addAction(LMainWidget::atSave);
     //addAction(LMainWidget::atLoadData);
@@ -40,9 +40,9 @@ void MainForm::initActions()
     addAction(LMainWidget::atSettings);
     addAction(LMainWidget::atExit);
 
-    //this->setActionTooltip(atStart, "Send free query");
-    //this->setActionTooltip(atSave, "Save page data to file");
-    //this->setActionTooltip(atLoadData, "Load page data from file");
+    this->setActionTooltip(atRefresh, "Update page data from chain");
+    this->setActionTooltip(atClear, "Clear protocol");
+    this->setActionTooltip(atSettings, "Application common settings");
     //this->setActionTooltip(atMonitoring, "Get state of positions with liquitydy");
 
 }
@@ -51,7 +51,7 @@ void MainForm::slotAction(int type)
     switch (type)
     {  
         //case LMainWidget::atStart: {actStart(); break;}
-        case LMainWidget::atStop: {actStop(); break;}
+        //case LMainWidget::atStop: {actStop(); break;}
         case LMainWidget::atRefresh: {actStartUpdating(); break;}
         case LMainWidget::atSettings: {actCommonSettings(); break;}
         case LMainWidget::atClear: {m_protocol->clearProtocol(); break;}
@@ -77,7 +77,9 @@ void MainForm::initWidgets()
     connect(m_centralWidget, SIGNAL(signalEnableControls(bool)), this, SLOT(slotEnableControls(bool)));
     connect(m_centralWidget, SIGNAL(signalTabPageChanged(int)), this, SLOT(slotVisibleActionsUpdate(int)));
 
+    //qDebug("MainForm::initWidgets() 1");
     slotEnableControls(true);
+    //qDebug("MainForm::initWidgets() 2");
 }
 void MainForm::initCommonSettings()
 {
@@ -127,16 +129,22 @@ void MainForm::slotVisibleActionsUpdate(int p_kind)
     switch(p_kind)
     {
 
+    case dpkWallet:
+    {
+        getAction(atRefresh)->setVisible(true);
+        break;
+    }
+    case dpkTx:
+    {
+        getAction(atRefresh)->setVisible(false);
+        break;
+    }
+    case dpkApproved:
+    {
+        getAction(atRefresh)->setVisible(false);
+        break;
+    }
     /*
-        case rtJsonView:
-        {
-            getAction(atStart)->setVisible(true);
-            getAction(atRefresh)->setVisible(false);
-            getAction(atLoadData)->setVisible(false);
-            getAction(atSave)->setVisible(false);
-            getAction(atMonitoring)->setVisible(false);
-            break;
-        }
         case rtPools:
         {
             getAction(atStart)->setVisible(false);
@@ -188,12 +196,15 @@ void MainForm::slotVisibleActionsUpdate(int p_kind)
         default: break;
     }
 }
+/*
 void MainForm::actStop()
 {
     m_centralWidget->breakUpdating();
     m_protocol->addSpace();
     m_protocol->addText("breaked updating data of page!", LProtocolBox::ttWarning);
 }
+*/
+
 void MainForm::actStartUpdating()
 {
     m_protocol->addSpace();
@@ -229,7 +240,7 @@ void MainForm::load()
 void MainForm::slotEnableControls(bool b)
 {    
     //getAction(atStart)->setEnabled(b);
-    getAction(atStop)->setEnabled(!b);
+    //getAction(atStop)->setEnabled(!b);
     getAction(atRefresh)->setEnabled(b);
     //getAction(atMonitoring)->setEnabled(b);
     getAction(atSettings)->setEnabled(b);

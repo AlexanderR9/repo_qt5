@@ -45,7 +45,7 @@ protected:
     virtual void updateTitle();
     virtual QString findTokenName() const;
     virtual void addErrorField(QString);
-    virtual void checkFields(QString&) = 0;
+    //virtual void checkFields(QString&) {};
     virtual void addSimulateField();
 
 protected slots:
@@ -63,12 +63,27 @@ public:
 
 protected:
     void init();
-    virtual void checkFields(QString&);
+    void checkFields(QString&);
 
 protected slots:
     void slotApply();
-
 };
+
+//TxTransferDialog
+class TxTransferDialog : public TxDialogBase
+{
+    Q_OBJECT
+public:
+    TxTransferDialog(TxDialogData&, QWidget*);
+    virtual ~TxTransferDialog() {}
+
+protected:
+    void init();
+
+protected slots:
+    void slotApply();
+};
+
 
 
 /*
@@ -89,20 +104,6 @@ protected slots:
 };
 
 
-//TxTransferDialog
-class TxTransferDialog : public TxDialogBase
-{
-    Q_OBJECT
-public:
-    TxTransferDialog(TxDialogData&, QWidget*);
-    virtual ~TxTransferDialog() {}
-
-protected:
-    void init();
-
-protected slots:
-    void slotApply();
-};
 
 //TxSwapDialog
 class TxSwapDialog : public TxDialogBase

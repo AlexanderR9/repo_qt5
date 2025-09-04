@@ -76,6 +76,17 @@ void DefiWalletTabPage::initTable()
     LTable::createAllItems(m_integratedTable->table());
     h_splitter->addWidget(m_integratedTable);
 }
+QString DefiWalletTabPage::tickerByAddress(const QString &t_addr) const
+{
+    QTableWidget *t = m_table->table();
+    int n_rows = t->rowCount();
+    for (int i=0; i<n_rows; i++)
+    {
+        if (t->item(i, ADDRESS_COL)->text().trimmed() == t_addr)
+            return t->item(i, TOKEN_COL)->text().trimmed();
+    }
+    return QString();
+}
 void DefiWalletTabPage::setChain(int cid)
 {
     BaseTabPage_V3::setChain(cid);
@@ -185,6 +196,7 @@ void DefiWalletTabPage::slotNodejsReply(const QJsonObject &js_reply)
     else if (req == NodejsBridge::jsonCommandValue(nrcChainID)) updateIntegratedTable(req, js_reply);
     else if (req == NodejsBridge::jsonCommandValue(txWrap)) checkTxResult(req, js_reply);
     else if (req == NodejsBridge::jsonCommandValue(txUnwrap)) checkTxResult(req, js_reply);
+    else if (req == NodejsBridge::jsonCommandValue(txTransfer)) checkTxResult(req, js_reply);
     else return;
 
     m_table->resizeByContents();
@@ -389,26 +401,28 @@ void DefiWalletTabPage::slotUnwrap()
     data.token_addr = t->item(row, ADDRESS_COL)->text().trimmed();
     data.dialog_params.insert("balance", t->item(row, AMOUNT_COL)->text());
     TxWrapDialog d(data, this);
-    d.exec();
-    if (d.isApply())
-    {
-        sendTxNodejsRequest(data);
-        /*
-        emit signalMsg(QString("Try send TX [%1]").arg(NodejsBridge::jsonCommandValue(data.tx_kind)));
-        if (data.dialog_params.contains("error")) {emit signalError(data.dialog_params.value("error")); return;}
 
-        QJsonObject j_params;
-        QStringList keys(data.dialog_params.keys());
-        foreach (const QString &v, keys)
-            j_params.insert(v, data.dialog_params.value(v));
-        sendTxNodejsRequest(j_params);
-        */
-    }
+    d.exec();
+    if (d.isApply()) sendTxNodejsRequest(data);
     else emit signalMsg("operation was canceled!");
 }
 void DefiWalletTabPage::slotTransfer()
 {
     qDebug("DefiWalletTabPage::slotTransfer()");
+    if (!hasBalances()) {emit signalError("DefiWalletTabPage: Balances must updated"); return;}
+
+    int row = m_table->curSelectedRow();
+    if (row < 0) {emit signalError("DefiWalletTabPage: You must select row"); return;}
+    QTableWidget *t = m_table->table();
+
+    TxDialogData data(txTransfer, curChainName());
+    data.token_addr = t->item(row, ADDRESS_COL)->text().trimmed();
+    data.dialog_params.insert("balance", t->item(row, AMOUNT_COL)->text());
+    TxTransferDialog d(data, this);
+
+    d.exec();
+    if (d.isApply()) sendTxNodejsRequest(data);
+    else emit signalMsg("operation was canceled!");
 
 }
 void DefiWalletTabPage::slotGetTxCount()
@@ -447,17 +461,34 @@ void DefiWalletTabPage::checkTxResult(QString req, const QJsonObject &js_reply)
     }
     else if (js_reply.contains(AppCommonSettings::nodejsTxHashFieldName()))
     {
-        TxLogRecord tx_rec(req, curChainName());
-        tx_rec.tx_hash = js_reply.value(AppCommonSettings::nodejsTxHashFieldName()).toString().trimmed().toLower();
-
-        if (req == NodejsBridge::jsonCommandValue(txWrap))
-        {
-            tx_rec.wallet.token_addr = js_reply.value("token_address").toString();
-            tx_rec.wallet.token_amount = js_reply.value("amount").toString().toFloat();
-            tx_rec.note = QString("wrap %1").arg(defi_config.nativeTokenName(curChainName()));
-        }
-        emit signalNewTx(tx_rec);
+        logTxRecord(req, js_reply);
     }
+}
+void DefiWalletTabPage::logTxRecord(QString req, const QJsonObject &js_reply)
+{
+    TxLogRecord tx_rec(req, curChainName());
+    tx_rec.tx_hash = js_reply.value(AppCommonSettings::nodejsTxHashFieldName()).toString().trimmed().toLower();
+
+    if (req == NodejsBridge::jsonCommandValue(txWrap))
+    {
+        tx_rec.wallet.token_addr = js_reply.value("token_address").toString();
+        tx_rec.wallet.token_amount = js_reply.value("amount").toString().toFloat();
+        tx_rec.note = QString("wrap %1").arg(defi_config.nativeTokenName(curChainName()));
+    }
+    else if (req == NodejsBridge::jsonCommandValue(txUnwrap))
+    {
+        tx_rec.wallet.token_addr = js_reply.value("token_address").toString();
+        tx_rec.wallet.token_amount = js_reply.value("amount").toString().toFloat();
+        tx_rec.note = QString("unwrap %1").arg(defi_config.nativeTokenName(curChainName()));
+    }
+    else if (req == NodejsBridge::jsonCommandValue(txTransfer))
+    {
+        tx_rec.wallet.token_addr = js_reply.value("token_address").toString().trimmed();
+        tx_rec.wallet.token_amount = js_reply.value("amount").toString().toFloat();
+        tx_rec.wallet.target_wallet = js_reply.value("to_wallet").toString();
+        tx_rec.note = QString("transfer %1").arg(tickerByAddress(tx_rec.wallet.token_addr));
+    }
+    emit signalNewTx(tx_rec);
 }
 
 

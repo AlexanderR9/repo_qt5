@@ -50,6 +50,16 @@ DefiTxTabPage::DefiTxTabPage(QWidget *parent)
 void DefiTxTabPage::slotNewTx(const TxLogRecord &rec)
 {
     m_logger->addNewRecord(rec);
+
+    QTableWidget *t = m_table->table();
+    QStringList row_data;
+    row_data << rec.tx_hash << rec.strDate() << rec.strTime() << rec.tx_kind;
+    row_data << QString::number(rec.status.gas_used) << QString::number(rec.status.fee_coin) << QString::number(rec.status.fee_cent);
+    row_data << rec.status.result;
+    LTable::insertTableRow(0, t, row_data);
+    updateRowColor(0);
+    m_table->resizeByContents();
+
     emit signalStartTXDelay();
 }
 void DefiTxTabPage::setChain(int cid)
@@ -62,7 +72,6 @@ void DefiTxTabPage::setChain(int cid)
 
     m_logger->reloadLogFiles();
     emit signalMsg(QString("Loaded %1 TX records").arg(m_logger->logSize()));
-    //return;
     reloadTables();
 
     m_table->resizeByContents();
@@ -114,17 +123,10 @@ void DefiTxTabPage::reloadTables()
         row_data << rec.tx_hash << rec.strDate() << rec.strTime() << rec.tx_kind;
         row_data << QString::number(rec.status.gas_used) << QString::number(rec.status.fee_coin) << QString::number(rec.status.fee_cent);
         row_data << rec.status.result;
+
         LTable::addTableRow(t, row_data);
-        //qDebug()<<QString("2");
-
-        if (rec.resultOk()) t->item(last_row, RESULT_COL)->setTextColor(Qt::darkGreen);
-        else if (rec.resultFault()) t->item(last_row, RESULT_COL)->setTextColor(Qt::red);
-        else t->item(last_row, RESULT_COL)->setTextColor(Qt::gray);
-
-        if (rec.tx_kind == "mint") t->item(last_row, TX_KIND_COL)->setTextColor("#FF8C00");
-        if (rec.tx_kind == "burn") t->item(last_row, TX_KIND_COL)->setTextColor("#AA0000");
+        updateRowColor(last_row);
         last_row++;
-        //qDebug()<<QString("3");
     }
 }
 void DefiTxTabPage::initPopupMenu()
@@ -148,6 +150,9 @@ void DefiTxTabPage::slotTxStatus()
     if (row < 0) {emit signalError("You must select row"); return;}
 
     QString hash = m_table->table()->item(row, HASH_COL)->text().trimmed();
+    qDebug()<<QString("DefiTxTabPage::slotTxStatus()  row %1  hash[%2]").arg(row).arg(hash);
+
+
     QJsonObject j_params;
     j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcTXStatus));
     j_params.insert(AppCommonSettings::nodejsTxHashFieldName(), hash);
@@ -187,6 +192,8 @@ void DefiTxTabPage::updateTableRowByRecord(const QString &hash)
     t->item(row, FEE_NATIVE_COL)->setText(QString::number(rec->status.fee_coin, 'f', FEE_COIN_PRECISION));
     t->item(row, FEE_CENT_COL)->setText(QString::number(rec->status.fee_cent, 'f', FEE_CENT_PRECISION));
     t->item(row, RESULT_COL)->setText(rec->status.result);
+
+    updateRowColor(row);
 }
 void DefiTxTabPage::selectRowByHash(const QString &v)
 {
@@ -203,6 +210,29 @@ void DefiTxTabPage::selectRowByHash(const QString &v)
         }
     }
 }
+void DefiTxTabPage::updateRowColor(int row)
+{
+    QTableWidget *t = m_table->table();
+    if (row < 0 || row >= t->rowCount()) return;
+
+    QString status = t->item(row, RESULT_COL)->text().trimmed().toLower();
+    QString tx_kind = t->item(row, TX_KIND_COL)->text().trimmed().toLower();
+    if (status == "ok") t->item(row, RESULT_COL)->setTextColor(Qt::darkGreen);
+    else if (status == "fault") t->item(row, RESULT_COL)->setTextColor(Qt::red);
+    else t->item(row, RESULT_COL)->setTextColor(Qt::gray);
+    if (tx_kind == "mint") t->item(row, TX_KIND_COL)->setTextColor("#FF8C00");
+    if (tx_kind == "burn") t->item(row, TX_KIND_COL)->setTextColor("#AA0000");
+}
+void DefiTxTabPage::checkStatusLastTx()
+{
+    qDebug("DefiTxTabPage::checkStatusLastTx()");
+    QTableWidget *t = m_table->table();
+    t->clearSelection();
+    t->selectRow(0);
+
+    slotTxStatus();
+}
+
 
 /*
 void JSTxTab::loadTxFromFile(QString chain_name)

@@ -86,6 +86,7 @@ struct TxLogRecord
     QString strTime() const;
     void parseDetails(const QString&); // извлечь поля детализации записи из соответствующей части строки файла tx_details.txt
     void parseDetail(QString, QString); // извлечь конкретное поле детализации
+    void parseStatus(const QStringList&); // загрузить данные статуса из строки файла tx_state.txt
 
     // finished status funcs
     bool resultOk() const; // транзакция завершилась успешно

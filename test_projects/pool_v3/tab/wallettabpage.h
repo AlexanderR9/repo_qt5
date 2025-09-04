@@ -23,6 +23,9 @@ public:
     virtual void sendUpdateDataRequest(); //срабатывает по нажатию пользователем кнопки в тулбаре
     void updatePrices() const;
 
+    QString tickerByAddress(const QString&) const; // получить тикер по адресу из таблицы кошелька текущей сети
+
+
 protected:
     void initTable();
     void updateAmounts(const QJsonObject&);
@@ -35,7 +38,8 @@ protected:
     bool hasBalances() const; // проверка что балансы кошелька были получены
 
     //check nodejs reply after TX
-    void checkTxResult(QString, const QJsonObject&);
+    void checkTxResult(QString, const QJsonObject&); // проанализировать ответ после попытки отправить очередную транзакцию
+    void logTxRecord(QString, const QJsonObject&); // отправить в журнал новую транзакцию
 
 public slots:
     void slotNodejsReply(const QJsonObject&); //получен успешный ответ от скрипта nodejs

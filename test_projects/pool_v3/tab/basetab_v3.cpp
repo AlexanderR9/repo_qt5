@@ -95,22 +95,50 @@ const DefiWalletTabPage* DefiChainTabV3::walletPage() const
     }
     return NULL;
 }
-const DefiTxTabPage* DefiChainTabV3::txPage() const
+DefiTxTabPage* DefiChainTabV3::txPage() const
 {
     int n = m_tab->pageCount();
     for (int i=0; i<n; i++)
     {
-        const BaseTabPage_V3 *page = qobject_cast<const BaseTabPage_V3*>(tabWidget()->widget(i));
+        BaseTabPage_V3 *page = qobject_cast<BaseTabPage_V3*>(tabWidget()->widget(i));
         if (page)
         {
             if (page->kind() == dpkTx)
-                return (qobject_cast<const DefiTxTabPage*>(page));
+                return (qobject_cast<DefiTxTabPage*>(page));
         }
     }
     return NULL;
 }
-
-
+void DefiChainTabV3::checkStatusLastTx()
+{
+    DefiTxTabPage *tx_page = txPage();
+    if (tx_page)
+    {
+        changeCurrentPage(dpkTx);
+        tx_page->checkStatusLastTx();
+    }
+}
+void DefiChainTabV3::changeCurrentPage(int page_kind)
+{
+    for (int i=0; i<tabWidget()->count(); i++)
+    {
+        BaseTabPage_V3 *w = qobject_cast<BaseTabPage_V3*>(tabWidget()->widget(i));
+        if (w)
+        {
+            if (w->kind() == page_kind)
+            {
+                tabWidget()->setCurrentIndex(i);
+                break;
+            }
+        }
+    }
+}
+int DefiChainTabV3::currentPageKind() const
+{
+    const BaseTabPage_V3 *w = qobject_cast<const BaseTabPage_V3*>(tabWidget()->currentWidget());
+    if (w) return w->kind();
+    return -1;
+}
 
 void DefiChainTabV3::tabActivated()
 {
@@ -150,6 +178,13 @@ void DefiChainTabV3::initTab()
     h_splitter->addWidget(m_tab);
     //m_tab->layout()->setMargin(4);
     m_tab->layout()->setSpacing(0);
+
+    connect(tabWidget(), SIGNAL(currentChanged(int)), this, SLOT(slotPageChanged(int)));
+}
+void DefiChainTabV3::slotPageChanged(int i)
+{
+    qDebug()<<QString("DefiChainTabV3::slotPageChanged  index %1").arg(i);
+    emit signalTabPageChanged(currentPageKind());
 }
 void DefiChainTabV3::initReqStateWidget()
 {
@@ -256,6 +291,8 @@ void DefiChainTabV3::slotPageSendReq(QString req_name, const QStringList &js_arg
     js_bridge->slotRunScriptArgs(js_args);
 }
 
+
+
 void DefiChainTabV3::load(QSettings &settings)
 {
  //   qDebug("DefiChainTabV3::load");
@@ -268,6 +305,7 @@ void DefiChainTabV3::load(QSettings &settings)
         else qWarning("WARNING: tabWidget()->widget(i) is NULL");
     }
 
+    //slotPageChanged(0);
 }
 void DefiChainTabV3::save(QSettings &settings)
 {

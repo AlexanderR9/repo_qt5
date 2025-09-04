@@ -264,7 +264,7 @@ void CentralWidgetV3::loadDefiData()
         connect(tab, SIGNAL(signalRewriteJsonFile(const QJsonObject&, QString)), this, SLOT(slotRewriteJsonFile(const QJsonObject&, QString)));
         connect(tab, SIGNAL(signalEnableControls(bool)), this, SIGNAL(signalEnableControls(bool)));
         connect(this, SIGNAL(signalTabsPricesUpdate()), tab, SLOT(slotTabsPricesUpdate()));
-        //connect(tab, SIGNAL(signalGetPrices()), this, SLOT(slotSendHttpReq()));
+        connect(tab, SIGNAL(signalTabPageChanged(int)), this, SIGNAL(signalTabPageChanged(int)));
     }
 }
 void CentralWidgetV3::createTabPages(int chain_id)
@@ -348,6 +348,7 @@ void CentralWidgetV3::slotRewriteJsonFile(const QJsonObject &j_params, QString f
     if (!err.isEmpty()) {emit signalError(err); return;}
     else emit signalMsg("JSON file done!");
 }
+/*
 void CentralWidgetV3::breakUpdating()
 {
     qDebug("CentralWidgetV3::breakUpdating()");
@@ -355,12 +356,18 @@ void CentralWidgetV3::breakUpdating()
     if (tab) tab->stopUpdating();
 
 }
+*/
+
 void CentralWidgetV3::slotTXDelayFinished()
 {
     qDebug("EthersPage::slotTXDelayFinished()");
     this->setEnabled(true);
     m_splashWidget->setTextSize(16);
     m_splashWidget->setTextColor("#008080");
+
+    //need result last TX
+    DefiChainTabV3 *tab = currentTab();
+    if (tab) tab->checkStatusLastTx();
 }
 void CentralWidgetV3::slotStartTXDelay()
 {

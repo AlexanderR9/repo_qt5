@@ -66,6 +66,24 @@ void DefiTxLogger::loadTxStateFile()
     QString err = LFile::readFileSL(fname, fdata);
     if (!err.isEmpty()) {emit signalError(QString("DefiTxLogger: %1").arg(err)); return;}
 
+    //parse file data
+    foreach (const QString &fline, fdata)
+    {
+        if (fline.trimmed().isEmpty()) continue;
+        if (fline.trimmed().at(0) == QChar('#')) continue;
+        QStringList rec_data = LString::trimSplitList(fline, "/");
+        if (rec_data.count() != 5) continue;
+
+        QString tx_hash = rec_data.first();
+        for (int i=0; i<m_logData.count(); i++)
+        {
+            if (m_logData.at(i).tx_hash == tx_hash)
+            {
+                m_logData[i].parseStatus(rec_data);
+                break;
+            }
+        }
+    }
 }
 void DefiTxLogger::loadTxDetailsFile()
 {
@@ -98,8 +116,9 @@ void DefiTxLogger::loadTxDetailsFile()
 }
 void DefiTxLogger::addNewRecord(const TxLogRecord &rec)
 {
-    QString tx_base = (rec.listFileLine().trimmed() + "\n");
-    QString tx_details = (rec.detailsFileLine().trimmed() + "\n");
+    m_logData.append(rec);
+    QString tx_base(m_logData.last().listFileLine().trimmed() + "\n");
+    QString tx_details(m_logData.last().detailsFileLine().trimmed() + "\n");
     if (tx_base.isEmpty() || tx_details.isEmpty()) {emit signalError("DefiTxLogger: can't add new tx_record to log-files"); return;}
 
     QString err;
@@ -131,14 +150,34 @@ void DefiTxLogger::updateRecStatus(const QString &hash, QString status, float fe
             if (p > 0) m_logData[i].status.fee_cent = (p*fee_native*float(100));
             else m_logData[i].status.fee_cent = -1;
 
-            rewriteFileLineByRec(m_logData.at(i));
-
+            rewriteStatusFiles();
             break;
         }
     }
 }
-void DefiTxLogger::rewriteFileLineByRec(const TxLogRecord &rec)
+void DefiTxLogger::rewriteStatusFiles()
 {
+    QString err;
+    int n = logSize();
+    QStringList fdata;
+
+    // rewrite status file
+    QString fname = QString("%1%2%3").arg(AppCommonSettings::appDataPath()).arg(QDir::separator()).arg(AppCommonSettings::txStateFile());
+    for (int i=0; i<n; i++)
+    {
+        if (m_logData.at(i).isFinishedStatus())
+            fdata << m_logData.at(i).statusFileLine().trimmed();
+    }
+    err = LFile::writeFileSL(fname, fdata);
+    if (!err.isEmpty()) {emit signalError(QString("DefiTxLogger: %1").arg(err)); return;}
+
+    // rewrite status file
+    fdata.clear();
+    fname = QString("%1%2%3").arg(AppCommonSettings::appDataPath()).arg(QDir::separator()).arg(AppCommonSettings::txDetailsFile());
+    for (int i=0; i<n; i++)
+        fdata << m_logData.at(i).detailsFileLine().trimmed();
+    err = LFile::writeFileSL(fname, fdata);
+    if (!err.isEmpty()) {emit signalError(QString("DefiTxLogger: %1").arg(err)); return;}
 
 }
 const TxLogRecord* DefiTxLogger::recByHash(const QString &hash) const
@@ -149,58 +188,6 @@ const TxLogRecord* DefiTxLogger::recByHash(const QString &hash) const
         if (v.tx_hash == hash) return &v;
     return NULL;
 }
-
-
-/*
-void JSTxLogger::slotAddLog(const JSTxLogRecord &rec)
-{
-    if (rec.invalid())
-    {
-        emit signalError("JSTxLogger: record is invalid");
-        return;
-    }
-    QString fline = rec.toFileLine().trimmed() + QChar('\n');
-
-    QString err;
-    QString fname = QString("%1%2%3").arg(SubGraph_CommonSettings::appDataPath()).arg(QDir::separator()).arg(txLogFile());
-    if (!LFile::fileExists(fname)) err = LFile::writeFile(fname, fline);
-    else err = LFile::appendFile(fname, fline);
-
-    if (!err.isEmpty())
-        emit signalError(QString("JSTxLogger::slotAddLog, %1").arg(err));
-
-    emit signalStartTXDelay(); //запустить диалоговое окно для блокировки интерфейса на определенную задержку
-}
-void JSTxLogger::reloadLogFile()
-{
-    m_logData.clear();
-    emit signalMsg("");
-    emit signalMsg("Try load log file data ........");
-
-    QString fname = QString("%1%2%3").arg(SubGraph_CommonSettings::appDataPath()).arg(QDir::separator()).arg(txLogFile());
-    if (!LFile::fileExists(fname)) {emit signalError(QString("log file[%1] not found").arg(txLogFile())); return;}
-
-    QStringList fdata;
-    QString err = LFile::readFileSL(fname, fdata);
-    if (!err.isEmpty()) {emit signalError(QString("can not read log file[%1]").arg(txLogFile())); return;}
-
-    foreach (const QString &fline, fdata)
-    {
-        QString s = fline.trimmed();
-        if (s.isEmpty()) continue;
-
-        JSTxLogRecord rec;
-        rec.fromFileLine(s);
-        if (rec.invalid()) qWarning()<<QString("JSTxLogger: WARNING - invalid fileline [%1]").arg(s);
-        else
-        {
-            if (rec.chain_name == m_currentChain) m_logData.append(rec);
-        }
-    }
-    emit signalMsg(QString("Loaded %1 records from log file.").arg(logSize()));
-}
-*/
-
 
 
 

@@ -31,9 +31,9 @@ public:
     void tabActivated(); //выполняется когда происходит смена сети и этот таб всплывает наверх в стеке табов
     void startUpdating(); //запустить сценарий запросов
     void stopUpdating();
-
     void connectPageSignals();
-
+    void checkStatusLastTx(); // после выполнения транзакции и зпдержки после нее, необходимо автоматом проверить статус выполнения
+    int currentPageKind() const;
 
 protected:
     LTabWidgetBox       *m_tab;
@@ -46,22 +46,24 @@ protected:
     void initTab();
     void initJsBridgeObj();
     void initReqStateWidget();
+    void changeCurrentPage(int);
 
     const DefiWalletTabPage* walletPage() const;
-    const DefiTxTabPage* txPage() const;
+    DefiTxTabPage* txPage() const;
 
 protected slots:
     void slotTimer(); // когда запускается некий сценарий запросов начинает работать m_timer и этот слот выполняется каждый его тик для оценки текщего состояния выполнения запросов
     void slotJSScriptFinished(int); //выполняется всякий раз когда очередной nodejs скрипт завершил работу (параметр - код успешности выполнения)
+    void slotPageChanged(int);    // когда переключается вкладка на табе, параметр это индекс страницы
 
 public slots:
     void slotTabsPricesUpdate(); // выполняется после упешно полученных последних цен
     void slotPageSendReq(QString, const QStringList&); //выполняется когда со страницы пришел сигнал на запуск js_bridge объекта
 
-
 signals:
     void signalRewriteJsonFile(const QJsonObject&, QString);
     void signalEnableControls(bool);
+    void signalTabPageChanged(int); // имитится когда переключается вкладка на табе, параметр это тип страницы (элемент DefiPageKind)
 
 };
 
