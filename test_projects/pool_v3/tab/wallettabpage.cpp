@@ -357,7 +357,6 @@ void DefiWalletTabPage::initPopupMenu()
     m_integratedTable->connectSlotToPopupAction(i_menu, this, SLOT(slotGetTxCount())); i_menu++;
     m_integratedTable->connectSlotToPopupAction(i_menu, this, SLOT(slotGetGasPrice())); i_menu++;
     m_integratedTable->connectSlotToPopupAction(i_menu, this, SLOT(slotGetChainID())); i_menu++;
-
 }
 void DefiWalletTabPage::slotWrap()
 {
@@ -371,22 +370,9 @@ void DefiWalletTabPage::slotWrap()
     data.token_addr = t->item(row, ADDRESS_COL)->text().trimmed();
     data.dialog_params.insert("balance", t->item(row, AMOUNT_COL)->text());
     TxWrapDialog d(data, this);
+
     d.exec();
-    if (d.isApply())
-    {
-        sendTxNodejsRequest(data);
-
-        /*
-        emit signalMsg(QString("Try send TX [%1]").arg(NodejsBridge::jsonCommandValue(data.tx_kind)));
-        if (data.dialog_params.contains("error")) {emit signalError(data.dialog_params.value("error")); return;}
-
-        QJsonObject j_params;
-        QStringList keys(data.dialog_params.keys());
-        foreach (const QString &v, keys)
-            j_params.insert(v, data.dialog_params.value(v));
-        sendTxNodejsRequest(j_params);
-        */
-    }
+    if (d.isApply()) sendTxNodejsRequest(data);
     else emit signalMsg("operation was canceled!");
 }
 void DefiWalletTabPage::slotUnwrap()
@@ -423,7 +409,6 @@ void DefiWalletTabPage::slotTransfer()
     d.exec();
     if (d.isApply()) sendTxNodejsRequest(data);
     else emit signalMsg("operation was canceled!");
-
 }
 void DefiWalletTabPage::slotGetTxCount()
 {

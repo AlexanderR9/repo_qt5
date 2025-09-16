@@ -131,10 +131,12 @@ QString TxLogRecord::detailsFileLine() const
     {
         additions = QString("token_addr[%1]; token_amount[%2];").arg(wallet.token_addr).arg(wallet.token_amount);
     }
-    else if (tx_kind == NodejsBridge::jsonCommandValue(txTransfer) )
+    else if (tx_kind == NodejsBridge::jsonCommandValue(txTransfer) || tx_kind == NodejsBridge::jsonCommandValue(txApprove))
     {
         additions = QString("token_addr[%1]; token_amount[%2];").arg(wallet.token_addr).arg(wallet.token_amount);
-        additions = QString("%1 to_wallet[%2]").arg(additions).arg(wallet.target_wallet);
+        bool is_transfer = (tx_kind == NodejsBridge::jsonCommandValue(txTransfer));
+        if (is_transfer) additions = QString("%1 to_wallet[%2];").arg(additions).arg(wallet.target_wallet);
+        else additions = QString("%1 to_contract[%2];").arg(additions).arg(wallet.contract_addr);
     }
     additions = QString("%1 note[%2]").arg(additions).arg(note);
 

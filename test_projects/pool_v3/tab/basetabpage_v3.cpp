@@ -65,7 +65,6 @@ void BaseTabPage_V3::sendTxNodejsRequest(const TxDialogData &tx_data /*const QJs
     foreach (const QString &v, keys)
         j_params.insert(v, tx_data.dialog_params.value(v));
 
-
     // second part
     emit signalRewriteJsonFile(j_params, AppCommonSettings::txParamsNodeJSFile()); //rewrite params json-file
 

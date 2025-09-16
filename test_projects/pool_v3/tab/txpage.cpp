@@ -86,7 +86,7 @@ void DefiTxTabPage::initTable()
     headers << "Hash" << "Date" << "Time" << "Kind" << "Gas used" << "Fee (native)" << "Fee (cents)" << "Result";
     LTable::setTableHeaders(m_table->table(), headers);
     m_table->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::SingleSelection);
-    m_table->setSelectionColor("#B7F8F9");
+    m_table->setSelectionColor("#D3D3D3");
     h_splitter->addWidget(m_table);
 
     /////////////////////////////////////////
@@ -109,8 +109,6 @@ void DefiTxTabPage::reloadTables()
     if (m_logger->logEmpty()) return;
 
     QTableWidget *t = m_table->table();
-
-
     int n = m_logger->logSize();
     //qDebug()<<QString("logSize %1").arg(n);
     QStringList row_data;

@@ -85,9 +85,6 @@ protected slots:
 };
 
 
-
-/*
-
 //TxApproveDialog
 class TxApproveDialog : public TxDialogBase
 {
@@ -105,6 +102,7 @@ protected slots:
 
 
 
+/*
 //TxSwapDialog
 class TxSwapDialog : public TxDialogBase
 {

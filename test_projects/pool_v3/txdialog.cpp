@@ -318,7 +318,6 @@ void TxTransferDialog::slotApply()
 
 
 
-/*
 
 ///////////////////TxApproveDialog////////////////////////////
 TxApproveDialog::TxApproveDialog(TxDialogData &data, QWidget *parent)
@@ -337,48 +336,67 @@ TxApproveDialog::TxApproveDialog(TxDialogData &data, QWidget *parent)
 }
 void TxApproveDialog::init()
 {
-    QString key = "whom";
-    this->addSimpleWidget("Whom approve, contract", LSimpleDialog::sdtStringCombo, key);
+    QString key = "token_name";
+    this->addSimpleWidget("Transfering token name", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, findTokenName());
     const SimpleWidget *sw = this->widgetByKey(key);
-    if (!sw) return;
-    sw->comboBox->clear();
-    sw->comboBox->addItem("SWAP_ROUTER");
-    sw->comboBox->addItem("POS_MANAGER");
+    sw->edit->setReadOnly(true);
+    sw->edit->setStyleSheet(QString("QLineEdit {color: #5F9EA0;}"));
 
-    key = "token";
+    key = "token_addr";
     this->addSimpleWidget("Token address", LSimpleDialog::sdtString, key);
     this->setWidgetValue(key, m_data.token_addr);
     sw = this->widgetByKey(key);
-    if (!sw) return;
     sw->edit->setReadOnly(true);
-    QString color = "#800000";
+    QString color = "#000080";
     sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg(color));
 
+
+    addLineSeparator(2, "#2F4F4F");
+
     key = "amount";
-    this->addSimpleWidget("Supply amount", LSimpleDialog::sdtString, key, 2);
+    QString s = "Amount of wraping token";
+    if (m_data.tx_kind == txUnwrap)  s = "Amount of unwraping token";
+    this->addSimpleWidget(s, LSimpleDialog::sdtString, key, 2);
     this->setWidgetValue(key, "1.0");
+
+    key = "whom";
+    this->addSimpleWidget("Whom approve, contract", LSimpleDialog::sdtStringCombo, key);
+    sw = this->widgetByKey(key);
+    sw->comboBox->clear();
+    sw->comboBox->addItem("POS_MANAGER");
+    sw->comboBox->addItem("SWAP_ROUTER");
+
+    addSimulateField();
 }
 void TxApproveDialog::slotApply()
 {
     m_data.dialog_params.clear();
     bool ok = true;
+
+    //check amount
     QString key = "amount";
     float sum = this->widgetValue(key).toFloat(&ok);
-    if (!ok || sum < 0.01) m_data.dialog_params.insert(key, QString("invalid"));
-    else m_data.dialog_params.insert(key, QString::number(sum, 'f', 4));
+    if (!ok)
+        m_data.dialog_params.insert(ERROR_KEY, QString("invalid amount value (%1)").arg(widgetValue(key).toString()));
+    if (sum < 0.01 || sum > 10000)
+        m_data.dialog_params.insert(ERROR_KEY, QString("amount value out of range (%1) [sum < 0.01 || sum > 10000]").arg(widgetValue(key).toString()));
+    m_data.dialog_params.insert(key, QString::number(sum, 'f', 4));
 
+    //define to_contract field
     key = "whom";
-    QString to_contract = this->widgetValue(key).toString().trimmed().toLower();
-    m_data.dialog_params.insert(key, to_contract);
+    QString to_contract_addr = this->widgetValue(key).toString().trimmed().toLower();
+    m_data.dialog_params.insert("to_contract", to_contract_addr);
 
-    LSimpleDialog::slotApply();
+    m_data.dialog_params.insert("token_address", widgetValue("token_addr").toString().trimmed());
+    TxDialogBase::slotApply();
 }
 
 
 
 
 
-
+/*
 ///////////////////TxSwapDialog////////////////////////////
 TxSwapDialog::TxSwapDialog(TxDialogData &data, QWidget *parent)
     :TxDialogBase(data, parent)

@@ -11,7 +11,7 @@ enum DefiPageKind {dpkWallet = 730, dpkApproved, dpkPool, dpkTx};
 enum NodejsReadCommand {nrcBalance = 830, nrcTXCount, nrcApproved, nrcGasPrice, nrcChainID,
                         nrcTXStatus, nrcInvalid = -1};
 
-//Orepation Type
+//TX Orepation Type
 enum NodejsTxCommand {txWrap = 870, txUnwrap, txApprove, txTransfer, txSwap,
                        txMint, txIncrease, txDecrease, txCollect, txBurn, txInvalid = -1};
 
