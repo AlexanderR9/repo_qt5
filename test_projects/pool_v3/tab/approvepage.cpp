@@ -2,8 +2,6 @@
 #include "deficonfig.h"
 #include "appcommonsettings.h"
 #include "ltable.h"
-//#include "lfile.h"
-//#include "lstring.h"
 #include "txdialog.h"
 #include "txlogrecord.h"
 #include "nodejsbridge.h"
@@ -20,16 +18,11 @@
 
 #define ADDRESS_COL             3
 #define TOKEN_COL               0
-//#define SUPPLIED_PRECISION      2
-//#define LOCAL_APPROVE_FILE       "approve.txt"
 
 
 // JSApproveTab
 DefiApproveTabPage::DefiApproveTabPage(QWidget *parent)
     :BaseTabPage_V3(parent, 20, dpkApproved)
-      //m_table(NULL),
-      //m_updateTimer(NULL),
-      //js_running(false)
 {
     setObjectName("defi_approve_tab_page");
 
@@ -38,15 +31,14 @@ DefiApproveTabPage::DefiApproveTabPage(QWidget *parent)
 
     // init popup
     initPopupMenu();
+}
+void DefiApproveTabPage::updatePageBack(QString extra_data)
+{
+    qDebug()<<QString("DefiWalletTabPage::updatePageBack  extra_data[%1]").arg(extra_data);
 
-    /*
-
-    m_updateTimer = new QTimer(this);
-    m_updateTimer->setInterval(900);
-    m_updateTimer->stop();
-    connect(m_updateTimer, SIGNAL(timeout()), this, SLOT(slotTimer()));
-    */
-
+    m_table->table()->clearSelection();
+    selectRowByCellData(extra_data.trimmed(), ADDRESS_COL);
+    slotGetApproved();
 }
 void DefiApproveTabPage::initTable()
 {
@@ -159,13 +151,10 @@ void DefiApproveTabPage::updateApprovedAmounts(const QJsonObject &js_reply)
             t->item(i, 1)->setText(js_reply.value("pos_manager").toString());
             t->item(i, 2)->setText(js_reply.value("swap_router").toString());
 
-
             if (pm <= 0.01) t->item(i, 1)->setTextColor(Qt::lightGray);
             else t->item(i, 1)->setTextColor(Qt::darkGreen);
             if (sr <= 0.01) t->item(i, 2)->setTextColor(Qt::lightGray);
             else t->item(i, 2)->setTextColor(Qt::darkGreen);
-
-
             break;
         }
     }
@@ -210,8 +199,6 @@ QString DefiApproveTabPage::tickerByAddress(const QString &t_addr) const
     }
     return QString();
 }
-
-
 
 
 

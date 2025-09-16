@@ -109,13 +109,13 @@ DefiTxTabPage* DefiChainTabV3::txPage() const
     }
     return NULL;
 }
-void DefiChainTabV3::checkStatusLastTx()
+void DefiChainTabV3::autoCheckStatusLastTx()
 {
     DefiTxTabPage *tx_page = txPage();
     if (tx_page)
     {
         changeCurrentPage(dpkTx);
-        tx_page->checkStatusLastTx();
+        tx_page->autoCheckStatusLastTx();
     }
 }
 void DefiChainTabV3::changeCurrentPage(int page_kind)
@@ -183,7 +183,7 @@ void DefiChainTabV3::initTab()
 }
 void DefiChainTabV3::slotPageChanged(int i)
 {
-    qDebug()<<QString("DefiChainTabV3::slotPageChanged  index %1").arg(i);
+    //qDebug()<<QString("DefiChainTabV3::slotPageChanged  index %1").arg(i);
     emit signalTabPageChanged(currentPageKind());
 }
 void DefiChainTabV3::initReqStateWidget()
@@ -207,6 +207,17 @@ QTabWidget* DefiChainTabV3::tabWidget() const
 {
     if (m_tab) return m_tab->tab();
     return NULL;
+}
+void DefiChainTabV3::slotUpdatePageBack(QString req_name, QString extra_data)
+{
+    qDebug()<<QString("DefiChainTabV3::slotUpdatePageBack  req_name[%1]   extra_data[%2]").arg(req_name).arg(extra_data);
+    if (req_name == NodejsBridge::jsonCommandValue(txApprove)) changeCurrentPage(dpkApproved);
+    else if (req_name == NodejsBridge::jsonCommandValue(txWrap)) changeCurrentPage(dpkWallet);
+    else if (req_name == NodejsBridge::jsonCommandValue(txUnwrap)) changeCurrentPage(dpkWallet);
+    else if (req_name == NodejsBridge::jsonCommandValue(txTransfer)) changeCurrentPage(dpkWallet);
+
+    BaseTabPage_V3 *cur_page = qobject_cast<BaseTabPage_V3*>(tabWidget()->currentWidget());
+    if (cur_page) cur_page->updatePageBack(extra_data);
 }
 void DefiChainTabV3::slotTimer()
 {
@@ -263,6 +274,10 @@ void DefiChainTabV3::connectPageSignals()
             if (w->kind() != dpkTx)
             {
                 connect(w, SIGNAL(signalNewTx(const TxLogRecord&)), tx_page, SLOT(slotNewTx(const TxLogRecord&)));
+            }
+            else
+            {
+                connect(w, SIGNAL(signalUpdatePageBack(QString, QString)), this, SLOT(slotUpdatePageBack(QString, QString)));
             }
         }
     }

@@ -65,6 +65,16 @@ QString NodejsBridge::jsonCommandValue(int cmd)
     }
     return QString("cmd_invalid");
 }
+int NodejsBridge::commandCodeByTxKind(QString req_name)
+{
+    req_name = req_name.trimmed().toLower();
+    if (req_name == "wrap") return txWrap;
+    else if (req_name == "unwrap") return txUnwrap;
+    else if (req_name == "transfer") return txTransfer;
+    else if (req_name == "approve") return txApprove;
+    else if (req_name == "swap") return txSwap;
+    return -1;
+}
 void NodejsBridge::slotJSScriptFinished()
 {
     qDebug()<<QString("NodejsBridge::slotJSScriptFinished tab_%1").arg(m_userSign);

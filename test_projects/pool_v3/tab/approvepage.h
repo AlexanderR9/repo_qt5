@@ -3,10 +3,7 @@
 
 #include "basetabpage_v3.h"
 
-//class LTableWidgetBox;
 class QJsonObject;
-//struct JSTxLogRecord;
-
 
 
 //DefiApproveTabPage
@@ -21,6 +18,8 @@ public:
     virtual void setChain(int);
     QString tickerByAddress(const QString&) const; // получить тикер по адресу из таблицы кошелька текущей сети
 
+    virtual void updatePageBack(QString extra_data); // выполняется после анализа результа последней транзакции, происходит переход обратно на страницу и обновление ее.
+
 protected:
     void initTable();
     void initTokenList(int); // загрузить список токенов из конфигурации для указанной сети
@@ -32,11 +31,9 @@ protected:
     void checkTxResult(QString, const QJsonObject&); // проанализировать ответ после попытки отправить очередную транзакцию
     void logTxRecord(QString, const QJsonObject&); // отправить в журнал новую транзакцию
 
-
 protected slots:
     void slotGetApproved();
     void slotTxApprove();
-
 
 public slots:
     virtual void slotNodejsReply(const QJsonObject&); //получен успешный ответ от скрипта nodejs

@@ -24,6 +24,7 @@ public:
     void updatePrices() const;
 
     QString tickerByAddress(const QString&) const; // получить тикер по адресу из таблицы кошелька текущей сети
+    virtual void updatePageBack(QString); // выполняется после анализа результа последней транзакции, происходит переход обратно на страницу и обновление ее.
 
 
 protected:

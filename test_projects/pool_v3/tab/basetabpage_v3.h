@@ -26,6 +26,8 @@ public:
 
     virtual void setChain(int);
     virtual QString curChainName() {return userData();}
+    virtual void updatePageBack(QString) {} // выполняется после анализа результа последней транзакции, происходит переход обратно на страницу и обновление ее.
+
 
     //выполняется запрос к сети(read only) для обновления данных на странице.
     //выполняется когда пользователь в тулбаре нажимает кнопку "Update"
@@ -37,6 +39,7 @@ protected:
 
     virtual void sendReadNodejsRequest(const QJsonObject&); // отаправить команду в nodejs_bridge для запроса на чтение из сети
     virtual void sendTxNodejsRequest(const TxDialogData& /*const QJsonObject&*/); // отаправить команду в nodejs_bridge для запроса на запись транзакции в сеть
+    virtual void selectRowByCellData(const QString&, int col); //веделить строку со значение ячеики в указанном столбце
 
 public slots:
     virtual void slotNodejsReply(const QJsonObject&) = 0; //получен успешный ответ от скрипта nodejs

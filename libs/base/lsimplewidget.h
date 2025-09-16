@@ -143,7 +143,7 @@ protected:
     virtual void slotSortCustom(quint8, int) {} //какая-то необычная сортировка, нужно переопределить в классе своего проекта
 
     virtual void destroyPopupMenu(); //уничтожает реализацию вплывающего меню (если она была активирована)
-    virtual void connectPopupActionSlots() {qDebug("invoke connectPopupActionSlots()");} //эту функцию необходимо переопределить если активировано всплывающее меню, нужно подключить свои слоты к элементам m_popupMenuActions
+    virtual void connectPopupActionSlots() {/*qDebug("invoke connectPopupActionSlots()");*/} //эту функцию необходимо переопределить если активировано всплывающее меню, нужно подключить свои слоты к элементам m_popupMenuActions
 
 protected slots:
     virtual void slotItemDoubleClicked(QTableWidgetItem*); //в базовом класе копируется содержимое итема в буфер обмена

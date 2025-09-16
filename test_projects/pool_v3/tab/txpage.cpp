@@ -7,6 +7,7 @@
 #include "appcommonsettings.h"
 #include "txlogger.h"
 #include "nodejsbridge.h"
+#include "txdialog.h"
 
 
 
@@ -27,7 +28,6 @@
 #define FEE_CENT_COL            6
 
 
-//#define CHECK_STATE_TIMER_INTERVAL  700
 #define FEE_COIN_PRECISION          8
 #define FEE_CENT_PRECISION          4
 
@@ -35,9 +35,8 @@
 // DefiTxTabPage
 DefiTxTabPage::DefiTxTabPage(QWidget *parent)
     :BaseTabPage_V3(parent, 20, dpkTx),
-    m_logger(NULL)
-     // m_checkStateTimer(NULL),
-     // js_running(false)
+    m_logger(NULL),
+    m_autoMode(false)
 {
     setObjectName("defi_tx_tab_page");
 
@@ -56,7 +55,9 @@ void DefiTxTabPage::slotNewTx(const TxLogRecord &rec)
     row_data << rec.tx_hash << rec.strDate() << rec.strTime() << rec.tx_kind;
     row_data << QString::number(rec.status.gas_used) << QString::number(rec.status.fee_coin) << QString::number(rec.status.fee_cent);
     row_data << rec.status.result;
-    LTable::insertTableRow(0, t, row_data);
+
+    LTable::insertTableRow(0, t, row_data);   
+    setRecordIcon(0, rec);
     updateRowColor(0);
     m_table->resizeByContents();
 
@@ -123,10 +124,27 @@ void DefiTxTabPage::reloadTables()
         row_data << rec.status.result;
 
         LTable::addTableRow(t, row_data);
+        setRecordIcon(last_row, rec);
         updateRowColor(last_row);
         last_row++;
     }
+
+    updateTotalTable();
 }
+void DefiTxTabPage::setRecordIcon(int row, const TxLogRecord &rec)
+{
+    QTableWidget *t = m_table->table();
+    if (row < 0 || row >= t->rowCount()) return;
+
+    t->item(row, TX_KIND_COL)->setToolTip(rec.note);
+
+    int tx_code = NodejsBridge::commandCodeByTxKind(rec.tx_kind);
+    if (tx_code < 0) return;
+
+    QString path = TxDialogBase::iconByTXType(tx_code);
+    t->item(row, TX_KIND_COL)->setIcon(QIcon(path));
+}
+
 void DefiTxTabPage::initPopupMenu()
 {
     //prepare menu actions data
@@ -149,8 +167,6 @@ void DefiTxTabPage::slotTxStatus()
 
     QString hash = m_table->table()->item(row, HASH_COL)->text().trimmed();
     qDebug()<<QString("DefiTxTabPage::slotTxStatus()  row %1  hash[%2]").arg(row).arg(hash);
-
-
     QJsonObject j_params;
     j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcTXStatus));
     j_params.insert(AppCommonSettings::nodejsTxHashFieldName(), hash);
@@ -173,12 +189,16 @@ void DefiTxTabPage::slotNodejsReply(const QJsonObject &js_reply)
             m_logger->updateRecStatus(hash, status, fee_native, gas_used);
 
             updateTableRowByRecord(hash);
+            updateTotalTable();
+            analyzeStatusLastTx();
         }
+        else emit signalError("DefiTxTabPage: nodejs reply has't field <tx_hash>");
     }
+    m_autoMode = false;
 }
 void DefiTxTabPage::updateTableRowByRecord(const QString &hash)
 {
-    selectRowByHash(hash);
+    selectRowByCellData(hash, HASH_COL);
     const TxLogRecord *rec = m_logger->recByHash(hash);
     if (!rec) {emit signalError(QString("DefiTxTabPage: TxLogRecord is null by hash [%1]").arg(hash)); return;}
 
@@ -193,6 +213,7 @@ void DefiTxTabPage::updateTableRowByRecord(const QString &hash)
 
     updateRowColor(row);
 }
+/*
 void DefiTxTabPage::selectRowByHash(const QString &v)
 {
     QTableWidget *t = m_table->table();
@@ -208,6 +229,46 @@ void DefiTxTabPage::selectRowByHash(const QString &v)
         }
     }
 }
+*/
+void DefiTxTabPage::updateTotalTable()
+{
+    QTableWidget *t = m_integratedTable->table();
+
+    int n = m_logger->logSize();
+    t->item(0, 0)->setText(QString::number(n));
+
+    if (m_logger->logEmpty())
+    {
+        t->item(0, 3)->setText("?");
+        t->item(0, 4)->setText("?");
+        return;
+    }
+
+    int n_fault = 0;
+    int n_unknow = 0;
+    float fee_native = 0;
+    float fee_cent = 0;
+    for (int i=0; i<n; i++)
+    {
+        const TxLogRecord &rec = m_logger->recordAt(i);
+        if (rec.isFinishedStatus())
+        {
+            if (rec.resultFault()) n_fault++;
+            fee_native += rec.status.fee_coin;
+            fee_cent += rec.status.fee_cent;
+        }
+        else n_unknow++;
+    }
+
+    int row = 1;
+    t->item(row, 0)->setText(QString::number(n_unknow)); row++;
+    t->item(row, 0)->setText(QString::number(n_fault)); row++;
+    if (n_fault > 0) t->item(row, 0)->setTextColor(Qt::red);
+    t->item(row, 0)->setText(QString("%1 %2").arg(QString::number(fee_native, 'f', FEE_CENT_PRECISION)).arg(defi_config.nativeTokenName(curChainName()))); row++;
+    t->item(row, 0)->setText(QString("%1 c.").arg(QString::number(fee_cent, 'f', 2))); row++;
+
+    m_integratedTable->resizeByContents();
+}
 void DefiTxTabPage::updateRowColor(int row)
 {
     QTableWidget *t = m_table->table();
@@ -221,15 +282,30 @@ void DefiTxTabPage::updateRowColor(int row)
     if (tx_kind == "mint") t->item(row, TX_KIND_COL)->setTextColor("#FF8C00");
     if (tx_kind == "burn") t->item(row, TX_KIND_COL)->setTextColor("#AA0000");
 }
-void DefiTxTabPage::checkStatusLastTx()
+void DefiTxTabPage::autoCheckStatusLastTx()
 {
     qDebug("DefiTxTabPage::checkStatusLastTx()");
     QTableWidget *t = m_table->table();
     t->clearSelection();
     t->selectRow(0);
 
+    m_autoMode = true;
     slotTxStatus();
 }
+void DefiTxTabPage::analyzeStatusLastTx()
+{
+    if (m_autoMode)
+    {
+        const TxLogRecord &rec = m_logger->recordLast();
+        if (rec.resultOk())
+        {
+            QString extra_data = QString();
+            if (rec.tx_kind == NodejsBridge::jsonCommandValue(txApprove)) extra_data = rec.wallet.token_addr;
+            emit signalUpdatePageBack(rec.tx_kind, extra_data);
+        }
+    }
+}
+
 
 
 /*
@@ -478,75 +554,6 @@ void JSTxTab::slotCheckStateTimer()
     emit signalMsg(QString("next TX_HASH: %1").arg(next_hash));
     selectRowByHash(next_hash);
     slotTxStatus();
-}
-*/
-
-
-/*
-
-////////////////JSTxRecord//////////////////////
-QString JSTxRecord::toLocalFileLine() const
-{
-    if (invalid()) return QString();
-    if (txUnknown())  return QString();
-    return QString("%1 / %2 / %3").arg(hash).arg(strFee()).arg(strResult());
-}
-void JSTxRecord::fromFileLine(const QString &fline)
-{
-   // qDebug()<<QString("fromFileLine [%1]").arg(fline);
-    reset();
-    QString s = fline.trimmed();
-    if (s.isEmpty()) return;
-
-    QStringList list = LString::trimSplitList(s, "/");
-    if (list.count() != 7) {qWarning()<<QString("JSTxRecord::fromFileLine WARNING list.count(%1)!=7").arg(list.count()); return;}
-   // qDebug()<<QString("fromFileLine list.count()[%1]").arg(list.count());
-
-
-    int i = 0;
-    s = list.at(i).trimmed();
-    dt.setDate(QDate::fromString(s, "dd.MM.yyyy")); i++;
-    s = list.at(i).trimmed();
-    dt.setTime(QTime::fromString(s, "hh:mm:ss")); i++;
-    hash = list.at(i).trimmed().toLower();  i++;
-    chain = list.at(i).trimmed().toUpper();  i++;
-    kind = list.at(i).trimmed().toLower();  i++;
-}
-bool JSTxRecord::invalid() const
-{
-    if (hash.length() < 30) return true;
-    if (hash.left(2) != "0x") return true;
-    if (!dt.isValid() || dt.isNull()) return true;
-    if (kind.isEmpty() || kind == "none") return true;
-    return false;
-}
-QString JSTxRecord::strTime() const
-{
-    return LTime::strDate(dt.date());
-}
-QString JSTxRecord::strDate() const
-{
-    return LTime::strTime(dt.time(), "hh:mm:ss");
-}
-QString JSTxRecord::strFee() const
-{
-    //if (txFault()) return "?";
-    if (txFault()) return QString::number(fee, 'f', 4);
-    if (txOk()) return QString::number(fee, 'f', 8);
-    return "---";
-}
-QString JSTxRecord::strResult() const
-{
-    if (txFault()) return "FAULT";
-    if (txOk()) return "OK";
-    return "wait...";
-}
-void JSTxRecord::setJSResponse(QString js_status, QString js_fee, bool js_finished)
-{
-    if (!js_finished) {fee = -1; return;}
-
-    fee = js_fee.toFloat();
-    finished_fault = (js_status == "FAULT");
 }
 */
 

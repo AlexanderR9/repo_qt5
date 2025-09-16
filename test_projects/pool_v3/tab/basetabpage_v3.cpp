@@ -72,3 +72,25 @@ void BaseTabPage_V3::sendTxNodejsRequest(const TxDialogData &tx_data /*const QJs
     args << "tx_writer.js" << AppCommonSettings::txParamsNodeJSFile();
     emit signalRunNodejsBridge(j_params.value(AppCommonSettings::nodejsReqFieldName()).toString(), args);
 }
+void BaseTabPage_V3::selectRowByCellData(const QString &cell_data, int col)
+{
+    if (!m_table) return;
+    QTableWidget *t = m_table->table();
+    if (!t) return;
+    if (col<0 || col>=t->columnCount()) return;
+    if (t->rowCount() == 0) return;
+
+    t->clearSelection();
+    int n_row = t->rowCount();
+    for (int i=0; i<n_row; i++)
+    {
+        if (t->item(i, col)->text().trimmed() == cell_data)
+        {
+            t->selectRow(i);
+            break;
+        }
+    }
+}
+
+
+

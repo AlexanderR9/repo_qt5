@@ -32,7 +32,7 @@ public:
     void startUpdating(); //запустить сценарий запросов
     void stopUpdating();
     void connectPageSignals();
-    void checkStatusLastTx(); // после выполнения транзакции и зпдержки после нее, необходимо автоматом проверить статус выполнения
+    void autoCheckStatusLastTx(); // после выполнения транзакции и задержки после нее, необходимо автоматом проверить статус выполнения
     int currentPageKind() const;
 
 protected:
@@ -55,6 +55,7 @@ protected slots:
     void slotTimer(); // когда запускается некий сценарий запросов начинает работать m_timer и этот слот выполняется каждый его тик для оценки текщего состояния выполнения запросов
     void slotJSScriptFinished(int); //выполняется всякий раз когда очередной nodejs скрипт завершил работу (параметр - код успешности выполнения)
     void slotPageChanged(int);    // когда переключается вкладка на табе, параметр это индекс страницы
+    void slotUpdatePageBack(QString req_name, QString extra_data = QString()); // после анализа результа последней транзакции перейти обратно на соотвутствующую страницу и обновить ее.
 
 public slots:
     void slotTabsPricesUpdate(); // выполняется после упешно полученных последних цен

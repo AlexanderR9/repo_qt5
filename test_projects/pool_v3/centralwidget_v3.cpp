@@ -314,7 +314,7 @@ DefiChainTabV3* CentralWidgetV3::currentTab() const
 }
 void CentralWidgetV3::slotChainChanged(int i)
 {
-    qDebug()<<QString("CentralWidgetV3::slotChainChanged i=%1").arg(i);
+    //qDebug()<<QString("CentralWidgetV3::slotChainChanged i=%1").arg(i);
     if (i >=0 && i < w_stack->count())
     {
         w_stack->setCurrentIndex(i);
@@ -367,7 +367,7 @@ void CentralWidgetV3::slotTXDelayFinished()
 
     //need result last TX
     DefiChainTabV3 *tab = currentTab();
-    if (tab) tab->checkStatusLastTx();
+    if (tab) tab->autoCheckStatusLastTx();
 }
 void CentralWidgetV3::slotStartTXDelay()
 {

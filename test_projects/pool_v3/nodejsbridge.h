@@ -21,6 +21,7 @@ public:
     bool buzy() const;
 
     static QString jsonCommandValue(int); //значение поля 'req_name' в файле-параметрах  по коду команды
+    static int commandCodeByTxKind(QString); //инерсное выполнение функции jsonCommandValue
 
 protected:
     LProcessObj     *m_procObj; //объект для запуска скриптов

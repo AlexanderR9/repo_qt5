@@ -25,45 +25,26 @@ public:
     virtual void sendUpdateDataRequest() {}; //срабатывает по нажатию пользователем кнопки в тулбаре
     virtual void setChain(int);
 
-    void checkStatusLastTx(); // после выполнения транзакции и зпдержки после нее, необходимо автоматом проверить статус выполнения
+    void autoCheckStatusLastTx(); // после выполнения транзакции и задержки после нее, необходимо автоматом проверить статус выполнения
 
 protected:
     DefiTxLogger    *m_logger; //managet tx records
+    bool  m_autoMode;   //признак того что выполнение проверки статуса происходит в автоматическом режиме а не из меню вручную.
 
     void initTable();
     void reloadTables();
     void initPopupMenu(); //инициализировать элементы всплывающего меню
-    void selectRowByHash(const QString&);
+    //void selectRowByHash(const QString&);
+    void updateRowColor(int); // обновить цвета  некоторых ячеек строки (tx_kind/status)
+    void updateTotalTable(); //обновить поля обобщенной таблицы
+    void setRecordIcon(int, const TxLogRecord&); // обновить тултип и иконку для типа транзакции
 
     // после получения статуса транзакции и обновления самой записи в m_logger необходимо обновить соответствующую строку в таблице
     void updateTableRowByRecord(const QString&);
 
-    void updateRowColor(int); // обновить цвета  некоторых ячеек строки (tx_kind/status)
-
-
-    /*
-    LTableWidgetBox     *m_table;
-    QList<JSTxRecord>    tx_data;
-    QTimer              *m_checkStateTimer; //таймер для опроса всех записей, которые в режиме ожидания
-    bool                 js_running;
-
-
-    //информация загруженная из локального файла, содержит информацию только о завершенных транзакциях.
-    //вид строки: hash / fee_size / status (OK/FAULT)
-    QStringList          m_locData;
-
-    void applyLocalData();
-    void loadLocalData(); //from local defi file
-    JSTxRecord* recordByHash(QString);
-    void updateTableRowByRecord(const JSTxRecord*);
-    void addRecToLocalFile(const JSTxRecord *rec); //после получения ответа от nodejs добавить информацию в локальный файл
-
-
-
-public slots:
-    void slotCheckTxResult(const QString&, bool&); //выполняется для проверки успешности выполнения транзакции
-*/
-
+    // после выполнения транзакции и проверки ее статуса необходимо проанализировать полученный результат.
+    //если транзакция завершилась с успехом, то перейти обратно на соотвутствующую страницу и обновить ее.
+    void analyzeStatusLastTx();
 
 public slots:
     void slotNodejsReply(const QJsonObject&); //получен успешный ответ от скрипта nodejs
@@ -75,10 +56,10 @@ public slots:
 
 protected slots:
     void slotTxStatus();
-//    void slotCheckStateTimer();
 
 signals:
     void signalStartTXDelay(); //запустить диалоговое окно для блокировки интерфейса на определенную задержку
+    void signalUpdatePageBack(QString req_name, QString extra_data = QString()); // после анализа результа последней транзакции отправить сигнал на обновление страницы с которой отправилась транзакция
 
 };
 

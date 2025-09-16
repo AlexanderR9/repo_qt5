@@ -48,6 +48,12 @@ DefiWalletTabPage::DefiWalletTabPage(QWidget *parent)
     initBalanceHistoryObj();
     */
 }
+void DefiWalletTabPage::updatePageBack(QString extra_data)
+{
+    qDebug("DefiWalletTabPage::updatePageBack");
+    Q_UNUSED(extra_data);
+    sendUpdateDataRequest();
+}
 void DefiWalletTabPage::initTable()
 {
     m_table = new LTableWidgetBox(this);

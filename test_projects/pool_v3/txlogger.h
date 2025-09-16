@@ -59,9 +59,10 @@ public:
 
     virtual QString name() const {return QString("defi_tx_logger");}
 
-    inline const TxLogRecord& recordAt(int i) const {return m_logData.at(i);}
     inline int logSize() const {return m_logData.count();}
     inline bool logEmpty() const {return m_logData.isEmpty();}
+    inline const TxLogRecord& recordAt(int i) const {return m_logData.at(i);}
+    inline const TxLogRecord& recordLast() const {return recordAt(logSize()-1);}
 
 protected:
     QString m_chain; //название текущей сети
