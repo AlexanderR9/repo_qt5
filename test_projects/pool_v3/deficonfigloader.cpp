@@ -58,6 +58,7 @@ void DefiConfigLoader::loadDefiConfiguration(QString fconfig)
     readTokensNode(root_node);
     readPoolsNode(root_node);
     readBBNode(root_node);
+    readTargetWalletNode(root_node);
 
 }
 void DefiConfigLoader::readChainsNode(const QDomNode &root_node)
@@ -145,6 +146,18 @@ void DefiConfigLoader::readBBNode(const QDomNode &root_node)
     defi_config.bb_settings.private_key = LStaticXML::getStringAttrValue("pkey", node).trimmed();
     defi_config.bb_settings.timeout = LStaticXML::getIntAttrValue("timeout", node, 4900);
 
+}
+void DefiConfigLoader::readTargetWalletNode(const QDomNode &root_node)
+{
+    emit signalMsg("load target_wallet section ............");
+    QDomNode node = root_node.namedItem("target_wallet");
+    if (node.isNull())
+    {
+        emit signalError(QString("DefiConfigLoader: node <target_wallet> not found, default value - 0x."));
+        return;
+    }
+
+    defi_config.target_wallet = LStaticXML::getStringAttrValue("address", node).trimmed();
 }
 
 

@@ -15,10 +15,10 @@
 #include <QTableWidgetItem>
 #include <QSplitter>
 #include <QDir>
-#include <QTimer>
 #include <QDebug>
 #include <QJsonObject>
 #include <QJsonValue>
+#include <QTimerEvent>
 
 #define HASH_COL                0
 #define TX_KIND_COL             3
@@ -144,7 +144,6 @@ void DefiTxTabPage::setRecordIcon(int row, const TxLogRecord &rec)
     QString path = TxDialogBase::iconByTXType(tx_code);
     t->item(row, TX_KIND_COL)->setIcon(QIcon(path));
 }
-
 void DefiTxTabPage::initPopupMenu()
 {
     //prepare menu actions data
@@ -213,23 +212,6 @@ void DefiTxTabPage::updateTableRowByRecord(const QString &hash)
 
     updateRowColor(row);
 }
-/*
-void DefiTxTabPage::selectRowByHash(const QString &v)
-{
-    QTableWidget *t = m_table->table();
-    t->clearSelection();
-    int n_row = t->rowCount();
-    for (int i=0; i<n_row; i++)
-    {
-        QString t_hash = t->item(i, HASH_COL)->text().trimmed();
-        if (t_hash == v.trimmed())
-        {
-            t->selectRow(i);
-            break;
-        }
-    }
-}
-*/
 void DefiTxTabPage::updateTotalTable()
 {
     QTableWidget *t = m_integratedTable->table();
@@ -299,263 +281,24 @@ void DefiTxTabPage::analyzeStatusLastTx()
         const TxLogRecord &rec = m_logger->recordLast();
         if (rec.resultOk())
         {
-            QString extra_data = QString();
-            if (rec.tx_kind == NodejsBridge::jsonCommandValue(txApprove)) extra_data = rec.wallet.token_addr;
-            emit signalUpdatePageBack(rec.tx_kind, extra_data);
+            qDebug()<<QString("DefiTxTabPage::analyzeStatusLastTx() recordLast[%1] ").arg(rec.tx_hash);
+            int x = startTimer(2500);
+            qDebug() << QString("DefiTxTabPage::analyzeStatusLastTx()  start timer ID=%1").arg(x);
         }
     }
 }
-
-
-
-/*
-void JSTxTab::loadTxFromFile(QString chain_name)
+void DefiTxTabPage::timerEvent(QTimerEvent *event)
 {
-    qDebug("-----------------JSTxTab::loadTxFromFile()--------------------------");
-    m_locData.clear();
-    tx_data.clear();
-    m_table->removeAllRows();
-    chain_name = chain_name.trimmed().toUpper();
+    int t_id = event->timerId();
+    qDebug() << QString("KILL Timer ID:  %1").arg(t_id);
+    this->killTimer(t_id);
 
-    QString fname = QString("%1%2%3").arg(sub_commonSettings.nodejs_path).arg(QDir::separator()).arg(JS_TX_FILE);
-    emit signalMsg(QString("try load transactions list [%1].........").arg(fname));
-    if (!LFile::fileExists(fname))
-    {
-        emit signalError("TX file not found");
-        return;
-    }
-    QStringList fdata;
-    QString err = LFile::readFileSL(fname, fdata);
-    if (!err.isEmpty()) {emit signalError(err); return;}
-
-    foreach (const QString &v, fdata)
-    {
-        QString fline = v.trimmed();
-        if (fline.isEmpty()) continue;
-        if (fline.left(1) == "#") continue;
-
-        JSTxRecord rec;
-        rec.fromFileLine(fline);
-        if (!rec.invalid())
-        {
-            if (rec.chain == chain_name)
-                tx_data.append(rec);
-        }
-    }
-    emit signalMsg(QString("loaded %1 TX records").arg(tx_data.count()));
-    qDebug()<<QString("loaded %1 TX records").arg(tx_data.count());
-
-    loadLocalData();
-    emit signalMsg(QString("loaded %1 lines local data").arg(m_locData.count()));
-    qDebug()<<QString("loaded %1 lines local data").arg(m_locData.count());
-
-
-    applyLocalData();
-    reloadTable();
+    qDebug("DefiTxTabPage::timerEvent: next step [emit signalUpdatePageBack]");
+    const TxLogRecord &rec = m_logger->recordLast();
+    QString extra_data = QString();
+    if (rec.tx_kind == NodejsBridge::jsonCommandValue(txApprove)) extra_data = rec.wallet.token_addr;
+    emit signalUpdatePageBack(rec.tx_kind, extra_data);
 }
-void JSTxTab::reloadTable()
-{
-    QTableWidget *t = m_table->table();
-
-    m_table->removeAllRows();
-    QStringList row_data;
-    for (int i=0; i<tx_data.count(); i++)
-    {
-        row_data.clear();
-        const JSTxRecord &rec = tx_data.at(i);
-        row_data << QString::number(i+1) << rec.chain << rec.strDate() << rec.strTime();
-        row_data << rec.hash << rec.kind << rec.strFee() << rec.strResult();
-        LTable::addTableRow(t, row_data);
-
-        if (tx_data.at(i).txOk()) t->item(i, RESULT_COL)->setTextColor(Qt::darkGreen);
-        else if (tx_data.at(i).txFault()) t->item(i, RESULT_COL)->setTextColor(Qt::red);
-        else t->item(i, RESULT_COL)->setTextColor(Qt::gray);
-
-        if (tx_data.at(i).kind == "mint") t->item(i, TX_KIND_COL)->setTextColor("#FF8C00");
-        if (tx_data.at(i).kind == "burn") t->item(i, TX_KIND_COL)->setTextColor("#AA0000");
-    }
-    m_table->resizeByContents();
-    t->scrollToBottom();
-
-    //qDebug()<<QString("JSTxTab: TX table rows %1").arg(t->rowCount());
-}
-void JSTxTab::loadLocalData()
-{
-    m_locData.clear();
-    QString fname = QString("%1%2%3").arg(SubGraph_CommonSettings::appDataPath()).arg(QDir::separator()).arg(LOCAL_TX_FILE);
-    emit signalMsg(QString("try load local file [%1].........").arg(fname));
-    if (!LFile::fileExists(fname))
-    {
-        emit signalError("TX local_file not found");
-        return;
-    }
-    QStringList fdata;
-    QString err = LFile::readFileSL(fname, fdata);
-    if (!err.isEmpty()) {emit signalError(err); return;}
-
-    foreach (const QString &line, fdata)
-    {
-        QString s = line.trimmed();
-        if (s.isEmpty()) continue;
-        QStringList list = LString::trimSplitList(s, "/");
-        if (list.count() == 3)  m_locData.append(s);
-    }
-}
-void JSTxTab::applyLocalData()
-{
-    if (m_locData.isEmpty() || tx_data.isEmpty()) return;
-
-    int n_rows = tx_data.count();
-    foreach (const QString &line, m_locData)
-    {
-        QString s = line.trimmed();
-        QStringList list = LString::trimSplitList(s, "/");
-        if (list.count() != 3) {qWarning()<<QString("LocalRecord: WARNING list.count(%1)!=3").arg(list.count()); continue;}
-
-        float fee = list.at(1).toFloat();
-        for (int i=0; i<n_rows; i++)
-        {
-            if (tx_data.at(i).hash == list.first().trimmed())
-            {
-                tx_data[i].fee = fee;
-                tx_data[i].finished_fault = (list.last().trimmed().toLower() == "fault");
-            }
-        }
-    }
-}
-void JSTxTab::updateTableRowByRecord(const JSTxRecord *rec)
-{
-    if (!rec) return;
-    if (rec->invalid()) return;
-    QTableWidget *t = m_table->table();
-    int n_rows = t->rowCount();
-    for (int i=0; i<n_rows; i++)
-    {
-        if (t->item(i, HASH_COL)->text() != rec->hash) continue;
-
-        t->item(i, FEE_COL)->setText(rec->strFee());
-        t->item(i, RESULT_COL)->setText(rec->strResult());
-        if (rec->txOk()) t->item(i, RESULT_COL)->setTextColor(Qt::darkGreen);
-        else if (rec->txFault()) t->item(i, RESULT_COL)->setTextColor(Qt::red);
-        break;
-    }
-}
-JSTxRecord* JSTxTab::recordByHash(QString hash_value)
-{
-    hash_value = hash_value.trimmed().toLower();
-    if (hash_value.isEmpty() || tx_data.isEmpty()) return NULL;
-
-    for (int i=0; i<tx_data.count(); i++)
-    {
-        if (tx_data.at(i).hash == hash_value)
-            return &tx_data[i];
-    }
-    return NULL;
-}
-*/
-
-
-
-/*
-void JSTxTab::parseJSResult(const QJsonObject &j_result)
-{
-  //  qDebug("JSTxTab::parseJSResult");
-  //  qDebug() << j_result;
-    m_table->table()->setEnabled(true);
-
-    QString hash = j_result.value("hash").toString().trimmed();
-    if (hash.length() < 30) {emit signalError("invalid JS response, it has no HASH"); return;}
-    JSTxRecord *rec = recordByHash(hash);
-    if (!rec) {emit signalError(QString("not found record by HASH[%1]").arg(hash)); return;}
-
-    QString str_status = j_result.value("status").toString().trimmed();
-    QString str_fee = j_result.value("fee").toString().trimmed();
-  //  qDebug()<<QString("str_status(%1)   str_fee(%2)").arg(str_status).arg(str_fee);
-
-    bool is_finished = (j_result.value("finished").toString().trimmed() == "true");
-  //  qDebug()<<QString("is_finished = %1").arg(is_finished?"YES":"NO");
-    rec->setJSResponse(str_status, str_fee, is_finished);
-    updateTableRowByRecord(rec);
-    m_table->resizeByContents();
-
-    addRecToLocalFile(rec);
-
-//--------------------------------------------------
-
-    emit signalMsg("\n\n\n");
-    js_running = false;
-}
-void JSTxTab::addRecToLocalFile(const JSTxRecord *rec)
-{
-    if (!rec) return;
-    QString fline = rec->toLocalFileLine().trimmed();
-  //  qDebug()<<QString("LFile::appendFile  line[%1]").arg(fline);
-
-    if (fline.isEmpty()) return;
-    if (m_locData.contains(fline)) {qWarning("local file line already contains this line"); return;}
-
-    QString err;
-    QString fname = QString("%1%2%3").arg(SubGraph_CommonSettings::appDataPath()).arg(QDir::separator()).arg(LOCAL_TX_FILE);
-  //  qDebug()<<fname;
-    if (LFile::fileExists(fname))
-    {
-      //  qDebug("appendFile");
-        LFile::appendFile(fname, QString("%1 \n").arg(fline));
-    }
-    else
-    {
-      //  qDebug("writeFile");
-        LFile::writeFile(fname, QString("%1 \n").arg(fline));
-    }
-    if (!err.isEmpty()) emit signalError(QString("can't append line to local file: %1").arg(fname));
-}
-void JSTxTab::slotCheckTxResult(const QString &tx_hash, bool &ok)
-{
-    ok = false;
-    foreach (const JSTxRecord &rec, tx_data)
-    {
-        if (rec.hash == tx_hash)
-        {
-            ok = rec.txOk();
-            break;
-        }
-    }
-}
-void JSTxTab::getAllWaitingStates()
-{
-    qDebug("JSTxTab::getAllWaitingStates()");
-    if (tx_data.isEmpty())
-    {
-        emit signalError("TX list is empty");
-        emit signalEnableControls(false);
-        return;
-    }
-
-    js_running = false;
-    m_checkStateTimer->start();
-}
-void JSTxTab::slotCheckStateTimer()
-{
-    if (js_running) {qDebug("js_running"); return;}
-
-    QString next_hash = QString();
-    foreach (const JSTxRecord &rec, tx_data)
-    {
-        if (rec.txUnknown()) {next_hash = rec.hash; break;}
-    }
-    if (next_hash.isEmpty())
-    {
-        m_checkStateTimer->stop();
-        emit signalMsg("Getting TX states finished!");
-        emit signalEnableControls(true);
-        return;
-    }
-
-    emit signalMsg(QString("next TX_HASH: %1").arg(next_hash));
-    selectRowByHash(next_hash);
-    slotTxStatus();
-}
-*/
 
 
 

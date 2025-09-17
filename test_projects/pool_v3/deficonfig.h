@@ -78,6 +78,7 @@ struct DefiConfiguration
     QList<DefiPoolV3> pools;
     BybitSettings bb_settings;
     quint16 delayAfterTX; // seconds
+    QString target_wallet;
 
     void reset();
     int chainIndexOf(int) const; // возврвщает индекс элемента chains по указанному id или -1

@@ -34,7 +34,7 @@ DefiApproveTabPage::DefiApproveTabPage(QWidget *parent)
 }
 void DefiApproveTabPage::updatePageBack(QString extra_data)
 {
-    qDebug()<<QString("DefiWalletTabPage::updatePageBack  extra_data[%1]").arg(extra_data);
+    qDebug()<<QString("DefiApproveTabPage::updatePageBack  extra_data[%1]").arg(extra_data);
 
     m_table->table()->clearSelection();
     selectRowByCellData(extra_data.trimmed(), ADDRESS_COL);
@@ -184,7 +184,9 @@ void DefiApproveTabPage::logTxRecord(QString req, const QJsonObject &js_reply)
     tx_rec.wallet.token_addr = js_reply.value("token_address").toString().trimmed();
     tx_rec.wallet.token_amount = js_reply.value("amount").toString().toFloat();
     tx_rec.wallet.contract_addr = js_reply.value("to_contract").toString();
-    tx_rec.note = QString("approve %1").arg(tickerByAddress(tx_rec.wallet.token_addr));
+    //tx_rec.note = QString("approve %1").arg(tickerByAddress(tx_rec.wallet.token_addr));
+    tx_rec.formNote(tickerByAddress(tx_rec.wallet.token_addr));
+
 
     emit signalNewTx(tx_rec);
 }

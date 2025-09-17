@@ -464,21 +464,22 @@ void DefiWalletTabPage::logTxRecord(QString req, const QJsonObject &js_reply)
     {
         tx_rec.wallet.token_addr = js_reply.value("token_address").toString();
         tx_rec.wallet.token_amount = js_reply.value("amount").toString().toFloat();
-        tx_rec.note = QString("wrap %1").arg(defi_config.nativeTokenName(curChainName()));
+        //tx_rec.note = QString("wrap %1").arg(defi_config.nativeTokenName(curChainName()));
     }
     else if (req == NodejsBridge::jsonCommandValue(txUnwrap))
     {
         tx_rec.wallet.token_addr = js_reply.value("token_address").toString();
         tx_rec.wallet.token_amount = js_reply.value("amount").toString().toFloat();
-        tx_rec.note = QString("unwrap %1").arg(defi_config.nativeTokenName(curChainName()));
+        //tx_rec.note = QString("unwrap %1").arg(defi_config.nativeTokenName(curChainName()));
     }
     else if (req == NodejsBridge::jsonCommandValue(txTransfer))
     {
         tx_rec.wallet.token_addr = js_reply.value("token_address").toString().trimmed();
         tx_rec.wallet.token_amount = js_reply.value("amount").toString().toFloat();
         tx_rec.wallet.target_wallet = js_reply.value("to_wallet").toString();
-        tx_rec.note = QString("transfer %1").arg(tickerByAddress(tx_rec.wallet.token_addr));
+        //tx_rec.note = QString("transfer %1").arg(tickerByAddress(tx_rec.wallet.token_addr));
     }
+    tx_rec.formNote(tickerByAddress(tx_rec.wallet.token_addr));
     emit signalNewTx(tx_rec);
 }
 

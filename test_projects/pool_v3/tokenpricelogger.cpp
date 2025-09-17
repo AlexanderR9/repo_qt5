@@ -81,7 +81,7 @@ void TokenPriceLogger::checkLastPrices()
 float TokenPriceLogger::priceDeviation(float prev, float cur) const
 {
     if (prev <= 0 || cur <= 0) return -1;
-    float d = cur - prev;
+    float d = qAbs(cur - prev);
     return (float(100)*(d/prev));
 }
 float TokenPriceLogger::getLastPrice(QString t_name, QString t_addr) const

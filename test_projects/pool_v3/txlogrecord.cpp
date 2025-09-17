@@ -143,5 +143,16 @@ QString TxLogRecord::detailsFileLine() const
     s = QString("%1 / %2").arg(s).arg(additions);
     return s;
 }
+void TxLogRecord::formNote(QString extra_data)
+{
+    note = tx_kind;
+    if (tx_kind == NodejsBridge::jsonCommandValue(txWrap) || tx_kind == NodejsBridge::jsonCommandValue(txUnwrap)
+            || tx_kind == NodejsBridge::jsonCommandValue(txApprove) || tx_kind == NodejsBridge::jsonCommandValue(txTransfer))
+    {
+        note = QString("%1 %2 %3").arg(note).arg(QString::number(wallet.token_amount, 'f', AppCommonSettings::interfacePricePrecision(wallet.token_amount))).arg(extra_data);
+        if (tx_kind == NodejsBridge::jsonCommandValue(txApprove)) note = QString("%1 to %2").arg(note).arg(wallet.contract_addr);
+        if (tx_kind == NodejsBridge::jsonCommandValue(txTransfer)) note = QString("%1 to %2").arg(note).arg(wallet.target_wallet);
+    }
 
+}
 

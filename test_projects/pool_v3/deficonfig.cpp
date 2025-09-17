@@ -18,6 +18,7 @@ void DefiConfiguration::reset()
     tokens.clear();
     pools.clear();
     delayAfterTX = 8;
+    target_wallet = "0x";
 }
 int DefiConfiguration::DefiConfiguration::chainIndexOf(int cid) const
 {

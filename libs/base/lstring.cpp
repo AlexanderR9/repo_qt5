@@ -185,5 +185,22 @@ QStringList LString::toUnicode(const QString &s)
     }
     return result;
 }
+int LString::listIndexOf(const QStringList &list, const QString &s, bool start_from_end)
+{
+    if (list.isEmpty() || s.isEmpty()) return -1;
+
+    int n = list.count();
+    if (start_from_end)
+    {
+        for (int i=n-1; i>=0; i--)
+            if (list.at(i).contains(s)) return i;
+    }
+    else
+    {
+        for (int i=0; i<n; i++)
+            if (list.at(i).contains(s)) return i;
+    }
+    return -1;
+}
 
 

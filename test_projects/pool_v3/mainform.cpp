@@ -128,71 +128,21 @@ void MainForm::slotVisibleActionsUpdate(int p_kind)
     qDebug()<<QString("MainForm::slotVisibleActionsUpdate  p_kind=%1").arg(p_kind);
     switch(p_kind)
     {
-
-    case dpkWallet:
-    {
-        getAction(atRefresh)->setVisible(true);
-        break;
-    }
-    case dpkTx:
-    {
-        getAction(atRefresh)->setVisible(false);
-        break;
-    }
-    case dpkApproved:
-    {
-        getAction(atRefresh)->setVisible(false);
-        break;
-    }
-    /*
-        case rtPools:
+        case dpkWallet:
         {
-            getAction(atStart)->setVisible(false);
             getAction(atRefresh)->setVisible(true);
-            getAction(atLoadData)->setVisible(true);
-            getAction(atSave)->setVisible(true);
-            getAction(atMonitoring)->setVisible(false);
             break;
         }
-        case rtTokens:
+        case dpkTx:
         {
-            getAction(atStart)->setVisible(false);
-            getAction(atRefresh)->setVisible(true);
-            getAction(atLoadData)->setVisible(true);
-            getAction(atSave)->setVisible(true);
-            getAction(atMonitoring)->setVisible(false);
+            getAction(atRefresh)->setVisible(false);
             break;
         }
-        case rtDaysData:
+        case dpkApproved:
         {
-            getAction(atStart)->setVisible(false);
-            getAction(atRefresh)->setVisible(true);
-            getAction(atLoadData)->setVisible(true);
-            getAction(atSave)->setVisible(false);
-            getAction(atMonitoring)->setVisible(false);
+            getAction(atRefresh)->setVisible(false);
             break;
         }
-        case rtPositionsAct:
-        case rtPositions:
-        {
-            getAction(atStart)->setVisible(false);
-            getAction(atRefresh)->setVisible(true);
-            getAction(atLoadData)->setVisible(false);
-            getAction(atSave)->setVisible(false);
-            getAction(atMonitoring)->setVisible(false);
-            break;
-        }
-        case rtEthers:
-        {
-            getAction(atStart)->setVisible(false);
-            getAction(atRefresh)->setVisible(true);
-            getAction(atLoadData)->setVisible(false);
-            getAction(atSave)->setVisible(false);
-            getAction(atMonitoring)->setVisible(true);
-            break;
-        }
-*/
-
         default: break;
     }
 }

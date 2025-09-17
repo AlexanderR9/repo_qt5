@@ -284,7 +284,8 @@ void TxTransferDialog::init()
 
     key = "to_wallet";
     this->addSimpleWidget("TO wallet address", LSimpleDialog::sdtString, key);
-    this->setWidgetValue(key, "0x");
+    if (defi_config.target_wallet.trimmed().isEmpty()) this->setWidgetValue(key, "0x");
+    else this->setWidgetValue(key, defi_config.target_wallet.trimmed());
 
     addSimulateField();
 

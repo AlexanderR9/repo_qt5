@@ -73,6 +73,10 @@ public:
     //если remove_spaces = true то также удаляются строки состоящие из одних пробелов.
     static void removeEmptyStrings(QStringList&, bool remove_spaces = true);
 
+    //производит поиск указанной подстроки во всех элементах списка.
+    //вернет индекс 1-го найденного элемента с таких вхождением. если подстрока нигде не найдена то -1.
+    //параметр start_from_end указывает, что поиск необходимо проводить с конца списка.
+    static int listIndexOf(const QStringList&, const QString&, bool start_from_end = false);
 
 };
 

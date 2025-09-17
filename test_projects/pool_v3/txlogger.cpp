@@ -28,7 +28,6 @@ void DefiTxLogger::reloadLogFiles()
     loadTxListFile();
     loadTxDetailsFile();
     loadTxStateFile();
-    //qDebug("reloadLogFiles finished");
 }
 void DefiTxLogger::loadTxListFile()
 {
@@ -136,49 +135,51 @@ void DefiTxLogger::updateRecStatus(const QString &hash, QString status, float fe
 {
     if (logEmpty()) return;
 
-    int n = logSize();
-    for (int i=n-1; i>=0; i--)
-    {
-        if (m_logData.at(i).tx_hash == hash)
-        {
-            m_logData[i].status.result = status;
-            m_logData[i].status.fee_coin = fee_native;
-            m_logData[i].status.gas_used = gas_used;
+    int pos = indexOf(hash);
+    if (pos < 0) {emit signalError(QString("DefiTxLogger: not found rec in tx_log with hash [%1]").arg(hash)); return;}
 
-            float p = defi_config.lastPriceByTokenName(defi_config.nativeTokenName(m_chain));
-            qDebug()<<QString("DefiTxLogger::updateRecStatus - cur price nativeTokenName %1").arg(p);
-            if (p > 0) m_logData[i].status.fee_cent = (p*fee_native*float(100));
-            else m_logData[i].status.fee_cent = -1;
+    m_logData[pos].status.result = status;
+    m_logData[pos].status.fee_coin = fee_native;
+    m_logData[pos].status.gas_used = gas_used;
 
-            rewriteStatusFiles();
-            break;
-        }
-    }
+    float p = defi_config.lastPriceByTokenName(defi_config.nativeTokenName(m_chain));
+    qDebug()<<QString("DefiTxLogger::updateRecStatus - cur price nativeTokenName %1").arg(p);
+    if (p > 0) m_logData[pos].status.fee_cent = (p*fee_native*float(100));
+    else m_logData[pos].status.fee_cent = -1;
+
+    rewriteStatusFiles(m_logData.at(pos));
 }
-void DefiTxLogger::rewriteStatusFiles()
+void DefiTxLogger::rewriteStatusFiles(const TxLogRecord &rec)
 {
-    QString err;
-    int n = logSize();
-    QStringList fdata;
+    if (!rec.isFinishedStatus()) return;
 
     // rewrite status file
     QString fname = QString("%1%2%3").arg(AppCommonSettings::appDataPath()).arg(QDir::separator()).arg(AppCommonSettings::txStateFile());
-    for (int i=0; i<n; i++)
-    {
-        if (m_logData.at(i).isFinishedStatus())
-            fdata << m_logData.at(i).statusFileLine().trimmed();
-    }
-    err = LFile::writeFileSL(fname, fdata);
-    if (!err.isEmpty()) {emit signalError(QString("DefiTxLogger: %1").arg(err)); return;}
+    QString rewriting_line = rec.statusFileLine().trimmed();
+    rewriting_line = LString::removeSymbol(rewriting_line, QChar('\n'));
+    rewriteFileRecState(fname, rec, rewriting_line);
 
     // rewrite status file
-    fdata.clear();
     fname = QString("%1%2%3").arg(AppCommonSettings::appDataPath()).arg(QDir::separator()).arg(AppCommonSettings::txDetailsFile());
-    for (int i=0; i<n; i++)
-        fdata << m_logData.at(i).detailsFileLine().trimmed();
-    err = LFile::writeFileSL(fname, fdata);
-    if (!err.isEmpty()) {emit signalError(QString("DefiTxLogger: %1").arg(err)); return;}
+    rewriting_line = rec.detailsFileLine().trimmed();
+    rewriting_line = LString::removeSymbol(rewriting_line, QChar('\n'));
+    rewriteFileRecState(fname, rec, rewriting_line);
+}
+void DefiTxLogger::rewriteFileRecState(QString fname, const TxLogRecord &rec, const QString &rewriting_line)
+{
+    if (fname.trimmed().isEmpty()) {emit signalError("DefiTxLogger: log filename is empty"); return;}
 
+    QStringList fdata;
+    QString err = LFile::readFileSL(fname, fdata);
+    if (!err.isEmpty()) emit signalError(QString("DefiTxLogger: %1").arg(err));
+
+    int hash_pos = LString::listIndexOf(fdata, rec.tx_hash.trimmed(), true);
+    if (hash_pos < 0) fdata.append(rewriting_line);
+    else fdata.replace(hash_pos, rewriting_line);
+
+    LString::removeEmptyStrings(fdata);
+    err = LFile::writeFileSL(fname, fdata);
+    if (!err.isEmpty()) emit signalError(QString("DefiTxLogger: %1").arg(err));
 }
 const TxLogRecord* DefiTxLogger::recByHash(const QString &hash) const
 {
@@ -188,80 +189,16 @@ const TxLogRecord* DefiTxLogger::recByHash(const QString &hash) const
         if (v.tx_hash == hash) return &v;
     return NULL;
 }
-
-
-
-/*
-void DefiTxLogRecord::reset()
+int DefiTxLogger::indexOf(const QString &hash) const
 {
-    tx_hash.clear();
-    tx_kind = "unknown";
-    chain_name = "?";
-    dt = QDateTime();
-    pool_address.clear();
-    token_address.clear();
+    if (logEmpty()) return -1;
 
-    pid = current_tick = line_step = 0;
-    token0_size = token1_size = current_price = -1;
-    tick_range = "0:0";
-    price_range = "-1.0:-1.0";
-    note = "none";
+    int n = logSize();
+    for (int i=0; i<n; i++)
+        if (m_logData.at(i).tx_hash == hash) return i;
+    return -1;
 }
-QString DefiTxLogRecord::toFileLine() const
-{
-    QString s = LTime::strDateTime(dt);
-    s = QString("%1 / %2 / %3 / %4").arg(s).arg(chain_name).arg(tx_hash).arg(tx_kind);
-    s = QString("%1 / %2 / %3 / %4").arg(s).arg(pool_address).arg(token_address).arg(pid);
-    s = QString("%1 / %2").arg(s).arg(QString::number(token0_size, 'f', TOKEN_SIZE_PRECISION));
-    s = QString("%1 / %2").arg(s).arg(QString::number(token1_size, 'f', TOKEN_SIZE_PRECISION));
-    s = QString("%1 / %2 / %3").arg(s).arg(QString::number(current_price, 'f', PRICE_PRECISION)).arg(current_tick);
-    s = QString("%1 / %2 / %3 / %4 / %5").arg(s).arg(tick_range).arg(price_range).arg(line_step).arg(note);
-    return s;
-}
-void DefiTxLogRecord::fromFileLine(const QString &fline)
-{
-    reset();
-    if (fline.trimmed().isEmpty()) return;
-    QStringList list = LString::trimSplitList(fline, "/");
-    if (list.count() != 15) return;
 
-    int i = 0;
-    dt = QDateTime::fromString(list.at(i).trimmed(), "dd.MM.yyyy hh:mm:ss"); i++;
-    chain_name = list.at(i).trimmed(); i++;
-    tx_hash = list.at(i).trimmed(); i++;
-    tx_kind = list.at(i).trimmed(); i++;
-    pool_address = list.at(i).trimmed(); i++;
-    token_address = list.at(i).trimmed(); i++;
-    pid = list.at(i).trimmed().toULong(); i++;
-    token0_size = list.at(i).trimmed().toFloat(); i++;
-    token1_size = list.at(i).trimmed().toFloat(); i++;
-    current_price = list.at(i).trimmed().toFloat(); i++;
-    current_tick = list.at(i).trimmed().toInt(); i++;
-    tick_range = list.at(i).trimmed(); i++;
-    price_range = list.at(i).trimmed(); i++;
-    line_step = list.at(i).trimmed().toUInt(); i++;
-    note = list.at(i).trimmed(); i++;
-}
-bool DefiTxLogRecord::invalid() const
-{
-    if (tx_hash.isEmpty() || tx_kind == "unknown" || chain_name.length() < 3) return true;
-    if (!dt.isValid() || dt.date().year() < 2020) return true;
-    return false;
-}
-void DefiTxLogRecord::fromPriceRange(float &p1, float &p2) const
-{
-    p1 = p2 = -1;
-    QStringList list = LString::trimSplitList(price_range, ":");
-    if (list.count() == 2)
-    {
-        bool ok;
-        p1 = list.at(0).toFloat(&ok);
-        if (!ok || p1 < 0) p1 = -1;
-        p2 = list.at(1).toFloat(&ok);
-        if (!ok || p2 < 0) p2 = -1;
-    }
-}
-*/
 
 
 

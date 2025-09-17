@@ -3,13 +3,12 @@
 
 #include "basetabpage_v3.h"
 
-#include <QDateTime>
 
-//class LTableWidgetBox;
 class QJsonObject;
-//class QTimer;
 class DefiTxLogger;
 struct TxLogRecord;
+class QTimerEvent;
+
 
 
 //DefiTxTabPage
@@ -34,7 +33,6 @@ protected:
     void initTable();
     void reloadTables();
     void initPopupMenu(); //инициализировать элементы всплывающего меню
-    //void selectRowByHash(const QString&);
     void updateRowColor(int); // обновить цвета  некоторых ячеек строки (tx_kind/status)
     void updateTotalTable(); //обновить поля обобщенной таблицы
     void setRecordIcon(int, const TxLogRecord&); // обновить тултип и иконку для типа транзакции
@@ -45,6 +43,8 @@ protected:
     // после выполнения транзакции и проверки ее статуса необходимо проанализировать полученный результат.
     //если транзакция завершилась с успехом, то перейти обратно на соотвутствующую страницу и обновить ее.
     void analyzeStatusLastTx();
+
+    void timerEvent(QTimerEvent*);
 
 public slots:
     void slotNodejsReply(const QJsonObject&); //получен успешный ответ от скрипта nodejs
@@ -61,6 +61,10 @@ signals:
     void signalStartTXDelay(); //запустить диалоговое окно для блокировки интерфейса на определенную задержку
     void signalUpdatePageBack(QString req_name, QString extra_data = QString()); // после анализа результа последней транзакции отправить сигнал на обновление страницы с которой отправилась транзакция
 
+
 };
+
+
+
 
 #endif // TXTABPAGE_H

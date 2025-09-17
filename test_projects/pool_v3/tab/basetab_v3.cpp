@@ -5,6 +5,7 @@
 #include "nodejsbridge.h"
 #include "wallettabpage.h"
 #include "txpage.h"
+#include "lstring.h"
 
 #include <QDebug>
 #include <QTimer>
@@ -166,6 +167,7 @@ void DefiChainTabV3::tabActivated()
     }
     emit signalRewriteJsonFile(j_assets, AppCommonSettings::walletAssetsNodeJSFile()); //rewrite json-file
 
+    slotPageChanged(tabWidget()->currentIndex());
 }
 void DefiChainTabV3::initTab()
 {
@@ -183,7 +185,8 @@ void DefiChainTabV3::initTab()
 }
 void DefiChainTabV3::slotPageChanged(int i)
 {
-    //qDebug()<<QString("DefiChainTabV3::slotPageChanged  index %1").arg(i);
+    Q_UNUSED(i);
+    qDebug()<<QString("DefiChainTabV3::slotPageChanged  index %1").arg(i);
     emit signalTabPageChanged(currentPageKind());
 }
 void DefiChainTabV3::initReqStateWidget()
@@ -238,13 +241,6 @@ void DefiChainTabV3::startUpdating()
     BaseTabPage_V3 *page = qobject_cast<BaseTabPage_V3*>(tabWidget()->currentWidget());
     if (!page) {emit signalError("current tab page is null"); return;}
 
-    /*
-    if (js_bridge->buzy())  {emit signalError("nodejs bridge is buzy"); return;}
-    emit signalEnableControls(false);
-    m_timerCounter = 0;
-    m_timer->start();
-    */
-
     page->sendUpdateDataRequest();
 }
 void DefiChainTabV3::stopUpdating()
@@ -284,6 +280,8 @@ void DefiChainTabV3::connectPageSignals()
 }
 void DefiChainTabV3::slotPageSendReq(QString req_name, const QStringList &js_args)
 {
+    qDebug("---------------------------------");
+    qDebug()<<QString("DefiChainTabV3::slotPageSendReq req_name[%1]  js_args[%2]").arg(req_name).arg(LString::uniteList(js_args, "/"));
     QPalette p = m_reqStateEdit->palette();
     if (js_bridge->buzy())
     {
@@ -303,6 +301,7 @@ void DefiChainTabV3::slotPageSendReq(QString req_name, const QStringList &js_arg
     m_timer->start();
 
     emit signalMsg("\n\n\n[STARTED PAGE JS_REQUEST]");
+    emit signalMsg(QString("req_name=%1").arg(req_name));
     js_bridge->slotRunScriptArgs(js_args);
 }
 

@@ -22,6 +22,7 @@ protected:
     void readTokensNode(const QDomNode&);
     void readPoolsNode(const QDomNode&);
     void readBBNode(const QDomNode&);
+    void readTargetWalletNode(const QDomNode&);
 
 };
 
