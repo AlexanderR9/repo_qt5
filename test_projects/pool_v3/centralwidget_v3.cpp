@@ -3,6 +3,7 @@
 #include "basetab_v3.h"
 #include "wallettabpage.h"
 #include "approvepage.h"
+#include "poolspage.h"
 #include "txpage.h"
 #include "appcommonsettings.h"
 #include "lfile.h"
@@ -286,6 +287,10 @@ void CentralWidgetV3::createTabPages(int chain_id)
     //approve
     DefiApproveTabPage *a_page = new DefiApproveTabPage(this);
     tab->tabWidget()->addTab(a_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(a_page->kind()));
+
+    //pools
+    DefiPoolsTabPage *pool_page = new DefiPoolsTabPage(this);
+    tab->tabWidget()->addTab(pool_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(pool_page->kind()));
 
     //tx
     DefiTxTabPage *tx_page = new DefiTxTabPage(this);

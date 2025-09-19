@@ -63,6 +63,7 @@ void DefiConfigLoader::loadDefiConfiguration(QString fconfig)
 }
 void DefiConfigLoader::readChainsNode(const QDomNode &root_node)
 {
+    emit signalMsg("");
     emit signalMsg("load <chains> section ............");
     QDomNode node = root_node.namedItem("chains");
     if (node.isNull())
@@ -91,6 +92,7 @@ void DefiConfigLoader::readChainsNode(const QDomNode &root_node)
 }
 void DefiConfigLoader::readTokensNode(const QDomNode &root_node)
 {
+    emit signalMsg("");
     emit signalMsg("load <tokens> section ............");
     QDomNode node = root_node.namedItem("tokens");
     if (node.isNull())
@@ -122,6 +124,10 @@ void DefiConfigLoader::readTokensNode(const QDomNode &root_node)
 }
 void DefiConfigLoader::readPoolsNode(const QDomNode &root_node)
 {
+    //qDebug("");
+   // qDebug("DefiConfigLoader::readPoolsNode");
+
+    emit signalMsg("");
     emit signalMsg("load <pools> section ............");
     QDomNode node = root_node.namedItem("pools");
     if (node.isNull())
@@ -130,9 +136,64 @@ void DefiConfigLoader::readPoolsNode(const QDomNode &root_node)
         return;
     }
 
+    qDebug("<pools> node ok");
+    QDomNode pool_node = node.firstChild();
+    while (!pool_node.isNull())
+    {
+        if (pool_node.nodeName() == "pool")
+        {
+            //qDebug("find pool node");
+            DefiPoolV3 pool;
+            pool.chain_id = LStaticXML::getIntAttrValue("cid", pool_node, -1);
+            pool.address = LStaticXML::getStringAttrValue("address", pool_node, "?").trimmed().toLower();
+
+            QString token0 = LStaticXML::getStringAttrValue("token0", pool_node, "?").trimmed().toUpper();
+            QString token1 = LStaticXML::getStringAttrValue("token1", pool_node, "?").trimmed().toUpper();
+            pool.name = QString("%1/%2").arg(token0).arg(token1);
+            pool.fee = LStaticXML::getIntAttrValue("fee", pool_node, 0);
+            pool.is_stable = (LStaticXML::getStringAttrValue("stable", pool_node).trimmed() == "yes");
+
+            defi_config.findPoolTokenAddresses(pool);
+           // qDebug()<<pool.toStr();
+
+            if (pool.invalid()) emit signalError("find invalid <pool> node");
+            else {defi_config.pools.append(pool); emit signalMsg(pool.toStr());}
+        }
+        pool_node = pool_node.nextSibling();
+    }
+
+    readPoolPrioritetNode(node);
+}
+void DefiConfigLoader::readPoolPrioritetNode(const QDomNode &pools_node)
+{
+    emit signalMsg("");
+    emit signalMsg("load <pools_prioritet> section ............");
+    QDomNode node = pools_node.namedItem("prioritet");
+    if (node.isNull())
+    {
+        emit signalError(QString("invalid XML struct of DEFI config, node <pools>/<prioritet> not found."));
+        return;
+    }
+
+    QDomNode pair_node = node.firstChild();
+    while (!pair_node.isNull())
+    {
+        if (pair_node.nodeName() == "pool")
+        {
+            PoolTokenPrioritet pool;
+            pool.pair = LStaticXML::getStringAttrValue("pair", pair_node, "?").trimmed().toUpper();
+            pool.price_token = LStaticXML::getStringAttrValue("price_token", pair_node, "?").trimmed().toUpper();
+            pool.desired_token = LStaticXML::getStringAttrValue("desired_token", pair_node, "?").trimmed().toUpper();
+
+            if (pool.invalid()) emit signalError("find invalid <pools>/<prioritet> node");
+            else {defi_config.prioritet_data.append(pool); emit signalMsg(pool.toStr());}
+        }
+        pair_node = pair_node.nextSibling();
+    }
 }
 void DefiConfigLoader::readBBNode(const QDomNode &root_node)
 {
+    emit signalMsg("");
     emit signalMsg("load bybit section ............");
     QDomNode node = root_node.namedItem("bb");
     if (node.isNull())

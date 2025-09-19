@@ -26,7 +26,10 @@ public:
 
     virtual void setChain(int);
     virtual QString curChainName() {return userData();}
-    virtual void updatePageBack(QString) {} // выполняется после анализа результа последней транзакции, происходит переход обратно на страницу и обновление ее.
+
+
+    // выполняется после анализа результа последней транзакции, происходит переход обратно на страницу и обновление ее.
+    virtual void updatePageBack(QString) {}
 
 
     //выполняется запрос к сети(read only) для обновления данных на странице.

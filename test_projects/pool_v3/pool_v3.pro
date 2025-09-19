@@ -46,6 +46,7 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/tab/wallettabpage.h \
         $$PWD/tab/approvepage.h \
         $$PWD/tab/txpage.h \
+        $$PWD/tab/poolspage.h \
         $$PWD/nodejsbridge.h \
         $$PWD/txlogrecord.h \
         $$PWD/tokenpricelogger.h
@@ -64,6 +65,7 @@ SOURCES += $$PWD/main.cpp \
 	$$PWD/tab/wallettabpage.cpp \
         $$PWD/tab/approvepage.cpp \
         $$PWD/tab/txpage.cpp \
+        $$PWD/tab/poolspage.cpp \
         $$PWD/nodejsbridge.cpp \
         $$PWD/txlogrecord.cpp \
         $$PWD/tokenpricelogger.cpp

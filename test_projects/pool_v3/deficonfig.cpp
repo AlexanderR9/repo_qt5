@@ -1,6 +1,8 @@
 #include "deficonfig.h"
 #include "lfile.h"
 #include "appcommonsettings.h"
+#include "lstring.h"
+
 
 #include <QDir>
 #include <QDebug>
@@ -17,6 +19,8 @@ void DefiConfiguration::reset()
     chains.clear();
     tokens.clear();
     pools.clear();
+    prioritet_data.clear();
+
     delayAfterTX = 8;
     target_wallet = "0x";
 }
@@ -53,7 +57,63 @@ float DefiConfiguration::lastPriceByTokenName(QString t_name) const
     }
     return -1;
 }
+int DefiConfiguration::getTokenIndex(QString t_addr, int cid) const
+{
+    for (int i=0; i<tokens.count(); i++)
+    {
+        if (tokens.at(i).address == t_addr && tokens.at(i).chain_id == cid)
+            return i;
+    }
+    return -1;
+}
+int DefiConfiguration::getPoolIndex(QString p_addr) const
+{
+    for (int i=0; i<pools.count(); i++)
+    {
+        if (pools.at(i).address == p_addr) return i;
+    }
+    return -1;
+}
+int DefiConfiguration::getPoolTokenPriceIndex(QString pair) const
+{
+    QStringList token_names = LString::trimSplitList(pair, "/");
+    if (token_names.count() != 2)
+    {
+        qWarning()<<QString("DefiConfiguration::getPoolTokenPriceIndex  WARNING can't get pair tokens from [%1]").arg(pair);
+        return 0;
+    }
 
+    foreach (const PoolTokenPrioritet &v, prioritet_data)
+    {
+        if (v.pair == pair || v.pair == QString("%1/%2").arg(token_names.last()).arg(token_names.first()))
+        {
+            if (v.price_token == token_names.first()) return 0;
+            if (v.price_token == token_names.last()) return 1;
+            break;
+        }
+    }
+    return 0;
+}
+void DefiConfiguration::findPoolTokenAddresses(DefiPoolV3 &pool)
+{
+   // qDebug("DefiConfiguration::findPoolTokenAddresses");
+   // qDebug()<<pool.toStr();
+    QStringList token_names = LString::trimSplitList(pool.name, "/");
+    if (token_names.count() != 2)
+    {
+        qWarning()<<QString("DefiConfiguration::findPoolTokenAddresses  WARNING can't get pair tokens from [%1]").arg(pool.name);
+        return;
+    }
+
+  //  qDebug()<<QString("tokens %1").arg(tokens.count());
+    foreach (const DefiToken &v, tokens)
+    {
+        if (v.chain_id != pool.chain_id) continue;
+
+        if (v.name == token_names.first()) pool.token0_addr = v.address;
+        else if (v.name == token_names.last()) pool.token1_addr = v.address;
+    }
+}
 
 ///////////////////DefiChain//////////////////////
 DefiChain::DefiChain()
@@ -129,10 +189,34 @@ bool DefiToken::isWraped() const
 DefiPoolV3::DefiPoolV3()
     :DefiEntityBase(),
     fee(0),
-    address(QString("0x0"))
+    address(QString("0x0")),
+    token0_addr(QString()),
+    token1_addr(QString()),
+    is_stable(false)
 {
 
+
+
 }
+bool DefiPoolV3::invalid() const
+{
+    if (chain_id <= 0 || fee == 0) return true;
+    if (name.length() < 6 || name.length() > 10) return true;
+    if (address.length() < 30 || address.left(2) != "0x")  return true;
+    if (token0_addr.length() < 30 || token0_addr.left(2) != "0x")  return true;
+    if (token1_addr.length() < 30 || token1_addr.left(2) != "0x")  return true;
+    return false;
+}
+QString DefiPoolV3::toStr() const
+{
+    QString s("DefiPoolV3: ");
+    s = QString("%1 name[%2] CID[%3] address[%4]").arg(s).arg(name).arg(chain_id).arg(address);
+    s = QString("%1 token0_addr[%2] token1_addr[%3]").arg(s).arg(token0_addr).arg(token1_addr);
+    if (invalid()) return QString("%1 invalid").arg(s);
+    return s;
+}
+
+
 
 ///////////////////BybitSettings//////////////////////
 BybitSettings::BybitSettings()
@@ -151,4 +235,25 @@ bool BybitSettings::invalid() const
 }
 
 
+///////////////////PoolTokenPrioritet//////////////////////
+PoolTokenPrioritet::PoolTokenPrioritet()
+    :pair(QString()),
+    price_token(QString()),
+    desired_token(QString())
+{
+
+}
+bool PoolTokenPrioritet::invalid() const
+{
+    if (pair.length() < 6 || pair.length() > 10 || !pair.contains("/")) return true;
+    if (price_token.length() < 2 || desired_token.length() < 2 ) return true;
+    if (!pair.contains(price_token) || !pair.contains(desired_token))  return true;
+    return false;
+}
+QString PoolTokenPrioritet::toStr() const
+{
+    QString s("PoolTokenPrioritet: ");
+    s = QString("%1 pair[%2] price_token[%3] address[%4]").arg(s).arg(pair).arg(price_token).arg(desired_token);
+    return s;
+}
 

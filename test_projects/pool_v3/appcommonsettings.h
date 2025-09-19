@@ -9,7 +9,7 @@ enum DefiPageKind {dpkWallet = 730, dpkApproved, dpkPool, dpkTx};
 
 //описание всех возможных запросов к сети на чтение
 enum NodejsReadCommand {nrcBalance = 830, nrcTXCount, nrcApproved, nrcGasPrice, nrcChainID,
-                        nrcTXStatus, nrcInvalid = -1};
+                        nrcTXStatus, nrcPoolState, nrcInvalid = -1};
 
 //TX Orepation Type
 enum NodejsTxCommand {txWrap = 870, txUnwrap, txApprove, txTransfer, txSwap,
