@@ -5,6 +5,7 @@
 #include "txdialog.h"
 #include "txlogrecord.h"
 #include "nodejsbridge.h"
+#include "lstring.h"
 
 
 #include <QTableWidget>
@@ -36,20 +37,6 @@ DefiPoolsTabPage::DefiPoolsTabPage(QWidget *parent)
     // init popup
     initPopupMenu();
 }
-
-
-
-
-/*
-void DefiApproveTabPage::updatePageBack(QString extra_data)
-{
-    qDebug()<<QString("DefiApproveTabPage::updatePageBack  extra_data[%1]").arg(extra_data);
-
-    m_table->table()->clearSelection();
-    selectRowByCellData(extra_data.trimmed(), ADDRESS_COL);
-    slotGetApproved();
-}
-*/
 void DefiPoolsTabPage::initTable()
 {
     m_table = new LTableWidgetBox(this);
@@ -128,6 +115,45 @@ void DefiPoolsTabPage::slotGetPoolState()
 
     sendReadNodejsRequest(j_params);
 }
+bool DefiPoolsTabPage::hasBalances() const
+{
+    QTableWidget *t = m_table->table();
+    int row = m_table->curSelectedRow();
+    if (row < 0) return false;
+    QStringList token_names = LString::trimSplitList(t->item(row, PAIR_COL)->text().trimmed(), "/");
+    if (token_names.count() != 2) return false;
+
+    float a = 0;
+    float b = 0;
+    emit signalGetTokenBalance(token_names.first(), a);
+    emit signalGetTokenBalance(token_names.last(), b);
+
+    return (a >= 0 && b >= 0);
+}
+int DefiPoolsTabPage::findRowByPool(const QString &pool_addr) const
+{
+    QTableWidget *t = m_table->table();
+    int n_rows = t->rowCount();
+    if (n_rows <= 0) return -1;
+
+    for (int i=0; i<n_rows; i++)
+    {
+        if (t->item(i, ADDRESS_COL)->text().trimmed() == pool_addr)
+            return i;
+    }
+    return -1;
+}
+bool DefiPoolsTabPage::poolStateUpdated() const
+{
+    QTableWidget *t = m_table->table();
+    int row = m_table->curSelectedRow();
+    if (row < 0) return false;
+
+    bool ok = false;
+    float p = t->item(row, PRICE_COL)->text().trimmed().toFloat(&ok);
+
+    return (ok && p > 0);
+}
 void DefiPoolsTabPage::slotTxSwap()
 {
     qDebug("DefiPoolsTabPage::slotTxSwap()");
@@ -135,15 +161,48 @@ void DefiPoolsTabPage::slotTxSwap()
     if (row < 0) {emit signalError("DefiPoolsTabPage: You must select row"); return;}
     QTableWidget *t = m_table->table();
 
-    /*
-    TxDialogData data(txApprove, curChainName());
-    data.token_addr = t->item(row, ADDRESS_COL)->text().trimmed();
-    TxApproveDialog d(data, this);
+    if (!hasBalances()) {emit signalError("DefiPoolsTabPage: Balances must updated"); return;}
+    if (!poolStateUpdated()) {emit signalError("DefiPoolsTabPage: pool state must updated"); return;}
 
+
+    TxDialogData data(txSwap, curChainName());
+    data.pool_addr = t->item(row, ADDRESS_COL)->text().trimmed();
+    data.dialog_params.insert("pair", t->item(row, PAIR_COL)->text().trimmed());
+    data.dialog_params.insert("fee", t->item(row, FEE_COL)->text().trimmed());
+
+    //request pair balances
+    QStringList token_names = LString::trimSplitList(t->item(row, PAIR_COL)->text().trimmed(), "/");
+    float b_t0 = 0;
+    float b_t1 = 0;
+    emit signalGetTokenBalance(token_names.first(), b_t0);
+    emit signalGetTokenBalance(token_names.last(), b_t1);
+    data.dialog_params.insert("balance0", QString::number(b_t0));
+    data.dialog_params.insert("balance1", QString::number(b_t1));
+
+    //request cur price in pool
+    data.dialog_params.insert("price", t->item(row, PRICE_COL)->text().trimmed());
+    data.dialog_params.insert("price_index", QString::number(defi_config.getPoolTokenPriceIndex(t->item(row, PAIR_COL)->text())));
+
+
+    TxSwapDialog d(data, this);
     d.exec();
-    if (d.isApply()) sendTxNodejsRequest(data);
+    if (d.isApply())
+    {
+        //qDebug("next swap");
+        if (!data.dialog_params.contains("error"))
+        {
+            QString pool_addr = t->item(row, ADDRESS_COL)->text().trimmed();
+            int pos = defi_config.getPoolIndex(pool_addr);
+            if (pos < 0) {emit signalError(QString("not found pool[%1] in defi_config").arg(pool_addr)); return;}
+
+            data.dialog_params.insert("pool_address", pool_addr);
+            data.dialog_params.insert("token0_address", defi_config.pools.at(pos).token0_addr);
+            data.dialog_params.insert("token1_address", defi_config.pools.at(pos).token1_addr);
+            data.dialog_params.insert("fee", QString::number(defi_config.pools.at(pos).fee));
+        }
+        sendTxNodejsRequest(data);
+    }
     else emit signalMsg("operation was canceled!");
-    */
 }
 void DefiPoolsTabPage::slotNodejsReply(const QJsonObject &js_reply)
 {
@@ -169,17 +228,20 @@ void DefiPoolsTabPage::updatePoolStateRow(const QJsonObject &js_reply)
     {
         if (t->item(i, ADDRESS_COL)->text().trimmed() == p_addr)
         {
+            int pos = defi_config.getPoolIndex(p_addr);
+            if (pos < 0) {emit signalError(QString("not found pool[%1] in defi_config").arg(p_addr)); continue;}
+
+            //update tick
             t->item(i, TICK_COL)->setText(js_reply.value("tick").toString());
 
             //update price
             QString pair = t->item(i, PAIR_COL)->text().trimmed();
             int price_index = defi_config.getPoolTokenPriceIndex(pair);
             float price = ((price_index == 0) ? js_reply.value("price0").toString().toFloat() : js_reply.value("price1").toString().toFloat());
-            t->item(i, PRICE_COL)->setText(QString::number(price, 'f', AppCommonSettings::interfacePricePrecision(price)));
+            int pp = defi_config.pools.at(pos).is_stable ? 8 : AppCommonSettings::interfacePricePrecision(price);
+            t->item(i, PRICE_COL)->setText(QString::number(price, 'f', pp));
 
             //update tvl
-            int pos = defi_config.getPoolIndex(p_addr);
-            if (pos < 0) {emit signalError(QString("not found pool[%1] in defi_config").arg(p_addr)); continue;}
             float tvl0 = js_reply.value("tvl0").toString().toFloat();
             float tvl1 = js_reply.value("tvl1").toString().toFloat();
             int t0_pos = defi_config.getTokenIndex(defi_config.pools.at(pos).token0_addr, defi_config.getChainID(curChainName()));
@@ -204,7 +266,7 @@ void DefiPoolsTabPage::updatePoolStateRow(const QJsonObject &js_reply)
 }
 void DefiPoolsTabPage::checkTxResult(QString req, const QJsonObject &js_reply)
 {
-    /*
+    qDebug("DefiPoolsTabPage::checkTxResult(QString req");
     bool is_simulate = (js_reply.value(AppCommonSettings::nodejsTxSimulateFieldName()).toString() == "yes");
     emit signalMsg("");
     emit signalMsg(QString("//////////// REPLY form TX request [%1] ///////////////").arg(req));
@@ -214,39 +276,52 @@ void DefiPoolsTabPage::checkTxResult(QString req, const QJsonObject &js_reply)
 
     if (is_simulate)
     {
+        emit signalMsg(QString("input_amount = %1").arg(js_reply.value("input_amount").toString()));
+        emit signalMsg(QString("out_amount = %1").arg(js_reply.value("out_amount").toString()));
         emit signalMsg(QString("estimated_gas = %1").arg(js_reply.value("estimated_gas").toString()));
     }
     else if (js_reply.contains(AppCommonSettings::nodejsTxHashFieldName()))
     {
         logTxRecord(req, js_reply);
     }
-    */
 }
-/*
-void DefiApproveTabPage::logTxRecord(QString req, const QJsonObject &js_reply)
+void DefiPoolsTabPage::logTxRecord(QString req, const QJsonObject &js_reply)
 {
+    qDebug("DefiPoolsTabPage::logTxRecord");
+
     TxLogRecord tx_rec(req, curChainName());
     tx_rec.tx_hash = js_reply.value(AppCommonSettings::nodejsTxHashFieldName()).toString().trimmed().toLower();
-    tx_rec.wallet.token_addr = js_reply.value("token_address").toString().trimmed();
-    tx_rec.wallet.token_amount = js_reply.value("amount").toString().toFloat();
-    tx_rec.wallet.contract_addr = js_reply.value("to_contract").toString();
-    //tx_rec.note = QString("approve %1").arg(tickerByAddress(tx_rec.wallet.token_addr));
-    tx_rec.formNote(tickerByAddress(tx_rec.wallet.token_addr));
+    tx_rec.pool.pool_addr = js_reply.value("pool_address").toString().trimmed();
+    tx_rec.pool.token_in = js_reply.value("tokenIn").toString().trimmed();
+    tx_rec.pool.token_sizes.first = js_reply.value("input_amount").toString().toFloat();
 
+    qDebug()<<QString("tx_hash[%1]").arg(tx_rec.tx_hash);
+    QTableWidget *t = m_table->table();
+    int row = findRowByPool(tx_rec.pool.pool_addr);
+    if (row < 0)
+    {
+        qWarning()<<QString("DefiPoolsTabPage::logTxRecord WARNING selected row(%1) < 0").arg(row);
+        signalError(QString("DefiPoolsTabPage: can't find row by pool[%1]").arg(tx_rec.pool.pool_addr));
+        return;
+    }
+    tx_rec.pool.price = t->item(row, PRICE_COL)->text().trimmed().toFloat();
 
+    QString extra_data = "?";
+    int t_index = js_reply.value("input_index").toString().toInt();
+    QStringList token_names = LString::trimSplitList(t->item(row, PAIR_COL)->text().trimmed(), "/");
+    if (token_names.count() == 2)
+    {
+        if (t_index == 0) extra_data = QString("%1 => %2").arg(token_names.first()).arg(token_names.last());
+        else if (t_index == 1) extra_data = QString("%1 => %2").arg(token_names.last()).arg(token_names.first());
+        else extra_data = "?????";
+    }
+    tx_rec.formNote(extra_data);
+    //  - swap: pool_addr[0x_addr]; token_in[0x_addr]; token_amount[value]; current_price[value] (адрес пула в котором меняем, входной токен, который отдаем и сколько отдаем, текущая цена)
+
+    qDebug()<<QString("DefiPoolsTabPage::logTxRecord   emit signalNewTx(tx_rec);  tx_rec.note[%1]").arg(tx_rec.note);
     emit signalNewTx(tx_rec);
 }
-QString DefiApproveTabPage::tickerByAddress(const QString &t_addr) const
-{
-    QTableWidget *t = m_table->table();
-    int n_rows = t->rowCount();
-    for (int i=0; i<n_rows; i++)
-    {
-        if (t->item(i, ADDRESS_COL)->text().trimmed() == t_addr)
-            return t->item(i, TOKEN_COL)->text().trimmed();
-    }
-    return QString();
-}
-*/
+
+
 
 

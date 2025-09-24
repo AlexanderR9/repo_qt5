@@ -45,6 +45,7 @@ protected slots:
 private:
     QString defiConfig() const;
     QString nodejsPath() const;
+    bool updateWalletAtStart() const;
 
     /*
     int expandLevel() const;

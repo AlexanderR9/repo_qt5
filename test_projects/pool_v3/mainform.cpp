@@ -93,32 +93,16 @@ void MainForm::initCommonSettings()
     lCommonSettings.addParam(QString("Path to Node_JS scripts"), LSimpleDialog::sdtDirPath, key);
 
 
+    key = QString("update_wallet");
+    lCommonSettings.addParam(QString("Update wallet at startup"), LSimpleDialog::sdtBool, key);
+    lCommonSettings.setDefValue(key, false);
+
+
     /*
     QString key = QString("req_delay");
     lCommonSettings.addParam(QString("Request delay"), LSimpleDialog::sdtIntCombo, key);
     combo_list.clear();
     combo_list << "500" << "1000" << "2000" << "3000" << "5000" << "10000";
-    lCommonSettings.setComboList(key, combo_list);
-
-    key = QString("view_expand");
-    lCommonSettings.addParam(QString("View expand level"), LSimpleDialog::sdtIntCombo, key);
-    combo_list.clear();
-    combo_list << "1" << "2" << "3" << "4" << "5";
-    lCommonSettings.setComboList(key, combo_list);
-
-
-
-    key = QString("req_interval");
-    lCommonSettings.addParam(QString("Request sending interval, ms"), LSimpleDialog::sdtIntCombo, key);
-    combo_list.clear();
-    combo_list << "500" << "1000" << "1500" << "2000" << "3000" << "5000" << "10000" << "20000";
-    lCommonSettings.setComboList(key, combo_list);
-    lCommonSettings.setDefValue(key, combo_list.at(3));
-
-    key = QString("delay_after_tx");
-    lCommonSettings.addParam(QString("Delay after TX, secs"), LSimpleDialog::sdtIntCombo, key);
-    combo_list.clear();
-    for (int i=1; i<10; i++) combo_list << QString::number(i*5);
     lCommonSettings.setComboList(key, combo_list);
 
 */
@@ -186,6 +170,9 @@ void MainForm::load()
 
     //init central widget
     m_centralWidget->load(settings);
+
+    if (updateWalletAtStart())
+        actStartUpdating();
 }
 void MainForm::slotEnableControls(bool b)
 {    
@@ -229,6 +216,10 @@ QString MainForm::nodejsPath() const
 {
     return lCommonSettings.paramValue("nodejs_path").toString();
 }
+bool MainForm::updateWalletAtStart() const
+{
+    return lCommonSettings.paramValue("update_wallet").toBool();
+}
 
 /*
 
@@ -236,47 +227,7 @@ int MainForm::expandLevel() const
 {
     return lCommonSettings.paramValue("view_expand").toInt();
 }
-quint16 MainForm::pageUpdatingInterval() const
-{
-    return lCommonSettings.paramValue("page_updating_interval").toInt();
-}
-double MainForm::minTVL() const
-{
-    return lCommonSettings.paramValue("min_tvl").toDouble();
-}
-quint16 MainForm::minPoolAge() const
-{
-    return lCommonSettings.paramValue("min_age").toUInt();
-}
-quint16 MainForm::minPoolRatio() const
-{
-    return lCommonSettings.paramValue("min_ratio").toUInt();
-}
-quint16 MainForm::reqSize() const
-{
-    return lCommonSettings.paramValue("req_size").toUInt();
-}
-quint16 MainForm::reqInterval() const
-{
-    return lCommonSettings.paramValue("req_interval").toUInt();
-}
-quint8 MainForm::viewPrecision() const
-{
-    return lCommonSettings.paramValue("view_precision").toInt();
-}
-QString MainForm::apiKey() const
-{
-    return lCommonSettings.paramValue("apikey").toString();
-}
-QString MainForm::subgraphID() const
-{
-    QString chain = lCommonSettings.paramValue("subgraph_id").toString();
-    int pos = chain.indexOf("(");
-    if (pos > 0) chain = chain.left(pos).trimmed();
-    foreach (const SubGraph_CommonSettings::SGFactory &f, sub_commonSettings.factories)
-        if (f.chain == chain) return f.sub_id;
-    return QString();
-}
+
 bool MainForm::usePreferTokens() const
 {
     return lCommonSettings.paramValue("use_prefer_tokens").toBool();

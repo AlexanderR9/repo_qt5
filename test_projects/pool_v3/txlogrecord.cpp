@@ -70,6 +70,12 @@ void TxLogRecord::parseDetail(QString field, QString value)
     else if (field == "note") note = value;
     else if (field == "to_contract") wallet.contract_addr = value;
     else if (field == "to_wallet") wallet.target_wallet = value;
+    // for swap TX
+    else if (field == "pool_addr") pool.pool_addr = value;
+    else if (field == "token_in") pool.token_in = value;
+    else if (field == "token_amount_in") pool.token_sizes.first = value.toFloat();
+    else if (field == "current_price") pool.price = value.toFloat();
+
 }
 bool TxLogRecord::invalid() const
 {
@@ -138,6 +144,12 @@ QString TxLogRecord::detailsFileLine() const
         if (is_transfer) additions = QString("%1 to_wallet[%2];").arg(additions).arg(wallet.target_wallet);
         else additions = QString("%1 to_contract[%2];").arg(additions).arg(wallet.contract_addr);
     }
+    else if (tx_kind == NodejsBridge::jsonCommandValue(txSwap))
+    {
+        additions = QString("pool_addr[%1]; token_in[%1];").arg(pool.pool_addr).arg(pool.token_in);
+        additions = QString("%1 token_amount_in[%2];").arg(additions).arg(pool.token_sizes.first);
+        additions = QString("%1 current_price[%2];").arg(additions).arg(pool.price);
+    }
     additions = QString("%1 note[%2]").arg(additions).arg(note);
 
     s = QString("%1 / %2").arg(s).arg(additions);
@@ -153,6 +165,9 @@ void TxLogRecord::formNote(QString extra_data)
         if (tx_kind == NodejsBridge::jsonCommandValue(txApprove)) note = QString("%1 to %2").arg(note).arg(wallet.contract_addr);
         if (tx_kind == NodejsBridge::jsonCommandValue(txTransfer)) note = QString("%1 to %2").arg(note).arg(wallet.target_wallet);
     }
-
+    else if (tx_kind == NodejsBridge::jsonCommandValue(txSwap))
+    {
+        note = QString("%1 %2 %3").arg(note).arg(QString::number(pool.token_sizes.first, 'f', AppCommonSettings::interfacePricePrecision(wallet.token_amount))).arg(extra_data);
+    }
 }
 

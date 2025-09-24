@@ -43,6 +43,7 @@ protected:
     virtual void sendReadNodejsRequest(const QJsonObject&); // отаправить команду в nodejs_bridge для запроса на чтение из сети
     virtual void sendTxNodejsRequest(const TxDialogData& /*const QJsonObject&*/); // отаправить команду в nodejs_bridge для запроса на запись транзакции в сеть
     virtual void selectRowByCellData(const QString&, int col); //веделить строку со значение ячеики в указанном столбце
+    virtual bool hasBalances() const {return false;} // проверка что балансы кошелька были получены
 
 public slots:
     virtual void slotNodejsReply(const QJsonObject&) = 0; //получен успешный ответ от скрипта nodejs
@@ -51,6 +52,7 @@ signals:
     void signalRewriteJsonFile(const QJsonObject&, QString);
     void signalRunNodejsBridge(QString, const QStringList&);
     void signalNewTx(const TxLogRecord&); // отправляется странице DefiTxTabPage после успешного получения в ответе tx_hash
+    void signalGetTokenBalance(QString, float&) const;  //запрос текущего баланса токена в кошельке по его тикеру.
 
 };
 

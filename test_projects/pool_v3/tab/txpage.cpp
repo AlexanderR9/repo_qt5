@@ -20,16 +20,17 @@
 #include <QJsonValue>
 #include <QTimerEvent>
 
-#define HASH_COL                0
-#define TX_KIND_COL             3
-#define GAS_USED_COL            4
-#define RESULT_COL              7
-#define FEE_NATIVE_COL          5
-#define FEE_CENT_COL            6
+#define HASH_COL                    0
+#define TX_KIND_COL                 3
+#define GAS_USED_COL                4
+#define RESULT_COL                  7
+#define FEE_NATIVE_COL              5
+#define FEE_CENT_COL                6
 
 
 #define FEE_COIN_PRECISION          8
 #define FEE_CENT_PRECISION          4
+#define TIMER_DELAY_AFTER_STATUS    1500
 
 
 // DefiTxTabPage
@@ -282,7 +283,7 @@ void DefiTxTabPage::analyzeStatusLastTx()
         if (rec.resultOk())
         {
             qDebug()<<QString("DefiTxTabPage::analyzeStatusLastTx() recordLast[%1] ").arg(rec.tx_hash);
-            int x = startTimer(2500);
+            int x = startTimer(TIMER_DELAY_AFTER_STATUS);
             qDebug() << QString("DefiTxTabPage::analyzeStatusLastTx()  start timer ID=%1").arg(x);
         }
     }

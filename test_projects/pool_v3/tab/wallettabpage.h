@@ -44,6 +44,8 @@ protected:
 
 public slots:
     void slotNodejsReply(const QJsonObject&); //получен успешный ответ от скрипта nodejs
+    void slotSetTokenBalance(QString, float&) const;  //запись по запросу другой страницы текущего баланса токена в кошельке по его тикеру.
+
 
 protected slots:
     void slotWrap();

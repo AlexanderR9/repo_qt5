@@ -34,7 +34,7 @@
 //  - wrap/unwrap: token_addr[0x_addr]; token_amount[value] (т.е. адрес токена и объем который был врапнут)
 //  - approve: token_addr[0x_addr]; token_amount[value]; to_contract[0x_addr] (т.е. адрес токена и объем который был апрувнут и адрес контракта для кого апрувнут)
 //  - transfer: token_addr[0x_addr]; token_amount[value]; to_wallet[0x_addr] (т.е. адрес токена и объем, адрес кошелька, на который отправили токены)
-//  - swap: pool_addr[0x_addr]; token_in[0x_addr]; token_amount[value]; current_price[value] (адрес пула в котором меняем, входной токен, который отдаем и сколько отдаем, текущая цена)
+//  - swap: pool_addr[0x_addr]; token_in[0x_addr]; token_amount_in[value]; current_price[value] (адрес пула в котором меняем, входной токен, который отдаем и сколько отдаем, текущая цена)
 //  - mint: pool_addr[0x_addr]; current_price[value]; tick[cur_tick]; token_sizes[value0:value1]; pid[-1]; tick_range[t_low:t_high]; price_range[p_low:p_high]
 //            примечание: pid можно получить только после создании позы, в следующем запросе, т.е. tx_status этой транзакции.
 //  - increase/decrease/collect:  pid[value]; pool_addr[0x_addr]; current_price[value]; tick[cur_tick]; token_sizes[value0:value1]; tick_range[t_low:t_high]; price_range[p_low:p_high]

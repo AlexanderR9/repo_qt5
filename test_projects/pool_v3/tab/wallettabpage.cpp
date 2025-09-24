@@ -191,6 +191,24 @@ void DefiWalletTabPage::sendUpdateDataRequest()
     j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcBalance));
     sendReadNodejsRequest(j_params);
 }
+void DefiWalletTabPage::slotSetTokenBalance(QString t_name, float &amount) const
+{
+    amount = -1;
+    QTableWidget *t = m_table->table();
+    int n_rows = t->rowCount();
+    if (n_rows <= 0) return;
+
+    for (int i=0; i<n_rows; i++)
+    {
+        if (t->item(i, TOKEN_COL)->text().trimmed() == t_name)
+        {
+            bool ok;
+            float v = t->item(i, AMOUNT_COL)->text().trimmed().toFloat(&ok);
+            if (ok) amount = v;
+            break;
+        }
+    }
+}
 void DefiWalletTabPage::slotNodejsReply(const QJsonObject &js_reply)
 {
     QString req = js_reply.value(AppCommonSettings::nodejsReqFieldName()).toString();

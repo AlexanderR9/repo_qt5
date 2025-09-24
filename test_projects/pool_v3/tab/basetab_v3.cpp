@@ -218,6 +218,7 @@ void DefiChainTabV3::slotUpdatePageBack(QString req_name, QString extra_data)
     else if (req_name == NodejsBridge::jsonCommandValue(txWrap)) changeCurrentPage(dpkWallet);
     else if (req_name == NodejsBridge::jsonCommandValue(txUnwrap)) changeCurrentPage(dpkWallet);
     else if (req_name == NodejsBridge::jsonCommandValue(txTransfer)) changeCurrentPage(dpkWallet);
+    else if (req_name == NodejsBridge::jsonCommandValue(txSwap)) changeCurrentPage(dpkWallet);
 
     BaseTabPage_V3 *cur_page = qobject_cast<BaseTabPage_V3*>(tabWidget()->currentWidget());
     if (cur_page) cur_page->updatePageBack(extra_data);
@@ -253,6 +254,8 @@ void DefiChainTabV3::connectPageSignals()
 {
     const DefiTxTabPage *tx_page =  txPage();
     if (!tx_page) {emit signalError("DefiChainTabV3: tx_page is NULL");  return;}
+    const DefiWalletTabPage *w_page =  walletPage();
+    if (!w_page) {emit signalError("DefiChainTabV3: walletPage is NULL");  return;}
 
     for (int i=0; i<tabWidget()->count(); i++)
     {
@@ -275,6 +278,12 @@ void DefiChainTabV3::connectPageSignals()
             {
                 connect(w, SIGNAL(signalUpdatePageBack(QString, QString)), this, SLOT(slotUpdatePageBack(QString, QString)));
             }
+
+            if (w->kind() != dpkWallet)
+            {
+                connect(w, SIGNAL(signalGetTokenBalance(QString, float&)), w_page, SLOT(slotSetTokenBalance(QString, float&)));
+            }
+
         }
     }
 }

@@ -84,7 +84,6 @@ protected slots:
     void slotApply();
 };
 
-
 //TxApproveDialog
 class TxApproveDialog : public TxDialogBase
 {
@@ -100,9 +99,6 @@ protected slots:
     void slotApply();
 };
 
-
-
-/*
 //TxSwapDialog
 class TxSwapDialog : public TxDialogBase
 {
@@ -113,15 +109,21 @@ public:
 
 protected:
     void init();
+    QString token0() const;
+    QString token1() const;
+    int curInputIndex() const;
 
 protected slots:
     void slotApply();
+    void slotInputTokenChanged(int);
+    void slotAmountChanged();
+
 };
 
 
 
 
-
+/*
 //TxMintPositionDialog
 class TxMintPositionDialog : public TxDialogBase
 {

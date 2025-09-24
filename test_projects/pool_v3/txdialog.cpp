@@ -19,13 +19,6 @@
 #define ERROR_KEY       QString("error")
 
 
-//TxDialogData
-bool TxDialogData::invalid() const
-{
-    return (tx_kind < txWrap || tx_kind > txBurn);
-}
-
-
 //////////////////////////DIALOGS/////////////////////////////////////
 
 //TxDialogBase
@@ -137,7 +130,6 @@ void TxDialogBase::slotApply()
     LSimpleDialog::slotApply();
 }
 
-
 ///////////////////TxWrapDialog////////////////////////////
 TxWrapDialog::TxWrapDialog(TxDialogData &data, QWidget *parent)
     :TxDialogBase(data, parent)
@@ -234,7 +226,6 @@ void TxWrapDialog::slotApply()
 
     TxDialogBase::slotApply();
 }
-
 
 ///////////////////TxTransferDialog////////////////////////////
 TxTransferDialog::TxTransferDialog(TxDialogData &data, QWidget *parent)
@@ -396,14 +387,12 @@ void TxApproveDialog::slotApply()
 
 
 
-
-/*
 ///////////////////TxSwapDialog////////////////////////////
 TxSwapDialog::TxSwapDialog(TxDialogData &data, QWidget *parent)
     :TxDialogBase(data, parent)
 {
     setObjectName(QString("tx_swap_dialog"));
-    resize(700, 300);
+    resize(700, 400);
 
     if (m_data.invalid()) return;
 
@@ -415,83 +404,159 @@ TxSwapDialog::TxSwapDialog(TxDialogData &data, QWidget *parent)
 }
 void TxSwapDialog::init()
 {
-
     QString key = "desc";
     this->addSimpleWidget("Pool parameters", LSimpleDialog::sdtString, key);
-    this->setWidgetValue(key, m_data.token_name);
+    this->setWidgetValue(key, QString("%1 (%2%)").arg(m_data.dialog_params.value("pair")).arg(m_data.dialog_params.value("fee")));
     const SimpleWidget *sw = this->widgetByKey(key);
-    if (!sw) return;
     sw->edit->setReadOnly(true);
 
     key = "addr";
     this->addSimpleWidget("Pool address", LSimpleDialog::sdtString, key);
-    this->setWidgetValue(key, m_data.token_addr);
+    this->setWidgetValue(key, m_data.pool_addr);
     sw = this->widgetByKey(key);
-    if (!sw) return;
     sw->edit->setReadOnly(true);
-    QString color = "#000080";
-    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg(color));
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg("#060080"));
 
+    key = "price";
+    this->addSimpleWidget("Current price", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value("price", "-1"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+
+
+    key = "balance";
+    this->addSimpleWidget("Current input balance", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value("balance0", "-1"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    addLineSeparator(2, "#2F4F4F");
 
     key = "input_token";
-    this->addSimpleWidget("Input token of pair", LSimpleDialog::sdtStringCombo, key);
+    this->addSimpleWidget("Input token", LSimpleDialog::sdtStringCombo, key);
     sw = this->widgetByKey(key);
-    if (!sw) return;
-    sw->comboBox->addItem("TOKEN_0");
-    sw->comboBox->addItem("TOKEN_1");
+    sw->comboBox->addItem(token0());
+    sw->comboBox->addItem(token1());
 
-    key = "amount";
-    QString s = "Amount of change token";
-    this->addSimpleWidget(s, LSimpleDialog::sdtString, key, 2);
-    this->setWidgetValue(key, "1.0");
+    key = "input_amount";
+    this->addSimpleWidget("Input amount", LSimpleDialog::sdtString, key, 2);
+    this->setWidgetValue(key, "---");
 
-    key = "is_simulate";
-    this->addSimpleWidget("Simulate mode", LSimpleDialog::sdtBool, key);
+    addSimulateField();
+
+    addLineSeparator(2, "#2F4F4F");
+
+    key = "out_token";
+    this->addSimpleWidget("Output token", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, token1());
     sw = this->widgetByKey(key);
-    if (!sw) return;
-    sw->checkBox->setChecked(true);
+    sw->edit->setReadOnly(true);
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg("#A9A9A9"));
 
-    key = "dead_line";
-    this->addSimpleWidget("Dead line, secs", LSimpleDialog::sdtIntCombo, key);
+    key = "out_amount";
+    this->addSimpleWidget("Aproximate out amount", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, "?");
     sw = this->widgetByKey(key);
-    if (!sw) return;
-    for (int i=1; i<15; i++)
-        sw->comboBox->addItem(QString::number(i*20));
-    sw->comboBox->setCurrentIndex(3);
+    sw->edit->setReadOnly(true);
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg("#A9A9A9"));
 
+
+    slotAmountChanged();
+
+    connect(widgetByKey("input_amount")->edit, SIGNAL(textChanged(const QString&)), this, SLOT(slotAmountChanged()));
+    connect(widgetByKey("input_token")->comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotInputTokenChanged(int)));
+}
+void TxSwapDialog::slotInputTokenChanged(int t_index)
+{
+    if (t_index == 0)
+    {
+        setWidgetValue("out_token", token1());
+        setWidgetValue("balance", m_data.dialog_params.value("balance0", "-1"));
+    }
+    else
+    {
+        setWidgetValue("out_token", token0());
+        setWidgetValue("balance", m_data.dialog_params.value("balance1", "-1"));
+    }
+    slotAmountChanged();
+}
+void TxSwapDialog::slotAmountChanged()
+{
+    bool ok = false;
+    const SimpleWidget *sw = this->widgetByKey("input_amount");
+    float in_amount = widgetValue("input_amount").toFloat(&ok);
+    float in_balance = widgetValue("balance").toFloat();
+    qDebug()<<QString("TxSwapDialog::slotAmountChanged()  in_amount=%1  in_balance=%2").arg(in_amount).arg(in_balance);
+
+    if (in_amount <= 0 || !ok)
+    {
+        sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg("#800000"));
+        setWidgetValue("out_amount", "?");
+    }
+    else
+    {
+        int p_index = m_data.dialog_params.value("price_index", "0").toInt();
+        float p = m_data.dialog_params.value("price", "-1").toFloat();
+        float res = in_amount*p;
+        if (p_index != curInputIndex()) res = in_amount/p;
+        setWidgetValue("out_amount", QString::number(res, 'f', AppCommonSettings::interfacePricePrecision(res)));
+
+        if (in_amount > in_balance) sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg("#FF0000"));
+        else  sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg("#000000"));
+    }
 }
 void TxSwapDialog::slotApply()
 {
-
     m_data.dialog_params.clear();
     bool ok = true;
-    QString key = "amount";
+
+    //check amount
+    QString key = "input_amount";
     float sum = this->widgetValue(key).toFloat(&ok);
-    if (!ok || sum < 0.01) m_data.dialog_params.insert(key, QString("invalid"));
-    else m_data.dialog_params.insert(key, QString::number(sum, 'f', 4));
+    if (!ok)
+    {
+        m_data.dialog_params.insert(ERROR_KEY, QString("invalid amount value (%1)").arg(widgetValue(key).toString()));
+    }
+    else if (sum < 0.01 || sum > 10000)
+    {
+        m_data.dialog_params.insert(ERROR_KEY, QString("amount value out of range (%1) [sum < 0.01 || sum > 10000]").arg(widgetValue(key).toString()));
+    }
+    else
+    {
+        float in_balance = widgetValue("balance").toFloat();
+        if (sum > in_balance) m_data.dialog_params.insert(ERROR_KEY, QString("amount value (%1) > balance (%2)").arg(sum).arg(in_balance));
+        else  m_data.dialog_params.insert(key, QString::number(sum, 'f', 4));
+    }
 
-    key = "dead_line";
-    int dead_line = this->widgetValue(key).toInt(&ok);
-    if (!ok || dead_line < 10) m_data.dialog_params.insert(key, QString("invalid"));
-    else m_data.dialog_params.insert(key, QString::number(dead_line));
 
+    //check token index
+    const SimpleWidget *sw = this->widgetByKey("input_token");
+    m_data.dialog_params.insert("input_index", QString::number(sw->comboBox->currentIndex()));
 
-    bool simulate_mode = true;
-    key = "is_simulate";
-    const SimpleWidget *sw = this->widgetByKey(key);
-    if (sw) simulate_mode = sw->checkBox->isChecked();
-    m_data.dialog_params.insert(key, (simulate_mode ? "yes" : "no"));
-
-    int t_input = 0;
-    key = "input_token";
-    sw = this->widgetByKey(key);
-    if (sw) t_input = sw->comboBox->currentIndex();
-    m_data.dialog_params.insert(key, QString::number(t_input));
-
-    LSimpleDialog::slotApply();
+    TxDialogBase::slotApply();
+}
+QString TxSwapDialog::token0() const
+{
+    QStringList token_names = LString::trimSplitList(m_data.dialog_params.value("pair"), "/");
+    if (token_names.count() != 2) return "?";
+    return token_names.first();
+}
+QString TxSwapDialog::token1() const
+{
+    QStringList token_names = LString::trimSplitList(m_data.dialog_params.value("pair"), "/");
+    if (token_names.count() != 2) return "?";
+    return token_names.last();
+}
+int TxSwapDialog::curInputIndex() const
+{
+    const SimpleWidget *sw = this->widgetByKey("input_token");
+    return sw->comboBox->currentIndex();
 }
 
 
+
+/*
 ///////////////////TxRemoveLiqDialog////////////////////////////
 TxRemoveLiqDialog::TxRemoveLiqDialog(TxDialogData &data, QWidget *parent)
     :TxDialogBase(data, parent)
@@ -1143,4 +1208,22 @@ void TxIncreaseLiqDialog::checkIncreaseParamsValidity(QString &err)
     }
 }
 */
+
+
+
+
+
+
+
+
+
+
+//TxDialogData
+bool TxDialogData::invalid() const
+{
+    return (tx_kind < txWrap || tx_kind > txBurn);
+}
+
+
+
 
