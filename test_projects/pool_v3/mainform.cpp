@@ -27,15 +27,8 @@ MainForm::MainForm(QWidget *parent)
 }
 void MainForm::initActions()
 {
-    qDebug("MainForm::initActions()");
-    //addAction(LMainWidget::atStart);
     addAction(LMainWidget::atRefresh);
-    //addAction(LMainWidget::atMonitoring);
-    //addAction(LMainWidget::atStop);
     addAction(LMainWidget::atClear);
-    //addAction(LMainWidget::atSave);
-    //addAction(LMainWidget::atLoadData);
-
     addToolBarSeparator();
     addAction(LMainWidget::atSettings);
     addAction(LMainWidget::atExit);
@@ -43,27 +36,20 @@ void MainForm::initActions()
     this->setActionTooltip(atRefresh, "Update page data from chain");
     this->setActionTooltip(atClear, "Clear protocol");
     this->setActionTooltip(atSettings, "Application common settings");
-    //this->setActionTooltip(atMonitoring, "Get state of positions with liquitydy");
 
 }
 void MainForm::slotAction(int type)
 {
     switch (type)
     {  
-        //case LMainWidget::atStart: {actStart(); break;}
-        //case LMainWidget::atStop: {actStop(); break;}
         case LMainWidget::atRefresh: {actStartUpdating(); break;}
         case LMainWidget::atSettings: {actCommonSettings(); break;}
         case LMainWidget::atClear: {m_protocol->clearProtocol(); break;}
-        //case LMainWidget::atSave: {actSaveData(); break;}
-        //case LMainWidget::atLoadData: {actLoadData(); break;}
-        //case LMainWidget::atMonitoring: {m_centralWidget->getStateLiqPos(); break;}
         default: break;
     }
 }
 void MainForm::initWidgets()
 {
-    qDebug("MainForm::initWidgets()");
     v_splitter = new QSplitter(Qt::Vertical, this);
     addWidget(v_splitter, 0, 0);
 
@@ -77,9 +63,7 @@ void MainForm::initWidgets()
     connect(m_centralWidget, SIGNAL(signalEnableControls(bool)), this, SLOT(slotEnableControls(bool)));
     connect(m_centralWidget, SIGNAL(signalTabPageChanged(int)), this, SLOT(slotVisibleActionsUpdate(int)));
 
-    //qDebug("MainForm::initWidgets() 1");
     slotEnableControls(true);
-    //qDebug("MainForm::initWidgets() 2");
 }
 void MainForm::initCommonSettings()
 {
@@ -92,20 +76,9 @@ void MainForm::initCommonSettings()
     key = QString("nodejs_path");
     lCommonSettings.addParam(QString("Path to Node_JS scripts"), LSimpleDialog::sdtDirPath, key);
 
-
     key = QString("update_wallet");
     lCommonSettings.addParam(QString("Update wallet at startup"), LSimpleDialog::sdtBool, key);
     lCommonSettings.setDefValue(key, false);
-
-
-    /*
-    QString key = QString("req_delay");
-    lCommonSettings.addParam(QString("Request delay"), LSimpleDialog::sdtIntCombo, key);
-    combo_list.clear();
-    combo_list << "500" << "1000" << "2000" << "3000" << "5000" << "10000";
-    lCommonSettings.setComboList(key, combo_list);
-
-*/
 }
 void MainForm::slotVisibleActionsUpdate(int p_kind)
 {
@@ -122,6 +95,7 @@ void MainForm::slotVisibleActionsUpdate(int p_kind)
             getAction(atRefresh)->setVisible(false);
             break;
         }
+        case dpkBalance:
         case dpkApproved:
         {
             getAction(atRefresh)->setVisible(false);
@@ -130,15 +104,6 @@ void MainForm::slotVisibleActionsUpdate(int p_kind)
         default: break;
     }
 }
-/*
-void MainForm::actStop()
-{
-    m_centralWidget->breakUpdating();
-    m_protocol->addSpace();
-    m_protocol->addText("breaked updating data of page!", LProtocolBox::ttWarning);
-}
-*/
-
 void MainForm::actStartUpdating()
 {
     m_protocol->addSpace();
@@ -176,13 +141,9 @@ void MainForm::load()
 }
 void MainForm::slotEnableControls(bool b)
 {    
-    //getAction(atStart)->setEnabled(b);
-    //getAction(atStop)->setEnabled(!b);
     getAction(atRefresh)->setEnabled(b);
-    //getAction(atMonitoring)->setEnabled(b);
     getAction(atSettings)->setEnabled(b);
     getAction(atClear)->setEnabled(b);
-
     m_centralWidget->setEnableControl(b);
 }
 void MainForm::slotAppSettingsChanged(QStringList list)
@@ -221,26 +182,4 @@ bool MainForm::updateWalletAtStart() const
     return lCommonSettings.paramValue("update_wallet").toBool();
 }
 
-/*
-
-int MainForm::expandLevel() const
-{
-    return lCommonSettings.paramValue("view_expand").toInt();
-}
-
-bool MainForm::usePreferTokens() const
-{
-    return lCommonSettings.paramValue("use_prefer_tokens").toBool();
-}
-QString MainForm::walletAddr() const
-{
-    return lCommonSettings.paramValue("wallet").toString();
-}
-quint16 MainForm::delayAfterTX() const
-{
-    return lCommonSettings.paramValue("delay_after_tx").toUInt();
-}
-
-
-*/
 

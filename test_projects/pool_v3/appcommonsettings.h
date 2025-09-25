@@ -4,7 +4,7 @@
 #include <QString>
 
 // типы страниц таба для одной сети
-enum DefiPageKind {dpkWallet = 730, dpkApproved, dpkPool, dpkTx};
+enum DefiPageKind {dpkWallet = 730, dpkBalance, dpkApproved, dpkPool, dpkTx};
 
 
 //описание всех возможных запросов к сети на чтение
@@ -33,6 +33,7 @@ public:
     static QString txStateFile() {return "tx_state.txt";}
     static QString txDetailsFile() {return "tx_details.txt";}
     static QString priceLogFile() {return "prices_history.log";}
+    static QString balanceLogFile() {return "balance_history.log";}
     static QString timeUserMask() {return "hh:mm:ss";}
     static QString dateUserMask() {return "dd.MM.yyyy";}
 

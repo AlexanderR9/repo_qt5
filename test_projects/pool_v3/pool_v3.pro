@@ -32,6 +32,9 @@ unix:!macx: LIBS += -L$$PWD/../../libs/web/build/ -llweb
 unix:!macx: LIBS += -L$$PWD/../../libs/process/build/ -llprocess
 unix:!macx: LIBS += -L$$PWD/../../libs/uniswap/build/ -lluniswap
 
+# include pri
+include(tab/tab.pri)
+
 
 # Input
 HEADERS += $$PWD/mainform.h \
@@ -39,17 +42,12 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/deficonfig.h \
         $$PWD/txlogger.h \
         $$PWD/txdialog.h \
-        $$PWD/tab/basetab_v3.h \
         $$PWD/deficonfigloader.h \
 	$$PWD/appcommonsettings.h \
-	$$PWD/tab/basetabpage_v3.h \
-        $$PWD/tab/wallettabpage.h \
-        $$PWD/tab/approvepage.h \
-        $$PWD/tab/txpage.h \
-        $$PWD/tab/poolspage.h \
         $$PWD/nodejsbridge.h \
         $$PWD/txlogrecord.h \
-        $$PWD/tokenpricelogger.h
+        $$PWD/tokenpricelogger.h \
+        $$PWD/walletbalancelogger.h
 
 
 SOURCES += $$PWD/main.cpp \
@@ -58,16 +56,11 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/deficonfig.cpp \
         $$PWD/txlogger.cpp \
         $$PWD/txdialog.cpp \
-        $$PWD/tab/basetab_v3.cpp \
         $$PWD/deficonfigloader.cpp \
 	$$PWD/appcommonsettings.cpp \
-	$$PWD/tab/basetabpage_v3.cpp \
-	$$PWD/tab/wallettabpage.cpp \
-        $$PWD/tab/approvepage.cpp \
-        $$PWD/tab/txpage.cpp \
-        $$PWD/tab/poolspage.cpp \
         $$PWD/nodejsbridge.cpp \
         $$PWD/txlogrecord.cpp \
-        $$PWD/tokenpricelogger.cpp
+        $$PWD/tokenpricelogger.cpp \
+        $$PWD/walletbalancelogger.cpp
 
 

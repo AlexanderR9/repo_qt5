@@ -30,8 +30,6 @@ protected:
 
     void save();
     void load();
-
-  //  void actStop(); //break requests line
     void actStartUpdating(); //send many request by timer
 
 protected slots:
@@ -46,24 +44,6 @@ private:
     QString defiConfig() const;
     QString nodejsPath() const;
     bool updateWalletAtStart() const;
-
-    /*
-    int expandLevel() const;
-    quint16 pageUpdatingInterval() const;
-    QString apiKey() const;
-    QString walletAddr() const;
-    //QString graphDomain() const;
-    QString subgraphID() const;
-    quint8 viewPrecision() const;
-    double minTVL() const;
-    quint16 minPoolAge() const;
-    quint16 minPoolRatio() const;
-    quint16 reqSize() const;
-    quint16 reqInterval() const;
-    bool usePreferTokens() const;
-    quint16 delayAfterTX() const;
-    */
-
 
 };
 

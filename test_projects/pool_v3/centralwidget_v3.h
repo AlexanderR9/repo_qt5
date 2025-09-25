@@ -25,9 +25,7 @@ public:
 
     virtual void load(QSettings&);
     virtual void save(QSettings&);
-
     void startUpdating(); // запустить сценарий запросов для обновления данных на текущей странице
-    //void breakUpdating(); // принудительный останов сценария запросов по кнопке
     void setEnableControl(bool);
 
 protected:

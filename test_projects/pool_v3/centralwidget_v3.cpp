@@ -13,6 +13,7 @@
 #include "lmath.h"
 #include "lsplash.h"
 #include "tokenpricelogger.h"
+#include "balancehistorypage.h"
 
 
 #include <QStackedWidget>
@@ -63,7 +64,7 @@ void CentralWidgetV3::slotSendHttpReq()
     emit signalMsg(QString("\n Start HTTP request ..."));
     if (http_requester->isBuzy()) {emit signalError("Requester object is buzy."); return;}
 
-    qDebug()<<QString("BB_CentralWidget::slotSendReq ");
+    //qDebug()<<QString("BB_CentralWidget::slotSendReq ");
     const BybitSettings &bb = defi_config.bb_settings;
     if (bb.invalid()) {emit signalError("Bybit API settings is invalid, check app config"); return;}
     QString params;
@@ -86,7 +87,7 @@ void CentralWidgetV3::slotSendHttpReq()
 }
 void CentralWidgetV3::slotHttpReqFinished(int code)
 {
-    qDebug("DefiChainTabV3::slotHttpReqFinished()");
+   // qDebug("DefiChainTabV3::slotHttpReqFinished()");
     const LHttpApiReplyData& r = http_requester->lastReply();
     emit signalMsg(QString("next request finished, result %1/%2").arg(r.result_code).arg(code));
     emit signalEnableControls(true);
@@ -95,13 +96,13 @@ void CentralWidgetV3::slotHttpReqFinished(int code)
 
     if (r.isOk())
     {
-        qDebug()<<QString("result OK,  fields %1").arg(r.data.keys().count());
+        //qDebug()<<QString("result OK,  fields %1").arg(r.data.keys().count());
         const QJsonValue &jv = r.data.value("result");
         if (jv.isNull()) {emit signalError("CentralWidgetV3: result QJsonValue not found"); return;}
         const QJsonValue &j_list = jv.toObject().value("list");
         if (!j_list.isArray()) {emit signalError("CentralWidgetV3: j_list not array"); return;}
         const QJsonArray j_arr = j_list.toArray();
-        qDebug()<<QString("got price records: %1").arg(j_arr.count());
+        //qDebug()<<QString("got price records: %1").arg(j_arr.count());
         if (j_arr.isEmpty()) {emit signalError("CentralWidgetV3: array of records is empty"); return;}
 
         newPricesReceived(j_arr);
@@ -284,6 +285,10 @@ void CentralWidgetV3::createTabPages(int chain_id)
     tab->tabWidget()->addTab(w_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(w_page->kind()));
     connect(w_page, SIGNAL(signalGetPrices()), this, SLOT(slotSendHttpReq()));
 
+    //balance history
+    BalanceHistoryPage *bh_page = new BalanceHistoryPage(this);
+    tab->tabWidget()->addTab(bh_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(bh_page->kind()));
+
     //approve
     DefiApproveTabPage *a_page = new DefiApproveTabPage(this);
     tab->tabWidget()->addTab(a_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(a_page->kind()));
@@ -330,7 +335,7 @@ void CentralWidgetV3::slotChainChanged(int i)
 }
 void CentralWidgetV3::slotRewriteJsonFile(const QJsonObject &j_params, QString fname)
 {
-    qDebug()<<QString("CentralWidgetV3::slotRewriteJsonFile  fname[%1]").arg(fname);
+    //qDebug()<<QString("CentralWidgetV3::slotRewriteJsonFile  fname[%1]").arg(fname);
     QJsonDocument j_doc(j_params);
     QString fdata(j_doc.toJson());
     fdata.append(QChar('\n'));
@@ -353,19 +358,9 @@ void CentralWidgetV3::slotRewriteJsonFile(const QJsonObject &j_params, QString f
     if (!err.isEmpty()) {emit signalError(err); return;}
     else emit signalMsg("JSON file done!");
 }
-/*
-void CentralWidgetV3::breakUpdating()
-{
-    qDebug("CentralWidgetV3::breakUpdating()");
-    DefiChainTabV3 *tab = currentTab();
-    if (tab) tab->stopUpdating();
-
-}
-*/
-
 void CentralWidgetV3::slotTXDelayFinished()
 {
-    qDebug("EthersPage::slotTXDelayFinished()");
+   // qDebug("EthersPage::slotTXDelayFinished()");
     this->setEnabled(true);
     m_splashWidget->setTextSize(16);
     m_splashWidget->setTextColor("#008080");
@@ -376,7 +371,7 @@ void CentralWidgetV3::slotTXDelayFinished()
 }
 void CentralWidgetV3::slotStartTXDelay()
 {
-    qDebug()<<QString("EthersPage::slotStartTXDelay() delay %1 seconds").arg(defi_config.delayAfterTX);
+    //qDebug()<<QString("EthersPage::slotStartTXDelay() delay %1 seconds").arg(defi_config.delayAfterTX);
     m_splashWidget->setTextSize(14, true);
     m_splashWidget->setTextColor("#DD4500");
     m_splashWidget->updateProgressDelay(defi_config.delayAfterTX);

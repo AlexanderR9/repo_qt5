@@ -18,8 +18,8 @@
 #include <QLineEdit>
 
 
-#define STATE_TIMER_INTERVAL        700 //ms
-#define UPDATING_TIMEOUT            15 //sec, таймаут выполнения одного сценария запросов
+#define STATE_TIMER_INTERVAL        1300 //ms
+#define UPDATING_TIMEOUT            25 //sec, таймаут выполнения одного сценария запросов
 
 
 
@@ -56,8 +56,8 @@ void DefiChainTabV3::initJsBridgeObj()
 }
 void DefiChainTabV3::slotJSScriptFinished(int code)
 {
-    qDebug("DefiChainTabV3::slotJSScriptFinished()");
-    qDebug()<<QString("result code %1").arg(code);
+    //qDebug("DefiChainTabV3::slotJSScriptFinished()");
+    //qDebug()<<QString("result code %1").arg(code);
     stopUpdating();
 
     QPalette p = m_reqStateEdit->palette();
@@ -77,7 +77,7 @@ void DefiChainTabV3::slotJSScriptFinished(int code)
 }
 void DefiChainTabV3::slotTabsPricesUpdate()
 {
-    qDebug("DefiChainTabV3::slotTabsPricesUpdate()");
+   // qDebug("DefiChainTabV3::slotTabsPricesUpdate()");
     const DefiWalletTabPage *wpage =walletPage();
     if (wpage) wpage->updatePrices();
 
@@ -143,7 +143,7 @@ int DefiChainTabV3::currentPageKind() const
 
 void DefiChainTabV3::tabActivated()
 {
-    qDebug("DefiChainTabV3::tabActivated()");
+    //qDebug("DefiChainTabV3::tabActivated()");
     QString chain = "???";
     int pos = defi_config.chainIndexOf(chainId());
     if (pos >= 0) chain = defi_config.chains.at(pos).name;
@@ -186,7 +186,7 @@ void DefiChainTabV3::initTab()
 void DefiChainTabV3::slotPageChanged(int i)
 {
     Q_UNUSED(i);
-    qDebug()<<QString("DefiChainTabV3::slotPageChanged  index %1").arg(i);
+   // qDebug()<<QString("DefiChainTabV3::slotPageChanged  index %1").arg(i);
     emit signalTabPageChanged(currentPageKind());
 }
 void DefiChainTabV3::initReqStateWidget()
@@ -213,7 +213,7 @@ QTabWidget* DefiChainTabV3::tabWidget() const
 }
 void DefiChainTabV3::slotUpdatePageBack(QString req_name, QString extra_data)
 {
-    qDebug()<<QString("DefiChainTabV3::slotUpdatePageBack  req_name[%1]   extra_data[%2]").arg(req_name).arg(extra_data);
+    //qDebug()<<QString("DefiChainTabV3::slotUpdatePageBack  req_name[%1]   extra_data[%2]").arg(req_name).arg(extra_data);
     if (req_name == NodejsBridge::jsonCommandValue(txApprove)) changeCurrentPage(dpkApproved);
     else if (req_name == NodejsBridge::jsonCommandValue(txWrap)) changeCurrentPage(dpkWallet);
     else if (req_name == NodejsBridge::jsonCommandValue(txUnwrap)) changeCurrentPage(dpkWallet);
@@ -226,7 +226,7 @@ void DefiChainTabV3::slotUpdatePageBack(QString req_name, QString extra_data)
 void DefiChainTabV3::slotTimer()
 {
     m_timerCounter++;
-    qDebug()<<QString("PAGE[%1] slotTimer, counter %2").arg(userSign()).arg(m_timerCounter);
+   // qDebug()<<QString("PAGE[%1] slotTimer, counter %2").arg(userSign()).arg(m_timerCounter);
 
 
     int t = m_timerCounter*STATE_TIMER_INTERVAL;
@@ -238,7 +238,7 @@ void DefiChainTabV3::slotTimer()
 }
 void DefiChainTabV3::startUpdating()
 {
-    qDebug()<<QString("DefiChainTabV3::startUpdating page=%1").arg(tabWidget()->currentIndex());
+    //qDebug()<<QString("DefiChainTabV3::startUpdating page=%1").arg(tabWidget()->currentIndex());
     BaseTabPage_V3 *page = qobject_cast<BaseTabPage_V3*>(tabWidget()->currentWidget());
     if (!page) {emit signalError("current tab page is null"); return;}
 
@@ -246,7 +246,7 @@ void DefiChainTabV3::startUpdating()
 }
 void DefiChainTabV3::stopUpdating()
 {
-    qDebug()<<QString("UG_BasePage::stopUpdating  page=%1").arg(userSign());
+    //qDebug()<<QString("UG_BasePage::stopUpdating  page=%1").arg(userSign());
     m_timer->stop();
     emit signalEnableControls(true);
 }

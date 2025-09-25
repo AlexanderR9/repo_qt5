@@ -27,6 +27,7 @@ QString AppCommonSettings::tabPageTitle(int p_kind)
     {
         case dpkWallet: return QString("Wallet");
         case dpkApproved: return QString("Approved");
+        case dpkBalance: return QString("Balance history");
         case dpkPool: return QString("Pool list");
         case dpkTx: return QString("TX log");
         default: break;
