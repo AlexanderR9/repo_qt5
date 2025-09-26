@@ -59,16 +59,6 @@ protected slots:
 signals:
     void signalGetPrices();
 
-    /*
-    WalletBalanceHistory    *m_balanceHistory;
-    void initBalanceHistoryObj();
-public slots:
-    void slotScriptBroken();
-signals:
-    void signalBalancesUpdated(QString);
-    */
-
-
 };
 
 

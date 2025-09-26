@@ -640,6 +640,8 @@ void LTreeWidgetBox::init()
     layout()->addWidget(m_view);
 
     connect(m_view, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(slotItemDoubleClicked(QTreeWidgetItem*, int)));
+    connect(m_view, SIGNAL(itemClicked(QTreeWidgetItem*, int)), this, SLOT(slotItemClicked(QTreeWidgetItem*, int)));
+
 }
 void LTreeWidgetBox::slotItemDoubleClicked(QTreeWidgetItem *item, int col)
 {

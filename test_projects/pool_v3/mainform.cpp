@@ -85,6 +85,7 @@ void MainForm::slotVisibleActionsUpdate(int p_kind)
     qDebug()<<QString("MainForm::slotVisibleActionsUpdate  p_kind=%1").arg(p_kind);
     switch(p_kind)
     {
+        case dpkPositions:
         case dpkWallet:
         {
             getAction(atRefresh)->setVisible(true);
@@ -96,6 +97,7 @@ void MainForm::slotVisibleActionsUpdate(int p_kind)
             break;
         }
         case dpkBalance:
+        case dpkPool:
         case dpkApproved:
         {
             getAction(atRefresh)->setVisible(false);

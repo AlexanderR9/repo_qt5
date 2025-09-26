@@ -54,6 +54,7 @@ QString NodejsBridge::jsonCommandValue(int cmd)
         case nrcChainID:    return QString("chain_id");
         case nrcTXStatus:   return QString("tx_status");
         case nrcPoolState:  return QString("pool_state");
+        case nrcPositions:  return QString("positions");
 
         //tx reqs
         case txWrap:        return QString("wrap");

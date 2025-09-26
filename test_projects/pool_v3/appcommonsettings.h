@@ -4,12 +4,12 @@
 #include <QString>
 
 // типы страниц таба для одной сети
-enum DefiPageKind {dpkWallet = 730, dpkBalance, dpkApproved, dpkPool, dpkTx};
+enum DefiPageKind {dpkWallet = 730, dpkBalance, dpkApproved, dpkPool, dpkPositions, dpkTx};
 
 
 //описание всех возможных запросов к сети на чтение
 enum NodejsReadCommand {nrcBalance = 830, nrcTXCount, nrcApproved, nrcGasPrice, nrcChainID,
-                        nrcTXStatus, nrcPoolState, nrcInvalid = -1};
+                        nrcTXStatus, nrcPositions, nrcPoolState, nrcInvalid = -1};
 
 //TX Orepation Type
 enum NodejsTxCommand {txWrap = 870, txUnwrap, txApprove, txTransfer, txSwap,

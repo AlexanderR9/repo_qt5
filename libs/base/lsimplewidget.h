@@ -283,6 +283,7 @@ private:
 
 protected slots:
     virtual void slotItemDoubleClicked(QTreeWidgetItem*, int); //в базовом класе копируется содержимое итема в буфер обмена
+    virtual void slotItemClicked(QTreeWidgetItem*, int) {} // выполняется когда пользователь кликает мышкой по итему
 
 signals:
     void signalError(const QString&);

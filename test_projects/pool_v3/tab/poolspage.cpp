@@ -40,7 +40,7 @@ DefiPoolsTabPage::DefiPoolsTabPage(QWidget *parent)
 void DefiPoolsTabPage::initTable()
 {
     m_table = new LTableWidgetBox(this);
-    m_table->setTitle("Supplied amounts information");
+    m_table->setTitle("Uniswap pools information");
     m_table->vHeaderHide();
     QStringList headers;
     headers << "Tokens" << "Fee" << "Address" << "Tick" << "Price" << "TVL (kUSDT)";

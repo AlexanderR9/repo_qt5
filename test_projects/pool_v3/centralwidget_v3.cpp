@@ -14,6 +14,7 @@
 #include "lsplash.h"
 #include "tokenpricelogger.h"
 #include "balancehistorypage.h"
+#include "positionspage.h"
 
 
 #include <QStackedWidget>
@@ -301,6 +302,11 @@ void CentralWidgetV3::createTabPages(int chain_id)
     DefiTxTabPage *tx_page = new DefiTxTabPage(this);
     tab->tabWidget()->addTab(tx_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(tx_page->kind()));
     connect(tx_page, SIGNAL(signalStartTXDelay()), this, SLOT(slotStartTXDelay()));
+
+    //positions
+    DefiPositionsPage *pos_page = new DefiPositionsPage(this);
+    tab->tabWidget()->addTab(pos_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(pos_page->kind()));
+
 
 }
 const DefiChainTabV3* CentralWidgetV3::tabByChain(int chain_id) const
