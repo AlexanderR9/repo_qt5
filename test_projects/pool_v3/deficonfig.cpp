@@ -2,6 +2,7 @@
 #include "lfile.h"
 #include "appcommonsettings.h"
 #include "lstring.h"
+#include "defiposition.h"
 
 
 #include <QDir>
@@ -66,6 +67,15 @@ int DefiConfiguration::getTokenIndex(QString t_addr, int cid) const
     }
     return -1;
 }
+QString DefiConfiguration::tokenNameByAddress(QString t_addr, int cid) const
+{
+    foreach (const DefiToken &v, tokens)
+    {
+        if (v.chain_id != cid) continue;
+        if (v.address == t_addr) return v.name;
+    }
+    return "?";
+}
 int DefiConfiguration::getPoolIndex(QString p_addr) const
 {
     for (int i=0; i<pools.count(); i++)
@@ -114,6 +124,22 @@ void DefiConfiguration::findPoolTokenAddresses(DefiPoolV3 &pool)
         else if (v.name == token_names.last()) pool.token1_addr = v.address;
     }
 }
+int DefiConfiguration::getPoolIndexByPosition(const DefiPosition &pos) const
+{
+    if (pos.invalid()) return -1;
+
+    for (int i=0; i<pools.count(); i++)
+    {
+        if (pools.at(i).token0_addr == pos.token_addrs.first &&
+                pools.at(i).token1_addr == pos.token_addrs.second &&
+                pools.at(i).fee == pos.fee) return i;
+    }
+    return -1;
+}
+
+
+
+
 
 ///////////////////DefiChain//////////////////////
 DefiChain::DefiChain()

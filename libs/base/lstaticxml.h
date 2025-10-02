@@ -22,6 +22,7 @@ public:
     static QString getStringAttrValue(const QString&, const QDomNode&, QString defValue = QString()); //get string value of attribute, params: attr_name, node, default_value
     static void createDomHeader(QDomDocument&); // for create first section xml node
 
+
     //открывает xml file, загружает QDomDocumet, извлекает рутовую ноду и записывает в параметр r_node,
     //если параметр need_root_node_name не пустой, то предварительно проверяет имя рутовой ноды (онодолжно совпадать с need_root_node_name).
     //в случае любой ошибки r_node не запишется, а функция вернет текст ошибки.
@@ -29,6 +30,16 @@ public:
 	
     //проверка, имеет ли нода атрибут с указанным названием
     static bool hasAttr(QString attr_name, const QDomNode&);
+
+    // поместить любой текст внутрь ноды
+    static void setNodeText(QDomNode&, const QString&);
+
+    // преобразует QDomDocument в готовый текст для записи в файл
+    static QString domToFileData(const QDomDocument&);
+
+    // преобразует все содержимое QDomNode в текст (включая саму эту ноду)
+    // 2-й параметр означает отступ от края.
+    static QString nodeToString(const QDomNode&, int indent = 0);
 
 };
 

@@ -9,7 +9,7 @@ enum DefiPageKind {dpkWallet = 730, dpkBalance, dpkApproved, dpkPool, dpkPositio
 
 //описание всех возможных запросов к сети на чтение
 enum NodejsReadCommand {nrcBalance = 830, nrcTXCount, nrcApproved, nrcGasPrice, nrcChainID,
-                        nrcTXStatus, nrcPositions, nrcPoolState, nrcInvalid = -1};
+                        nrcTXStatus, nrcPositions, nrcPoolState, nrcPosState, nrcInvalid = -1};
 
 //TX Orepation Type
 enum NodejsTxCommand {txWrap = 870, txUnwrap, txApprove, txTransfer, txSwap,
@@ -34,6 +34,9 @@ public:
     static QString txDetailsFile() {return "tx_details.txt";}
     static QString priceLogFile() {return "prices_history.log";}
     static QString balanceLogFile() {return "balance_history.log";}
+    static QString positionsListFile() {return "positions.txt";}
+
+
     static QString timeUserMask() {return "hh:mm:ss";}
     static QString dateUserMask() {return "dd.MM.yyyy";}
 

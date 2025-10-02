@@ -1,8 +1,10 @@
 #include "lstaticxml.h"
+#include "lstring.h"
 
 #include <QDebug>
 #include <QFile>
 #include <QDomNodeList>
+#include <QDomText>
 
 
 //////////////// LStaticXML /////////////////////////
@@ -96,6 +98,28 @@ QString LStaticXML::getDomRootNode(const QString &fname, QDomNode &r_node, QStri
     if (r_node.isNull()) return QString("In Childs list not found element node, input file [%1]").arg(fname);
     return QString();
 }
+void LStaticXML::setNodeText(QDomNode &node, const QString &text)
+{
+    if (node.isNull()) return;
 
+    QDomDocument dom;
+    QDomText text_node = dom.createTextNode(text);
+    node.appendChild(text_node);
+}
+QString LStaticXML::domToFileData(const QDomDocument &dom)
+{
+    if (dom.isNull()) return QString();
+    return (dom.toString() + LString::nextLineSymbol());
+}
+QString LStaticXML::nodeToString(const QDomNode &node, int indent)
+{
+    if (node.isNull()) return QString();
+
+    QByteArray ba;
+    QTextStream stream(&ba, QIODevice::WriteOnly | QIODevice::Text);
+    node.save(stream, indent);
+
+    return (QString(ba) + LString::nextLineSymbol());
+}
 
 

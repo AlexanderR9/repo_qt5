@@ -25,7 +25,7 @@ public:
     virtual void save(QSettings&);
 
     virtual void setChain(int);
-    virtual QString curChainName() {return userData();}
+    virtual QString curChainName() const {return userData();}
 
 
     // выполняется после анализа результа последней транзакции, происходит переход обратно на страницу и обновление ее.

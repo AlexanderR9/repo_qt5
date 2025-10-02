@@ -127,6 +127,7 @@ public:
     virtual void popupMenuActivate(const QList< QPair<QString, QString> >&, bool need_row_selection = true); //активация всплывающего меню, необходимо передать набор пар <название, путь к иконке> , путь к иконке может быть пустым
     inline int popupMenuSize() const {return m_popupMenuActions.count();} //количество инициализированных пуктов меню
     void connectSlotToPopupAction(int, QObject*, const char*); //для соединения со слотами внешнего объекта-хозяина необходимо вызвать этот метод для каждого пункта меню, указав индекс пункта
+    inline void setMaxPopupSelectRows(quint16 a) {m_maxPopupSelectRows = a;}
 
     QTableWidget* table() const;
 
@@ -135,6 +136,8 @@ protected:
     QMap<quint8, SortingDataType> m_sortingData; //данные которые указывают какие столбцы должны реагировать на сортировку
     QList<QAction*> m_popupMenuActions; //пункты всплывающего меню, поумолчанию список пуст, активируются методом popumMenuActivate
     bool m_popupNeedSelection; // признак, нужно ли выделять строки при активации всплывающего меню (иначе меню работает для всей таблицы)
+    quint16 m_maxPopupSelectRows; // максимальное количество выделеных строк при котором всплывет меню, имеет смысл при m_popupNeedSelection==true
+
 
     void init();
     virtual void slotSortString(quint8 col, int order);

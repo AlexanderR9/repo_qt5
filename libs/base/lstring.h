@@ -13,6 +13,9 @@ public:
     //возвращает строку в виде одиночного пробела
     static QString spaceSymbol() {return QString(" ");}
 
+    // символ перехода на другую строку
+    static QChar nextLineSymbol() {return QChar('\n');}
+
     //количество вхождений подстроки в строку
     static int subCount(const QString &s, const QString sub_s);
 

@@ -134,7 +134,8 @@ bool LSimpleWidget::onlyHorizontal() const
 LTableWidgetBox::LTableWidgetBox(QWidget *parent, int t)
     :QGroupBox("Table Box", parent),
       m_table(NULL),
-      m_popupNeedSelection(true)
+      m_popupNeedSelection(true),
+      m_maxPopupSelectRows(1)
 {
     setObjectName("ltable_widget_box");
 
@@ -341,7 +342,12 @@ void LTableWidgetBox::slotContextMenu(QPoint p)
 {
  //   qDebug()<<QString("LTableWidgetBox::slotContextMenu  %1/%2").arg(p.x()).arg(p.y());
     if (m_popupMenuActions.isEmpty()) return;
-    if (m_popupNeedSelection && (LTable::selectedRows(m_table).count() != 1)) return;
+    if (m_popupNeedSelection)
+    {
+        int n_selected = LTable::selectedRows(m_table).count();
+        if (n_selected <= 0) return;
+        if (n_selected > m_maxPopupSelectRows) return;
+    }
 
     QMenu *menu = new QMenu(this);
     foreach (QAction *act, m_popupMenuActions)

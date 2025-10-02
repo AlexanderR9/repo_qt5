@@ -55,6 +55,7 @@ QString NodejsBridge::jsonCommandValue(int cmd)
         case nrcTXStatus:   return QString("tx_status");
         case nrcPoolState:  return QString("pool_state");
         case nrcPositions:  return QString("positions");
+        case nrcPosState:  return QString("pos_state");
 
         //tx reqs
         case txWrap:        return QString("wrap");
@@ -153,6 +154,105 @@ void NodejsBridge::slotRunScriptArgs(const QStringList &args)
 
 
 //private
+void NodejsBridge::parseNextJsonElement(QString &raw_json, QString &s_el) const
+{
+    //необходимо подготовить трансформированный элемент вида: "key" : "value"
+    s_el.clear();
+    raw_json = raw_json.trimmed();
+    if (raw_json.isEmpty()) return;
+
+    //извлекаем ключ
+    int pos = raw_json.indexOf(QChar(':'));
+    if (pos <= 0) return;
+    QString key = raw_json.left(pos).trimmed();
+    raw_json = LString::strTrimLeft(raw_json, pos+1).trimmed(); // отрезаем слева ключ вместе с разделителем ':'
+    if (raw_json.isEmpty()) return;
+
+    //извлекаем значение
+    QString value = QString();
+    if (raw_json.at(0) == QChar('[')) // element is arr
+    {
+        pos = raw_json.indexOf(QChar(']'));
+        if (pos <= 0) return; // wrong json
+        value = raw_json.left(pos+1).trimmed(); // извлекаем значение-arr полностью
+        raw_json = LString::strTrimLeft(raw_json, pos+1).trimmed(); // отрезаем слева из основной строки
+    }
+    else if (raw_json.at(0) == QChar('{')) // element is json
+    {
+        pos = raw_json.indexOf(QChar('}'));
+        if (pos <= 0) return; // wrong json
+        value = raw_json.left(pos+1).trimmed(); // извлекаем значение-json полностью
+        raw_json = LString::strTrimLeft(raw_json, pos+1).trimmed(); // отрезаем слева из основной строки
+    }
+    else // simple elemment
+    {
+        pos = raw_json.indexOf(QChar(','));
+        value = raw_json.trimmed();
+        if (pos > 0) value = raw_json.left(pos).trimmed();
+        raw_json = LString::strTrimLeft(raw_json, pos).trimmed(); // отрезаем слева из основной строки
+        if (value.isEmpty()) return;
+    }
+
+    qDebug()<<QString("ROW_PAIR - %1 : %2").arg(key).arg(value);
+
+
+    wrapValueQuotes(key); // обрамляем ключ кавычками
+    wrapValueQuotes(value); // обрамляем значение кавычками
+    s_el = QString("%1 : %2").arg(key).arg(value);
+}
+void NodejsBridge::wrapValueQuotes(QString &j_value) const
+{
+    j_value = j_value.trimmed();
+    if (j_value.isEmpty()) return; //invalid value
+
+    if (j_value.at(0) != QChar('[') && j_value.at(0) != QChar('{')) // значение - простой элемент
+    {
+        j_value.prepend(QUTE_SYMBOL1);
+        j_value.append(QUTE_SYMBOL1);
+        return;
+    }
+
+    // сложный элемент
+    QChar open_tag = j_value.at(0);
+    QChar close_tag = j_value.at(j_value.length()-1);
+    j_value = LString::strTrimLeft(j_value, 1);
+    j_value = LString::strTrimRight(j_value, 1);
+    j_value = j_value.trimmed();
+
+    //удаляем последнюю висячую запятую если она присутствует
+    if (j_value.at(j_value.length()-1) == QChar(','))
+        j_value = LString::strTrimRight(j_value, 1).trimmed();
+
+    if (open_tag == QChar('[')) // array
+    {
+        QStringList list = LString::trimSplitList(j_value, ","); // разбиваем на элементы
+        j_value.clear();
+        for (int i=0; i<list.count(); i++) // оборачиваем каждый элемент массива в кавычки и составляем строку обратно
+        {
+            if (j_value.isEmpty()) j_value = QString("%1%2%1").arg(QUTE_SYMBOL1).arg(list.at(i));
+            else j_value = QString("%1, %2%3%2").arg(j_value).arg(QUTE_SYMBOL1).arg(list.at(i));
+        }
+    }
+    else //json-element, этот подэлемент должен содержать элементы только простых типов
+    {
+        QStringList list = LString::trimSplitList(j_value, ","); // разбиваем на элементы:  key : value
+        j_value.clear();
+        foreach (const QString &v, list) // перебираем пары и оборачиваем ключ и значение каждой в кавычки
+        {
+            QStringList key_value = LString::trimSplitList(v.trimmed(), ":"); // разбиваем пару на ключ и значение
+            if (key_value.count() != 2) continue; // wrong element
+            QString finished_el = QString("%1%2%1 : %1%3%1").arg(QUTE_SYMBOL1).arg(key_value.first()).arg(key_value.last());
+
+            if (j_value.isEmpty()) j_value = finished_el.trimmed(); // собираем обратно отформатированную строку
+            else j_value = QString("%1, %2").arg(j_value).arg(finished_el.trimmed());
+        }
+    }
+
+    //добавляем скобки обратно
+    j_value.prepend(open_tag);
+    j_value.append(close_tag);
+}
+
 QString NodejsBridge::transformJsonResult(const QString &str_json) const
 {
     QString s = str_json.trimmed();
@@ -160,7 +260,6 @@ QString NodejsBridge::transformJsonResult(const QString &str_json) const
     if (s.isEmpty()) return s;
     int len = s.length();
     if (s.at(0) != '{' || s.at(len-1) != '}') return QString("invalid_json");
-//    s = LString::strBetweenStr(s, "{", "}");
 
     //удаляем обрамляющие скобки JSON '{  }'
     s = LString::strTrimLeft(s, 1);
@@ -174,71 +273,37 @@ QString NodejsBridge::transformJsonResult(const QString &str_json) const
     s = LString::removeSymbol(s, QUTE_SYMBOL2);
     s = s.trimmed();
 
-    //определяем длину полезных данных JSON
-    len = s.length();
-    if (s.at(len-1) == ',') {s = LString::strTrimRight(s, 1); s = s.trimmed(); len = s.length();}
-   // qDebug()<<QString("trimed JSON: |%1|").arg(s);
-    //строка готова к разметке позиций пар ключ/значение.
+    //удаляем последнюю висячую запятую если она присутствует
+    if (s.at(s.length()-1) == QChar(',')) s = LString::strTrimRight(s, 1).trimmed();
 
 
-    //для начала проведем поиск элементов значений-массивов и в них разделитель символ ',' заменим на ';'
-    int arr_start = -1;
-    int arr_end = -1;
-    int pos = 0;
+    // перебираем элементы и собираем новую правильную строку
+    int i = 0;
+    QString result;
     while (2 > 1)
     {
-        if (arr_start > 0 && arr_end > 0) //found arr-value
-        {
-            s = LString::replaceByRange(s, QString(","), QString(";"), arr_start, arr_end);
-            arr_start = arr_end = -1;
-        }
-        if (pos >= s.length()) break;
+        i++;
+        QString s_el;
+        parseNextJsonElement(s, s_el);
+        if (s_el.trimmed().isEmpty())  break;
 
-        if (arr_start < 0)
-        {
-            if (s.at(pos) == QChar('[')) arr_start = pos;
-            pos++;
-            continue;
-        }
-        if (arr_end < 0)
-        {
-            if (s.at(pos) == QChar(']')) arr_end = pos;
-            pos++;
-            continue;
-        }
-    }
-    qDebug()<<QString("trimed JSON_next: |%1|").arg(s);
+        if (result.isEmpty()) result = s_el.trimmed(); // собираем обратно отформатированную строку
+        else result = QString("%1, %2").arg(result).arg(s_el.trimmed());
 
-    //разбиваем строку на пары JSON (<ключ> : <значение>)
-    QStringList list = LString::trimSplitList(s, ",");
-    qDebug()<<QString("----------json pairs %1-------------").arg(list.count());
-    s.clear(); //final transformed JSON-result
-    for(int i=0; i<list.count(); i++)
-    {
-        qDebug()<<QString("PAIR_%1  [%2]").arg(i+1).arg(list.at(i));
-        if (!s.isEmpty()) s.append(QString(", "));
+       // qDebug()<<QString("TRANSFORMED_PAIR_%1 - %2").arg(i).arg(s_el);
 
-        QString field = list.at(i).trimmed();
-        pos = field.indexOf(QChar(':'));
-        if (pos > 0)
-        {
-            //qDebug()<<QString("pos = %1").arg(pos);
-            QString f_name = field.left(pos).trimmed();
-            QString f_value = LString::strTrimLeft(field, pos+1).trimmed();
-            QString j_line = QString("%1%2%1 : %1%3%1").arg(QUTE_SYMBOL1).arg(f_name).arg(f_value);
-            if (f_value.at(0) == QChar('['))  //is arr element
-            {
-                f_value.replace(QString(";"), QString(","));
-                j_line = QString("%1%2%1 : %3").arg(QUTE_SYMBOL1).arg(f_name).arg(f_value);
-            }
-            s.append(j_line);
-        }
-        else s.append(field);
+        s = s.trimmed();
+        if (s.at(0) == QChar(','))
+            s = LString::strTrimLeft(s, 1).trimmed(); // отрезаем оставшийся разделитель с прошлого элемента
+
+        if (i > 1000) {qWarning("WARNING while incorrect"); break;}
     }
 
-    s.prepend(QChar('{'));
-    s.append(QChar('}'));
-    return s;
+
+
+    result.prepend(QChar('{'));
+    result.append(QChar('}'));
+    return result;
 }
 
 
