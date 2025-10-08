@@ -30,7 +30,7 @@
 
 #define FEE_COIN_PRECISION          8
 #define FEE_CENT_PRECISION          4
-#define TIMER_DELAY_AFTER_STATUS    1500
+#define TIMER_DELAY_AFTER_STATUS    1700
 
 
 // DefiTxTabPage

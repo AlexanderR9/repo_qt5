@@ -104,6 +104,26 @@ int DefiConfiguration::getPoolTokenPriceIndex(QString pair) const
     }
     return 0;
 }
+int DefiConfiguration::getPoolTokenAmountIndex(QString pair) const
+{
+    QStringList token_names = LString::trimSplitList(pair, "/");
+    if (token_names.count() != 2)
+    {
+        qWarning()<<QString("DefiConfiguration::getPoolTokenPriceIndex  WARNING can't get pair tokens from [%1]").arg(pair);
+        return 0;
+    }
+
+    foreach (const PoolTokenPrioritet &v, prioritet_data)
+    {
+        if (v.pair == pair || v.pair == QString("%1/%2").arg(token_names.last()).arg(token_names.first()))
+        {
+            if (v.desired_token == token_names.first()) return 0;
+            if (v.desired_token == token_names.last()) return 1;
+            break;
+        }
+    }
+    return 0;
+}
 void DefiConfiguration::findPoolTokenAddresses(DefiPoolV3 &pool)
 {
    // qDebug("DefiConfiguration::findPoolTokenAddresses");

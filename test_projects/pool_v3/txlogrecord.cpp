@@ -169,5 +169,9 @@ void TxLogRecord::formNote(QString extra_data)
     {
         note = QString("%1 %2 %3").arg(note).arg(QString::number(pool.token_sizes.first, 'f', AppCommonSettings::interfacePricePrecision(wallet.token_amount))).arg(extra_data);
     }
+    else if (tx_kind == NodejsBridge::jsonCommandValue(txBurn))
+    {
+        note = QString("%1 PID_ARR => %2").arg(note).arg(extra_data);
+    }
 }
 

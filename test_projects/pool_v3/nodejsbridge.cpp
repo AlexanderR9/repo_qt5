@@ -64,6 +64,10 @@ QString NodejsBridge::jsonCommandValue(int cmd)
         case txApprove:     return QString("approve");
         case txSwap:        return QString("swap");
 
+        // tx PM reqs
+        case txBurn:        return QString("burn");
+
+
         default: break;
     }
     return QString("cmd_invalid");
@@ -76,6 +80,7 @@ int NodejsBridge::commandCodeByTxKind(QString req_name)
     else if (req_name == "transfer") return txTransfer;
     else if (req_name == "approve") return txApprove;
     else if (req_name == "swap") return txSwap;
+    else if (req_name == "burn") return txBurn;
     return -1;
 }
 void NodejsBridge::slotJSScriptFinished()

@@ -555,6 +555,48 @@ int TxSwapDialog::curInputIndex() const
 }
 
 
+///////////////////TxBurnPosDialog////////////////////////////
+TxBurnPosDialog::TxBurnPosDialog(TxDialogData &data, QWidget *parent)
+    :TxDialogBase(data, parent)
+{
+    setObjectName(QString("tx_burn_pos_dialog"));
+    resize(500, 250);
+
+    if (m_data.invalid()) return;
+
+    init();
+    addVerticalSpacer();
+
+    this->setCaptionsWidth(220);
+    setExpandWidgets();
+}
+void TxBurnPosDialog::init()
+{
+    QString key = "count";
+    this->addSimpleWidget("Selected positions", LSimpleDialog::sdtString, key);
+    const SimpleWidget *sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+    sw->edit->setText(QString::number(m_data.dialog_params.count()));
+
+    addSimulateField();
+}
+void TxBurnPosDialog::slotApply()
+{
+    QStringList keys(m_data.dialog_params.keys());
+    QString pid_arr_line;
+    foreach (const QString &key, keys)
+    {
+        if (pid_arr_line.isEmpty()) pid_arr_line = m_data.dialog_params.value(key).trimmed();
+        else pid_arr_line = QString("%1 / %2").arg(pid_arr_line).arg(m_data.dialog_params.value(key).trimmed());
+    }
+
+    m_data.dialog_params.clear();
+    m_data.dialog_params.insert("pid_arr", pid_arr_line);
+
+    TxDialogBase::slotApply();
+}
+
+
 
 /*
 ///////////////////TxRemoveLiqDialog////////////////////////////

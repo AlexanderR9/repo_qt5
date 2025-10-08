@@ -112,6 +112,7 @@ struct DefiConfiguration
     float lastPriceByTokenName(QString) const; // получить последнюю цену по тикеру токена
     void findPoolTokenAddresses(DefiPoolV3&); //найти и обновить адреса пары токенов для указанного пула
     int getPoolTokenPriceIndex(QString) const; //найти в prioritet_data указанную пару и выдать индекс токена из пары для которого отображать цену
+    int getPoolTokenAmountIndex(QString) const; //найти в prioritet_data указанную пару и выдать индекс токена из пары для которого отображать количество
     int getPoolIndex(QString) const; // найти в контейнере pools пул по его адресу и выдать индекс
     int getPoolIndexByPosition(const DefiPosition&) const; // найти в контейнере pools пул по объекту позиции
     int getTokenIndex(QString, int) const; // найти в контейнере tokens asset по его адресу и ID_chain и выдать индекс

@@ -45,7 +45,7 @@ struct TxLogRecord
         float token_amount;
         void reset() {token_addr = contract_addr = target_wallet = "0x0"; token_amount=-1;}
     };
-    // структура для хранения инфы по транзакциям связанными с операциями в пуле:  mint/increase/decrease/collect/swap/burn
+    // структура для хранения инфы по транзакциям связанными с операциями в пуле:  mint/increase/decrease/collect/swap
     struct TxPoolLog
     {
         TxPoolLog() {reset();}

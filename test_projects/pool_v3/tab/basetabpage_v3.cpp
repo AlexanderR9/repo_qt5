@@ -3,12 +3,14 @@
 #include "appcommonsettings.h"
 #include "txdialog.h"
 #include "nodejsbridge.h"
+#include "lstring.h"
 
 #include <QSettings>
 #include <QSplitter>
 #include <QByteArray>
 #include <QDebug>
 #include <QJsonObject>
+#include <QJsonArray>
 
 
 
@@ -63,7 +65,16 @@ void BaseTabPage_V3::sendTxNodejsRequest(const TxDialogData &tx_data /*const QJs
     QJsonObject j_params;
     QStringList keys(tx_data.dialog_params.keys());
     foreach (const QString &v, keys)
-        j_params.insert(v, tx_data.dialog_params.value(v));
+    {
+        if (v.contains("_arr")) // если в имени поля присутствует '_arr' то значит что значение это json массив
+        {
+            QJsonArray j_arr_pid;
+            QStringList arr_list = LString::trimSplitList(tx_data.dialog_params.value(v), "/");
+            foreach (const QString &v_arr, arr_list) j_arr_pid.push_back(v_arr.trimmed());
+            j_params.insert(v, j_arr_pid);
+        }
+        else j_params.insert(v, tx_data.dialog_params.value(v));
+    }
 
     // second part
     emit signalRewriteJsonFile(j_params, AppCommonSettings::txParamsNodeJSFile()); //rewrite params json-file

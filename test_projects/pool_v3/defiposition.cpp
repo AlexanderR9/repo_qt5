@@ -8,16 +8,22 @@
 #include <QJsonObject>
 
 
+#define STABLE_POOL_PRICE_PRECISION     6
+
 
 // DefiPosition
 void DefiPosition::reset()
 {
     token_addrs.first.clear();
     token_addrs.second.clear();
+    token_names.first = token_names.second = "?";
+
     pid = -1;
     fee = 0;
     tick_range.first = tick_range.second = 0;
     liq.clear();
+    tprice_index_desired = tamount_index_desired = 0;
+    stable_pool = false;
 
     state.reset();
 }
@@ -61,6 +67,28 @@ void DefiPosition::fromFileLine(const QString &fline)
     token_addrs.second = list.at(i).trimmed(); i++;
 
 }
+void DefiPosition::calcTIndex(QString chain_name)
+{
+    tprice_index_desired = tamount_index_desired = 0;
+    if (invalid()) return;
+
+    int cid = defi_config.getChainID(chain_name);
+    if (cid < 0) return;
+
+    int pos0 = defi_config.getTokenIndex(token_addrs.first, cid);
+    int pos1 = defi_config.getTokenIndex(token_addrs.second, cid);
+    if (pos0 >= 0 && pos1 >= 0) // определяем является ли пул is_stable
+        stable_pool = (defi_config.tokens.at(pos0).is_stable && defi_config.tokens.at(pos1).is_stable);
+
+    token_names.first = defi_config.tokenNameByAddress(token_addrs.first, cid);
+    token_names.second = defi_config.tokenNameByAddress(token_addrs.second, cid);
+    QString pair = QString("%1/%2").arg(token_names.first).arg(token_names.second);
+    if (pair.contains("?")) return;
+
+    tprice_index_desired = defi_config.getPoolTokenPriceIndex(pair);
+    tamount_index_desired = defi_config.getPoolTokenAmountIndex(pair);
+
+}
 QString DefiPosition::toStr() const
 {
     QString s("DefiPosition:");
@@ -82,19 +110,34 @@ QString DefiPosition::interfaceTickRange() const
 }
 QString DefiPosition::interfacePriceRange() const
 {
-    if (invalid()) return QString("[? : ?]");
-    QString p1 = QString::number(state.price0_range.first, 'f', AppCommonSettings::interfacePricePrecision(state.price0_range.first));
-    QString p2 = QString::number(state.price0_range.second, 'f', AppCommonSettings::interfacePricePrecision(state.price0_range.second));
+    if (invalid() || state.invalid()) return QString("[? : ?]");
+
+    float p_low = state.price0_range.first;
+    float p_high = state.price0_range.second;
+    if (tprice_index_desired == 1)
+    {
+        float x = float(1)/p_high;
+        p_high = float(1)/p_low;
+        p_low = x;
+    }
+
+    quint8 prec = (stable_pool ? STABLE_POOL_PRICE_PRECISION : AppCommonSettings::interfacePricePrecision(p_low));
+    QString p1 = QString::number(p_low, 'f', prec);
+    QString p2 = QString::number(p_high, 'f', prec);
     return QString("[%1 : %2]").arg(p1).arg(p2);
 }
 QString DefiPosition::interfaceCurrentPrice() const
 {
-    if (invalid()) return QString("-1");
-    return QString::number(state.price0, 'f', AppCommonSettings::interfacePricePrecision(state.price0));
+    if (invalid() || state.invalid()) return QString("-1");
+
+    float p = ((tprice_index_desired == 1) ? state.price1() : state.price0);
+    quint8 prec = (stable_pool ? STABLE_POOL_PRICE_PRECISION : AppCommonSettings::interfacePricePrecision(p));
+    return QString::number(p, 'f', prec);
 }
 QString DefiPosition::interfaceAssetAmounts() const
 {
     if (invalid()) return QString("? / ?");
+    if (!hasLiquidity()) return QString("- / -");
 
     QString size0 = QString::number(state.asset_amounts.first, 'f', AppCommonSettings::interfacePricePrecision(state.asset_amounts.first));
     QString size1 = QString::number(state.asset_amounts.second, 'f', AppCommonSettings::interfacePricePrecision(state.asset_amounts.second));
@@ -107,6 +150,65 @@ QString DefiPosition::interfaceRewards() const
     QString size0 = QString::number(state.rewards.first, 'f', AppCommonSettings::interfacePricePrecision(state.rewards.first));
     QString size1 = QString::number(state.rewards.second, 'f', AppCommonSettings::interfacePricePrecision(state.rewards.second));
     return QString("%1 / %2").arg(size0).arg(size1);
+}
+QString DefiPosition::interfaceAssetAmountsDesired() const
+{
+    float a = lockedDesiredSum();
+    if (a < 0) return QString("-1.0 ???"); // invalid state
+
+    QString t_name = ((tamount_index_desired == 1) ? token_names.second : token_names.first);
+    return QString("%1 %2").arg(QString::number(a, 'f', AppCommonSettings::interfacePricePrecision(a))).arg(t_name);
+}
+QString DefiPosition::interfaceRewardsDesired() const
+{
+    float a = rewardDesiredSum();
+    if (a < 0) return QString("-1.0 ???"); // invalid state
+
+    QString t_name = ((tamount_index_desired == 1) ? token_names.second : token_names.first);
+    return QString("%1 %2").arg(QString::number(a, 'f', AppCommonSettings::interfacePricePrecision(a))).arg(t_name);
+}
+float DefiPosition::lockedDesiredSum() const
+{
+    if (state.invalid()) return -1;
+    if (!hasLiquidity()) return 0;
+    float a0 = state.asset_amounts.first;
+    float a1 = state.asset_amounts.second;
+    if (tamount_index_desired == 0) return (a0 + (a1/state.price0));
+    if (tamount_index_desired == 1) return (a1 + (a0*state.price0));
+    return 0;
+}
+float DefiPosition::lockedSum() const
+{
+    if (state.invalid()) return -1;
+    if (!hasLiquidity()) return 0;
+    float p0 = defi_config.lastPriceByTokenName(token_names.first);
+    float p1 = defi_config.lastPriceByTokenName(token_names.second);
+    if (p0 < 0 || p1 < 0) return -1;
+    return (state.asset_amounts.first*p0 + state.asset_amounts.second*p1);
+}
+float DefiPosition::rewardDesiredSum() const
+{
+    if (state.invalid()) return -1;
+    //if (!hasLiquidity()) return 0;
+    float a0 = state.rewards.first;
+    float a1 = state.rewards.second;
+    if (tamount_index_desired == 0) return (a0 + (a1/state.price0));
+    if (tamount_index_desired == 1) return (a1 + (a0*state.price0));
+    return 0;
+}
+float DefiPosition::rewardSum() const
+{
+    if (state.invalid()) return -1;
+    //if (!hasLiquidity()) return 0;
+    float p0 = defi_config.lastPriceByTokenName(token_names.first);
+    float p1 = defi_config.lastPriceByTokenName(token_names.second);
+    if (p0 < 0 || p1 < 0) return -1;
+    return (state.rewards.first*p0 + state.rewards.second*p1);
+}
+bool DefiPosition::isOutRange() const
+{
+    if (state.invalid() || !hasLiquidity()) return false;
+    return ((state.pool_tick < tick_range.first) || (state.pool_tick >= tick_range.second));
 }
 
 
@@ -157,5 +259,16 @@ void DefiPositionState::update(const QJsonObject &j_obj)
     if (!ok || p<0) qWarning()<<QString("DefiPositionState: WARNING - invalid reward1 field");
     else rewards.second = p;
 }
-
+bool DefiPositionState::invalid() const
+{
+    if (price0 <= 0) return true;
+    if (price0_range.first <= 0 || price0_range.second <= 0) return true;
+    return false;
+}
+float DefiPositionState::price1() const
+{
+    if (invalid()) return -1;
+    if (price0 <= 0) return 0;
+    return float(1)/price0;
+}
 

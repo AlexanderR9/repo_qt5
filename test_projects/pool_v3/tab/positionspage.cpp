@@ -4,6 +4,8 @@
 #include "nodejsbridge.h"
 #include "lfile.h"
 #include "deficonfig.h"
+#include "txdialog.h"
+#include "txlogrecord.h"
 
 
 
@@ -24,6 +26,9 @@
 #define REWARDS_COL          5
 #define LIQ_COL              6
 
+#define IN_RANGE_COLOR      QString("#AAFBAA")
+#define OUT_RANGE_COLOR     QString("#FFCCCC")
+
 
 // DefiPositionsPage
 DefiPositionsPage::DefiPositionsPage(QWidget *parent)
@@ -40,6 +45,12 @@ DefiPositionsPage::DefiPositionsPage(QWidget *parent)
 
 
 }
+void DefiPositionsPage::updatePageBack(QString extra_data)
+{
+    qDebug("=========DefiPositionsPage::updatePageBack=========");
+    Q_UNUSED(extra_data);
+    sendUpdateDataRequest();
+}
 void DefiPositionsPage::initPopupMenu()
 {
     QString path = AppCommonSettings::commonIconsPath(); // icons path
@@ -47,12 +58,14 @@ void DefiPositionsPage::initPopupMenu()
 
     //prepare menu actions data for assets table
     QList< QPair<QString, QString> > act_list;
-    QPair<QString, QString> pair1("Get state (selected)", QString("%1/edit-redo.svg").arg(path));
+    QPair<QString, QString> pair1("Get state (selected)", QString("%1/view-refresh.svg").arg(path));
     act_list.append(pair1);
     QPair<QString, QString> pair2("Get state (with liquidity)", QString("%1/edit-undo.svg").arg(path));
     act_list.append(pair2);
-//    QPair<QString, QString> pair2("Swap tokens", TxDialogBase::iconByTXType(txSwap));
-  //  act_list.append(pair2);
+    QPair<QString, QString> pair3("Get state (none liquidity)", QString("%1/edit-redo.svg").arg(path));
+    act_list.append(pair3);
+    QPair<QString, QString> pair4("Burn positions (selected)", QString("%1/emblem-cancel.svg").arg(path));
+    act_list.append(pair4);
 
 
     //init popup menu actions
@@ -63,7 +76,8 @@ void DefiPositionsPage::initPopupMenu()
     int i_menu = 0;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotGetSelectedPosState())); i_menu++;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotGetLiquidityPosState())); i_menu++;
-    //m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotTxSwap())); i_menu++;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotGetNoneLiqPosState())); i_menu++;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotBurnPosSelected())); i_menu++;
 
 
 }
@@ -89,7 +103,7 @@ void DefiPositionsPage::initTable()
     headers << "Value";
     LTable::setTableHeaders(m_integratedTable->table(), headers);
     headers.clear();
-    headers << "Total positions" << "With liquidity" << "Minted positions" <<  "Burned positions" << "Locked sum" << "Rewards sum";
+    headers << "Total positions" << "With liquidity" << "Minted positions" <<  "Burned positions" << "Locked sum (USDT)" << "Rewards sum (USDT)";
     LTable::setTableHeaders(m_integratedTable->table(), headers, Qt::Vertical);
     m_integratedTable->setSelectionMode(QAbstractItemView::NoSelection, QAbstractItemView::NoSelection);
     LTable::createAllItems(m_integratedTable->table());
@@ -112,9 +126,13 @@ void DefiPositionsPage::slotNodejsReply(const QJsonObject &js_reply)
 
     if (req == NodejsBridge::jsonCommandValue(nrcPositions)) updatePositionsData(js_reply);
     else if (req == NodejsBridge::jsonCommandValue(nrcPosState)) updatePositionsState(js_reply);
+    else if (req == NodejsBridge::jsonCommandValue(txBurn)) checkTxResult(req, js_reply);
     else return;
 
+    updateIntegratedTable();
+
     m_table->resizeByContents();
+    m_integratedTable->resizeByContents();
 }
 void DefiPositionsPage::sendUpdateDataRequest()
 {
@@ -149,13 +167,22 @@ void DefiPositionsPage::updatePositionState(int i, const QJsonValue &js_value)
     if (!j_obj.isEmpty()) m_positions[i].state.update(j_obj);
 
     //update row table
+    const DefiPosition &rec = m_positions.at(i);
     QTableWidget *t = m_table->table();
-    t->item(i, RANGE_COL)->setText(m_positions[i].interfacePriceRange());
-    t->item(i, PRICE_COL)->setText(m_positions[i].interfaceCurrentPrice());
-    t->item(i, ASSETS_COL)->setText(m_positions[i].interfaceAssetAmounts());
-    t->item(i, REWARDS_COL)->setText(m_positions[i].interfaceRewards());
+    t->item(i, RANGE_COL)->setText(rec.interfacePriceRange());
+    t->item(i, PRICE_COL)->setText(rec.interfaceCurrentPrice());
+    t->item(i, ASSETS_COL)->setText(rec.interfaceAssetAmounts());
+    t->item(i, REWARDS_COL)->setText(rec.interfaceRewards());
 
-    t->item(i, PRICE_COL)->setToolTip(QString("tick: %1").arg(m_positions[i].state.pool_tick));
+    t->item(i, PRICE_COL)->setToolTip(QString("tick: %1").arg(rec.state.pool_tick));
+    t->item(i, ASSETS_COL)->setToolTip(rec.interfaceAssetAmountsDesired());
+    t->item(i, REWARDS_COL)->setToolTip(rec.interfaceRewardsDesired());
+
+    if (rec.hasLiquidity())
+    {
+        if (rec.isOutRange())  LTable::setTableRowColor(t, i, OUT_RANGE_COLOR);
+        else LTable::setTableRowColor(t, i, IN_RANGE_COLOR);
+    }
 }
 void DefiPositionsPage::updatePositionsData(const QJsonObject &js_reply)
 {
@@ -212,6 +239,7 @@ void DefiPositionsPage::readNodejsPosFile()
         rec.fromFileLine(fline);
         if (!rec.invalid())
         {
+            rec.calcTIndex(curChainName());
             if (rec.hasLiquidity()) m_positions.insert(0, rec);
             else m_positions.append(rec);
             qDebug()<<rec.toStr();
@@ -286,8 +314,52 @@ void DefiPositionsPage::slotGetSelectedPosState()
 void DefiPositionsPage::slotGetLiquidityPosState()
 {
     qDebug("DefiPositionsPage::slotGetLiquidityPosState()");
+    if (m_positions.isEmpty()) return;
 
+    QJsonObject j_params;
+    j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcPosState));
+    QJsonArray j_arr_pid;
+    QJsonArray j_arr_pool;
 
+    QTableWidget *t = m_table->table();
+    int n_row = t->rowCount();
+    for (int i=0; i<n_row; i++)
+    {
+        QString s_liq = t->item(i, LIQ_COL)->text().trimmed();
+        if (s_liq.length() < 3) continue; // pos has not liq
+
+        j_arr_pid.push_back(t->item(i, 0)->text().trimmed());
+        j_arr_pool.push_back(t->item(i, POOL_COL)->toolTip().trimmed());
+    }
+
+    j_params.insert("pid_arr", j_arr_pid);
+    j_params.insert("pool_addresses", j_arr_pool);
+    sendReadNodejsRequest(j_params);
+}
+void DefiPositionsPage::slotGetNoneLiqPosState()
+{
+    qDebug("DefiPositionsPage::slotGetNoneLiqPosState()");
+    if (m_positions.isEmpty()) return;
+
+    QJsonObject j_params;
+    j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcPosState));
+    QJsonArray j_arr_pid;
+    QJsonArray j_arr_pool;
+
+    QTableWidget *t = m_table->table();
+    int n_row = t->rowCount();
+    for (int i=0; i<n_row; i++)
+    {
+        QString s_liq = t->item(i, LIQ_COL)->text().trimmed();
+        if (s_liq != QString("0")) continue; // pos has liq
+
+        j_arr_pid.push_back(t->item(i, 0)->text().trimmed());
+        j_arr_pool.push_back(t->item(i, POOL_COL)->toolTip().trimmed());
+    }
+
+    j_params.insert("pid_arr", j_arr_pid);
+    j_params.insert("pool_addresses", j_arr_pool);
+    sendReadNodejsRequest(j_params);
 }
 int DefiPositionsPage::posIndexOf(int pid) const
 {
@@ -299,5 +371,142 @@ int DefiPositionsPage::posIndexOf(int pid) const
 
     return -1;
 }
+void DefiPositionsPage::updateIntegratedTable()
+{
+    if (m_positions.isEmpty()) return;
+
+    QTableWidget *t = m_integratedTable->table();
+    t->item(0, 0)->setText(QString::number(m_positions.count()));
+
+    int n_liq = 0;
+    float locked = -1;
+    float reward = -1;
+    foreach (const DefiPosition &v, m_positions)
+    {
+        if (v.hasLiquidity()) n_liq++;
+        if (!v.state.invalid())
+        {
+            if (locked < 0) locked = 0;
+            if (reward < 0) reward = 0;
+            reward += v.rewardSum();
+            locked += v.lockedSum();
+        }
+    }
+    t->item(1, 0)->setText(QString::number(n_liq));
+    t->item(2, 0)->setText("?");
+    t->item(3, 0)->setText("?");
+    t->item(4, 0)->setText(QString::number(locked, 'f', 1));
+    t->item(5, 0)->setText(QString::number(reward, 'f', 2));
+
+    // set colors
+    if (n_liq > 0) t->item(1, 0)->setTextColor(Qt::darkGreen);
+    if (reward > 9.9) t->item(5, 0)->setTextColor(Qt::blue);
+    else t->item(5, 0)->setTextColor(Qt::lightGray);
+
+
+}
+void DefiPositionsPage::slotBurnPosSelected()
+{
+    qDebug("DefiPositionsPage::slotBurnPosSelected()");
+    QTableWidget *t = m_table->table();
+    QList<int> list = LTable::selectedRows(t);
+    if (list.isEmpty()) {emit signalError("DefiPositionsPage: You must select several positions"); return;}
+
+    //check selected pos state
+    bool ok;
+    QString err;
+    QList<int> pids;
+    foreach (int row, list)
+    {
+        int pid = t->item(row, 0)->text().trimmed().toInt(&ok);
+        if (!ok) {err = QString("invalid convert PID(%1) to integer").arg(t->item(row, 0)->text()); break;}
+
+        int j = posIndexOf(pid);
+        if (j < 0) {err = QString("can't find PID(%1) to positions container").arg(pid); break;}
+
+        if (m_positions.at(j).state.invalid()) {err = QString("you must update state for position PID(%1)").arg(pid); break;}
+        if (m_positions.at(j).hasLiquidity()) {err = QString("position PID(%1) has liquidity").arg(pid); break;}
+        if (m_positions.at(j).rewardSum() > 0) {err = QString("position PID(%1) has rewards > 0").arg(pid); break;}
+
+        pids.append(pid);
+    }
+    if (!err.isEmpty()) {emit signalError(err); return;}
+
+    // init TX dialog
+    TxDialogData data(txBurn, curChainName());
+    for(int i=0; i<pids.count(); i++)
+        data.dialog_params.insert(QString("pid%1").arg(i+1), QString::number(pids.at(i)));
+
+
+    TxBurnPosDialog d(data, this);
+    d.exec();
+    if (d.isApply())
+    {
+        sendTxNodejsRequest(data);
+    }
+    else emit signalMsg("operation was canceled!");
+}
+void DefiPositionsPage::checkTxResult(QString req, const QJsonObject &js_reply)
+{
+    bool is_simulate = (js_reply.value(AppCommonSettings::nodejsTxSimulateFieldName()).toString() == "yes");
+    emit signalMsg("");
+    emit signalMsg(QString("//////////// REPLY form TX request [%1] ///////////////").arg(req));
+    int result_code = js_reply.value("code").toString().toInt();
+    emit signalMsg(QString("simulate_mode = %1").arg(is_simulate?"YES":"NO"));
+    emit signalMsg(QString("result_code = %1").arg(result_code));
+
+    if (is_simulate)
+    {
+        emit signalMsg(QString("estimated_gas = %1").arg(js_reply.value("estimated_gas").toString()));
+        QString extra_data;
+        if (js_reply.value("pid_arr").isArray())
+        {
+            QJsonArray j_pid_arr = js_reply.value("pid_arr").toArray();
+            for (int i=0; i<j_pid_arr.count(); i++)
+            {
+                QString s_pid = j_pid_arr.at(i).toString().trimmed();
+                if (extra_data.isEmpty()) extra_data = s_pid;
+                else extra_data = QString("%1:%2").arg(extra_data).arg(s_pid);
+            }
+
+            emit signalMsg(QString("pid_arr: %1,  count=%2").arg(extra_data).arg(j_pid_arr.count()));
+        }
+        else emit signalError("can't get j_pid_arr from js_reply");
+
+    }
+    else if (js_reply.contains(AppCommonSettings::nodejsTxHashFieldName()))
+    {
+        logTxRecord(req, js_reply);
+    }
+}
+void DefiPositionsPage::logTxRecord(QString req, const QJsonObject &js_reply)
+{
+    TxLogRecord tx_rec(req, curChainName());
+    tx_rec.tx_hash = js_reply.value(AppCommonSettings::nodejsTxHashFieldName()).toString().trimmed().toLower();
+
+    QString extra_data;
+    if (req == NodejsBridge::jsonCommandValue(txBurn))
+    {
+        if (js_reply.value("pid_arr").isArray())
+        {
+            QJsonArray j_pid_arr = js_reply.value("pid_arr").toArray();
+            for (int i=0; i<j_pid_arr.count(); i++)
+            {
+                QString s_pid = j_pid_arr.at(i).toString().trimmed();
+                if (extra_data.isEmpty()) extra_data = s_pid;
+                else extra_data = QString("%1:%2").arg(extra_data).arg(s_pid);
+            }
+            emit signalMsg(QString("pid_arr: %1").arg(extra_data));
+        }
+        else
+        {
+            extra_data = "???";
+            emit signalError("can't get j_pid_arr from js_reply");
+        }
+    }
+    tx_rec.formNote(extra_data);
+    emit signalNewTx(tx_rec);
+}
+
 
 

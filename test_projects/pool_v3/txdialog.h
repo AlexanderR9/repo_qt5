@@ -16,13 +16,12 @@ struct TxDialogData
     QString pool_addr;
     QString token_addr;
     QString chain_name; //current chain
-    //bool is_simulate; // признак что транзакцию нужно выполнить в режиме симуляции
 
     //параметры которые будут возвращены после закрытия диалога.
     //если в контейнере присутствует поле 'error', то значит параметры заданы не корректно и текст этой ошибки вывести в протокол.
     QMap<QString, QString> dialog_params;
 
-    void reset() {token_addr.clear(); /*token_name.clear();*/ dialog_params.clear(); pool_addr.clear(); /*is_simulate = true; */}
+    void reset() {token_addr.clear(); dialog_params.clear(); pool_addr.clear();}
     bool invalid() const;
 };
 
@@ -120,6 +119,21 @@ protected slots:
 
 };
 
+
+//TxBurnPosDialog
+class TxBurnPosDialog : public TxDialogBase
+{
+    Q_OBJECT
+public:
+    TxBurnPosDialog(TxDialogData&, QWidget*);
+    virtual ~TxBurnPosDialog() {}
+
+protected:
+    void init();
+
+protected slots:
+    void slotApply();
+};
 
 
 

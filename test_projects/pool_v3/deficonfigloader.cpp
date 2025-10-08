@@ -115,12 +115,12 @@ void DefiConfigLoader::readTokensNode(const QDomNode &root_node)
             token.icon_file = LStaticXML::getStringAttrValue("icon", token_node).trimmed();
             token.is_stable = (LStaticXML::getStringAttrValue("stable", token_node).trimmed() == "yes");
 
+            if (token.is_stable) token.last_price = 1;
             if (token.invalid()) emit signalError("find invalid <token> node");
             else {defi_config.tokens.append(token); emit signalMsg(token.toStr());}
         }
         token_node = token_node.nextSibling();
     }
-
 }
 void DefiConfigLoader::readPoolsNode(const QDomNode &root_node)
 {
