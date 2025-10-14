@@ -62,6 +62,7 @@ QString TxDialogBase::iconByTXType(int tt)
         case txDecrease: {icon_file = "list-remove.svg"; break;}
         case txCollect: {icon_file = "percent.png"; break;}
         case txBurn: {icon_file = "process-stop.svg"; break;}
+        case txTakeaway: {icon_file = "coins.png"; break;}
         default: return QString();
     }
     return QString("%1%2%3").arg(path).arg(QDir::separator()).arg(icon_file);
@@ -80,6 +81,7 @@ QString TxDialogBase::captionByTXType(int tt)
         case txDecrease: return QString("DECREASE_LIQ");
         case txCollect: return QString("COLLECT_TOKENS");
         case txBurn: return QString("BURN_POSITION");
+        case txTakeaway: return QString("TAKE_AWAY_ASSETS");
         default: break;
     }
     return QString("???");
@@ -655,6 +657,164 @@ void TxCollectRewardDialog::slotApply()
     m_data.dialog_params.insert(PID_KEY, widgetValue(PID_KEY).toString().trimmed());
     TxDialogBase::slotApply();
 }
+
+
+
+
+
+///////////////////TxDecreaseLiqDialog////////////////////////////
+TxDecreaseLiqDialog::TxDecreaseLiqDialog(TxDialogData &data, QWidget *parent)
+    :TxDialogBase(data, parent)
+{
+    setObjectName(QString("tx_decrease_liq_pos_dialog"));
+    resize(600, 400);
+
+    if (m_data.invalid()) return;
+
+    init();
+    addVerticalSpacer();
+
+    this->setCaptionsWidth(160);
+    setExpandWidgets();
+}
+void TxDecreaseLiqDialog::init()
+{
+    QString key = "desc";
+    this->addSimpleWidget("Pool parameters", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key,m_data.dialog_params.value(key));
+    const SimpleWidget *sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    key = "addr";
+    this->addSimpleWidget("Pool address", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.pool_addr);
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg("#060080"));
+
+    this->addSimpleWidget("PID position", LSimpleDialog::sdtString, PID_KEY);
+    this->setWidgetValue(PID_KEY, m_data.dialog_params.value(PID_KEY));
+    sw = this->widgetByKey(PID_KEY);
+    sw->edit->setReadOnly(true);
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg("#060080"));
+
+    key = "price";
+    this->addSimpleWidget("Current price", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value(key, "-1"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    key = "assets";
+    this->addSimpleWidget("Assets amounts", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value(key));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    key = "liq";
+    this->addSimpleWidget("Uniswap liquidity", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value(key, "?"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg("#ee8800"));
+
+
+    addSimulateField();
+}
+void TxDecreaseLiqDialog::slotApply()
+{
+    m_data.dialog_params.clear();
+    m_data.dialog_params.insert(PID_KEY, widgetValue(PID_KEY).toString().trimmed());
+    m_data.dialog_params.insert("liq", widgetValue("liq").toString().trimmed());
+    TxDialogBase::slotApply();
+}
+
+
+
+
+///////////////////TxTakeawayLiqDialog////////////////////////////
+TxTakeawayLiqDialog::TxTakeawayLiqDialog(TxDialogData &data, QWidget *parent)
+    :TxDialogBase(data, parent)
+{
+    setObjectName(QString("tx_takeaway_liq_pos_dialog"));
+    resize(700, 500);
+
+    if (m_data.invalid()) return;
+
+    init();
+    addVerticalSpacer();
+
+    this->setCaptionsWidth(160);
+    setExpandWidgets();
+}
+void TxTakeawayLiqDialog::init()
+{
+    QString key = "desc";
+    this->addSimpleWidget("Pool parameters", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key,m_data.dialog_params.value(key));
+    const SimpleWidget *sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    key = "addr";
+    this->addSimpleWidget("Pool address", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.pool_addr);
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg("#060080"));
+
+    this->addSimpleWidget("PID position", LSimpleDialog::sdtString, PID_KEY);
+    this->setWidgetValue(PID_KEY, m_data.dialog_params.value(PID_KEY));
+    sw = this->widgetByKey(PID_KEY);
+    sw->edit->setReadOnly(true);
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg("#060080"));
+
+    key = "price_range";
+    this->addSimpleWidget("Price range", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value(key));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+    if (m_data.dialog_params.value("out") == "yes")  sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg("#B22222"));
+    else sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg("#4682B4"));
+
+
+    key = "price";
+    this->addSimpleWidget("Current price", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value(key, "-1"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    key = "assets";
+    this->addSimpleWidget("Assets amounts", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value(key));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    key = "reward";
+    this->addSimpleWidget("Rewards size", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value(key, "-1"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    key = "liq";
+    this->addSimpleWidget("Uniswap liquidity", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value(key, "?"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg("#ee8800"));
+
+
+    addSimulateField();
+}
+void TxTakeawayLiqDialog::slotApply()
+{
+    m_data.dialog_params.clear();
+    m_data.dialog_params.insert(PID_KEY, widgetValue(PID_KEY).toString().trimmed());
+    m_data.dialog_params.insert("liq", widgetValue("liq").toString().trimmed());
+    TxDialogBase::slotApply();
+}
+
+
+
+
 
 
 /*

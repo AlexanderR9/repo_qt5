@@ -45,7 +45,7 @@ struct TxLogRecord
         float token_amount;
         void reset() {token_addr = contract_addr = target_wallet = "0x0"; token_amount=-1;}
     };
-    // структура для хранения инфы по транзакциям связанными с операциями в пуле:  mint/increase/decrease/collect/swap
+    // структура для хранения инфы по транзакциям связанными с операциями в пуле:  mint/increase/decrease/collect/swap/take_away
     struct TxPoolLog
     {
         TxPoolLog() {reset();}
@@ -56,6 +56,7 @@ struct TxLogRecord
         QPair<int, int> tick_range;
         QPair<float, float> price_range;
         QPair<float, float> token_sizes;
+        QPair<float, float> reward_sizes;
         QString token_in; //адрес токена который меняется при свопе
         void reset()
         {
@@ -64,6 +65,7 @@ struct TxLogRecord
             price = -1;
             price_range.first = price_range.second = 0;
             token_sizes.first = token_sizes.second = 0;
+            reward_sizes.first = reward_sizes.second = 0;
         }
     };
 
@@ -98,6 +100,8 @@ struct TxLogRecord
     QString statusFileLine() const;
     QString detailsFileLine() const;
 
+private:
+    void parseFloatPair(QString, QPair<float, float>&);
 
 };
 

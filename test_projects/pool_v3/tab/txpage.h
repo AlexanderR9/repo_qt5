@@ -58,7 +58,7 @@ protected slots:
     void slotTxStatus();
 
 signals:
-    void signalStartTXDelay(); //запустить диалоговое окно для блокировки интерфейса на определенную задержку
+    void signalStartTXDelay(QString); //запустить диалоговое окно для блокировки интерфейса на определенную задержку
     void signalUpdatePageBack(QString req_name, QString extra_data = QString()); // после анализа результа последней транзакции отправить сигнал на обновление страницы с которой отправилась транзакция
 
 

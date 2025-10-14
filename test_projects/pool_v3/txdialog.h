@@ -44,7 +44,6 @@ protected:
     virtual void updateTitle();
     virtual QString findTokenName() const;
     virtual void addErrorField(QString);
-    //virtual void checkFields(QString&) {};
     virtual void addSimulateField();
 
 protected slots:
@@ -150,6 +149,39 @@ protected:
 protected slots:
     void slotApply();
 
+};
+
+
+//TxDecreaseLiqDialog
+class TxDecreaseLiqDialog : public TxDialogBase
+{
+    Q_OBJECT
+public:
+    TxDecreaseLiqDialog(TxDialogData&, QWidget*);
+    virtual ~TxDecreaseLiqDialog() {}
+
+protected:
+    void init();
+
+protected slots:
+    void slotApply();
+
+};
+
+
+//TxTakeawayLiqDialog
+class TxTakeawayLiqDialog : public TxDialogBase
+{
+    Q_OBJECT
+public:
+    TxTakeawayLiqDialog(TxDialogData&, QWidget*);
+    virtual ~TxTakeawayLiqDialog() {}
+
+protected:
+    void init();
+
+protected slots:
+    void slotApply();
 
 };
 

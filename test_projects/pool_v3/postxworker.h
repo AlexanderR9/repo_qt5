@@ -26,7 +26,8 @@ public:
         int tx_kind; // тип последней отправленной транзакции (элемент NodejsTxCommand)
         int t_row;  // для типов collect/increase/decrease это номер строки в таблице, т.е. выделенная поза
         int pid; // для типов collect/increase/decrease это PID позиции с которой совершается действие
-        void reset() {tx_kind = t_row = pid = -1;}
+        bool need_reupdate; // признак что после успешной транзакции необходимо переобновить страницу
+        void reset() {tx_kind = t_row = pid = -1; need_reupdate = false;}
         inline bool invalid() const {return (tx_kind < 0);}
     };
 
@@ -36,6 +37,9 @@ public:
     inline int chainId() const {return userSign();}
     inline int lastTx() const {return m_lastTx.tx_kind;}
     inline int lastPosPid() const {return m_lastTx.pid;}
+    inline bool needReupdatePage() const {return m_lastTx.need_reupdate;}
+    inline void setReupdatePage(bool b) {m_lastTx.need_reupdate = b;}
+
 
     // подготовить параметры и отправить транзакцию указанного типа (элемент NodejsTxCommand)
     void tryTx(int, const QList<DefiPosition>&);
@@ -60,6 +64,8 @@ protected:
     void burnSelected(const QList<DefiPosition>&); // сжечь выделенные позиции (может быть несколько), можно сжечь позы только без ликвидности и с полностью выведенными токенами
     void collectSelected(const QList<DefiPosition>&); // собрать rewards у выделенной одной позиции
     void decreaseSelected(const QList<DefiPosition>&); // удалить ликвидность у выделенной одной позиции (перенести активы в зону reward)
+    void takeawaySelected(const QList<DefiPosition>&); // вывести всю ликвидность у выделенной одной позиции (перенести на кошелек)
+
 
 signals:
     void signalGetPosIndexByPid(int, int&); // запросить у страницы-родителя индекс позиции в контейнере m_positions по ее PID

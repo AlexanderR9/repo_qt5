@@ -70,7 +70,7 @@ QString NodejsBridge::jsonCommandValue(int cmd)
         case txIncrease:    return QString("increase");
         case txDecrease:    return QString("decrease");
         case txMint:        return QString("mint");
-
+        case txTakeaway:    return QString("take_away");
 
         default: break;
     }
@@ -90,6 +90,7 @@ int NodejsBridge::commandCodeByTxKind(QString req_name)
     else if (req_name == "increase") return txIncrease;
     else if (req_name == "mint") return txMint;
     else if (req_name == "collect") return txCollect;
+    else if (req_name == "take_away") return txTakeaway;
     return -1;
 }
 void NodejsBridge::slotJSScriptFinished()

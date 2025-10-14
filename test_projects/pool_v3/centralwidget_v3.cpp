@@ -301,7 +301,7 @@ void CentralWidgetV3::createTabPages(int chain_id)
     //tx
     DefiTxTabPage *tx_page = new DefiTxTabPage(this);
     tab->tabWidget()->addTab(tx_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(tx_page->kind()));
-    connect(tx_page, SIGNAL(signalStartTXDelay()), this, SLOT(slotStartTXDelay()));
+    connect(tx_page, SIGNAL(signalStartTXDelay(QString)), this, SLOT(slotStartTXDelay(QString)));
 
     //positions
     DefiPositionsPage *pos_page = new DefiPositionsPage(this);
@@ -375,15 +375,18 @@ void CentralWidgetV3::slotTXDelayFinished()
     DefiChainTabV3 *tab = currentTab();
     if (tab) tab->autoCheckStatusLastTx();
 }
-void CentralWidgetV3::slotStartTXDelay()
+void CentralWidgetV3::slotStartTXDelay(QString tx_kind)
 {
     //qDebug()<<QString("EthersPage::slotStartTXDelay() delay %1 seconds").arg(defi_config.delayAfterTX);
     m_splashWidget->setTextSize(14, true);
     m_splashWidget->setTextColor("#DD4500");
-    m_splashWidget->updateProgressDelay(defi_config.delayAfterTX);
+
+    int delay = defi_config.delayAfterTX;
+    if (tx_kind == "take_away" || tx_kind == "increase" || tx_kind == "mint") delay *= 2;
+    m_splashWidget->updateProgressDelay(delay);
 
     this->setEnabled(false);
-    QString text = QString("Going delay after TX, %1 seconds!").arg(defi_config.delayAfterTX);
+    QString text = QString("Going delay after TX, %1 seconds!").arg(delay);
     m_splashWidget->startProgress(text);
 }
 

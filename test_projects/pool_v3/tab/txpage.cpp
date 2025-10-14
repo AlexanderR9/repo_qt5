@@ -62,7 +62,7 @@ void DefiTxTabPage::slotNewTx(const TxLogRecord &rec)
     updateRowColor(0);
     m_table->resizeByContents();
 
-    emit signalStartTXDelay();
+    emit signalStartTXDelay(rec.tx_kind.trimmed().toLower());
 }
 void DefiTxTabPage::setChain(int cid)
 {

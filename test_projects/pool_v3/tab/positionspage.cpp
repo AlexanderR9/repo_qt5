@@ -58,10 +58,15 @@ void DefiPositionsPage::updatePageBack(QString extra_data)
     {
         sendUpdateDataRequest();
     }
-    else if (tx == txCollect || tx == txIncrease || tx == txDecrease)
+    else if (tx == txCollect)
     {
         selectRowByCellData(QString::number(m_txWorker->lastPosPid()), 0);
         slotGetSelectedPosState();
+    }
+    else if (tx == txIncrease || tx == txDecrease || tx == txTakeaway)
+    {
+        m_txWorker->setReupdatePage(true);
+        sendUpdateDataRequest();
     }
 }
 void DefiPositionsPage::initPopupMenu()
@@ -77,12 +82,14 @@ void DefiPositionsPage::initPopupMenu()
     act_list.append(pair2);
     QPair<QString, QString> pair3("Get state (none liquidity)", QString("%1/edit-redo.svg").arg(path));
     act_list.append(pair3);
-    QPair<QString, QString> pair4("Burn positions (selected)", TxDialogBase::iconByTXType(txBurn));
-    act_list.append(pair4);
     QPair<QString, QString> pair5("Collect rewards", TxDialogBase::iconByTXType(txCollect));
     act_list.append(pair5);
     QPair<QString, QString> pair6("Decrease liquidity", TxDialogBase::iconByTXType(txDecrease));
     act_list.append(pair6);
+    QPair<QString, QString> pair7("Take away assets", TxDialogBase::iconByTXType(txTakeaway));
+    act_list.append(pair7);
+    QPair<QString, QString> pair4("Burn positions (selected)", TxDialogBase::iconByTXType(txBurn));
+    act_list.append(pair4);
 
 
     //init popup menu actions
@@ -94,9 +101,10 @@ void DefiPositionsPage::initPopupMenu()
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotGetSelectedPosState())); i_menu++;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotGetLiquidityPosState())); i_menu++;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotGetNoneLiqPosState())); i_menu++;
-    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotBurnPosSelected())); i_menu++;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotCollectPosSelected())); i_menu++;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotDecreasePosSelected())); i_menu++;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotTakeawayPosSelected())); i_menu++;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotBurnPosSelected())); i_menu++;
 
 
 }
@@ -132,7 +140,6 @@ void DefiPositionsPage::initTable()
 void DefiPositionsPage::setChain(int cid)
 {
     BaseTabPage_V3::setChain(cid);
-   // initPoolList(cid);
 
     m_table->resizeByContents();
     m_integratedTable->resizeByContents();
@@ -144,18 +151,31 @@ void DefiPositionsPage::setChain(int cid)
     connect(m_txWorker, SIGNAL(signalSendTx(const TxDialogData&)), this, SLOT(slotSendTx(const TxDialogData&)));
     connect(m_txWorker, SIGNAL(signalNewTx(const TxLogRecord&)), this, SIGNAL(signalNewTx(const TxLogRecord&)));
 
-
 }
 void DefiPositionsPage::slotNodejsReply(const QJsonObject &js_reply)
 {
     QString req = js_reply.value(AppCommonSettings::nodejsReqFieldName()).toString();
     qDebug()<<QString("DefiPositionsPage::slotNodejsReply - req kind: [%1]").arg(req);
 
-    if (req == NodejsBridge::jsonCommandValue(nrcPositions)) updatePositionsData(js_reply);
+    if (req == NodejsBridge::jsonCommandValue(nrcPositions))
+    {
+        updatePositionsData(js_reply);
+        if (m_txWorker->needReupdatePage())
+        {
+            m_txWorker->setReupdatePage(false);
+            int tx = m_txWorker->lastTx();
+            if (tx == txDecrease || tx == txIncrease || tx == txTakeaway)
+            {
+                selectRowByCellData(QString::number(m_txWorker->lastPosPid()), 0);
+                slotGetSelectedPosState();
+            }
+        }
+    }
     else if (req == NodejsBridge::jsonCommandValue(nrcPosState)) updatePositionsState(js_reply);
     else if (req == NodejsBridge::jsonCommandValue(txBurn)) checkTxResult(req, js_reply);
     else if (req == NodejsBridge::jsonCommandValue(txCollect)) checkTxResult(req, js_reply);
     else if (req == NodejsBridge::jsonCommandValue(txDecrease)) checkTxResult(req, js_reply);
+    else if (req == NodejsBridge::jsonCommandValue(txTakeaway)) checkTxResult(req, js_reply);
     else return;
 
     updateIntegratedTable();
@@ -165,7 +185,6 @@ void DefiPositionsPage::slotNodejsReply(const QJsonObject &js_reply)
 }
 void DefiPositionsPage::sendUpdateDataRequest()
 {
-    qDebug("DefiPositionsPage::sendUpdateDataRequest()");
     //prepare json params
     QJsonObject j_params;
     j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcPositions));
@@ -173,7 +192,6 @@ void DefiPositionsPage::sendUpdateDataRequest()
 }
 void DefiPositionsPage::updatePositionsState(const QJsonObject &js_reply)
 {
-    qDebug("--DefiPositionsPage::updatePositionsState--");
     bool ok;
     QStringList keys = js_reply.keys();
     qDebug("received keys:");
@@ -456,127 +474,30 @@ void DefiPositionsPage::checkTxResult(QString req, const QJsonObject &js_reply)
     }
 }
 
-/*
-void DefiPositionsPage::logTxRecord(QString req, const QJsonObject &js_reply)
-{
-    TxLogRecord tx_rec(req, curChainName());
-    tx_rec.tx_hash = js_reply.value(AppCommonSettings::nodejsTxHashFieldName()).toString().trimmed().toLower();
 
-    QString extra_data;
-    if (req == NodejsBridge::jsonCommandValue(txBurn))
-    {
-        if (js_reply.value("pid_arr").isArray())
-        {
-            QJsonArray j_pid_arr = js_reply.value("pid_arr").toArray();
-            for (int i=0; i<j_pid_arr.count(); i++)
-            {
-                QString s_pid = j_pid_arr.at(i).toString().trimmed();
-                if (extra_data.isEmpty()) extra_data = s_pid;
-                else extra_data = QString("%1:%2").arg(extra_data).arg(s_pid);
-            }
-            emit signalMsg(QString("pid_arr: %1").arg(extra_data));
-        }
-        else
-        {
-            extra_data = "???";
-            emit signalError("can't get j_pid_arr from js_reply");
-        }
-    }
-    else if (req == NodejsBridge::jsonCommandValue(txCollect))
-    {
-        int pid = js_reply.value("pid").toString().toInt();
-        int j = posIndexOf(pid);
-        int row = tableRowByCellData(QString::number(pid), 0);
-        if (j < 0 || row < 0) {emit signalError(QString("can't find PID(%1)").arg(pid)); return;}
 
-        QTableWidget *t = m_table->table();
-        tx_rec.pool.pid = pid;
-        tx_rec.pool.pool_addr = t->item(row, POOL_COL)->toolTip();
-        tx_rec.pool.tick = m_positions.at(j).state.pool_tick;
-        tx_rec.pool.price = m_positions.at(j).interfaceCurrentPrice().toFloat();
-        tx_rec.pool.token_sizes.first = m_positions.at(j).state.asset_amounts.first;
-        tx_rec.pool.token_sizes.second = m_positions.at(j).state.asset_amounts.second;
-
-        extra_data = t->item(row, POOL_COL)->text();
-        extra_data = QString("%1  REWARDS(%2)").arg(extra_data).arg(t->item(row, REWARDS_COL)->text());
-
-    }
-    tx_rec.formNote(extra_data);
-    emit signalNewTx(tx_rec);
-}
-*/
+///////////////////////TX slots/////////////////////////////////////
 void DefiPositionsPage::slotCollectPosSelected()
 {
     m_txWorker->tryTx(txCollect, m_positions);
-
-    /*
-    QTableWidget *t = m_table->table();
-    QList<int> list = LTable::selectedRows(t);
-    if (list.isEmpty()) {emit signalError("DefiPositionsPage: You must select position"); return;}
-    if (list.count() > 1) {emit signalError("DefiPositionsPage: You must select only one position"); return;}
-
-    bool ok;
-    int row = list.first();
-    int pid = t->item(row, 0)->text().trimmed().toInt(&ok);
-    if (!ok) {emit signalError(QString("invalid convert PID(%1) to integer").arg(t->item(row, 0)->text())); return;}
-
-    int j = posIndexOf(pid);
-    if (j < 0) {emit signalError(QString("can't find PID(%1) to positions container").arg(pid)); return;}
-    if (m_positions.at(j).state.invalid()) {emit signalError(QString("you must update state for position PID(%1)").arg(pid)); return;}
-    if (m_positions.at(j).rewardSum() < 0.1) {emit signalError(QString("position PID(%1) has rewards nearly 0.0").arg(pid)); return;}
-
-    // init TX dialog
-    TxDialogData data(txCollect, curChainName());
-    data.dialog_params.insert(QString("pid"), t->item(row, 0)->text());
-    data.dialog_params.insert(QString("desc"), t->item(row, POOL_COL)->text());
-    data.pool_addr = t->item(row, POOL_COL)->toolTip();
-    data.dialog_params.insert(QString("price"), QString("%1 (%2)").arg(t->item(row, PRICE_COL)->text()).arg(t->item(row, PRICE_COL)->toolTip()));
-    data.dialog_params.insert(QString("reward"), t->item(row, REWARDS_COL)->text());
-
-    TxCollectRewardDialog d(data, this);
-    d.exec();
-    if (d.isApply()) sendTxNodejsRequest(data);
-    else emit signalMsg("operation was canceled!");
-*/
-
-}
-void DefiPositionsPage::slotSendTx(const TxDialogData &data)
-{
-    sendTxNodejsRequest(data);
-}
-void DefiPositionsPage::slotDecreasePosSelected()
-{
-    m_txWorker->tryTx(txDecrease, m_positions);
-
-    /*
-    QTableWidget *t = m_table->table();
-    QList<int> list = LTable::selectedRows(t);
-    if (list.isEmpty()) {emit signalError("DefiPositionsPage: You must select position"); return;}
-    if (list.count() > 1) {emit signalError("DefiPositionsPage: You must select only one position"); return;}
-
-    bool ok;
-    int row = list.first();
-    int pid = t->item(row, 0)->text().trimmed().toInt(&ok);
-    if (!ok) {emit signalError(QString("invalid convert PID(%1) to integer").arg(t->item(row, 0)->text())); return;}
-
-    int j = posIndexOf(pid);
-    if (j < 0) {emit signalError(QString("can't find PID(%1) to positions container").arg(pid)); return;}
-    if (m_positions.at(j).state.invalid()) {emit signalError(QString("you must update state for position PID(%1)").arg(pid)); return;}
-    if (!m_positions.at(j).hasLiquidity()) {emit signalError(QString("position PID(%1) has't liquidity").arg(pid)); return;}
-
-
-*/
-
-
-}
-void DefiPositionsPage::slotSetPosIndexByPid(int pid, int &j)
-{
-    j = posIndexOf(pid);
 }
 void DefiPositionsPage::slotBurnPosSelected()
 {
     m_txWorker->tryTx(txBurn, m_positions);
 }
+void DefiPositionsPage::slotDecreasePosSelected()
+{
+    m_txWorker->tryTx(txDecrease, m_positions);
+}
+void DefiPositionsPage::slotTakeawayPosSelected()
+{
+    m_txWorker->tryTx(txTakeaway, m_positions);
+}
+void DefiPositionsPage::slotSendTx(const TxDialogData &data)
+{
+    sendTxNodejsRequest(data);
+}
+
 
 
 

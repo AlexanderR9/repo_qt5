@@ -18,11 +18,11 @@
 
 
 #define POOL_COL             1
-//#define RANGE_COL            2
+#define RANGE_COL            2
 #define PRICE_COL            3
-//#define ASSETS_COL           4
+#define ASSETS_COL           4
 #define REWARDS_COL          5
-//#define LIQ_COL              6
+#define LIQ_COL              6
 
 
 //PosTxWorker
@@ -46,6 +46,7 @@ void PosTxWorker::tryTx(int tx_kind, const QList<DefiPosition> &pos_data)
         case txBurn:        {burnSelected(pos_data); break;}
         case txCollect:     {collectSelected(pos_data); break;}
         case txDecrease:    {decreaseSelected(pos_data); break;}
+        case txTakeaway:    {takeawaySelected(pos_data); break;}
 
         default:
         {
@@ -95,6 +96,28 @@ QString PosTxWorker::extraDataLastTx(const QJsonObject &js_reply) const
             else extra_data = QString("COLLECT: invalid PID(%1), can't find in table").arg(m_lastTx.pid);
             return extra_data;
         }
+        case txDecrease:
+        {
+            if (!m_lastTx.invalid())
+            {
+                extra_data = m_table->item(m_lastTx.t_row, POOL_COL)->text();
+                extra_data = QString("%1  ASSETS(%2)").arg(extra_data).arg(m_table->item(m_lastTx.t_row, ASSETS_COL)->text());
+                extra_data = QString("%1  LIQ(%2)").arg(extra_data).arg(m_table->item(m_lastTx.t_row, LIQ_COL)->text());
+            }
+            else extra_data = QString("DECREASE: invalid PID(%1), can't find in table").arg(m_lastTx.pid);
+            return extra_data;
+        }
+        case txTakeaway:
+        {
+            if (!m_lastTx.invalid())
+            {
+                extra_data = m_table->item(m_lastTx.t_row, POOL_COL)->text();
+                extra_data = QString("%1  ASSETS(%2)").arg(extra_data).arg(m_table->item(m_lastTx.t_row, ASSETS_COL)->text());
+                extra_data = QString("%1  REWARDS(%2)").arg(extra_data).arg(m_table->item(m_lastTx.t_row, REWARDS_COL)->text());
+            }
+            else extra_data = QString("TAKE_AWAY: invalid PID(%1), can't find in table").arg(m_lastTx.pid);
+            return extra_data;
+        }
         default: break;
     }
     return "invalid lastTx code";
@@ -130,14 +153,28 @@ void PosTxWorker::fillTxLogRecord(TxLogRecord &rec, const QJsonObject &js_reply,
     Q_UNUSED(js_reply);
 
     if (m_lastTx.tx_kind == txBurn) return;
-    if (m_lastTx.tx_kind == txCollect)
-    {
-        int row = tableRowIndexOf(pos.pid);
-        if (row < 0) {emit signalError(QString("can't find row with PID(%1) in table").arg(pos.pid)); return;}
 
+    int row = m_lastTx.t_row;
+    if (m_lastTx.tx_kind == txCollect || m_lastTx.tx_kind == txDecrease)
+    {
         rec.pool.tick = pos.state.pool_tick;
         rec.pool.price = m_table->item(row, PRICE_COL)->text().toFloat();
         rec.pool.pool_addr = m_table->item(row, POOL_COL)->toolTip();
+        if (m_lastTx.tx_kind == txDecrease)
+        {
+            rec.pool.token_sizes.first = pos.state.asset_amounts.first;
+            rec.pool.token_sizes.second = pos.state.asset_amounts.second;
+        }
+    }
+    else if (m_lastTx.tx_kind == txTakeaway)
+    {
+        rec.pool.tick = pos.state.pool_tick;
+        rec.pool.price = m_table->item(row, PRICE_COL)->text().toFloat();
+        rec.pool.pool_addr = m_table->item(row, POOL_COL)->toolTip();
+        rec.pool.token_sizes.first = pos.state.asset_amounts.first;
+        rec.pool.token_sizes.second = pos.state.asset_amounts.second;
+        rec.pool.reward_sizes.first = pos.state.rewards.first;
+        rec.pool.reward_sizes.second = pos.state.rewards.second;
     }
 }
 int PosTxWorker::tableRowIndexOf(int pid) const
@@ -235,8 +272,87 @@ void PosTxWorker::collectSelected(const QList<DefiPosition> &pos_data)
 }
 void PosTxWorker::decreaseSelected(const QList<DefiPosition> &pos_data)
 {
+    qDebug("PosTxWorker::decreaseSelected()");
+    QList<int> list = LTable::selectedRows(m_table);
+    if (list.isEmpty()) {emit signalError("PosTxWorker: You must select several positions"); return;}
+    if (list.count() > 1) {emit signalError("PosTxWorker: You must select only one position"); return;}
+
+    bool ok;
+    m_lastTx.t_row = list.first();
+    m_lastTx.pid = m_table->item(m_lastTx.t_row, 0)->text().trimmed().toInt(&ok);
+    if (!ok)
+    {
+        m_lastTx.reset();
+        emit signalError(QString("invalid convert PID(%1) to integer").arg(m_table->item(m_lastTx.t_row, 0)->text()));
+        return;
+    }
+
+    int j = -2;
+    emit signalGetPosIndexByPid(m_lastTx.pid, j);
+    if (j < 0) {emit signalError(QString("can't find PID(%1) to positions container").arg(m_lastTx.pid)); return;}
+    if (pos_data.at(j).state.invalid()) {emit signalError(QString("you must update state for position PID(%1)").arg(m_lastTx.pid)); return;}
+    if (!pos_data.at(j).hasLiquidity()) {emit signalError(QString("position PID(%1) has't liquidity").arg(m_lastTx.pid)); return;}
+
+    // init TX dialog
+    TxDialogData data(lastTx(), chainName());
+    data.dialog_params.insert(QString("pid"), m_table->item(m_lastTx.t_row, 0)->text());
+    data.dialog_params.insert(QString("desc"), m_table->item(m_lastTx.t_row, POOL_COL)->text());
+    data.pool_addr = m_table->item(m_lastTx.t_row, POOL_COL)->toolTip();
+    QString s_price = QString("%1 (%2)").arg(m_table->item(m_lastTx.t_row, PRICE_COL)->text()).arg(m_table->item(m_lastTx.t_row, PRICE_COL)->toolTip());
+    data.dialog_params.insert(QString("price"), s_price);
+    data.dialog_params.insert(QString("assets"), m_table->item(m_lastTx.t_row, ASSETS_COL)->text());
+    data.dialog_params.insert(QString("liq"), m_table->item(m_lastTx.t_row, LIQ_COL)->text());
+
+    TxDecreaseLiqDialog d(data, parentWidget());
+    d.exec();
+    if (d.isApply()) emit signalSendTx(data);
+    else emit signalMsg("operation was canceled!");
 
 }
+void PosTxWorker::takeawaySelected(const QList<DefiPosition> &pos_data)
+{
+    qDebug("PosTxWorker::takeawaySelected()");
+    QList<int> list = LTable::selectedRows(m_table);
+    if (list.isEmpty()) {emit signalError("PosTxWorker: You must select several positions"); return;}
+    if (list.count() > 1) {emit signalError("PosTxWorker: You must select only one position"); return;}
 
+    bool ok;
+    m_lastTx.t_row = list.first();
+    m_lastTx.pid = m_table->item(m_lastTx.t_row, 0)->text().trimmed().toInt(&ok);
+    if (!ok)
+    {
+        m_lastTx.reset();
+        emit signalError(QString("invalid convert PID(%1) to integer").arg(m_table->item(m_lastTx.t_row, 0)->text()));
+        return;
+    }
+
+    int j = -2;
+    emit signalGetPosIndexByPid(m_lastTx.pid, j);
+    if (j < 0) {emit signalError(QString("can't find PID(%1) to positions container").arg(m_lastTx.pid)); return;}
+    if (pos_data.at(j).state.invalid()) {emit signalError(QString("you must update state for position PID(%1)").arg(m_lastTx.pid)); return;}
+    if (!pos_data.at(j).hasLiquidity()) {emit signalError(QString("position PID(%1) has't liquidity").arg(m_lastTx.pid)); return;}
+
+    // init TX dialog
+    TxDialogData data(lastTx(), chainName());
+    data.dialog_params.insert(QString("pid"), m_table->item(m_lastTx.t_row, 0)->text());
+    data.dialog_params.insert(QString("desc"), m_table->item(m_lastTx.t_row, POOL_COL)->text());
+    data.pool_addr = m_table->item(m_lastTx.t_row, POOL_COL)->toolTip();
+
+    QString s_price = QString("%1 (%2)").arg(m_table->item(m_lastTx.t_row, PRICE_COL)->text()).arg(m_table->item(m_lastTx.t_row, PRICE_COL)->toolTip());
+    data.dialog_params.insert(QString("price"), s_price);
+    data.dialog_params.insert(QString("price_range"), m_table->item(m_lastTx.t_row, RANGE_COL)->text());
+    if (pos_data.at(j).isOutRange()) data.dialog_params.insert(QString("out"), "yes");
+    else data.dialog_params.insert(QString("out"), "no");
+
+    data.dialog_params.insert(QString("reward"), m_table->item(m_lastTx.t_row, REWARDS_COL)->text());
+    data.dialog_params.insert(QString("assets"), m_table->item(m_lastTx.t_row, ASSETS_COL)->text());
+    data.dialog_params.insert(QString("liq"), m_table->item(m_lastTx.t_row, LIQ_COL)->text());
+
+    TxTakeawayLiqDialog d(data, parentWidget());
+    d.exec();
+    if (d.isApply()) emit signalSendTx(data);
+    else emit signalMsg("operation was canceled!");
+
+}
 
 

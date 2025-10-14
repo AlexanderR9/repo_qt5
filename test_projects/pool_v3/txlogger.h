@@ -37,10 +37,11 @@
 //  - swap: pool_addr[0x_addr]; token_in[0x_addr]; token_amount_in[value]; current_price[value] (адрес пула в котором меняем, входной токен, который отдаем и сколько отдаем, текущая цена)
 //  - mint: pool_addr[0x_addr]; current_price[value]; tick[cur_tick]; token_sizes[value0:value1]; pid[-1]; tick_range[t_low:t_high]; price_range[p_low:p_high]
 //            примечание: pid можно получить только после создании позы, в следующем запросе, т.е. tx_status этой транзакции.
-//  - increase/decrease/collect:  pid[value]; pool_addr[0x_addr]; current_price[value]; tick[cur_tick]; token_sizes[value0:value1]; tick_range[t_low:t_high]; price_range[p_low:p_high]
+//  - increase:  pid[value]; pool_addr[0x_addr]; current_price[value]; tick[cur_tick]; token_sizes[value0:value1]; tick_range[t_low:t_high]; price_range[p_low:p_high]
 //  - collect: pid[value]; pool_addr[0x_addr]; current_price[value]; tick[cur_tick]; note[rewards sizes]
+//  - decrease: pid[value]; pool_addr[0x_addr]; current_price[value]; tick[cur_tick]; token_sizes[value0:value1]; note[assets sizes | liq]
 //  - burn: note[pid1:pid2:...]; // при данном типе транзакции можно удалить сразу несколько позиций, поэтому в детализацию попадают только их PID
-
+//  - take_away:  pid[value]; pool_addr[0x_addr]; current_price[value]; tick[cur_tick]; token_sizes[value0:value1]; reward_sizes[value0:value1]; note[full_assets_sizes]
 
 
 //DefiTxLogger

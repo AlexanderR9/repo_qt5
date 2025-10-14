@@ -12,8 +12,8 @@ enum NodejsReadCommand {nrcBalance = 830, nrcTXCount, nrcApproved, nrcGasPrice, 
                         nrcTXStatus, nrcPositions, nrcPoolState, nrcPosState, nrcInvalid = -1};
 
 //TX Orepation Type
-enum NodejsTxCommand {txWrap = 870, txUnwrap, txApprove, txTransfer, txSwap,
-                       txMint, txIncrease, txDecrease, txCollect, txBurn, txInvalid = -1};
+enum NodejsTxCommand {txWrap = 870, txUnwrap, txApprove, txTransfer, txSwap, txMint, txIncrease, txDecrease, txCollect,
+                      txTakeaway, txBurn, txInvalid = -1};
 
 
 
