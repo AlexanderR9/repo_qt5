@@ -17,6 +17,7 @@
 #include <QMessageBox>
 
 #define ERROR_KEY       QString("error")
+#define PID_KEY         QString("pid")
 
 
 //////////////////////////DIALOGS/////////////////////////////////////
@@ -59,7 +60,7 @@ QString TxDialogBase::iconByTXType(int tt)
         case txMint: {icon_file = "exchange.png"; break;}
         case txIncrease: {icon_file = "list-add.svg"; break;}
         case txDecrease: {icon_file = "list-remove.svg"; break;}
-        case txCollect: {icon_file = "crypto/usdc.png"; break;}
+        case txCollect: {icon_file = "percent.png"; break;}
         case txBurn: {icon_file = "process-stop.svg"; break;}
         default: return QString();
     }
@@ -596,6 +597,64 @@ void TxBurnPosDialog::slotApply()
     TxDialogBase::slotApply();
 }
 
+
+
+///////////////////TxCollectRewardDialog////////////////////////////
+TxCollectRewardDialog::TxCollectRewardDialog(TxDialogData &data, QWidget *parent)
+    :TxDialogBase(data, parent)
+{
+    setObjectName(QString("tx_collect_pos_reward_dialog"));
+    resize(600, 400);
+
+    if (m_data.invalid()) return;
+
+    init();
+    addVerticalSpacer();
+
+    this->setCaptionsWidth(160);
+    setExpandWidgets();
+}
+void TxCollectRewardDialog::init()
+{
+    QString key = "desc";
+    this->addSimpleWidget("Pool parameters", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key,m_data.dialog_params.value(key));
+    const SimpleWidget *sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    key = "addr";
+    this->addSimpleWidget("Pool address", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.pool_addr);
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg("#060080"));
+
+    this->addSimpleWidget("PID position", LSimpleDialog::sdtString, PID_KEY);
+    this->setWidgetValue(PID_KEY, m_data.dialog_params.value(PID_KEY));
+    sw = this->widgetByKey(PID_KEY);
+    sw->edit->setReadOnly(true);
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg("#060080"));
+
+    key = "price";
+    this->addSimpleWidget("Current price", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value(key, "-1"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    key = "reward";
+    this->addSimpleWidget("Rewards size", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value(key, "-1"));
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+
+    addSimulateField();
+}
+void TxCollectRewardDialog::slotApply()
+{
+    m_data.dialog_params.clear();
+    m_data.dialog_params.insert(PID_KEY, widgetValue(PID_KEY).toString().trimmed());
+    TxDialogBase::slotApply();
+}
 
 
 /*

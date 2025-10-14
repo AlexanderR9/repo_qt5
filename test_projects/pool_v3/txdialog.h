@@ -136,6 +136,23 @@ protected slots:
 };
 
 
+//TxCollectRewardDialog
+class TxCollectRewardDialog : public TxDialogBase
+{
+    Q_OBJECT
+public:
+    TxCollectRewardDialog(TxDialogData&, QWidget*);
+    virtual ~TxCollectRewardDialog() {}
+
+protected:
+    void init();
+
+protected slots:
+    void slotApply();
+
+
+};
+
 
 /*
 //TxMintPositionDialog

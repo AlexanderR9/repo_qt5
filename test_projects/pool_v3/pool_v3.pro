@@ -48,7 +48,8 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/txlogrecord.h \
         $$PWD/tokenpricelogger.h \
         $$PWD/walletbalancelogger.h \
-        $$PWD/defiposition.h
+        $$PWD/defiposition.h \
+        $$PWD/postxworker.h
 
 
 SOURCES += $$PWD/main.cpp \
@@ -63,6 +64,7 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/txlogrecord.cpp \
         $$PWD/tokenpricelogger.cpp \
         $$PWD/walletbalancelogger.cpp \
-        $$PWD/defiposition.cpp
+        $$PWD/defiposition.cpp \
+        $$PWD/postxworker.cpp
 
 

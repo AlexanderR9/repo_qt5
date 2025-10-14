@@ -75,6 +75,10 @@ void TxLogRecord::parseDetail(QString field, QString value)
     else if (field == "token_in") pool.token_in = value;
     else if (field == "token_amount_in") pool.token_sizes.first = value.toFloat();
     else if (field == "current_price") pool.price = value.toFloat();
+    // pos TX
+    else if (field == "tick") pool.tick = value.toInt();
+    else if (field == "pid") pool.pid = value.toInt();
+
 
 }
 bool TxLogRecord::invalid() const
@@ -146,9 +150,14 @@ QString TxLogRecord::detailsFileLine() const
     }
     else if (tx_kind == NodejsBridge::jsonCommandValue(txSwap))
     {
-        additions = QString("pool_addr[%1]; token_in[%1];").arg(pool.pool_addr).arg(pool.token_in);
+        additions = QString("pool_addr[%1]; token_in[%2];").arg(pool.pool_addr).arg(pool.token_in);
         additions = QString("%1 token_amount_in[%2];").arg(additions).arg(pool.token_sizes.first);
         additions = QString("%1 current_price[%2];").arg(additions).arg(pool.price);
+    }
+    else if (tx_kind == NodejsBridge::jsonCommandValue(txCollect))
+    {
+        additions = QString("pool_addr[%1]; pid[%2];").arg(pool.pool_addr).arg(pool.pid);
+        additions = QString("%1 current_price[%2]; tick[%3];").arg(additions).arg(pool.price).arg(pool.tick);
     }
     additions = QString("%1 note[%2]").arg(additions).arg(note);
 
@@ -168,10 +177,15 @@ void TxLogRecord::formNote(QString extra_data)
     else if (tx_kind == NodejsBridge::jsonCommandValue(txSwap))
     {
         note = QString("%1 %2 %3").arg(note).arg(QString::number(pool.token_sizes.first, 'f', AppCommonSettings::interfacePricePrecision(wallet.token_amount))).arg(extra_data);
+        note = QString("%1  price=%2").arg(note).arg(QString::number(pool.price));
     }
     else if (tx_kind == NodejsBridge::jsonCommandValue(txBurn))
     {
         note = QString("%1 PID_ARR => %2").arg(note).arg(extra_data);
+    }
+    else if (tx_kind == NodejsBridge::jsonCommandValue(txCollect))
+    {
+        note = QString("%1 %2").arg(note).arg(extra_data);
     }
 }
 

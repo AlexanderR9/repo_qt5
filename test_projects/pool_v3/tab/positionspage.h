@@ -7,6 +7,8 @@
 
 class QJsonObject;
 class QJsonValue;
+class PosTxWorker;
+
 
 
 //DefiPositionsPage
@@ -26,6 +28,8 @@ public:
 
 protected:
     QList<DefiPosition> m_positions;
+    PosTxWorker *m_txWorker;
+
 
     void initTable();
     void updatePositionsData(const QJsonObject&);
@@ -39,7 +43,7 @@ protected:
 
     //check nodejs reply after TX
     void checkTxResult(QString, const QJsonObject&); // проанализировать ответ после попытки отправить очередную транзакцию
-    void logTxRecord(QString, const QJsonObject&); // отправить в журнал новую транзакцию
+    //void logTxRecord(QString, const QJsonObject&); // отправить в журнал новую транзакцию
 
 private:
     QString poolInfo(const DefiPosition&) const;
@@ -52,8 +56,13 @@ protected slots:
     void slotGetLiquidityPosState();
     void slotGetNoneLiqPosState();
 
+    void slotSetPosIndexByPid(int, int&); // запросить у страницы-родителя индекс позиции в контейнере m_positions по ее PID
+    void slotSendTx(const TxDialogData&); // транслировать команду от m_txWorker в nodejs_bridge
+
     // TX actions
     void slotBurnPosSelected(); // сжечь выделенные позиции, можно сжечь позы только без ликвидности и с полностью выведенными токенами
+    void slotCollectPosSelected(); // собрать rewards у выделенной одной позиции
+    void slotDecreasePosSelected(); // удалить ликвидность у выделенной одной позиции (перенести активы в зону reward)
 
 
 };

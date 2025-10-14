@@ -41,9 +41,10 @@ protected:
     LTableWidgetBox     *m_integratedTable;
 
     virtual void sendReadNodejsRequest(const QJsonObject&); // отаправить команду в nodejs_bridge для запроса на чтение из сети
-    virtual void sendTxNodejsRequest(const TxDialogData& /*const QJsonObject&*/); // отаправить команду в nodejs_bridge для запроса на запись транзакции в сеть
+    virtual void sendTxNodejsRequest(const TxDialogData&); // отаправить команду в nodejs_bridge для запроса на запись транзакции в сеть
     virtual void selectRowByCellData(const QString&, int col); //веделить строку со значение ячеики в указанном столбце
     virtual bool hasBalances() const {return false;} // проверка что балансы кошелька были получены
+    virtual int tableRowByCellData(const QString&, int col) const; // вернет индекс строки таблицы, в которой значение ячеики в указанном столбце
 
 public slots:
     virtual void slotNodejsReply(const QJsonObject&) = 0; //получен успешный ответ от скрипта nodejs

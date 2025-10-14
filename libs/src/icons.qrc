@@ -33,6 +33,7 @@
         <file>images/edit-clear.svg</file>
         <file>images/edit-undo.svg</file>
         <file>images/edit-redo.svg</file>
+        <file>images/edit.svg</file>
         <file>images/bag.svg</file>
         <file>images/emblem-ok.svg</file>
         <file>images/emblem-cancel.svg</file>
@@ -71,6 +72,7 @@
         <file>images/crypto/trx.png</file>
         <file>images/crypto/link.png</file>
         <file>images/crypto/uni.png</file>
+        <file>images/crypto/dot.png</file>
         <file>images/crypto/cake.png</file>
 
         
@@ -83,6 +85,8 @@
         <file>images/stock.png</file>
         <file>images/event.png</file>
         <file>images/html.png</file>
+        <file>images/coins.png</file>
+        <file>images/percent.png</file>
         <file>images/eject.png</file>
         <file>images/isofile.png</file>
         <file>images/iso_cd.png</file>

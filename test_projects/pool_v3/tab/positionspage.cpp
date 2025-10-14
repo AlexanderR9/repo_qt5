@@ -6,6 +6,7 @@
 #include "deficonfig.h"
 #include "txdialog.h"
 #include "txlogrecord.h"
+#include "postxworker.h"
 
 
 
@@ -32,7 +33,8 @@
 
 // DefiPositionsPage
 DefiPositionsPage::DefiPositionsPage(QWidget *parent)
-    :BaseTabPage_V3(parent, 20, dpkPositions)
+    :BaseTabPage_V3(parent, 20, dpkPositions),
+      m_txWorker(NULL)
 {
     setObjectName("defi_poositions_tab_page");
     m_positions.clear();
@@ -49,7 +51,18 @@ void DefiPositionsPage::updatePageBack(QString extra_data)
 {
     qDebug("=========DefiPositionsPage::updatePageBack=========");
     Q_UNUSED(extra_data);
-    sendUpdateDataRequest();
+    m_table->table()->clearSelection();
+
+    int tx = m_txWorker->lastTx();
+    if (tx == txBurn)
+    {
+        sendUpdateDataRequest();
+    }
+    else if (tx == txCollect || tx == txIncrease || tx == txDecrease)
+    {
+        selectRowByCellData(QString::number(m_txWorker->lastPosPid()), 0);
+        slotGetSelectedPosState();
+    }
 }
 void DefiPositionsPage::initPopupMenu()
 {
@@ -64,8 +77,12 @@ void DefiPositionsPage::initPopupMenu()
     act_list.append(pair2);
     QPair<QString, QString> pair3("Get state (none liquidity)", QString("%1/edit-redo.svg").arg(path));
     act_list.append(pair3);
-    QPair<QString, QString> pair4("Burn positions (selected)", QString("%1/emblem-cancel.svg").arg(path));
+    QPair<QString, QString> pair4("Burn positions (selected)", TxDialogBase::iconByTXType(txBurn));
     act_list.append(pair4);
+    QPair<QString, QString> pair5("Collect rewards", TxDialogBase::iconByTXType(txCollect));
+    act_list.append(pair5);
+    QPair<QString, QString> pair6("Decrease liquidity", TxDialogBase::iconByTXType(txDecrease));
+    act_list.append(pair6);
 
 
     //init popup menu actions
@@ -78,6 +95,8 @@ void DefiPositionsPage::initPopupMenu()
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotGetLiquidityPosState())); i_menu++;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotGetNoneLiqPosState())); i_menu++;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotBurnPosSelected())); i_menu++;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotCollectPosSelected())); i_menu++;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotDecreasePosSelected())); i_menu++;
 
 
 }
@@ -118,6 +137,14 @@ void DefiPositionsPage::setChain(int cid)
     m_table->resizeByContents();
     m_integratedTable->resizeByContents();
 
+    m_txWorker = new PosTxWorker(this, cid, m_table->table());
+    connect(m_txWorker, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
+    connect(m_txWorker, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
+    connect(m_txWorker, SIGNAL(signalGetPosIndexByPid(int, int&)), this, SLOT(slotSetPosIndexByPid(int, int&)));
+    connect(m_txWorker, SIGNAL(signalSendTx(const TxDialogData&)), this, SLOT(slotSendTx(const TxDialogData&)));
+    connect(m_txWorker, SIGNAL(signalNewTx(const TxLogRecord&)), this, SIGNAL(signalNewTx(const TxLogRecord&)));
+
+
 }
 void DefiPositionsPage::slotNodejsReply(const QJsonObject &js_reply)
 {
@@ -127,6 +154,8 @@ void DefiPositionsPage::slotNodejsReply(const QJsonObject &js_reply)
     if (req == NodejsBridge::jsonCommandValue(nrcPositions)) updatePositionsData(js_reply);
     else if (req == NodejsBridge::jsonCommandValue(nrcPosState)) updatePositionsState(js_reply);
     else if (req == NodejsBridge::jsonCommandValue(txBurn)) checkTxResult(req, js_reply);
+    else if (req == NodejsBridge::jsonCommandValue(txCollect)) checkTxResult(req, js_reply);
+    else if (req == NodejsBridge::jsonCommandValue(txDecrease)) checkTxResult(req, js_reply);
     else return;
 
     updateIntegratedTable();
@@ -405,47 +434,6 @@ void DefiPositionsPage::updateIntegratedTable()
 
 
 }
-void DefiPositionsPage::slotBurnPosSelected()
-{
-    qDebug("DefiPositionsPage::slotBurnPosSelected()");
-    QTableWidget *t = m_table->table();
-    QList<int> list = LTable::selectedRows(t);
-    if (list.isEmpty()) {emit signalError("DefiPositionsPage: You must select several positions"); return;}
-
-    //check selected pos state
-    bool ok;
-    QString err;
-    QList<int> pids;
-    foreach (int row, list)
-    {
-        int pid = t->item(row, 0)->text().trimmed().toInt(&ok);
-        if (!ok) {err = QString("invalid convert PID(%1) to integer").arg(t->item(row, 0)->text()); break;}
-
-        int j = posIndexOf(pid);
-        if (j < 0) {err = QString("can't find PID(%1) to positions container").arg(pid); break;}
-
-        if (m_positions.at(j).state.invalid()) {err = QString("you must update state for position PID(%1)").arg(pid); break;}
-        if (m_positions.at(j).hasLiquidity()) {err = QString("position PID(%1) has liquidity").arg(pid); break;}
-        if (m_positions.at(j).rewardSum() > 0) {err = QString("position PID(%1) has rewards > 0").arg(pid); break;}
-
-        pids.append(pid);
-    }
-    if (!err.isEmpty()) {emit signalError(err); return;}
-
-    // init TX dialog
-    TxDialogData data(txBurn, curChainName());
-    for(int i=0; i<pids.count(); i++)
-        data.dialog_params.insert(QString("pid%1").arg(i+1), QString::number(pids.at(i)));
-
-
-    TxBurnPosDialog d(data, this);
-    d.exec();
-    if (d.isApply())
-    {
-        sendTxNodejsRequest(data);
-    }
-    else emit signalMsg("operation was canceled!");
-}
 void DefiPositionsPage::checkTxResult(QString req, const QJsonObject &js_reply)
 {
     bool is_simulate = (js_reply.value(AppCommonSettings::nodejsTxSimulateFieldName()).toString() == "yes");
@@ -458,27 +446,17 @@ void DefiPositionsPage::checkTxResult(QString req, const QJsonObject &js_reply)
     if (is_simulate)
     {
         emit signalMsg(QString("estimated_gas = %1").arg(js_reply.value("estimated_gas").toString()));
-        QString extra_data;
-        if (js_reply.value("pid_arr").isArray())
-        {
-            QJsonArray j_pid_arr = js_reply.value("pid_arr").toArray();
-            for (int i=0; i<j_pid_arr.count(); i++)
-            {
-                QString s_pid = j_pid_arr.at(i).toString().trimmed();
-                if (extra_data.isEmpty()) extra_data = s_pid;
-                else extra_data = QString("%1:%2").arg(extra_data).arg(s_pid);
-            }
-
-            emit signalMsg(QString("pid_arr: %1,  count=%2").arg(extra_data).arg(j_pid_arr.count()));
-        }
-        else emit signalError("can't get j_pid_arr from js_reply");
-
+        QString extra_data = m_txWorker->extraDataLastTx(js_reply);
+        if (extra_data.contains("invalid")) emit signalError(extra_data);
+        emit signalMsg(extra_data);
     }
     else if (js_reply.contains(AppCommonSettings::nodejsTxHashFieldName()))
     {
-        logTxRecord(req, js_reply);
+        m_txWorker->prepareTxLog(js_reply, m_positions);
     }
 }
+
+/*
 void DefiPositionsPage::logTxRecord(QString req, const QJsonObject &js_reply)
 {
     TxLogRecord tx_rec(req, curChainName());
@@ -504,9 +482,102 @@ void DefiPositionsPage::logTxRecord(QString req, const QJsonObject &js_reply)
             emit signalError("can't get j_pid_arr from js_reply");
         }
     }
+    else if (req == NodejsBridge::jsonCommandValue(txCollect))
+    {
+        int pid = js_reply.value("pid").toString().toInt();
+        int j = posIndexOf(pid);
+        int row = tableRowByCellData(QString::number(pid), 0);
+        if (j < 0 || row < 0) {emit signalError(QString("can't find PID(%1)").arg(pid)); return;}
+
+        QTableWidget *t = m_table->table();
+        tx_rec.pool.pid = pid;
+        tx_rec.pool.pool_addr = t->item(row, POOL_COL)->toolTip();
+        tx_rec.pool.tick = m_positions.at(j).state.pool_tick;
+        tx_rec.pool.price = m_positions.at(j).interfaceCurrentPrice().toFloat();
+        tx_rec.pool.token_sizes.first = m_positions.at(j).state.asset_amounts.first;
+        tx_rec.pool.token_sizes.second = m_positions.at(j).state.asset_amounts.second;
+
+        extra_data = t->item(row, POOL_COL)->text();
+        extra_data = QString("%1  REWARDS(%2)").arg(extra_data).arg(t->item(row, REWARDS_COL)->text());
+
+    }
     tx_rec.formNote(extra_data);
     emit signalNewTx(tx_rec);
 }
+*/
+void DefiPositionsPage::slotCollectPosSelected()
+{
+    m_txWorker->tryTx(txCollect, m_positions);
+
+    /*
+    QTableWidget *t = m_table->table();
+    QList<int> list = LTable::selectedRows(t);
+    if (list.isEmpty()) {emit signalError("DefiPositionsPage: You must select position"); return;}
+    if (list.count() > 1) {emit signalError("DefiPositionsPage: You must select only one position"); return;}
+
+    bool ok;
+    int row = list.first();
+    int pid = t->item(row, 0)->text().trimmed().toInt(&ok);
+    if (!ok) {emit signalError(QString("invalid convert PID(%1) to integer").arg(t->item(row, 0)->text())); return;}
+
+    int j = posIndexOf(pid);
+    if (j < 0) {emit signalError(QString("can't find PID(%1) to positions container").arg(pid)); return;}
+    if (m_positions.at(j).state.invalid()) {emit signalError(QString("you must update state for position PID(%1)").arg(pid)); return;}
+    if (m_positions.at(j).rewardSum() < 0.1) {emit signalError(QString("position PID(%1) has rewards nearly 0.0").arg(pid)); return;}
+
+    // init TX dialog
+    TxDialogData data(txCollect, curChainName());
+    data.dialog_params.insert(QString("pid"), t->item(row, 0)->text());
+    data.dialog_params.insert(QString("desc"), t->item(row, POOL_COL)->text());
+    data.pool_addr = t->item(row, POOL_COL)->toolTip();
+    data.dialog_params.insert(QString("price"), QString("%1 (%2)").arg(t->item(row, PRICE_COL)->text()).arg(t->item(row, PRICE_COL)->toolTip()));
+    data.dialog_params.insert(QString("reward"), t->item(row, REWARDS_COL)->text());
+
+    TxCollectRewardDialog d(data, this);
+    d.exec();
+    if (d.isApply()) sendTxNodejsRequest(data);
+    else emit signalMsg("operation was canceled!");
+*/
+
+}
+void DefiPositionsPage::slotSendTx(const TxDialogData &data)
+{
+    sendTxNodejsRequest(data);
+}
+void DefiPositionsPage::slotDecreasePosSelected()
+{
+    m_txWorker->tryTx(txDecrease, m_positions);
+
+    /*
+    QTableWidget *t = m_table->table();
+    QList<int> list = LTable::selectedRows(t);
+    if (list.isEmpty()) {emit signalError("DefiPositionsPage: You must select position"); return;}
+    if (list.count() > 1) {emit signalError("DefiPositionsPage: You must select only one position"); return;}
+
+    bool ok;
+    int row = list.first();
+    int pid = t->item(row, 0)->text().trimmed().toInt(&ok);
+    if (!ok) {emit signalError(QString("invalid convert PID(%1) to integer").arg(t->item(row, 0)->text())); return;}
+
+    int j = posIndexOf(pid);
+    if (j < 0) {emit signalError(QString("can't find PID(%1) to positions container").arg(pid)); return;}
+    if (m_positions.at(j).state.invalid()) {emit signalError(QString("you must update state for position PID(%1)").arg(pid)); return;}
+    if (!m_positions.at(j).hasLiquidity()) {emit signalError(QString("position PID(%1) has't liquidity").arg(pid)); return;}
+
+
+*/
+
+
+}
+void DefiPositionsPage::slotSetPosIndexByPid(int pid, int &j)
+{
+    j = posIndexOf(pid);
+}
+void DefiPositionsPage::slotBurnPosSelected()
+{
+    m_txWorker->tryTx(txBurn, m_positions);
+}
+
 
 
 

@@ -57,7 +57,7 @@ void BaseTabPage_V3::sendReadNodejsRequest(const QJsonObject &j_params)
     args << "reader.js" << AppCommonSettings::readParamsNodeJSFile();
     emit signalRunNodejsBridge(j_params.value(AppCommonSettings::nodejsReqFieldName()).toString(), args);
 }
-void BaseTabPage_V3::sendTxNodejsRequest(const TxDialogData &tx_data /*const QJsonObject &j_params*/)
+void BaseTabPage_V3::sendTxNodejsRequest(const TxDialogData &tx_data)
 {
     emit signalMsg(QString("Try send TX [%1]").arg(NodejsBridge::jsonCommandValue(tx_data.tx_kind)));
     if (tx_data.dialog_params.contains("error")) {emit signalError(tx_data.dialog_params.value("error")); return;}
@@ -82,6 +82,19 @@ void BaseTabPage_V3::sendTxNodejsRequest(const TxDialogData &tx_data /*const QJs
     QStringList args;
     args << "tx_writer.js" << AppCommonSettings::txParamsNodeJSFile();
     emit signalRunNodejsBridge(j_params.value(AppCommonSettings::nodejsReqFieldName()).toString(), args);
+}
+int BaseTabPage_V3::tableRowByCellData(const QString &cell_data, int col) const
+{
+    if (!m_table) return -1;
+    const QTableWidget *t = m_table->table();
+    if (!t) return -1;
+
+    int n_row = t->rowCount();
+    if (col<0 || col>=t->columnCount() || n_row <= 0) return -1;
+
+    for (int i=0; i<n_row; i++)
+        if (t->item(i, col)->text().trimmed() == cell_data) return i;
+    return -1;
 }
 void BaseTabPage_V3::selectRowByCellData(const QString &cell_data, int col)
 {

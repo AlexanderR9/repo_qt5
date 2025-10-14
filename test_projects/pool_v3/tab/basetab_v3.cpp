@@ -219,7 +219,9 @@ void DefiChainTabV3::slotUpdatePageBack(QString req_name, QString extra_data)
     else if (req_name == NodejsBridge::jsonCommandValue(txUnwrap)) changeCurrentPage(dpkWallet);
     else if (req_name == NodejsBridge::jsonCommandValue(txTransfer)) changeCurrentPage(dpkWallet);
     else if (req_name == NodejsBridge::jsonCommandValue(txSwap)) changeCurrentPage(dpkWallet);
+    // pos TX
     else if (req_name == NodejsBridge::jsonCommandValue(txBurn)) changeCurrentPage(dpkPositions);
+    else if (req_name == NodejsBridge::jsonCommandValue(txCollect)) changeCurrentPage(dpkPositions);
 
     BaseTabPage_V3 *cur_page = qobject_cast<BaseTabPage_V3*>(tabWidget()->currentWidget());
     if (cur_page) cur_page->updatePageBack(extra_data);
