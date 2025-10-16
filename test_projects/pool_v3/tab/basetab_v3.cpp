@@ -5,6 +5,7 @@
 #include "nodejsbridge.h"
 #include "wallettabpage.h"
 #include "txpage.h"
+#include "positionspage.h"
 #include "lstring.h"
 
 #include <QDebug>
@@ -106,6 +107,20 @@ DefiTxTabPage* DefiChainTabV3::txPage() const
         {
             if (page->kind() == dpkTx)
                 return (qobject_cast<DefiTxTabPage*>(page));
+        }
+    }
+    return NULL;
+}
+DefiPositionsPage* DefiChainTabV3::positionsPage() const
+{
+    int n = m_tab->pageCount();
+    for (int i=0; i<n; i++)
+    {
+        BaseTabPage_V3 *page = qobject_cast<BaseTabPage_V3*>(tabWidget()->widget(i));
+        if (page)
+        {
+            if (page->kind() == dpkPositions)
+                return (qobject_cast<DefiPositionsPage*>(page));
         }
     }
     return NULL;
@@ -255,6 +270,14 @@ void DefiChainTabV3::stopUpdating()
     //qDebug()<<QString("UG_BasePage::stopUpdating  page=%1").arg(userSign());
     m_timer->stop();
     emit signalEnableControls(true);
+}
+void DefiChainTabV3::mintPos()
+{
+    qDebug("DefiChainTabV3::mintPos()");
+    DefiPositionsPage *pos_page = positionsPage();
+    if (!pos_page) {emit signalError("DefiChainTabV3: positionsPage is NULL"); return;}
+
+    pos_page->mintPos();
 }
 void DefiChainTabV3::connectPageSignals()
 {

@@ -47,6 +47,30 @@ DefiPositionsPage::DefiPositionsPage(QWidget *parent)
 
 
 }
+bool DefiPositionsPage::hasBalances() const
+{
+    QString t_name;
+    foreach (const DefiToken &v, defi_config.tokens)
+    {
+        if (v.chain_id == m_txWorker->chainId())
+        {
+            t_name = v.name;
+            break;
+        }
+    }
+
+    float amount = -1;
+    emit signalGetTokenBalance(t_name, amount);
+    qDebug()<<QString("DefiPositionsPage::hasBalances()  t_name[%1] cid[%2] amount=%3 ").arg(t_name).arg(m_txWorker->chainId()).arg(amount);
+    return (amount >= 0);
+}
+void DefiPositionsPage::mintPos()
+{
+    qDebug("DefiPositionsPage::mintPos()");
+    //if (!hasBalances()) {emit signalError("You must update wallet balances"); return;}
+
+    m_txWorker->tryTx(txMint, m_positions);
+}
 void DefiPositionsPage::updatePageBack(QString extra_data)
 {
     qDebug("=========DefiPositionsPage::updatePageBack=========");
@@ -105,7 +129,6 @@ void DefiPositionsPage::initPopupMenu()
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotDecreasePosSelected())); i_menu++;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotTakeawayPosSelected())); i_menu++;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotBurnPosSelected())); i_menu++;
-
 
 }
 void DefiPositionsPage::initTable()

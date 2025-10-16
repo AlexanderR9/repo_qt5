@@ -26,6 +26,7 @@ public:
     virtual void load(QSettings&);
     virtual void save(QSettings&);
     void startUpdating(); // запустить сценарий запросов для обновления данных на текущей странице
+    void mintPos(); // запустить диалог для чеканки позы
     void setEnableControl(bool);
 
 protected:

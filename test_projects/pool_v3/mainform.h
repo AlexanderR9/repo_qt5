@@ -31,6 +31,7 @@ protected:
     void save();
     void load();
     void actStartUpdating(); //send many request by timer
+    void actMintPos();
 
 protected slots:
     void slotAction(int); //virtual slot from parent

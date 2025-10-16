@@ -29,6 +29,7 @@ void MainForm::initActions()
 {
     addAction(LMainWidget::atRefresh);
     addAction(LMainWidget::atClear);
+    addAction(LMainWidget::atData);
     addToolBarSeparator();
     addAction(LMainWidget::atSettings);
     addAction(LMainWidget::atExit);
@@ -36,6 +37,9 @@ void MainForm::initActions()
     this->setActionTooltip(atRefresh, "Update page data from chain");
     this->setActionTooltip(atClear, "Clear protocol");
     this->setActionTooltip(atSettings, "Application common settings");
+    this->setActionTooltip(atData, "Mint position");
+    this->setActionIcon(atData, QString("%1/modbus.png").arg(AppCommonSettings::commonIconsPath()));
+
 
 }
 void MainForm::slotAction(int type)
@@ -43,6 +47,7 @@ void MainForm::slotAction(int type)
     switch (type)
     {  
         case LMainWidget::atRefresh: {actStartUpdating(); break;}
+        case LMainWidget::atData: {actMintPos(); break;}
         case LMainWidget::atSettings: {actCommonSettings(); break;}
         case LMainWidget::atClear: {m_protocol->clearProtocol(); break;}
         default: break;
@@ -83,9 +88,15 @@ void MainForm::initCommonSettings()
 void MainForm::slotVisibleActionsUpdate(int p_kind)
 {
     qDebug()<<QString("MainForm::slotVisibleActionsUpdate  p_kind=%1").arg(p_kind);
+    getAction(atData)->setVisible(false);
     switch(p_kind)
     {
         case dpkPositions:
+        {
+            getAction(atRefresh)->setVisible(true);
+            getAction(atData)->setVisible(true);
+            break;
+        }
         case dpkWallet:
         {
             getAction(atRefresh)->setVisible(true);
@@ -111,6 +122,11 @@ void MainForm::actStartUpdating()
     m_protocol->addSpace();
     m_protocol->addText("Run updating data of page .......", LProtocolBox::ttFile);
     m_centralWidget->startUpdating();
+}
+void MainForm::actMintPos()
+{
+    m_protocol->addSpace();
+    m_centralWidget->mintPos();
 }
 void MainForm::save()
 {

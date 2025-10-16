@@ -49,7 +49,8 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/tokenpricelogger.h \
         $$PWD/walletbalancelogger.h \
         $$PWD/defiposition.h \
-        $$PWD/postxworker.h
+        $$PWD/postxworker.h \
+        $$PWD/defimintdialog.h
 
 
 SOURCES += $$PWD/main.cpp \
@@ -65,6 +66,9 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/tokenpricelogger.cpp \
         $$PWD/walletbalancelogger.cpp \
         $$PWD/defiposition.cpp \
-        $$PWD/postxworker.cpp
+        $$PWD/postxworker.cpp \
+        $$PWD/defimintdialog.cpp
 
+
+FORMS += $$PWD/defimintdialog.ui
 

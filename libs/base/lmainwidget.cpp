@@ -111,6 +111,12 @@ void LMainWidget::setActionTooltip(int type, QString text)
     if (!action) qWarning()<<QString("LMainWidget::setActionTooltip WARNING - not found action %1 (%2)").arg(type).arg(actionIconName(type));
     else action->setText(text);
 }
+void LMainWidget::setActionIcon(int type, QString icon_path)
+{
+    QAction *action = getAction(type);
+    if (!action) qWarning()<<QString("LMainWidget::setActionIcon WARNING - not found action %1 (%2)").arg(type).arg(actionIconName(type));
+    else action->setIcon(QIcon(icon_path));
+}
 void LMainWidget::addAction(int type)
 {
     QString icon_name(actionIconName(type));

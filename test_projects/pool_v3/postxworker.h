@@ -65,6 +65,7 @@ protected:
     void collectSelected(const QList<DefiPosition>&); // собрать rewards у выделенной одной позиции
     void decreaseSelected(const QList<DefiPosition>&); // удалить ликвидность у выделенной одной позиции (перенести активы в зону reward)
     void takeawaySelected(const QList<DefiPosition>&); // вывести всю ликвидность у выделенной одной позиции (перенести на кошелек)
+    void mintPos(); // чеканка новой позы
 
 
 signals:

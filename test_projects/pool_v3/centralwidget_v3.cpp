@@ -114,9 +114,11 @@ void CentralWidgetV3::startUpdating()
 {
     DefiChainTabV3 *tab = currentTab();
     if (tab) tab->startUpdating();
-
-   // slotSendHttpReq();
-
+}
+void CentralWidgetV3::mintPos()
+{
+    DefiChainTabV3 *tab = currentTab();
+    if (tab) tab->mintPos();
 }
 void CentralWidgetV3::setEnableControl(bool b)
 {

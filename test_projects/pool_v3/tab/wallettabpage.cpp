@@ -187,6 +187,8 @@ void DefiWalletTabPage::sendUpdateDataRequest()
 void DefiWalletTabPage::slotSetTokenBalance(QString t_name, float &amount) const
 {
     amount = -1;
+    if (t_name.trimmed().isEmpty()) return;
+
     QTableWidget *t = m_table->table();
     int n_rows = t->rowCount();
     if (n_rows <= 0) return;

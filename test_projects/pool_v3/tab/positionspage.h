@@ -26,6 +26,9 @@ public:
     inline int posCount() const {return m_positions.count();}
     inline bool hasPos() const {return (posCount() > 0);}
 
+    void mintPos(); // запустить диалог для чеканки позы
+
+
 protected:
     QList<DefiPosition> m_positions;
     PosTxWorker *m_txWorker;
@@ -40,6 +43,7 @@ protected:
     void initPopupMenu(); //инициализировать элементы всплывающего меню
     int posIndexOf(int) const; // поиск позиции по ее PID, вернет индекс в контейнере или -1
     void updateIntegratedTable();
+    bool hasBalances() const;// проверка что балансы кошелька были получены
 
     //check nodejs reply after TX
     void checkTxResult(QString, const QJsonObject&); // проанализировать ответ после попытки отправить очередную транзакцию

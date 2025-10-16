@@ -24,6 +24,7 @@ public:
     QAction* getAction(int) const;
     void addToolBarSeparator();
     void setActionTooltip(int, QString);
+    void setActionIcon(int, QString);
 
     virtual void init();
     

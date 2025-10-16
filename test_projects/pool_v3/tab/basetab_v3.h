@@ -10,6 +10,7 @@ class NodejsBridge;
 class DefiWalletTabPage;
 class QLineEdit;
 class DefiTxTabPage;
+class DefiPositionsPage;
 
 
 //главный таб для работы в одной сети
@@ -34,6 +35,7 @@ public:
     void connectPageSignals();
     void autoCheckStatusLastTx(); // после выполнения транзакции и задержки после нее, необходимо автоматом проверить статус выполнения
     int currentPageKind() const;
+    void mintPos(); // запустить диалог для чеканки позы
 
 protected:
     LTabWidgetBox       *m_tab;
@@ -50,6 +52,7 @@ protected:
 
     const DefiWalletTabPage* walletPage() const;
     DefiTxTabPage* txPage() const;
+    DefiPositionsPage* positionsPage() const;
 
 protected slots:
     void slotTimer(); // когда запускается некий сценарий запросов начинает работать m_timer и этот слот выполняется каждый его тик для оценки текщего состояния выполнения запросов

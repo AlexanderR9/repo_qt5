@@ -6,6 +6,7 @@
 #include "txdialog.h"
 #include "txlogrecord.h"
 #include "defiposition.h"
+#include "defimintdialog.h"
 
 
 
@@ -47,6 +48,7 @@ void PosTxWorker::tryTx(int tx_kind, const QList<DefiPosition> &pos_data)
         case txCollect:     {collectSelected(pos_data); break;}
         case txDecrease:    {decreaseSelected(pos_data); break;}
         case txTakeaway:    {takeawaySelected(pos_data); break;}
+        case txMint:        {mintPos(); break;}
 
         default:
         {
@@ -354,5 +356,24 @@ void PosTxWorker::takeawaySelected(const QList<DefiPosition> &pos_data)
     else emit signalMsg("operation was canceled!");
 
 }
+void PosTxWorker::mintPos()
+{
+    TxDialogData data(lastTx(), chainName());
+    DefiMintDialog d(data, parentWidget());
+    qDebug("1");
+    d.exec();
+    qDebug("2");
+    if (d.isApply())
+    {
+        qDebug("PosTxWorker::mintPos()  send MINT_TX");
+        //emit signalSendTx(data);
+    }
+    else
+    {
+        qDebug("cancel mint");
+        emit signalMsg("operation was canceled!");
+    }
+    qDebug("3");
 
+}
 
