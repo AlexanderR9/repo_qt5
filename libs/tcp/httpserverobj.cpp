@@ -30,7 +30,7 @@ void LHttpServerObj::httpReqReceived(int i_socket, const QByteArray &req_data)
     }
 
     QTcpSocket *s = m_sockets[i_socket];
-    qDebug()<<QString("LHttpServerObj::slotHttpReqReceived  req_data size %1").arg(req_data.size());
+   // qDebug()<<QString("LHttpServerObj::slotHttpReqReceived  req_data size %1").arg(req_data.size());
     if (!req_data.startsWith("GET "))
     {
         qWarning()<<QString("WARNING: 404, invalid req");
@@ -85,15 +85,15 @@ void LHttpServerObj::parseHttpHeaders(const QStringList &headers, LHttpReqParams
 }
 void LHttpServerObj::processHttpReq(const LHttpReqParams &params)
 {
-    qDebug("---------------processHttpReq--------------------");
-    qDebug()<<params.toStr();
+    //qDebug("---------------processHttpReq--------------------");
+    //qDebug()<<params.toStr();
 
     QString page = LString::strTrimLeft(params.path, 1).trimmed();
     QString contentType = "text/html";
     if (page == "" || page == "index") page = "index.html";
-    else contentType = params.replyContentType();
+    else contentType = LHttpServerObj::replyContentType(params.path);
 
-    qDebug()<<QString("REPLY: page[%1]  contentType[%2]").arg(page).arg(contentType);
+    //qDebug()<<QString("REPLY: page[%1]  contentType[%2]").arg(page).arg(contentType);
 
     int i_socket = socketIndexOf(params.socket_name);
     QTcpSocket *s = m_sockets[i_socket];
@@ -150,18 +150,33 @@ void LHttpServerObj::slotSocketError()
 }
 void LHttpServerObj::slotSocketReadyRead()
 {
-    qDebug("");
+    //qDebug("");
     QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
     if (!socket) qWarning("LHttpServerObj::slotSocketReadyRead() - WARNING: socket is null");
 
     QByteArray ba = socket->readAll();
-    qDebug()<<QString("LHttpServerObj::slotSocketReadyRead(), socket[%1], data_size %2 bytes").arg(socket->objectName()).arg(ba.size());
+    //qDebug()<<QString("LHttpServerObj::slotSocketReadyRead(), socket[%1], data_size %2 bytes").arg(socket->objectName()).arg(ba.size());
     int i_socket = socketIndexOf(socket->objectName());
     httpReqReceived(i_socket, ba);
+}
+QString LHttpServerObj::replyContentType(QString req_file)
+{
+    QString contentType = "text/plain";
+    if (req_file.endsWith(".html")) contentType = "text/html";
+    else if (req_file.endsWith(".js")) contentType = "application/javascript";
+    else if (req_file.endsWith(".css")) contentType = "text/css";
+    else if (req_file.endsWith(".json")) contentType = "application/json";
+    else if (req_file.endsWith(".png")) contentType = "image/png";
+    else if (req_file.endsWith(".svg")) contentType = "image/svg+xml";
+    else if (req_file.endsWith(".ico")) contentType = "image/x-icon";
+    else if (req_file.endsWith(".jpg") || req_file.endsWith(".jpeg")) contentType = "image/jpeg";
+    return contentType;
 }
 
 
 /////////////////////////////////////////////////////////
+
+/*
 QString LHttpReqParams::replyContentType() const
 {
     QString contentType = "text/plain";
@@ -175,7 +190,7 @@ QString LHttpReqParams::replyContentType() const
     else if (path.endsWith(".jpg") || path.endsWith(".jpeg")) contentType = "image/jpeg";
     return contentType;
 }
-
+*/
 
 
 

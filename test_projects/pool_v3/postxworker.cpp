@@ -29,7 +29,8 @@
 //PosTxWorker
 PosTxWorker::PosTxWorker(QObject *parent, int cid, QTableWidget *t)
     :LSimpleObject(parent),
-    m_table(t)
+    m_table(t),
+    m_mintDialog(NULL)
 {
     setObjectName("pos_tx_worker");
     m_userSign = cid;
@@ -358,11 +359,16 @@ void PosTxWorker::takeawaySelected(const QList<DefiPosition> &pos_data)
 }
 void PosTxWorker::mintPos()
 {
+    m_lastTx.mint_activated = true;
+
     TxDialogData data(lastTx(), chainName());
     DefiMintDialog d(data, parentWidget());
-    qDebug("1");
+    m_mintDialog = &d;
+    connect(&d, SIGNAL(signalGetTokenBalance(QString, float&)), this, SIGNAL(signalGetTokenBalance(QString, float&)));
+    connect(&d, SIGNAL(signalTryUpdatePoolState(const QString&)), this, SIGNAL(signalTryUpdatePoolState(const QString&)));
+    connect(&d, SIGNAL(signalEmulateMint(const TxDialogData&)), this, SLOT(slotEmulateMint(const TxDialogData&)));
+
     d.exec();
-    qDebug("2");
     if (d.isApply())
     {
         qDebug("PosTxWorker::mintPos()  send MINT_TX");
@@ -375,5 +381,24 @@ void PosTxWorker::mintPos()
     }
     qDebug("3");
 
+    m_mintDialog = NULL;
 }
+void PosTxWorker::poolStateReceived(const QStringList &p_state)
+{
+    if (m_mintDialog)
+        m_mintDialog->poolStateReceived(p_state);
+}
+void PosTxWorker::slotEmulateMint(const TxDialogData &data)
+{
+    if (data.dialog_params.contains("error"))
+    {
+        emit signalError(data.dialog_params.value("error"));
+        return;
+    }
+
+    emit signalSendTx(data);
+}
+
+
+
 

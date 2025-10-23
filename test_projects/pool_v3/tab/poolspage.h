@@ -39,6 +39,8 @@ protected slots:
 
 public slots:
     virtual void slotNodejsReply(const QJsonObject&); //получен успешный ответ от скрипта nodejs
+    void slotGetPoolStateForPosPage(const QString&, QStringList&);
+
 
 signals:
 

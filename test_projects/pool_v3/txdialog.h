@@ -23,6 +23,7 @@ struct TxDialogData
 
     void reset() {token_addr.clear(); dialog_params.clear(); pool_addr.clear();}
     bool invalid() const;
+
 };
 
 

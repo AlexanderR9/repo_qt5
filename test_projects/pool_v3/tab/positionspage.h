@@ -44,9 +44,12 @@ protected:
     int posIndexOf(int) const; // поиск позиции по ее PID, вернет индекс в контейнере или -1
     void updateIntegratedTable();
     bool hasBalances() const;// проверка что балансы кошелька были получены
+    void getPoolStateFromPoolPage(const QJsonObject&);
+
 
     //check nodejs reply after TX
     void checkTxResult(QString, const QJsonObject&); // проанализировать ответ после попытки отправить очередную транзакцию
+
 
 private:
     QString poolInfo(const DefiPosition&) const;
@@ -58,6 +61,7 @@ protected slots:
     void slotGetSelectedPosState();
     void slotGetLiquidityPosState();
     void slotGetNoneLiqPosState();
+    void slotGetPoolState(const QString&);
 
     void slotSetPosIndexByPid(int pid, int &j) {j = posIndexOf(pid);} // запросить у страницы-родителя индекс позиции в контейнере m_positions по ее PID
     void slotSendTx(const TxDialogData&); // транслировать команду от m_txWorker в nodejs_bridge
@@ -68,6 +72,8 @@ protected slots:
     void slotDecreasePosSelected(); // удалить ликвидность у выделенной одной позиции (перенести активы в зону reward)
     void slotTakeawayPosSelected(); // извлечь все активы у выделенной одной позиции (на кошелек)
 
+signals:
+    void signalGetPoolStateFromPoolPage(const QString&, QStringList&);
 
 };
 

@@ -118,6 +118,15 @@ struct DefiConfiguration
     int getTokenIndex(QString, int) const; // найти в контейнере tokens asset по его адресу и ID_chain и выдать индекс
     QString tokenNameByAddress(QString, int) const; // найти в контейнере tokens asset по его адресу и ID_chain и выдать его название(тикер)
 
+    //параметром может быть либо тикер токена либо его адрес.
+    //возвращает признак того что указанный токен является стейблом.
+    bool isStableToken(QString) const;
+
+    //признак того что пул состоит из стейблов, по указанному адресу пула
+    bool isStablePool(QString) const;
+
+
+
 };
 
 

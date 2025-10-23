@@ -20,7 +20,7 @@ struct LHttpReqParams
 
     void reset() {kind.clear(); path.clear(); host.clear(); socket_name.clear();}
     QString toStr() const {return QString("LHttpReqParams: kind[%1]  path[%2]  host[%3] socket[%4]").arg(kind).arg(path).arg(host).arg(socket_name);}
-    QString replyContentType() const;
+    //QString replyContentType() const;
 
 };
 
@@ -39,6 +39,10 @@ public:
     virtual ~LHttpServerObj() {}
 
     void setWebPath(QString wpath) {m_wwwPath = wpath.trimmed();}
+
+    // возвращает значение заголовка "Content-Type" которое необходимо поставить в отвтете на запрос браузера.
+    // определяется по типу запрашиваемого ресурса(файла/страницы)
+    static QString replyContentType(QString);
 
 protected:
     QString m_wwwPath; //путь к папке где хранятся все web файлы типа js, html, путь указывается относительно точки запуска ПО

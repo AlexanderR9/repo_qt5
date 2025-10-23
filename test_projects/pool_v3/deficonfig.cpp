@@ -67,6 +67,21 @@ int DefiConfiguration::getTokenIndex(QString t_addr, int cid) const
     }
     return -1;
 }
+bool DefiConfiguration::isStableToken(QString pr) const
+{
+    foreach (const DefiToken &v, tokens)
+    {
+        if (v.address == pr) return v.is_stable;
+        if (v.name == pr) return v.is_stable;
+    }
+    return false;
+}
+bool DefiConfiguration::isStablePool(QString p_addr) const
+{
+    foreach (const DefiPoolV3 &v, pools)
+        if (v.address == p_addr) return v.is_stable;
+    return false;
+}
 QString DefiConfiguration::tokenNameByAddress(QString t_addr, int cid) const
 {
     foreach (const DefiToken &v, tokens)

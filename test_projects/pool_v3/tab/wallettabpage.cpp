@@ -69,7 +69,7 @@ void DefiWalletTabPage::initTable()
     headers << "Value";
     LTable::setTableHeaders(m_integratedTable->table(), headers);
     headers.clear();
-    headers << "Balance" << "N assets" << "TX count" <<  "Gas price" << "Chain ID";
+    headers << "Balance" << "Stables balance" << "N assets" << "TX count" <<  "Gas price" << "Chain ID";
     LTable::setTableHeaders(m_integratedTable->table(), headers, Qt::Vertical);
     m_integratedTable->setSelectionMode(QAbstractItemView::NoSelection, QAbstractItemView::NoSelection);
     LTable::createAllItems(m_integratedTable->table());
@@ -173,7 +173,7 @@ void DefiWalletTabPage::initTokenList(int cid)
 
 
     t->setIconSize(QSize(24, 24));
-    m_integratedTable->table()->item(1, 0)->setText(QString::number(t->rowCount()));
+    m_integratedTable->table()->item(2, 0)->setText(QString::number(t->rowCount()));
 
 }
 void DefiWalletTabPage::sendUpdateDataRequest()
@@ -228,21 +228,12 @@ void DefiWalletTabPage::updateIntegratedTable(QString req, const QJsonObject &js
     {
         if (!js_reply.contains("data"))
         {
-            t_int->item(2, 0)->setText("err");
-            t_int->item(2, 0)->setTextColor(Qt::red);
-        }
-        else t_int->item(2, 0)->setText(js_reply.value("data").toString());
-    }
-    else if (req == NodejsBridge::jsonCommandValue(nrcGasPrice))
-    {
-        if (!js_reply.contains("data"))
-        {
             t_int->item(3, 0)->setText("err");
             t_int->item(3, 0)->setTextColor(Qt::red);
         }
         else t_int->item(3, 0)->setText(js_reply.value("data").toString());
     }
-    else if (req == NodejsBridge::jsonCommandValue(nrcChainID))
+    else if (req == NodejsBridge::jsonCommandValue(nrcGasPrice))
     {
         if (!js_reply.contains("data"))
         {
@@ -250,6 +241,15 @@ void DefiWalletTabPage::updateIntegratedTable(QString req, const QJsonObject &js
             t_int->item(4, 0)->setTextColor(Qt::red);
         }
         else t_int->item(4, 0)->setText(js_reply.value("data").toString());
+    }
+    else if (req == NodejsBridge::jsonCommandValue(nrcChainID))
+    {
+        if (!js_reply.contains("data"))
+        {
+            t_int->item(5, 0)->setText("err");
+            t_int->item(5, 0)->setTextColor(Qt::red);
+        }
+        else t_int->item(5, 0)->setText(js_reply.value("data").toString());
     }
 }
 void DefiWalletTabPage::updateAmounts(const QJsonObject &js_reply)
@@ -316,12 +316,16 @@ void DefiWalletTabPage::updateTotalBalance() const
 
     bool ok;
     float tb = -1;
+    float tbs = 0;
     QTableWidget *t = m_table->table();
     int n_rows = t->rowCount();
     for (int i=0; i<n_rows; i++)
     {
         float b = t->item(i, BALANCE_COL)->text().toFloat(&ok);
         if (!ok) continue;
+
+        QString t_name = t->item(i, TOKEN_COL)->text().trimmed();
+        if (defi_config.isStableToken(t_name)) tbs += b;
 
         if (tb < 0) tb = b;
         else tb += b;
@@ -331,6 +335,8 @@ void DefiWalletTabPage::updateTotalBalance() const
     {
         t_int->item(0, 0)->setText(QString("%1 USDT").arg(QString::number(tb, 'f', 1)));
         t_int->item(0, 0)->setTextColor(Qt::darkGreen);
+        t_int->item(1, 0)->setText(QString::number(tbs, 'f', 1));
+        t_int->item(1, 0)->setTextColor(QString("#6A5ACD"));
     }
 }
 void DefiWalletTabPage::initPopupMenu()

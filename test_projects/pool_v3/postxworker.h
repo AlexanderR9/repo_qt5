@@ -9,6 +9,7 @@ struct DefiPosition;
 struct TxDialogData;
 class QJsonObject;
 struct TxLogRecord;
+class DefiMintDialog;
 
 
 
@@ -27,7 +28,8 @@ public:
         int t_row;  // для типов collect/increase/decrease это номер строки в таблице, т.е. выделенная поза
         int pid; // для типов collect/increase/decrease это PID позиции с которой совершается действие
         bool need_reupdate; // признак что после успешной транзакции необходимо переобновить страницу
-        void reset() {tx_kind = t_row = pid = -1; need_reupdate = false;}
+        bool mint_activated; // запущен диалог MINT
+        void reset() {tx_kind = t_row = pid = -1; need_reupdate = mint_activated =false;}
         inline bool invalid() const {return (tx_kind < 0);}
     };
 
@@ -39,6 +41,7 @@ public:
     inline int lastPosPid() const {return m_lastTx.pid;}
     inline bool needReupdatePage() const {return m_lastTx.need_reupdate;}
     inline void setReupdatePage(bool b) {m_lastTx.need_reupdate = b;}
+    inline bool mintDialogActivated() const {return m_lastTx.mint_activated;}
 
 
     // подготовить параметры и отправить транзакцию указанного типа (элемент NodejsTxCommand)
@@ -50,10 +53,12 @@ public:
     // подготовить поле note для лога последней транзакции
     QString extraDataLastTx(const QJsonObject &js_reply) const;
 
+    void poolStateReceived(const QStringList&); // после запроса на обновление состояния пула пришел ответ от nodejs на страницу pools
 
 protected:
     QTableWidget *m_table; // указатель на таблицу со страницы DefiPositionsPage
     LastTxInfo m_lastTx; // инфо о последней отправленной транзакции
+    const DefiMintDialog *m_mintDialog;
 
 
     QWidget* parentWidget() const; // указатель страницу-родителя DefiPositionsPage
@@ -68,10 +73,16 @@ protected:
     void mintPos(); // чеканка новой позы
 
 
+protected slots:
+    void slotEmulateMint(const TxDialogData&);
+
 signals:
     void signalGetPosIndexByPid(int, int&); // запросить у страницы-родителя индекс позиции в контейнере m_positions по ее PID
     void signalSendTx(const TxDialogData&); // отправить команду в nodejs_bridge для запроса на запись транзакции в сеть
     void signalNewTx(const TxLogRecord&); // отправляется странице DefiTxTabPage после успешного получения в ответе tx_hash
+    void signalGetTokenBalance(QString, float&) const;  //запрос текущего баланса токена в кошельке по его тикеру.
+    void signalTryUpdatePoolState(const QString&); // запрос текущего состояния пула
+
 
 };
 

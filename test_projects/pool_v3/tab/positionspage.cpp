@@ -173,6 +173,8 @@ void DefiPositionsPage::setChain(int cid)
     connect(m_txWorker, SIGNAL(signalGetPosIndexByPid(int, int&)), this, SLOT(slotSetPosIndexByPid(int, int&)));
     connect(m_txWorker, SIGNAL(signalSendTx(const TxDialogData&)), this, SLOT(slotSendTx(const TxDialogData&)));
     connect(m_txWorker, SIGNAL(signalNewTx(const TxLogRecord&)), this, SIGNAL(signalNewTx(const TxLogRecord&)));
+    connect(m_txWorker, SIGNAL(signalGetTokenBalance(QString, float&)), this, SIGNAL(signalGetTokenBalance(QString, float&)));
+    connect(m_txWorker, SIGNAL(signalTryUpdatePoolState(const QString&)), this, SLOT(slotGetPoolState(const QString&)));
 
 }
 void DefiPositionsPage::slotNodejsReply(const QJsonObject &js_reply)
@@ -199,12 +201,25 @@ void DefiPositionsPage::slotNodejsReply(const QJsonObject &js_reply)
     else if (req == NodejsBridge::jsonCommandValue(txCollect)) checkTxResult(req, js_reply);
     else if (req == NodejsBridge::jsonCommandValue(txDecrease)) checkTxResult(req, js_reply);
     else if (req == NodejsBridge::jsonCommandValue(txTakeaway)) checkTxResult(req, js_reply);
+    else if (req == NodejsBridge::jsonCommandValue(nrcPoolState)) getPoolStateFromPoolPage(js_reply);
     else return;
 
     updateIntegratedTable();
 
     m_table->resizeByContents();
     m_integratedTable->resizeByContents();
+}
+void DefiPositionsPage::getPoolStateFromPoolPage(const QJsonObject &js_reply)
+{
+    qDebug("DefiPositionsPage::getPoolStateFromPoolPage 1");
+    if (!m_txWorker->mintDialogActivated()) return;
+
+    qDebug("DefiPositionsPage::getPoolStateFromPoolPage 2");
+    QString p_addr = js_reply.value("pool_address").toString().trimmed();
+    QStringList p_state;
+    emit signalGetPoolStateFromPoolPage(p_addr, p_state);
+
+    m_txWorker->poolStateReceived(p_state);
 }
 void DefiPositionsPage::sendUpdateDataRequest()
 {
@@ -496,7 +511,27 @@ void DefiPositionsPage::checkTxResult(QString req, const QJsonObject &js_reply)
         m_txWorker->prepareTxLog(js_reply, m_positions);
     }
 }
+void DefiPositionsPage::slotGetPoolState(const QString &pool_addr)
+{
+    qDebug()<<QString("DefiPoolsTabPage::slotGetPoolState() pool_addr[%1]").arg(pool_addr);
 
+    QJsonObject j_params;
+    j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcPoolState));
+    int pos = defi_config.getPoolIndex(pool_addr);
+    if (pos < 0)
+    {
+        qWarning()<<QString("DefiPositionsPage: WARNING  not found pool[%1] in defi_config").arg(pool_addr);
+        emit signalError(QString("not found pool[%1] in defi_config").arg(pool_addr));
+        return;
+    }
+
+    j_params.insert("pool_address", pool_addr);
+    j_params.insert("token0_address", defi_config.pools.at(pos).token0_addr);
+    j_params.insert("token1_address", defi_config.pools.at(pos).token1_addr);
+    j_params.insert("fee", QString::number(defi_config.pools.at(pos).fee));
+
+    sendReadNodejsRequest(j_params);
+}
 
 
 ///////////////////////TX slots/////////////////////////////////////

@@ -115,6 +115,23 @@ void DefiPoolsTabPage::slotGetPoolState()
 
     sendReadNodejsRequest(j_params);
 }
+void DefiPoolsTabPage::slotGetPoolStateForPosPage(const QString &p_addr, QStringList &p_state)
+{
+    qDebug("DefiPoolsTabPage::slotGetPoolStateForPosPage");
+    p_state.clear();
+    QTableWidget *t = m_table->table();
+    int n_rows = t->rowCount();
+    for (int i=0; i<n_rows; i++)
+    {
+        if (t->item(i, ADDRESS_COL)->text().trimmed() == p_addr)
+        {
+            p_state << t->item(i, TVL_COL)->text();
+            p_state << t->item(i, TICK_COL)->text();
+            p_state << t->item(i, PRICE_COL)->text();
+            break;
+        }
+    }
+}
 bool DefiPoolsTabPage::hasBalances() const
 {
     QTableWidget *t = m_table->table();

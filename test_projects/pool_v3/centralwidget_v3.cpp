@@ -308,6 +308,8 @@ void CentralWidgetV3::createTabPages(int chain_id)
     //positions
     DefiPositionsPage *pos_page = new DefiPositionsPage(this);
     tab->tabWidget()->addTab(pos_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(pos_page->kind()));
+    connect(pos_page, SIGNAL(signalGetPoolStateFromPoolPage(const QString&, QStringList&)), pool_page,
+            SLOT(slotGetPoolStateForPosPage(const QString&, QStringList&)));
 
 
 }

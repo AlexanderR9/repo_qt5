@@ -7,6 +7,7 @@
 #include "ui_defimintdialog.h"
 
 struct TxDialogData;
+class QJsonObject;
 
 
 // DefiMintDialog
@@ -18,6 +19,7 @@ public:
     virtual ~DefiMintDialog() {}
 
     inline bool isApply() const {return m_apply;}
+    void poolStateReceived(const QStringList&) const; // после запроса на обновление состояния пула пришел ответ от nodejs
 
 protected:
     TxDialogData&       m_data;
@@ -27,13 +29,25 @@ protected:
     void init(); // инициализация виджетов
     void initBaseTokens(); // заполнить список базовых токенов
 
+    void resetPoolStateTable();
+    void initMintSettings() const;
+
 private:
     QString baseTokenAddrSelected() const;
 
+
 protected slots:
     void slotApply(); // {m_apply = true; close();}
-    void slotBaseTokenChainged();
+    void slotBaseTokenChanged(); // выполняется когда пользователь меняет базовый токен в tokenComboBox
+    void slotPoolChanged(); // выполняется когда пользователь меняет пул в poolComboBox
+    void slotUpdatePoolState();
+    void slotAmountsEdited();
+    void slotEmulateMint();
 
+signals:
+    void signalGetTokenBalance(QString, float&) const;  //запрос текущего баланса токена в кошельке по его тикеру.
+    void signalTryUpdatePoolState(const QString&); // запрос текущего состояния пула
+    void signalEmulateMint(const TxDialogData&); // провести предварительную операцию в режиме имитации
 
 };
 
