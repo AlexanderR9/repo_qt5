@@ -11,6 +11,7 @@
 #include <QDialogButtonBox>
 #include <QMessageBox>
 #include <QJsonObject>
+#include <QJsonValue>
 
 
 //DefiMintDialog
@@ -22,7 +23,7 @@ DefiMintDialog::DefiMintDialog(TxDialogData &data, QWidget *parent)
     setupUi(this);
     setObjectName(QString("mint_pos_dialog"));
     setWindowTitle(QString("Mint position (%1)").arg(m_data.chain_name.trimmed().toUpper()));
-    resize(900, 500);
+    resize(1200, 500);
     setModal(true);
 
 
@@ -36,9 +37,6 @@ DefiMintDialog::DefiMintDialog(TxDialogData &data, QWidget *parent)
     connect(updatePoolStateButton, SIGNAL(clicked()), this, SLOT(slotUpdatePoolState()));
     connect(amount0LineEdit, SIGNAL(textChanged(QString)), this, SLOT(slotAmountsEdited()));
     connect(amount1LineEdit, SIGNAL(textChanged(QString)), this, SLOT(slotAmountsEdited()));
-
-
-    buttonBox->button(QDialogButtonBox::Apply)->setText("Emulate");
     connect(buttonBox->button(QDialogButtonBox::Apply), SIGNAL(clicked()), this, SLOT(slotEmulateMint()));
 }
 void DefiMintDialog::init()
@@ -67,11 +65,13 @@ void DefiMintDialog::init()
     headers.clear();
     headers << "First value" << "Second value";
     LTable::setTableHeaders(previewMintTable, headers, Qt::Horizontal);
-    headers << "Price range" << "Tick range" << "Token amounts" << "Gas fee";
+    headers.clear();
+    headers << "Price range" << "Tick range" << "Token amounts" << "Gas fee" << "Pool tick/price";
     LTable::setTableHeaders(previewMintTable, headers, Qt::Vertical);
     LTable::createAllItems(previewMintTable);
     previewMintTable->setSelectionMode(QAbstractItemView::NoSelection);
-    LTable::resizeTableContents(previewMintTable);
+
+    resetPreviewTable();
 
 }
 void DefiMintDialog::initBaseTokens()
@@ -92,10 +92,14 @@ void DefiMintDialog::initBaseTokens()
     //tokenComboBox->setIconSize(QSize(12, 12));
 
     slotBaseTokenChanged();
+    slotPoolChanged();
+
 }
 void DefiMintDialog::slotPoolChanged()
 {
     resetPoolStateTable();
+    resetPreviewTable();
+
 
     int cid = defi_config.getChainID(m_data.chain_name);
     int i = poolComboBox->currentIndex();
@@ -122,7 +126,6 @@ void DefiMintDialog::slotPoolChanged()
     emit signalGetTokenBalance(t1_name, balance1);
     poolStateTable->item(3, 0)->setText(QString::number(balance0));
     poolStateTable->item(4, 0)->setText(QString::number(balance1));
-
 
 }
 void DefiMintDialog::slotAmountsEdited()
@@ -172,7 +175,6 @@ void DefiMintDialog::slotBaseTokenChanged()
             poolComboBox->setItemData(poolComboBox->count()-1, v.address);
         }
     }
-    slotPoolChanged();
 
     connect(poolComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotPoolChanged()));
 }
@@ -194,14 +196,20 @@ QString DefiMintDialog::baseTokenAddrSelected() const
 void DefiMintDialog::slotApply()
 {
     qDebug("DefiMintDialog::slotApply()");
-    m_apply = false;
-    //close();
+    m_apply = true;
+    close();
 }
 void DefiMintDialog::resetPoolStateTable()
 {
     int rows = poolStateTable->rowCount();
     for(int i=0; i<rows; i++)
         poolStateTable->item(i, 0)->setText("-");
+}
+void DefiMintDialog::resetPreviewTable()
+{
+    LTable::clearAllItemsText(previewMintTable);
+    buttonBox->button(QDialogButtonBox::Apply)->setText("Emulate");
+    LTable::resizeTableContents(previewMintTable);
 }
 void DefiMintDialog::poolStateReceived(const QStringList &p_state) const
 {
@@ -257,7 +265,6 @@ void DefiMintDialog::slotEmulateMint()
     int cid = defi_config.getChainID(m_data.chain_name);
     m_data.dialog_params.clear();
     m_data.dialog_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(txMint));
-    m_data.dialog_params.insert(AppCommonSettings::nodejsTxSimulateFieldName(), "yes");
 
     m_data.pool_addr = poolComboBox->itemData(poolComboBox->currentIndex()).toString();
     int pool_index = defi_config.getPoolIndex(m_data.pool_addr);
@@ -301,8 +308,18 @@ void DefiMintDialog::slotEmulateMint()
     m_data.dialog_params.insert("p1", QString::number(p1, 'f', 8));
     m_data.dialog_params.insert("p2", QString::number(p2, 'f', 8));
 
+    if (buttonBox->button(QDialogButtonBox::Apply)->text().toLower().contains("mint"))
+    {
+        qDebug("----------- REAL MINT CMD----------------");
+        m_data.dialog_params.insert(AppCommonSettings::nodejsTxSimulateFieldName(), "no");
+        slotApply();
+    }
+    else
+    {
+        m_data.dialog_params.insert(AppCommonSettings::nodejsTxSimulateFieldName(), "yes");
+        emit signalEmulateMint(m_data);
+    }
 
-    emit signalEmulateMint(m_data);
 
 /*
 p1: // low price of range for token0
@@ -317,4 +334,29 @@ token1_amount: // вносимая сумма токена_1 в нормальн
 
 
 }
+void DefiMintDialog::emulMintReply(const QJsonObject &js_reply) const
+{
+    int row = 0;
+    previewMintTable->item(row, 0)->setText(js_reply.value("p1").toString().trimmed());
+    previewMintTable->item(row, 1)->setText(js_reply.value("p2").toString().trimmed());
+    row++;
+    previewMintTable->item(row, 0)->setText(js_reply.value("tick1").toString().trimmed());
+    previewMintTable->item(row, 1)->setText(js_reply.value("tick2").toString().trimmed());
+    row++;
+    previewMintTable->item(row, 0)->setText(js_reply.value("amount0").toString().trimmed());
+    previewMintTable->item(row, 1)->setText(js_reply.value("amount1").toString().trimmed());
+    LTable::setTableTextRowColor(previewMintTable, row, "#4682B4");
 
+    row++;
+    previewMintTable->item(row, 0)->setText(js_reply.value("estimated_gas").toString().trimmed());
+    previewMintTable->item(row, 1)->setText("gas_limit");
+    LTable::setTableTextRowColor(previewMintTable, row, Qt::gray);
+    row++;
+    previewMintTable->item(row, 0)->setText(js_reply.value("pool_tick").toString().trimmed());
+    previewMintTable->item(row, 1)->setText(js_reply.value("pool_price").toString().trimmed());
+    LTable::setTableTextRowColor(previewMintTable, row, Qt::gray);
+
+    LTable::resizeTableContents(previewMintTable);
+    buttonBox->button(QDialogButtonBox::Apply)->setText("Mint TX");
+
+}

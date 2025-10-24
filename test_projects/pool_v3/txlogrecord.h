@@ -102,6 +102,7 @@ struct TxLogRecord
 
 private:
     void parseFloatPair(QString, QPair<float, float>&);
+    void parseIntPair(QString, QPair<int, int>&);
 
 };
 

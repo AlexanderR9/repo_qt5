@@ -92,6 +92,10 @@ void DefiPositionsPage::updatePageBack(QString extra_data)
         m_txWorker->setReupdatePage(true);
         sendUpdateDataRequest();
     }
+    else if (tx == txMint)
+    {
+        sendUpdateDataRequest();
+    }
 }
 void DefiPositionsPage::initPopupMenu()
 {
@@ -201,6 +205,7 @@ void DefiPositionsPage::slotNodejsReply(const QJsonObject &js_reply)
     else if (req == NodejsBridge::jsonCommandValue(txCollect)) checkTxResult(req, js_reply);
     else if (req == NodejsBridge::jsonCommandValue(txDecrease)) checkTxResult(req, js_reply);
     else if (req == NodejsBridge::jsonCommandValue(txTakeaway)) checkTxResult(req, js_reply);
+    else if (req == NodejsBridge::jsonCommandValue(txMint)) checkTxResult(req, js_reply);
     else if (req == NodejsBridge::jsonCommandValue(nrcPoolState)) getPoolStateFromPoolPage(js_reply);
     else return;
 
@@ -502,9 +507,17 @@ void DefiPositionsPage::checkTxResult(QString req, const QJsonObject &js_reply)
     if (is_simulate)
     {
         emit signalMsg(QString("estimated_gas = %1").arg(js_reply.value("estimated_gas").toString()));
-        QString extra_data = m_txWorker->extraDataLastTx(js_reply);
-        if (extra_data.contains("invalid")) emit signalError(extra_data);
-        emit signalMsg(extra_data);
+
+        if (m_txWorker->lastTx() == txMint)
+        {
+            m_txWorker->emulMintReply(js_reply);
+        }
+        else
+        {
+            QString extra_data = m_txWorker->extraDataLastTx(js_reply);
+            if (extra_data.contains("invalid")) emit signalError(extra_data);
+            emit signalMsg(extra_data);
+        }
     }
     else if (js_reply.contains(AppCommonSettings::nodejsTxHashFieldName()))
     {

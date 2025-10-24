@@ -53,7 +53,9 @@ public:
     // подготовить поле note для лога последней транзакции
     QString extraDataLastTx(const QJsonObject &js_reply) const;
 
+    // for mint operation
     void poolStateReceived(const QStringList&); // после запроса на обновление состояния пула пришел ответ от nodejs на страницу pools
+    void emulMintReply(const QJsonObject &js_reply); // после отправки транзакции типа 'mint' в режиме эмуляции пришел ответ от скрипта nodejs
 
 protected:
     QTableWidget *m_table; // указатель на таблицу со страницы DefiPositionsPage
@@ -64,6 +66,7 @@ protected:
     QWidget* parentWidget() const; // указатель страницу-родителя DefiPositionsPage
     QString chainName() const; // название текущей сети
     void fillTxLogRecord(TxLogRecord&, const QJsonObject&, const DefiPosition&); // заполнить соответствующие поля записи лога последней тразакции
+    void fillTxMintLogRecord(TxLogRecord&, const QJsonObject&); // заполнить соответствующие поля записи лога последней тразакции (txMint)
     int tableRowIndexOf(int) const; // поиск строки c указанным pid
 
     void burnSelected(const QList<DefiPosition>&); // сжечь выделенные позиции (может быть несколько), можно сжечь позы только без ликвидности и с полностью выведенными токенами

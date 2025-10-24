@@ -20,6 +20,7 @@ public:
 
     inline bool isApply() const {return m_apply;}
     void poolStateReceived(const QStringList&) const; // после запроса на обновление состояния пула пришел ответ от nodejs
+    void emulMintReply(const QJsonObject &js_reply) const; // после отправки транзакции типа 'mint' в режиме эмуляции пришел ответ от скрипта nodejs
 
 protected:
     TxDialogData&       m_data;
@@ -30,6 +31,7 @@ protected:
     void initBaseTokens(); // заполнить список базовых токенов
 
     void resetPoolStateTable();
+    void resetPreviewTable();
     void initMintSettings() const;
 
 private:
@@ -37,7 +39,7 @@ private:
 
 
 protected slots:
-    void slotApply(); // {m_apply = true; close();}
+    void slotApply();
     void slotBaseTokenChanged(); // выполняется когда пользователь меняет базовый токен в tokenComboBox
     void slotPoolChanged(); // выполняется когда пользователь меняет пул в poolComboBox
     void slotUpdatePoolState();

@@ -121,6 +121,19 @@ QString PosTxWorker::extraDataLastTx(const QJsonObject &js_reply) const
             else extra_data = QString("TAKE_AWAY: invalid PID(%1), can't find in table").arg(m_lastTx.pid);
             return extra_data;
         }
+        case txMint:
+        {
+            QString pool_addr = js_reply.value("pool_address").toString().trimmed();
+            int pool_index = defi_config.getPoolIndex(pool_addr);
+            if (pool_index >= 0)
+            {
+                QString t0_name = defi_config.tokenNameByAddress(defi_config.pools.at(pool_index).token0_addr, chainId());
+                QString t1_name = defi_config.tokenNameByAddress(defi_config.pools.at(pool_index).token1_addr, chainId());
+                extra_data = QString("%1/%2 (%3)").arg(t0_name).arg(t1_name).arg(defi_config.pools.at(pool_index).strFloatFee());
+            }
+            else extra_data = QString("MINT: invalid pool_addr(%1), can't find in defi_config").arg(pool_addr);
+            return extra_data;
+        }
         default: break;
     }
     return "invalid lastTx code";
@@ -144,12 +157,28 @@ void PosTxWorker::prepareTxLog(const QJsonObject &js_reply, const QList<DefiPosi
         }
         fillTxLogRecord(tx_rec, js_reply, pos_data.at(j));
     }
+    else if (lastTx() == txMint)
+    {
+        fillTxMintLogRecord(tx_rec, js_reply);
+    }
 
     QString extra_data = extraDataLastTx(js_reply);
     extra_data.replace(QChar('/'), QChar('|'));
     tx_rec.formNote(extra_data);
 
     emit signalNewTx(tx_rec);
+}
+void PosTxWorker::fillTxMintLogRecord(TxLogRecord &rec, const QJsonObject &js_reply)
+{
+    rec.pool.pool_addr = js_reply.value("pool_address").toString().trimmed();
+    rec.pool.price = js_reply.value("pool_price").toString().toFloat();
+    rec.pool.tick = js_reply.value("pool_tick").toString().toInt();
+    rec.pool.token_sizes.first = js_reply.value("amount0").toString().toFloat();
+    rec.pool.token_sizes.second = js_reply.value("amount1").toString().toFloat();
+    rec.pool.price_range.first = js_reply.value("p1").toString().toFloat();
+    rec.pool.price_range.second = js_reply.value("p2").toString().toFloat();
+    rec.pool.tick_range.first = js_reply.value("tick1").toString().toInt();
+    rec.pool.tick_range.second = js_reply.value("tick2").toString().toInt();
 }
 void PosTxWorker::fillTxLogRecord(TxLogRecord &rec, const QJsonObject &js_reply, const DefiPosition &pos)
 {
@@ -371,22 +400,26 @@ void PosTxWorker::mintPos()
     d.exec();
     if (d.isApply())
     {
+        m_mintDialog = NULL;
         qDebug("PosTxWorker::mintPos()  send MINT_TX");
-        //emit signalSendTx(data);
+        emit signalSendTx(data);
     }
     else
     {
+        m_mintDialog = NULL;
         qDebug("cancel mint");
         emit signalMsg("operation was canceled!");
     }
-    qDebug("3");
-
-    m_mintDialog = NULL;
 }
 void PosTxWorker::poolStateReceived(const QStringList &p_state)
 {
     if (m_mintDialog)
         m_mintDialog->poolStateReceived(p_state);
+}
+void PosTxWorker::emulMintReply(const QJsonObject &js_reply)
+{
+    if (m_mintDialog)
+        m_mintDialog->emulMintReply(js_reply);
 }
 void PosTxWorker::slotEmulateMint(const TxDialogData &data)
 {

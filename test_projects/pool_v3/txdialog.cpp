@@ -220,8 +220,8 @@ void TxWrapDialog::slotApply()
     float sum = this->widgetValue(key).toFloat(&ok);
     if (!ok)
         m_data.dialog_params.insert(ERROR_KEY, QString("invalid amount value (%1)").arg(widgetValue(key).toString()));
-    if (sum < 0.01 || sum > 10000)
-        m_data.dialog_params.insert(ERROR_KEY, QString("amount value out of range (%1) [sum < 0.01 || sum > 10000]").arg(widgetValue(key).toString()));
+    if (sum < 0.01 || sum > 50000)
+        m_data.dialog_params.insert(ERROR_KEY, QString("amount value out of range (%1) [sum < 0.01 || sum > 50000]").arg(widgetValue(key).toString()));
     if (sum >= widgetValue("balance").toFloat())
         m_data.dialog_params.insert(ERROR_KEY, QString("amount value over balance (%1)").arg(widgetValue(key).toString()));
 
@@ -374,8 +374,8 @@ void TxApproveDialog::slotApply()
     float sum = this->widgetValue(key).toFloat(&ok);
     if (!ok)
         m_data.dialog_params.insert(ERROR_KEY, QString("invalid amount value (%1)").arg(widgetValue(key).toString()));
-    if (sum < 0.01 || sum > 10000)
-        m_data.dialog_params.insert(ERROR_KEY, QString("amount value out of range (%1) [sum < 0.01 || sum > 10000]").arg(widgetValue(key).toString()));
+    if (sum < 0.01 || sum > 50000)
+        m_data.dialog_params.insert(ERROR_KEY, QString("amount value out of range (%1) [sum < 0.01 || sum > 50000]").arg(widgetValue(key).toString()));
     m_data.dialog_params.insert(key, QString::number(sum, 'f', 4));
 
     //define to_contract field

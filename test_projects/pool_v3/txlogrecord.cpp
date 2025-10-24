@@ -80,6 +80,8 @@ void TxLogRecord::parseDetail(QString field, QString value)
     else if (field == "pid") pool.pid = value.toInt();
     else if (field == "token_sizes") parseFloatPair(value, pool.token_sizes);
     else if (field == "reward_sizes") parseFloatPair(value, pool.reward_sizes);
+    else if (field == "price_range") parseFloatPair(value, pool.price_range);
+    else if (field == "tick_range") parseIntPair(value, pool.tick_range);
 
 
 }
@@ -93,6 +95,18 @@ void TxLogRecord::parseFloatPair(QString value, QPair<float, float> &pair)
     float a = list.first().toFloat(&ok);
     if (ok) pair.first = a;
     a = list.last().toFloat(&ok);
+    if (ok) pair.second = a;
+}
+void TxLogRecord::parseIntPair(QString value, QPair<int, int> &pair)
+{
+    pair.first = pair.second = 0;
+    QStringList list = LString::trimSplitList(value, ":");
+    if (list.count() != 2) return;
+
+    bool ok;
+    int a = list.first().toInt(&ok);
+    if (ok) pair.first = a;
+    a = list.last().toInt(&ok);
     if (ok) pair.second = a;
 }
 bool TxLogRecord::invalid() const
@@ -192,6 +206,21 @@ QString TxLogRecord::detailsFileLine() const
         sa1 = QString::number(pool.reward_sizes.second, 'f', AppCommonSettings::interfacePricePrecision(pool.reward_sizes.second));
         additions = QString("%1 reward_sizes[%2:%3];").arg(additions).arg(sa0).arg(sa1);
     }
+    else if (tx_kind == NodejsBridge::jsonCommandValue(txMint))
+    {
+        additions = QString("pool_addr[%1]; pid[%2];").arg(pool.pool_addr).arg(pool.pid);
+        additions = QString("%1 current_price[%2]; tick[%3];").arg(additions).arg(pool.price).arg(pool.tick);
+
+        QString sa0 = QString::number(pool.token_sizes.first, 'f', AppCommonSettings::interfacePricePrecision(pool.token_sizes.first));
+        QString sa1 = QString::number(pool.token_sizes.second, 'f', AppCommonSettings::interfacePricePrecision(pool.token_sizes.second));
+        additions = QString("%1 token_sizes[%2:%3];").arg(additions).arg(sa0).arg(sa1);
+
+        sa0 = QString::number(pool.price_range.first, 'f', AppCommonSettings::interfacePricePrecision(pool.price_range.first));
+        sa1 = QString::number(pool.price_range.second, 'f', AppCommonSettings::interfacePricePrecision(pool.price_range.second));
+        additions = QString("%1 price_range[%2:%3];").arg(additions).arg(sa0).arg(sa1);
+
+        additions = QString("%1 tick_range[%2:%3];").arg(additions).arg(pool.tick_range.first).arg(pool.tick_range.second);
+    }
     additions = QString("%1 note[%2]").arg(additions).arg(note);
 
     s = QString("%1 / %2").arg(s).arg(additions);
@@ -231,6 +260,23 @@ void TxLogRecord::formNote(QString extra_data)
         QString sa0 = QString::number(a0, 'f', AppCommonSettings::interfacePricePrecision(a0));
         QString sa1 = QString::number(a1, 'f', AppCommonSettings::interfacePricePrecision(a1));
         note = QString("%1  TAKEN_ASSETS(%2 | %3)").arg(note).arg(sa0).arg(sa1);
+    }
+    else if (tx_kind == NodejsBridge::jsonCommandValue(txMint))
+    {
+        note = QString("%1 %2").arg(note).arg(extra_data);
+
+        float p1 = pool.price_range.first;
+        float p2 = pool.price_range.second;
+        QString sp1 = QString::number(p1, 'f', AppCommonSettings::interfacePricePrecision(p1));
+        QString sp2 = QString::number(p2, 'f', AppCommonSettings::interfacePricePrecision(p2));
+        note = QString("%1  RANGE(%2 : %3)").arg(note).arg(sp1).arg(sp2);
+
+
+        float a0 = pool.token_sizes.first;
+        float a1 = pool.token_sizes.second;
+        QString sa0 = QString::number(a0, 'f', AppCommonSettings::interfacePricePrecision(a0));
+        QString sa1 = QString::number(a1, 'f', AppCommonSettings::interfacePricePrecision(a1));
+        note = QString("%1  ASSETS_AMOUNT(%2 | %3)").arg(note).arg(sa0).arg(sa1);
     }
 }
 
