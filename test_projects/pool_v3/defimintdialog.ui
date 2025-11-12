@@ -111,11 +111,17 @@
        </widget>
       </item>
       <item row="0" column="0" colspan="3">
-       <widget class="QGraphicsView" name="graphicsView">
+       <widget class="MintRangeView" name="graphicsView">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>130</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>100</height>
+          <height>130</height>
          </size>
         </property>
        </widget>
@@ -152,6 +158,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>MintRangeView</class>
+   <extends>QGraphicsView</extends>
+   <header>mintrangeview.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>

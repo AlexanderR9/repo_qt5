@@ -245,8 +245,10 @@ void DefiTxTabPage::updateTotalTable()
 
     int row = 1;
     t->item(row, 0)->setText(QString::number(n_unknow)); row++;
-    t->item(row, 0)->setText(QString::number(n_fault)); row++;
+    t->item(row, 0)->setText(QString::number(n_fault));
     if (n_fault > 0) t->item(row, 0)->setTextColor(Qt::red);
+    row++;
+
     t->item(row, 0)->setText(QString("%1 %2").arg(QString::number(fee_native, 'f', FEE_CENT_PRECISION)).arg(defi_config.nativeTokenName(curChainName()))); row++;
     t->item(row, 0)->setText(QString("%1 c.").arg(QString::number(fee_cent, 'f', 2))); row++;
 

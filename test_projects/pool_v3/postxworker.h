@@ -72,6 +72,7 @@ protected:
     void burnSelected(const QList<DefiPosition>&); // сжечь выделенные позиции (может быть несколько), можно сжечь позы только без ликвидности и с полностью выведенными токенами
     void collectSelected(const QList<DefiPosition>&); // собрать rewards у выделенной одной позиции
     void decreaseSelected(const QList<DefiPosition>&); // удалить ликвидность у выделенной одной позиции (перенести активы в зону reward)
+    void increaseSelected(const QList<DefiPosition>&); // добавить ликвидность к указанной позе
     void takeawaySelected(const QList<DefiPosition>&); // вывести всю ликвидность у выделенной одной позиции (перенести на кошелек)
     void mintPos(); // чеканка новой позы
 

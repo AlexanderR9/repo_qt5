@@ -50,7 +50,8 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/walletbalancelogger.h \
         $$PWD/defiposition.h \
         $$PWD/postxworker.h \
-        $$PWD/defimintdialog.h
+        $$PWD/defimintdialog.h \
+        $$PWD/mintrangeview.h
 
 
 SOURCES += $$PWD/main.cpp \
@@ -67,7 +68,8 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/walletbalancelogger.cpp \
         $$PWD/defiposition.cpp \
         $$PWD/postxworker.cpp \
-        $$PWD/defimintdialog.cpp
+        $$PWD/defimintdialog.cpp \
+        $$PWD/mintrangeview.cpp
 
 
 FORMS += $$PWD/defimintdialog.ui

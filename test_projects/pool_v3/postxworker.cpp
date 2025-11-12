@@ -48,6 +48,7 @@ void PosTxWorker::tryTx(int tx_kind, const QList<DefiPosition> &pos_data)
         case txBurn:        {burnSelected(pos_data); break;}
         case txCollect:     {collectSelected(pos_data); break;}
         case txDecrease:    {decreaseSelected(pos_data); break;}
+        case txIncrease:    {increaseSelected(pos_data); break;}
         case txTakeaway:    {takeawaySelected(pos_data); break;}
         case txMint:        {mintPos(); break;}
 
@@ -134,6 +135,19 @@ QString PosTxWorker::extraDataLastTx(const QJsonObject &js_reply) const
             else extra_data = QString("MINT: invalid pool_addr(%1), can't find in defi_config").arg(pool_addr);
             return extra_data;
         }
+        case txIncrease:
+        {
+            QString pool_addr = js_reply.value("pool_address").toString().trimmed();
+            int pool_index = defi_config.getPoolIndex(pool_addr);
+            if (pool_index >= 0)
+            {
+                QString t0_name = defi_config.tokenNameByAddress(defi_config.pools.at(pool_index).token0_addr, chainId());
+                QString t1_name = defi_config.tokenNameByAddress(defi_config.pools.at(pool_index).token1_addr, chainId());
+                extra_data = QString("%1/%2 (%3)").arg(t0_name).arg(t1_name).arg(defi_config.pools.at(pool_index).strFloatFee());
+            }
+            else extra_data = QString("INCREASE: invalid pool_addr(%1), can't find in defi_config").arg(pool_addr);
+            return extra_data;
+        }
         default: break;
     }
     return "invalid lastTx code";
@@ -207,6 +221,10 @@ void PosTxWorker::fillTxLogRecord(TxLogRecord &rec, const QJsonObject &js_reply,
         rec.pool.token_sizes.second = pos.state.asset_amounts.second;
         rec.pool.reward_sizes.first = pos.state.rewards.first;
         rec.pool.reward_sizes.second = pos.state.rewards.second;
+    }
+    else if (m_lastTx.tx_kind == txIncrease)
+    {
+        fillTxMintLogRecord(rec, js_reply);
     }
 }
 int PosTxWorker::tableRowIndexOf(int pid) const
@@ -336,6 +354,46 @@ void PosTxWorker::decreaseSelected(const QList<DefiPosition> &pos_data)
     data.dialog_params.insert(QString("liq"), m_table->item(m_lastTx.t_row, LIQ_COL)->text());
 
     TxDecreaseLiqDialog d(data, parentWidget());
+    d.exec();
+    if (d.isApply()) emit signalSendTx(data);
+    else emit signalMsg("operation was canceled!");
+
+}
+void PosTxWorker::increaseSelected(const QList<DefiPosition> &pos_data)
+{
+    qDebug("PosTxWorker::increaseSelected()");
+    QList<int> list = LTable::selectedRows(m_table);
+    if (list.isEmpty()) {emit signalError("PosTxWorker: You must select position"); return;}
+    if (list.count() > 1) {emit signalError("PosTxWorker: You must select only one position"); return;}
+
+    bool ok;
+    m_lastTx.t_row = list.first();
+    m_lastTx.pid = m_table->item(m_lastTx.t_row, 0)->text().trimmed().toInt(&ok);
+    if (!ok)
+    {
+        m_lastTx.reset();
+        emit signalError(QString("invalid convert PID(%1) to integer").arg(m_table->item(m_lastTx.t_row, 0)->text()));
+        return;
+    }
+    int j = -2;
+    emit signalGetPosIndexByPid(m_lastTx.pid, j);
+    if (j < 0) {emit signalError(QString("can't find PID(%1) to positions container").arg(m_lastTx.pid)); return;}
+    if (pos_data.at(j).state.invalid()) {emit signalError(QString("you must update state for position PID(%1)").arg(m_lastTx.pid)); return;}
+    if (pos_data.at(j).hasLiquidity()) {emit signalError(QString("position PID(%1) already contains liquidity").arg(m_lastTx.pid)); return;}
+
+    // init TX dialog
+    TxDialogData data(lastTx(), chainName());
+    data.dialog_params.insert(QString("pid"), m_table->item(m_lastTx.t_row, 0)->text());
+    data.dialog_params.insert(QString("desc"), m_table->item(m_lastTx.t_row, POOL_COL)->text());
+    data.pool_addr = m_table->item(m_lastTx.t_row, POOL_COL)->toolTip();
+    QString s_price = QString("%1 (%2)").arg(m_table->item(m_lastTx.t_row, PRICE_COL)->text()).arg(m_table->item(m_lastTx.t_row, PRICE_COL)->toolTip());
+    data.dialog_params.insert(QString("price"), s_price);
+    data.dialog_params.insert(QString("assets"), m_table->item(m_lastTx.t_row, ASSETS_COL)->text());
+    data.dialog_params.insert(QString("liq"), m_table->item(m_lastTx.t_row, LIQ_COL)->text());
+    data.dialog_params.insert(QString("price_range"), m_table->item(m_lastTx.t_row, RANGE_COL)->text());
+    data.dialog_params.insert(QString("tick_range"), m_table->item(m_lastTx.t_row, RANGE_COL)->data(Qt::UserRole).toString());
+
+    TxIncreaseLiqDialog d(data, parentWidget());
     d.exec();
     if (d.isApply()) emit signalSendTx(data);
     else emit signalMsg("operation was canceled!");

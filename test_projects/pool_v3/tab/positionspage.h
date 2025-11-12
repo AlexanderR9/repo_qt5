@@ -71,6 +71,7 @@ protected slots:
     void slotCollectPosSelected(); // собрать rewards у выделенной одной позиции
     void slotDecreasePosSelected(); // удалить ликвидность у выделенной одной позиции (перенести активы в зону reward)
     void slotTakeawayPosSelected(); // извлечь все активы у выделенной одной позиции (на кошелек)
+    void slotIncreasePosSelected(); // добавить ликвидность в существующую указанную позицию
 
 signals:
     void signalGetPoolStateFromPoolPage(const QString&, QStringList&);

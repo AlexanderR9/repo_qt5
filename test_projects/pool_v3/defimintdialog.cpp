@@ -2,6 +2,7 @@
 #include "txdialog.h"
 #include "deficonfig.h"
 #include "ltable.h"
+#include "lstring.h"
 #include "appcommonsettings.h"
 #include "nodejsbridge.h"
 
@@ -37,7 +38,14 @@ DefiMintDialog::DefiMintDialog(TxDialogData &data, QWidget *parent)
     connect(updatePoolStateButton, SIGNAL(clicked()), this, SLOT(slotUpdatePoolState()));
     connect(amount0LineEdit, SIGNAL(textChanged(QString)), this, SLOT(slotAmountsEdited()));
     connect(amount1LineEdit, SIGNAL(textChanged(QString)), this, SLOT(slotAmountsEdited()));
-    connect(buttonBox->button(QDialogButtonBox::Apply), SIGNAL(clicked()), this, SLOT(slotEmulateMint()));
+    connect(p1LineEdit, SIGNAL(textChanged(QString)), this, SLOT(slotPrevewTableReset()));
+    connect(p2LineEdit, SIGNAL(textChanged(QString)), this, SLOT(slotPrevewTableReset()));
+    connect(buttonBox->button(QDialogButtonBox::Apply), SIGNAL(clicked()), this, SLOT(slotMint()));
+}
+void DefiMintDialog::slotPrevewTableReset()
+{
+    resetPreviewTable();
+
 }
 void DefiMintDialog::init()
 {
@@ -72,7 +80,6 @@ void DefiMintDialog::init()
     previewMintTable->setSelectionMode(QAbstractItemView::NoSelection);
 
     resetPreviewTable();
-
 }
 void DefiMintDialog::initBaseTokens()
 {
@@ -92,16 +99,14 @@ void DefiMintDialog::initBaseTokens()
     //tokenComboBox->setIconSize(QSize(12, 12));
 
     slotBaseTokenChanged();
-    slotPoolChanged();
-
 }
 void DefiMintDialog::slotPoolChanged()
 {
+    qDebug("DefiMintDialog::slotPoolChanged()");
+
     resetPoolStateTable();
     resetPreviewTable();
 
-
-    int cid = defi_config.getChainID(m_data.chain_name);
     int i = poolComboBox->currentIndex();
     QString pool_addr = poolComboBox->itemData(i).toString();
     int pool_index = defi_config.getPoolIndex(pool_addr);
@@ -111,8 +116,6 @@ void DefiMintDialog::slotPoolChanged()
         return;
     }
 
-    QString t0_name = defi_config.tokenNameByAddress(defi_config.pools.at(pool_index).token0_addr, cid);
-    QString t1_name = defi_config.tokenNameByAddress(defi_config.pools.at(pool_index).token1_addr, cid);
 
     //fill table
     QString p_stable = (defi_config.isStablePool(pool_addr) ? "yes" : "no");
@@ -120,13 +123,28 @@ void DefiMintDialog::slotPoolChanged()
     poolStateTable->item(5, 0)->setText(p_stable);
     poolStateTable->item(5, 0)->setTextColor(p_color);
 
+    // get wallet balances
+    updateTokensBalances();
+}
+void DefiMintDialog::updateTokensBalances()
+{
+    QPair<QString, QString> token_pair;
+    getTokensPairOfPool(token_pair);
+    if (token_pair.first.length() < 2 || token_pair.second.length() < 2)
+    {
+        poolStateTable->item(3, 0)->setText("err");
+        poolStateTable->item(4, 0)->setText("err");
+        return;
+    }
+
     float balance0 = -1;
     float balance1 = -1;
-    emit signalGetTokenBalance(t0_name, balance0);
-    emit signalGetTokenBalance(t1_name, balance1);
+    emit signalGetTokenBalance(token_pair.first, balance0);
+    emit signalGetTokenBalance(token_pair.second, balance1);
     poolStateTable->item(3, 0)->setText(QString::number(balance0));
     poolStateTable->item(4, 0)->setText(QString::number(balance1));
 
+    LTable::resizeTableContents(poolStateTable);
 }
 void DefiMintDialog::slotAmountsEdited()
 {
@@ -149,10 +167,14 @@ void DefiMintDialog::slotAmountsEdited()
     connect(amount0LineEdit, SIGNAL(textChanged(QString)), this, SLOT(slotAmountsEdited()));
     connect(amount1LineEdit, SIGNAL(textChanged(QString)), this, SLOT(slotAmountsEdited()));
 
+
+    slotPrevewTableReset();
     qDebug("DefiMintDialog::slotAmountsEdited() end");
 }
 void DefiMintDialog::slotBaseTokenChanged()
 {
+    qDebug("------------");
+    qDebug("DefiMintDialog::slotBaseTokenChanged()");
     disconnect(poolComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotPoolChanged()));
 
     int cid = defi_config.getChainID(m_data.chain_name);
@@ -177,6 +199,8 @@ void DefiMintDialog::slotBaseTokenChanged()
     }
 
     connect(poolComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotPoolChanged()));
+
+    slotPoolChanged();
 }
 void DefiMintDialog::slotUpdatePoolState()
 {
@@ -222,30 +246,36 @@ void DefiMintDialog::poolStateReceived(const QStringList &p_state) const
         for (int i=0; i<p_state.count(); i++)
             poolStateTable->item(i, 0)->setText(p_state.at(i));
     }
+    LTable::resizeTableContents(poolStateTable);
 
-    initMintSettings();
+    initMintSettings();    
 }
 void DefiMintDialog::initMintSettings() const
 {
     qDebug("DefiMintDialog::initMintSettings() 1");
     bool ok = false;
-    qDebug("DefiMintDialog::initMintSettings() 11");
+    bool stb = (poolStateTable->item(5, 0)->text() == "yes");
     float p = poolStateTable->item(2, 0)->text().toFloat(&ok);
-    qDebug("DefiMintDialog::initMintSettings() 111");
+    int tick = poolStateTable->item(1, 0)->text().toInt(&ok);
     if (p > 0 && ok)
     {
-        qDebug("DefiMintDialog::initMintSettings() ok");
-        p1LineEdit->setText(QString::number(p));
-        p2LineEdit->setText(QString::number(p*1.2));
+        if (stb)
+        {
+            p1LineEdit->setText(QString("t%1").arg(tick));
+            p2LineEdit->setText(QString("t%1").arg(tick+1));
+        }
+        else
+        {
+            p1LineEdit->setText(QString::number(p));
+            p2LineEdit->setText(QString::number(p*1.2));
+        }
     }
     else
     {
-        qDebug("DefiMintDialog::initMintSettings() fault");
         p1LineEdit->setText("?");
         p2LineEdit->setText("?");
     }
 
-    qDebug("DefiMintDialog::initMintSettings() 2");
     float amount = poolStateTable->item(3, 0)->text().toFloat(&ok);
     if (amount > 0 && ok)
     {
@@ -255,17 +285,113 @@ void DefiMintDialog::initMintSettings() const
     {
         amount1LineEdit->setText("?");
     }
-
-    qDebug("DefiMintDialog::initMintSettings() ok");
 }
-void DefiMintDialog::slotEmulateMint()
+void DefiMintDialog::getTokensPairOfPool(QPair<QString, QString> &pair) const
+{
+    pair.first = pair.second = "?";
+    int cid = defi_config.getChainID(m_data.chain_name);
+    m_data.pool_addr = poolComboBox->itemData(poolComboBox->currentIndex()).toString();
+    int pool_index = defi_config.getPoolIndex(m_data.pool_addr);
+    if (pool_index < 0) return;
+
+    pair.first = defi_config.tokenNameByAddress(defi_config.pools.at(pool_index).token0_addr, cid); // token0
+    pair.second = defi_config.tokenNameByAddress(defi_config.pools.at(pool_index).token1_addr, cid); // token1
+}
+void DefiMintDialog::checkValidityMintParams(QString &err)
+{
+    err.clear();
+    bool ok = false;
+    float amount0 = amount0LineEdit->text().toFloat(&ok);
+    if (!ok) {err = "invalid amount0 value"; return;}
+    float amount1 = amount1LineEdit->text().toFloat(&ok);
+    if (!ok) {err = "invalid amount1 value"; return;}
+    if (amount0 <= 0 && amount1 <= 0) {err = "invalid combination values of amount0/amount1"; return;}
+
+
+    QString sp1 = p1LineEdit->text().trimmed();
+    QString sp2 = p2LineEdit->text().trimmed();
+    if (sp1.isEmpty()) {err = "range price1 is empty"; return;}
+    if (sp2.isEmpty()) {err = "range price2 is empty"; return;}
+    if (sp1.at(0) == QChar('t') && sp2.at(0) != QChar('t')) {err = "price range must be all is ticks"; return;}
+    if (sp1.at(0) != QChar('t') && sp2.at(0) == QChar('t')) {err = "price range must be all is ticks"; return;}
+
+    bool is_tick_range = (sp1.at(0) == QChar('t')); // диапазон указан в виде тиков
+    if (is_tick_range)
+    {
+        sp1 = LString::strTrimLeft(sp1, 1);
+        sp2 = LString::strTrimLeft(sp2, 1);
+        int t1 = sp1.toInt(&ok);
+        if (!ok) {err = "invalid TICK_1 value"; return;}
+        int t2 = sp2.toInt(&ok);
+        if (!ok) {err = "invalid TICK_2 value"; return;}
+        if (t1 >= t2) {err = "invalid range, TICK_1 >= TICK_2"; return;}
+    }
+    else
+    {
+        float p1 = sp1.toFloat(&ok);
+        if (!ok) {err = "invalid P1 value"; return;}
+        float p2 = sp2.toFloat(&ok);
+        if (!ok) {err = "invalid P2 value"; return;}
+        if (p1 >= p2) {err = "invalid range, P2 <= P1"; return;}
+    }
+}
+void DefiMintDialog::fillMintParams(int pool_index)
+{
+    m_data.dialog_params.insert("pool_address", m_data.pool_addr);
+    m_data.dialog_params.insert("token0_address", defi_config.pools.at(pool_index).token0_addr);
+    m_data.dialog_params.insert("token1_address", defi_config.pools.at(pool_index).token1_addr);
+    m_data.dialog_params.insert("fee", QString::number(defi_config.pools.at(pool_index).fee));
+    m_data.dialog_params.insert("token0_amount", amount0LineEdit->text().trimmed());
+    m_data.dialog_params.insert("token1_amount", amount1LineEdit->text().trimmed());
+
+
+    //range
+    QString sp1 = p1LineEdit->text().trimmed();
+    QString sp2 = p2LineEdit->text().trimmed();
+    bool is_tick_range = (sp1.at(0) == QChar('t')); // диапазон указан в виде тиков
+    if (is_tick_range)
+    {
+        sp1 = LString::strTrimLeft(sp1, 1);
+        sp2 = LString::strTrimLeft(sp2, 1);
+        m_data.dialog_params.insert("tick1", sp1);
+        m_data.dialog_params.insert("tick2", sp2);
+    }
+    else
+    {
+        float p1 = sp1.toFloat();
+        float p2 = sp2.toFloat();
+
+        QPair<QString, QString> token_pair;
+        getTokensPairOfPool(token_pair);
+        int price_prior_index = defi_config.getPoolTokenPriceIndex(QString("%1/%2").arg(token_pair.first).arg(token_pair.second));
+        if (price_prior_index == 1) // необходимо конвертировать ценовой диапазон в значения для токена_0
+        {
+            float p1_0 = 1/p2;
+            float p2_0 = 1/p1;
+            p1 = p1_0;
+            p2 = p2_0;
+        }
+
+        m_data.dialog_params.insert("p1", QString::number(p1, 'f', 8));
+        m_data.dialog_params.insert("p2", QString::number(p2, 'f', 8));
+    }
+}
+void DefiMintDialog::slotMint()
 {
     bool ok;
-    qDebug("DefiMintDialog::slotEmulateMint()");
-    int cid = defi_config.getChainID(m_data.chain_name);
+    qDebug("DefiMintDialog::slotMint()");
     m_data.dialog_params.clear();
     m_data.dialog_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(txMint));
 
+    // check params
+    QString err;
+    checkValidityMintParams(err);
+    if (!err.isEmpty())
+    {
+        QMessageBox::warning(this, "Inalid mint params", err);
+        m_data.dialog_params.insert("error", err); return;
+        return;
+    }
     m_data.pool_addr = poolComboBox->itemData(poolComboBox->currentIndex()).toString();
     int pool_index = defi_config.getPoolIndex(m_data.pool_addr);
     if (pool_index < 0)
@@ -274,47 +400,19 @@ void DefiMintDialog::slotEmulateMint()
         return;
     }
 
-    // pool info
-    m_data.dialog_params.insert("pool_address", m_data.pool_addr);
-    m_data.dialog_params.insert("token0_address", defi_config.pools.at(pool_index).token0_addr);
-    m_data.dialog_params.insert("token1_address", defi_config.pools.at(pool_index).token1_addr);
-    m_data.dialog_params.insert("fee", QString::number(defi_config.pools.at(pool_index).fee));
 
-    //amount info
-    float amount0 = amount0LineEdit->text().toFloat(&ok);
-    if (!ok) {m_data.dialog_params.insert("error", "invalid amount0 value"); return;}
-    float amount1 = amount1LineEdit->text().toFloat(&ok);
-    if (!ok) {m_data.dialog_params.insert("error", "invalid amount1 value"); return;}
-    m_data.dialog_params.insert("token0_amount", amount0LineEdit->text().trimmed());
-    m_data.dialog_params.insert("token1_amount", amount1LineEdit->text().trimmed());
+    //fill mint params
+    fillMintParams(pool_index);
 
-    //range
-    float p1 = p1LineEdit->text().toFloat(&ok);
-    if (!ok) {m_data.dialog_params.insert("error", "invalid P1 value"); return;}
-    float p2 = p2LineEdit->text().toFloat(&ok);
-    if (!ok) {m_data.dialog_params.insert("error", "invalid P2 value"); return;}
-    if (p1 >= p2) {m_data.dialog_params.insert("error", "invalid range, P2 <= P1"); return;}
-
-    QString t0_name = defi_config.tokenNameByAddress(defi_config.pools.at(pool_index).token0_addr, cid);
-    QString t1_name = defi_config.tokenNameByAddress(defi_config.pools.at(pool_index).token1_addr, cid);
-    int price_prior_index = defi_config.getPoolTokenPriceIndex(QString("%1/%2").arg(t0_name).arg(t1_name));
-    if (price_prior_index == 1) // необходимо конвертировать ценовой диапазон в значения для токена_0
-    {
-        float p1_0 = 1/p2;
-        float p2_0 = 1/p1;
-        p1 = p1_0;
-        p2 = p2_0;
-    }
-    m_data.dialog_params.insert("p1", QString::number(p1, 'f', 8));
-    m_data.dialog_params.insert("p2", QString::number(p2, 'f', 8));
-
-    if (buttonBox->button(QDialogButtonBox::Apply)->text().toLower().contains("mint"))
+    // try mint
+    QString btn_caption = buttonBox->button(QDialogButtonBox::Apply)->text().toLower();
+    if (btn_caption.contains("mint")) // real TX
     {
         qDebug("----------- REAL MINT CMD----------------");
         m_data.dialog_params.insert(AppCommonSettings::nodejsTxSimulateFieldName(), "no");
         slotApply();
     }
-    else
+    else // simulate mode
     {
         m_data.dialog_params.insert(AppCommonSettings::nodejsTxSimulateFieldName(), "yes");
         emit signalEmulateMint(m_data);
@@ -337,9 +435,22 @@ token1_amount: // вносимая сумма токена_1 в нормальн
 void DefiMintDialog::emulMintReply(const QJsonObject &js_reply) const
 {
     int row = 0;
-    previewMintTable->item(row, 0)->setText(js_reply.value("p1").toString().trimmed());
-    previewMintTable->item(row, 1)->setText(js_reply.value("p2").toString().trimmed());
+    float p1 = js_reply.value("p1").toString().toFloat(); // for token0
+    float p2 = js_reply.value("p2").toString().toFloat(); // for token0
+    QPair<QString, QString> token_pair;
+    getTokensPairOfPool(token_pair);
+    int price_prior_index = defi_config.getPoolTokenPriceIndex(QString("%1/%2").arg(token_pair.first).arg(token_pair.second));
+    if (price_prior_index == 1) // необходимо конвертировать ценовой диапазон в значения для токена_1
+    {
+        float p1_1 = 1/p2;
+        float p2_1 = 1/p1;
+        p1 = p1_1;
+        p2 = p2_1;
+    }
+    previewMintTable->item(row, 0)->setText(QString::number(p1, 'f', 6));
+    previewMintTable->item(row, 1)->setText(QString::number(p2, 'f', 6));
     row++;
+
     previewMintTable->item(row, 0)->setText(js_reply.value("tick1").toString().trimmed());
     previewMintTable->item(row, 1)->setText(js_reply.value("tick2").toString().trimmed());
     row++;

@@ -118,6 +118,8 @@ void DefiPositionsPage::initPopupMenu()
     act_list.append(pair7);
     QPair<QString, QString> pair4("Burn positions (selected)", TxDialogBase::iconByTXType(txBurn));
     act_list.append(pair4);
+    QPair<QString, QString> pair8("Increase liquidity", TxDialogBase::iconByTXType(txIncrease));
+    act_list.append(pair8);
 
 
     //init popup menu actions
@@ -133,6 +135,7 @@ void DefiPositionsPage::initPopupMenu()
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotDecreasePosSelected())); i_menu++;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotTakeawayPosSelected())); i_menu++;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotBurnPosSelected())); i_menu++;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotIncreasePosSelected())); i_menu++;
 
 }
 void DefiPositionsPage::initTable()
@@ -206,6 +209,7 @@ void DefiPositionsPage::slotNodejsReply(const QJsonObject &js_reply)
     else if (req == NodejsBridge::jsonCommandValue(txDecrease)) checkTxResult(req, js_reply);
     else if (req == NodejsBridge::jsonCommandValue(txTakeaway)) checkTxResult(req, js_reply);
     else if (req == NodejsBridge::jsonCommandValue(txMint)) checkTxResult(req, js_reply);
+    else if (req == NodejsBridge::jsonCommandValue(txIncrease)) checkTxResult(req, js_reply);
     else if (req == NodejsBridge::jsonCommandValue(nrcPoolState)) getPoolStateFromPoolPage(js_reply);
     else return;
 
@@ -363,6 +367,7 @@ void DefiPositionsPage::reloadTableByRecords()
         else t->item(i, POOL_COL)->setToolTip("WARNING: pool not found");
 
         t->item(i, RANGE_COL)->setToolTip(rec.interfaceTickRange());
+        t->item(i, RANGE_COL)->setData(Qt::UserRole, rec.interfaceTickRange());
     }
 
     m_table->resizeByContents();
@@ -559,6 +564,10 @@ void DefiPositionsPage::slotBurnPosSelected()
 void DefiPositionsPage::slotDecreasePosSelected()
 {
     m_txWorker->tryTx(txDecrease, m_positions);
+}
+void DefiPositionsPage::slotIncreasePosSelected()
+{
+    m_txWorker->tryTx(txIncrease, m_positions);
 }
 void DefiPositionsPage::slotTakeawayPosSelected()
 {

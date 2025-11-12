@@ -170,6 +170,26 @@ protected slots:
 };
 
 
+//TxIncreaseLiqDialog
+class TxIncreaseLiqDialog : public TxDialogBase
+{
+    Q_OBJECT
+public:
+    TxIncreaseLiqDialog(TxDialogData&, QWidget*);
+    virtual ~TxIncreaseLiqDialog() {}
+
+protected:
+    void init();
+
+    void initAmountFields();
+    void checkIncreaseParamsValidity(QString &err);
+
+protected slots:
+    void slotApply();
+    void slotAmountsChanged();
+
+};
+
 //TxTakeawayLiqDialog
 class TxTakeawayLiqDialog : public TxDialogBase
 {

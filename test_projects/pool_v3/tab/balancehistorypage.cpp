@@ -21,6 +21,8 @@
 #define COLOR_DAY_ODD       QString("#EEFFFF")
 
 
+#define BALANCE_SENSIVITY   0.5 // %
+
 // BalanceHistoryPage
 BalanceHistoryPage::BalanceHistoryPage(QWidget *parent)
     :BaseTabPage_V3(parent, 20, dpkBalance),
@@ -33,6 +35,8 @@ BalanceHistoryPage::BalanceHistoryPage(QWidget *parent)
 
     //init balance history object
     m_balanceObj = new WalletBalanceLogger(m_tokenList, this);
+    m_balanceObj->setSensivityChainging(BALANCE_SENSIVITY);
+
     connect(m_balanceObj, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
     connect(m_balanceObj, SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
     connect(m_balanceObj, SIGNAL(signalAddNewRecord(float)), this, SLOT(slotAddNewRecord(float)));
@@ -146,7 +150,9 @@ void BalanceHistoryPage::recalcDeviationCol()
         float deviation = m_balanceObj->recBalanceDeviation(k);
         if (deviation == 0) continue;
 
-        t->item(i, DEVIATION_COL)->setText(QString::number(deviation, 'f', AppCommonSettings::interfacePricePrecision(deviation)));
+        quint8 prec = AppCommonSettings::interfacePricePrecision(qAbs(deviation));
+        //qDebug()<<QString("BalanceHistoryPage::recalcDeviationCol()  deviation=%1  Precision=%2").arg(deviation).arg(prec);
+        t->item(i, DEVIATION_COL)->setText(QString::number(deviation, 'f', prec));
     }
 }
 void BalanceHistoryPage::updateTableColors()
