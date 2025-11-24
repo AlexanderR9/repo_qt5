@@ -1,11 +1,12 @@
 #include "localserverobj.h"
 #include "lstring.h"
+#include "lfile.h"
 
 #include <QLocalServer>
 #include <QLocalSocket>
-//#include <QTest>
 
 #include <QFile>
+#include <QDebug>
 
 
 // LLocalServerObj constructor
@@ -13,7 +14,7 @@ LLocalServerObj::LLocalServerObj(QObject *parent)
     :LSimpleObject(parent),
     m_server(NULL),
     m_errCounter(0),
-    m_serverName("ltestserv"),
+    m_serverName("ltestserv.sock"),
     m_maxConnections(2),
     m_blockSize(4)
 {
@@ -21,14 +22,11 @@ LLocalServerObj::LLocalServerObj(QObject *parent)
 
     m_server = new QLocalServer(this);
     connect(m_server, SIGNAL(newConnection()), this, SLOT(slotServerNewConnection()));
-
-
 }
 void LLocalServerObj::slotServerNewConnection()
 {
     emit signalMsg(QString("%0: was new connection").arg(name()));
     emit signalEvent("new_client_connected");
-
 
     QLocalSocket *socket = m_server->nextPendingConnection();
     if (!socket)
@@ -44,16 +42,17 @@ void LLocalServerObj::slotServerNewConnection()
 }
 void LLocalServerObj::addConnectedSocket(QLocalSocket *socket)
 {
-    qDebug()<<QString("LLocalServerObj::addConnectedSocket  QLocalSocket name [%1]").arg(socket->objectName());
-    //socket->setObjectName(nextSocketName());
+    socket->setObjectName(nextSocketName());
     m_sockets.append(socket);
+    qDebug()<<QString("LLocalServerObj::addConnectedSocket  QLocalSocket name [%1]").arg(socket->objectName());
 
     //connect(socket, SIGNAL(connected()), this, SLOT(slotSocketConnected()));
     connect(socket, SIGNAL(disconnected()), this, SLOT(slotSocketDisconnected()));
     connect(socket, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(slotSocketError()));
     connect(socket, SIGNAL(stateChanged(QLocalSocket::LocalSocketState)), this, SLOT(slotSocketStateChanged()));
-    connect(socket, SIGNAL(readyRead()), this, SLOT(slotSocketReadyRead()));
 
+    //connect(socket, SIGNAL(readyRead()), this, SLOT(slotSocketReadyRead()));
+    connect(socket, &QLocalSocket::readyRead, this, [this, socket]{slotSocketReadyRead(socket);});
 }
 void LLocalServerObj::startListening()
 {
@@ -69,7 +68,8 @@ void LLocalServerObj::startListening()
     }
 
     // На всякий случай удалим старый сокет, если остался
-    QFile::remove(fileServerName());
+    resetServerFile();
+
 
     //try listening ON
     m_server->setMaxPendingConnections(m_maxConnections);
@@ -116,6 +116,13 @@ bool LLocalServerObj::isListening() const
 {
     return m_server->isListening();
 }
+QString LLocalServerObj::strState() const
+{
+    QString s("LLocalServerObj: ");
+    QString s_lis = (isListening() ? "true" : "false");
+    s = QString("%1 is_listening[%2]  clients[%3]  errs[%4]").arg(s).arg(s_lis).arg(clientsCount()).arg(errCount());
+    return s;
+}
 
 
 
@@ -136,12 +143,20 @@ quint8 LTcpServerObj::nextSocketNumber() const
     if (!ok || n < 1) return 1;
     return (n + 1);
 }
-QString LTcpServerObj::nextSocketName() const
-{
-    return QString("client_%1").arg(nextSocketNumber());
-}
 */
+QString LLocalServerObj::nextSocketName() const
+{
+    int n = 10000 + qrand()%1000;
+    return QString("local_client_%1").arg(n);
+}
+void LLocalServerObj::resetServerFile()
+{
+    QString fname = m_serverName.trimmed();
+    if (fname.isEmpty()) return;
 
+    if (LFile::fileExists(fname))
+        QFile::remove(fname);
+}
 int LLocalServerObj::socketIndexOf(const QString &s_name) const
 {
     if (m_sockets.isEmpty() || s_name.trimmed().isEmpty()) return -1;
@@ -163,17 +178,6 @@ void LLocalServerObj::slotSocketDisconnected()
 
     if (pos >= 0)
     {
-        /*
-        if (m_sockets.at(pos) && m_sockets.at(pos)->state() == QAbstractSocket::ConnectedState)
-        {
-            qDebug()<<QString("----------------ATTANTION socket was connected----------------------");
-            m_sockets[pos]->close();
-            //QTest::qWait(200);
-
-        }
-        */
-
-
         QLocalSocket *socket = m_sockets.takeAt(pos);
         if (socket) socket->deleteLater();
         emit signalMsg(QString("%0: current clients %1").arg(name()).arg(clientsCount()));
@@ -197,9 +201,9 @@ void LLocalServerObj::slotSocketStateChanged()
     qDebug()<<QString("LLocalServerObj::slotSocketStateChanged()  sender=[%1]  %2").arg(sender()->objectName()).arg(s_state);
 
 }
-void LLocalServerObj::slotSocketReadyRead()
+void LLocalServerObj::slotSocketReadyRead(QLocalSocket *socket)
 {
-    QLocalSocket *socket = qobject_cast<QLocalSocket*>(sender());
+   // QLocalSocket *socket = qobject_cast<QLocalSocket*>(sender());
     if (!socket) qWarning("LLocalServerObj::slotSocketReadyRead() - WARNING: socket is null");
 
     quint32 n = socket->bytesAvailable();
@@ -219,26 +223,8 @@ bool LLocalServerObj::hasConnectedClients() const
 {
     if (m_sockets.isEmpty()) return false;
     return true;
-
-    /*
-    foreach (QTcpSocket *socket, m_sockets)
-    {
-        if (!socket) continue;
-        if(socket->state() == QAbstractSocket::ConnectedState)
-            return true;
-    }
-    return false;
-    */
 }
-/*
-QString LTcpServerObj::connectedHostAt(int i) const
-{
-    if (i < 0 || i >= m_sockets.count()) return "??";
-
-    QHostAddress ip4(m_sockets.at(i)->peerAddress().toIPv4Address());
-    return ip4.toString();
-}
-void LTcpServerObj::trySendPacketToClients(const QByteArray &ba, bool &ok)
+void LLocalServerObj::trySendDataToClients(const QByteArray &ba, bool &ok)
 {
     ok = false;
     if (ba.isEmpty())
@@ -246,32 +232,32 @@ void LTcpServerObj::trySendPacketToClients(const QByteArray &ba, bool &ok)
         emit signalError(QString("%0: packet size is empty").arg(name()));
         return;
     }
-    if (clientsCount() == 0)
+    if (!hasConnectedClients())
     {
         emit signalError(QString("%0: connected clients is empty").arg(name()));
         return;
     }
 
     //try send packet
-    foreach (QTcpSocket *v, m_sockets)
+    foreach (QLocalSocket *client, m_sockets)
     {
-        if (v)
+        if (client)
         {
-            qint64 n_bytes = v->write(ba);
+            qint64 n_bytes = client->write(ba);
             if (n_bytes == ba.size())
             {
-                emit signalMsg(QString("%0: success sended packet (%1 bytes) to %2").arg(name()).arg(n_bytes).arg(v->objectName()));
+                emit signalMsg(QString("%0: success sended packet (%1 bytes) to %2").arg(name()).arg(n_bytes).arg(client->objectName()));
                 ok = true;
             }
             else
             {
-                emit signalError(QString("%0: wrong sending packet(%1 bytes) to %2, writed bytes %3").arg(name()).arg(ba.size()).arg(v->objectName()).arg(n_bytes));
+                emit signalError(QString("%0: wrong sending packet(%1 bytes) to %2, writed bytes %3").arg(name()).arg(ba.size()).arg(client->objectName()).arg(n_bytes));
                 m_errCounter++;
             }
         }
     }
 }
-void LTcpServerObj::trySendPacketToClient(quint8 socket_number, const QByteArray &ba, bool &ok)
+void LLocalServerObj::trySendDataToClient(quint8 socket_number, const QByteArray &ba, bool &ok)
 {
     ok = false;
     if (ba.isEmpty())
@@ -306,14 +292,17 @@ void LTcpServerObj::trySendPacketToClient(quint8 socket_number, const QByteArray
         m_errCounter++;
     }
 }
-*/
+const QLocalSocket* LLocalServerObj::socketAt(int i) const
+{
+    if (i < 0 || i >= clientsCount()) return NULL;
+    return m_sockets.at(i);
+}
 
 
 void LLocalServerObj::closeServer()
 {
     qDebug("LLocalServerObj::closeServer() 1");
     if (isListening()) m_server->close();
-    qDebug("LLocalServerObj::closeServer() 2");
     if (m_sockets.isEmpty()) return;
 
     foreach (QLocalSocket *socket, m_sockets)
@@ -321,11 +310,14 @@ void LLocalServerObj::closeServer()
         if (socket->state() == QLocalSocket::UnconnectedState) continue;
 
         // Отключите соединение с клиентом
+        QString sock_name(socket->objectName());
+        qWarning()<<QString("LLocalServerObj::closeServer()  WARNING: socket[%1/%2] not disconnected, aborting connection ...").
+                    arg(sock_name).arg(socketIndexOf(sock_name));
         socket->disconnectFromServer();
         if (socket->waitForDisconnected(500)) qDebug("QLocalSocket Disconnected!");
         if (socket->state() != QLocalSocket::UnconnectedState) socket->abort();
     }
-    qDebug("LLocalServerObj::closeServer() 3");
+
     qDeleteAll(m_sockets);
     m_sockets.clear();
     qDebug("LLocalServerObj::closeServer() 4");

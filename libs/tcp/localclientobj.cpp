@@ -2,9 +2,7 @@
 #include "ltime.h"
 
 #include <QLocalSocket>
-//#include <QHostAddress>
 #include <QDebug>
-//#include <QTimer>
 
 
 
@@ -14,24 +12,10 @@ LLocalClientObj::LLocalClientObj(QObject *parent)
     m_clientSocket(NULL),
     m_serverName("ltestserv"),
     m_blockSize(4)
-
-    //m_readOnly(false),
-    //m_connectTimeout(0),
-    //m_waitTimeoutTimer(NULL)
 {
     setObjectName("l_local_client");
 
-    /*
-    setConnectTimeout();
-    */
-
     initClient();
-
-    /*
-    m_waitTimeoutTimer = new QTimer(this);
-    m_waitTimeoutTimer->stop();
-    connect(m_waitTimeoutTimer, SIGNAL(timeout()), this, SLOT(slotConnectionTimeout()));
-    */
 
 }
 void LLocalClientObj::initClient()
@@ -42,7 +26,7 @@ void LLocalClientObj::initClient()
     connect(m_clientSocket, SIGNAL(connected()), this, SLOT(slotSocketConnected()));
     connect(m_clientSocket, SIGNAL(disconnected()), this, SLOT(slotSocketDisconnected()));
     connect(m_clientSocket, SIGNAL(error(QLocalSocket::LocalSocketError)), this, SLOT(slotSocketError()));
-    connect(m_clientSocket, SIGNAL(stateChanged(QLocalSocket::LocalSocketState socketState)), this, SLOT(slotSocketStateChanged()));
+    connect(m_clientSocket, SIGNAL(stateChanged(QLocalSocket::LocalSocketState)), this, SLOT(slotSocketStateChanged()));
     connect(m_clientSocket, SIGNAL(readyRead()), this, SLOT(slotSocketReadyRead()));
 
 }
@@ -61,12 +45,8 @@ void LLocalClientObj::tryConnect()
         return;
     }
 
-
     // try connect
-    //if (m_connectTimeout > 100) m_waitTimeoutTimer->start(m_connectTimeout);
-    //QIODevice::OpenMode mode = (isReadOnly() ? QIODevice::ReadOnly : QIODevice::ReadWrite);
     m_clientSocket->connectToServer(fileServerName());
-
 }
 void LLocalClientObj::tryDisconnect()
 {
@@ -77,46 +57,17 @@ void LLocalClientObj::tryDisconnect()
     }
     m_clientSocket->disconnectFromServer();
 }
-
-
-
-/*
-
-void LTcpClientObj::slotConnectionTimeout()
-{
-    qDebug("LTcpClientObj::slotConnectionTimeout()  connection timeout is OVER!!!!");
-    m_waitTimeoutTimer->stop();
-    abortSocket();
-
-    emit signalEvent("timeout");
-}
-void LTcpClientObj::setReadOnly(bool b)
-{
-    if (!isDisconnected()) return;
-
-    m_readOnly = b;
-}
-*/
-
-
-
-
 void LLocalClientObj::slotSocketConnected()
 {
-    //if (m_waitTimeoutTimer->isActive()) m_waitTimeoutTimer->stop();
-
     qDebug()<<QString("LLocalClientObj::slotSocketConnected()  sender=[%1]").arg(sender()->objectName());
     emit signalMsg(QString("%0: %1 conected").arg(name()).arg(sender()->objectName()));
     emit signalEvent("connected");
 }
 void LLocalClientObj::slotSocketDisconnected()
 {
-    //if (m_waitTimeoutTimer->isActive()) m_waitTimeoutTimer->stop();
-
     qDebug()<<QString("LLocalClientObj::slotSocketDisconnected()  sender=[%1]").arg(sender()->objectName());
     emit signalMsg(QString("%0: %1 disconected").arg(name()).arg(sender()->objectName()));
     emit signalEvent("disconnected");
-
 }
 void LLocalClientObj::slotSocketError()
 {
@@ -132,7 +83,7 @@ void LLocalClientObj::slotSocketStateChanged()
 {
     const QLocalSocket *socket = qobject_cast<const QLocalSocket*>(sender());
     QString s_state = QString("state=%1").arg(socket ? QString::number(socket->state()) : "?");
-    qDebug()<<QString("LLocalClientObj::slotSocketStateChanged()  sender=[%1]  %2").arg(sender()->objectName()).arg(s_state);
+    //qDebug()<<QString("LLocalClientObj::slotSocketStateChanged()  sender=[%1]  %2").arg(sender()->objectName()).arg(s_state);
 }
 void LLocalClientObj::slotSocketReadyRead()
 {
@@ -148,8 +99,6 @@ void LLocalClientObj::slotSocketReadyRead()
     QByteArray ba = socket->readAll();
     emit signalMsg(QString("%0: readed bytes %1").arg(name()).arg(ba.count()));
     emit signalDataReceived(ba);
-
-
 }
 bool LLocalClientObj::isConnected() const
 {
@@ -165,7 +114,6 @@ bool LLocalClientObj::isConnecting() const
 }
 void LLocalClientObj::abortSocket()
 {
-    //if (m_waitTimeoutTimer->isActive()) m_waitTimeoutTimer->stop();
     if (isDisconnected()) return;
 
     if (m_clientSocket)

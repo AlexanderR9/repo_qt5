@@ -16,21 +16,18 @@ public:
     LLocalServerObj(QObject *parent = NULL);
     virtual ~LLocalServerObj() {closeServer();}
 
-
     virtual QString name() const {return QString("LLocalServer");}
-
 
     virtual void startListening(); //запустить прослушивание
     virtual void stopListening(); //остановить прослушивание
     virtual bool isListening() const;
     virtual bool hasConnectedClients() const; // признак наличия подключенных клиентов в текущий момент
 
-    /*
-    virtual void trySendPacketToClient(quint8, const QByteArray&, bool&); //отправить пакет клиенту с заданным номером [1..N]
-    virtual void trySendPacketToClients(const QByteArray&, bool&); //отправить пакет все подключившимся клиента
+    const QLocalSocket* socketAt(int) const; // получить указатель клиента из m_sockets по его индексу, в случае ошибки вернет NULL
 
-    */
-
+    // send data to clients
+    virtual void trySendDataToClient(quint8, const QByteArray&, bool&); //отправить пакет клиенту с заданным номером [1..N]
+    virtual void trySendDataToClients(const QByteArray&, bool&); //отправить пакет все подключившимся клиентам
 
     inline void setFileServerName(QString fname) {m_serverName = fname.trimmed();}
     inline QString fileServerName() const {return m_serverName.trimmed();}
@@ -42,12 +39,14 @@ public:
     inline void setBlockSize(quint16 a) {m_blockSize = a;} //задать минимальное количество байт в сокете которое можно читать
     inline quint16 dataBlockSize() const {return m_blockSize;}
 
+    // diag func
+    virtual QString strState() const;
 
 protected:
     QLocalServer           *m_server;
     QList<QLocalSocket*>    m_sockets; // список подключившихся сокетов(клиентов)
     quint32                 m_errCounter; //счетчи ошибок
-    QString                 m_serverName; // файловый дискриптор, по которому слушает сервер
+    QString                 m_serverName; // файловый дискриптор, по которому слушает сервер, необходимо указать полное имя файла
     quint8                  m_maxConnections; // максимально допустимое количество подключенных клиентов
     quint16                 m_blockSize; // минимальное количество байт в сокете на которое реагировать, по умолчанию 4 байта
 
@@ -55,6 +54,7 @@ protected:
     virtual void closeServer(); //сервер закрывает прослушку, разрывается соединение со всеми клиентами, очищается контейнер m_sockets
 
     int socketIndexOf(const QString&) const; // поиск сокета в контейнере m_sockets по его имени, вернет индекс элемента или -1
+    void resetServerFile(); // удалить старый файл сервера
 
 protected slots:
     virtual void slotServerNewConnection(); //произошло новое подключение к серверу
@@ -63,13 +63,13 @@ protected slots:
     virtual void slotSocketDisconnected(); //выполняется когда клиент отключился, этот сокет удаляется из m_sockets
     virtual void slotSocketError(); //выполняется когда произошла сетевая ошибка у подключенного сокета
     virtual void slotSocketStateChanged(); //выполняется когда меняется состояние сокета
-    virtual void slotSocketReadyRead(); //выполняется когда в сокет пришли данные
+    virtual void slotSocketReadyRead(QLocalSocket*); //выполняется когда в сокет пришли данные
 
-    /*
+
 private:
-    quint8 nextSocketNumber() const; //возвращает следующий номер подключенного сокета(клиента) 1..N
+    //quint8 nextSocketNumber() const; //возвращает следующий номер подключенного сокета(клиента) 1..N
     QString nextSocketName() const; //возвращает следующеее назначенное имя подключенного сокета(клиента)
-    */
+
 
 signals:
     // выполняется когда пришли данные от любого из подключенных клиентов.
