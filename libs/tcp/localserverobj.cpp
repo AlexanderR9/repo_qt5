@@ -257,7 +257,7 @@ void LLocalServerObj::trySendDataToClients(const QByteArray &ba, bool &ok)
         }
     }
 }
-void LLocalServerObj::trySendDataToClient(quint8 socket_number, const QByteArray &ba, bool &ok)
+void LLocalServerObj::trySendDataToClient(int socket_index, const QByteArray &ba, bool &ok)
 {
     ok = false;
     if (ba.isEmpty())
@@ -266,29 +266,29 @@ void LLocalServerObj::trySendDataToClient(quint8 socket_number, const QByteArray
         return;
     }
 
-    QString s_name = QString("client_%1").arg(socket_number);
-    int pos = socketIndexOf(s_name);
-    if (pos < 0)
+    //QString s_name = QString("client_%1").arg(socket_number);
+    //int pos = socketIndexOf(s_name);
+    if (socket_index < 0 || socket_index >= clientsCount())
     {
-        emit signalError(QString("%0: socket by number %1 not found").arg(name()).arg(socket_number));
+        emit signalError(QString("%0: socket by number %1 not found").arg(name()).arg(socket_index));
         return;
     }
 
-    if (!m_sockets.at(pos))
+    if (!m_sockets.at(socket_index))
     {
-        emit signalError(QString("%0: socket by number %1 is null").arg(name()).arg(socket_number));
+        emit signalError(QString("%0: socket by index %1 is null").arg(name()).arg(socket_index));
         return;
     }
 
-    qint64 n_bytes = m_sockets[pos]->write(ba);
+    qint64 n_bytes = m_sockets[socket_index]->write(ba);
     if (n_bytes == ba.size())
     {
-        emit signalMsg(QString("%0: success sended packet (%1 bytes) to %2").arg(name()).arg(n_bytes).arg(s_name));
+        emit signalMsg(QString("%0: success sended packet (%1 bytes) to client_%2").arg(name()).arg(n_bytes).arg(socket_index));
         ok = true;
     }
     else
     {
-        emit signalError(QString("%0: wrong sending packet(%1 bytes) to %2, writed bytes %3").arg(name()).arg(ba.size()).arg(s_name).arg(n_bytes));
+        emit signalError(QString("%0: wrong sending packet(%1 bytes) to client_%2, writed bytes %3").arg(name()).arg(ba.size()).arg(socket_index).arg(n_bytes));
         m_errCounter++;
     }
 }

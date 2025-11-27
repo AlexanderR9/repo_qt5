@@ -26,7 +26,7 @@ public:
     const QLocalSocket* socketAt(int) const; // получить указатель клиента из m_sockets по его индексу, в случае ошибки вернет NULL
 
     // send data to clients
-    virtual void trySendDataToClient(quint8, const QByteArray&, bool&); //отправить пакет клиенту с заданным номером [1..N]
+    virtual void trySendDataToClient(int, const QByteArray&, bool&); //отправить пакет клиенту с заданным номером [1..N]
     virtual void trySendDataToClients(const QByteArray&, bool&); //отправить пакет все подключившимся клиентам
 
     inline void setFileServerName(QString fname) {m_serverName = fname.trimmed();}
