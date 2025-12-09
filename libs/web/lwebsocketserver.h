@@ -11,7 +11,7 @@ class QWebSocket;
 //класс для взаимодействия с веб браузером, а точнее со скриптами js работающими на страницах html.
 //при приходе сигнала disconnect от сокета, сокет удаляется из контейнера m_clients, и сам объект сокета тоже удаляется.
 
-//LTcpServerObj
+//LWebSocketServer
 class LWebSocketServer : public LSimpleObject
 {
     Q_OBJECT

@@ -1,6 +1,7 @@
 #include "httpserverobj.h"
 #include "lstring.h"
-#include "lstatic.h"
+//#include "lstatic.h"
+#include "lfile.h"
 
 #include <QDebug>
 #include <QByteArray>
@@ -19,6 +20,12 @@ LHttpServerObj::LHttpServerObj(quint16 port, QObject *parent)
 
     setMaxServerClients(1);
     setConnectionParams(QString(), port);
+}
+bool LHttpServerObj::invalidWebPath() const
+{
+    if (m_wwwPath.trimmed().isEmpty()) return true;
+    if (!LFile::dirExists(m_wwwPath)) return true;
+    return false;
 }
 void LHttpServerObj::httpReqReceived(int i_socket, const QByteArray &req_data)
 {

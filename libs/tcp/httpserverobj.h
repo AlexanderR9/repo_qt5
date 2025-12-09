@@ -45,11 +45,13 @@ public:
     static QString replyContentType(QString);
 
 protected:
-    QString m_wwwPath; //путь к папке где хранятся все web файлы типа js, html, путь указывается относительно точки запуска ПО
+    QString m_wwwPath; //путь к папке где хранятся все web файлы типа js, html, путь указывается полный или относительный
 
     virtual void httpReqReceived(int, const QByteArray&); //пришел запрос от браузера(от сокета с указанным индексом) на выдачу страницы
     virtual void parseHttpHeaders(const QStringList&, LHttpReqParams&); //обработать заголовки запроса и записать необходимые поля в структуру
     virtual void processHttpReq(const LHttpReqParams&); //обработать заголовки запроса и отправить страницу обратно в браузер по указанному сокету
+
+    bool invalidWebPath() const; // признак что m_wwwPath не задан или такой папки нет
 
 protected slots:
     virtual void slotServerNewConnection(); //произошло новое подключение к серверу

@@ -217,6 +217,20 @@ QString LFile::appendFileSL(QString fname, const QStringList &list)
     }
     return QString();
 }
+QString LFile::appendFileBA(QString fname, const QByteArray &ba)
+{
+    if (fname.trimmed().isEmpty()) return QString("filename is empty!");
+    if (!LFile::fileExists(fname))  return QString("filename [%1] not found!").arg(fname);
+
+    QFile f(fname);
+    if (!f.open(QIODevice::Append))
+        return QString("file [%1] not open for append data!").arg(fname);
+
+    f.write(ba.data(), ba.size());
+//    f.flush();
+    f.close();
+    return QString();
+}
 QString LFile::dirFolders(QString dir_path, QStringList &list, QString filter_text)
 {
     list.clear();

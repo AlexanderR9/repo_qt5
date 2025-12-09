@@ -15,6 +15,7 @@ public:
     static QString writeFileBA(QString fname, const QByteArray &ba);
     static QString appendFile(QString fname, const QString &data);
     static QString appendFileSL(QString fname, const QStringList &list);
+    static QString appendFileBA(QString fname, const QByteArray &ba);
 
     //возвращает список файлов лежащих в dir_path(полные пути), кроме пустых строк или типа (. или ..)
     //если ftype не пустая строка, то вернет только список файлов с рассширением ftype,
