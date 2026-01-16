@@ -550,6 +550,34 @@ void DefiPositionsPage::slotGetPoolState(const QString &pool_addr)
 
     sendReadNodejsRequest(j_params);
 }
+void DefiPositionsPage::slotSetOpenedPosState(QMap<int, QStringList> &map)
+{
+    map.clear();
+
+    foreach (const DefiPosition &v, m_positions)
+    {
+        if (!v.hasLiquidity()) continue;
+        if (v.state.invalid()) continue;
+
+        int p_index = defi_config.getPoolIndexByPosition(v);
+        if (p_index < 0) continue;
+
+        // список заполняется данными по одной позе (у которой есть ликвидность).
+        // 6 элементов: pool_addr / tick_range / cur_price(by prior_index) / cur_assets / cur_rewards / 'out' or 'active' range
+        QStringList pos_data;
+        pos_data.append(defi_config.pools.at(p_index).address);
+        pos_data.append(v.interfaceTickRange());
+        pos_data.append(v.interfaceCurrentPrice());
+        pos_data.append(v.interfaceAssetAmounts());
+        pos_data.append(v.interfaceRewards());
+        if (v.isOutRange()) pos_data.append("out");
+        else pos_data.append("active");
+
+        map.insert(v.pid, pos_data);
+    }
+}
+
+
 
 
 ///////////////////////TX slots/////////////////////////////////////

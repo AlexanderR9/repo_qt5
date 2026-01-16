@@ -68,6 +68,7 @@ protected:
     void fillTxLogRecord(TxLogRecord&, const QJsonObject&, const DefiPosition&); // заполнить соответствующие поля записи лога последней тразакции
     void fillTxMintLogRecord(TxLogRecord&, const QJsonObject&); // заполнить соответствующие поля записи лога последней тразакции (txMint)
     int tableRowIndexOf(int) const; // поиск строки c указанным pid
+    void parseTickRange(QString, TxLogRecord&); // спарсить строку вида [tick1 : tick2] и заполнить соостветствующие поля в записи
 
     void burnSelected(const QList<DefiPosition>&); // сжечь выделенные позиции (может быть несколько), можно сжечь позы только без ликвидности и с полностью выведенными токенами
     void collectSelected(const QList<DefiPosition>&); // собрать rewards у выделенной одной позиции

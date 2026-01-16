@@ -192,6 +192,7 @@ QString TxLogRecord::detailsFileLine() const
             QString sa1 = QString::number(pool.token_sizes.second, 'f', AppCommonSettings::interfacePricePrecision(pool.token_sizes.second));
             additions = QString("%1 token_sizes[%2:%3];").arg(additions).arg(sa0).arg(sa1);
         }
+        additions = QString("%1 tick_range[%2:%3];").arg(additions).arg(pool.tick_range.first).arg(pool.tick_range.second);
     }
     else if (tx_kind == NodejsBridge::jsonCommandValue(txTakeaway))
     {
@@ -205,6 +206,8 @@ QString TxLogRecord::detailsFileLine() const
         sa0 = QString::number(pool.reward_sizes.first, 'f', AppCommonSettings::interfacePricePrecision(pool.reward_sizes.first));
         sa1 = QString::number(pool.reward_sizes.second, 'f', AppCommonSettings::interfacePricePrecision(pool.reward_sizes.second));
         additions = QString("%1 reward_sizes[%2:%3];").arg(additions).arg(sa0).arg(sa1);
+
+        additions = QString("%1 tick_range[%2:%3];").arg(additions).arg(pool.tick_range.first).arg(pool.tick_range.second);
     }
     else if (tx_kind == NodejsBridge::jsonCommandValue(txMint) || tx_kind == NodejsBridge::jsonCommandValue(txIncrease))
     {

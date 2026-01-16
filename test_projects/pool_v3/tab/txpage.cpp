@@ -302,7 +302,22 @@ void DefiTxTabPage::timerEvent(QTimerEvent *event)
     if (rec.tx_kind == NodejsBridge::jsonCommandValue(txApprove)) extra_data = rec.wallet.token_addr;
     emit signalUpdatePageBack(rec.tx_kind, extra_data);
 }
+void DefiTxTabPage::slotSetTxHashHistory(QStringList &list)
+{
+    list.clear();
+    QTableWidget *t = m_table->table();
 
+    int n = t->rowCount();
+    for (int i=n-1; i>=0; i--)
+    {
+        if (t->item(i, RESULT_COL)->text().trimmed() == "OK")
+            list.append(t->item(i, HASH_COL)->text().trimmed());
+    }
 
+}
+void DefiTxTabPage::slotSetTxLogger(const DefiTxLogger *&p)
+{
+    p = m_logger;
+}
 
 

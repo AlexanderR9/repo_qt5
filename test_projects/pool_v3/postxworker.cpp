@@ -7,6 +7,7 @@
 #include "txlogrecord.h"
 #include "defiposition.h"
 #include "defimintdialog.h"
+#include "lstring.h"
 
 
 
@@ -194,6 +195,20 @@ void PosTxWorker::fillTxMintLogRecord(TxLogRecord &rec, const QJsonObject &js_re
     rec.pool.tick_range.first = js_reply.value("tick1").toString().toInt();
     rec.pool.tick_range.second = js_reply.value("tick2").toString().toInt();
 }
+void PosTxWorker::parseTickRange(QString s_ticks, TxLogRecord &rec)
+{
+    s_ticks.remove("[");
+    s_ticks.remove("]");
+    s_ticks = s_ticks.trimmed();
+    QStringList list = LString::trimSplitList(s_ticks, QString(":"));
+    if (list.count() != 2) return;
+
+    bool ok = false;
+    int t = list.first().toInt(&ok);
+    if (ok) rec.pool.tick_range.first = t;
+    t = list.last().toInt(&ok);
+    if (ok) rec.pool.tick_range.second = t;
+}
 void PosTxWorker::fillTxLogRecord(TxLogRecord &rec, const QJsonObject &js_reply, const DefiPosition &pos)
 {
     Q_UNUSED(js_reply);
@@ -211,6 +226,8 @@ void PosTxWorker::fillTxLogRecord(TxLogRecord &rec, const QJsonObject &js_reply,
             rec.pool.token_sizes.first = pos.state.asset_amounts.first;
             rec.pool.token_sizes.second = pos.state.asset_amounts.second;
         }
+
+        parseTickRange(m_table->item(row, RANGE_COL)->toolTip(), rec);
     }
     else if (m_lastTx.tx_kind == txTakeaway)
     {
@@ -221,6 +238,8 @@ void PosTxWorker::fillTxLogRecord(TxLogRecord &rec, const QJsonObject &js_reply,
         rec.pool.token_sizes.second = pos.state.asset_amounts.second;
         rec.pool.reward_sizes.first = pos.state.rewards.first;
         rec.pool.reward_sizes.second = pos.state.rewards.second;
+
+        parseTickRange(m_table->item(row, RANGE_COL)->toolTip(), rec);
     }
     else if (m_lastTx.tx_kind == txIncrease)
     {

@@ -15,6 +15,7 @@
 #include "tokenpricelogger.h"
 #include "balancehistorypage.h"
 #include "positionspage.h"
+#include "statpospage.h"
 
 
 #include <QStackedWidget>
@@ -310,6 +311,15 @@ void CentralWidgetV3::createTabPages(int chain_id)
     tab->tabWidget()->addTab(pos_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(pos_page->kind()));
     connect(pos_page, SIGNAL(signalGetPoolStateFromPoolPage(const QString&, QStringList&)), pool_page,
             SLOT(slotGetPoolStateForPosPage(const QString&, QStringList&)));
+
+    // statistic of pos
+    DefiStatPosPage *stat_page = new DefiStatPosPage(this);
+    tab->tabWidget()->addTab(stat_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(stat_page->kind()));
+    connect(stat_page, SIGNAL(signalGetTxHashHistory(QStringList&)), tx_page, SLOT(slotSetTxHashHistory(QStringList&)));
+    //connect(stat_page, SIGNAL(signalGetTxRecByHash(const QString&, const TxLogRecord*)), tx_page, SLOT(slotSetTxRecByHash(const QString&, const TxLogRecord*)));
+    connect(stat_page, SIGNAL(signalGetTxLogger(const DefiTxLogger*&)), tx_page, SLOT(slotSetTxLogger(const DefiTxLogger*&)));
+    connect(stat_page, SIGNAL(signalGetOpenedPosState(QMap<int, QStringList>&)), pos_page, SLOT(slotSetOpenedPosState(QMap<int, QStringList>&)));
+
 
 
 }

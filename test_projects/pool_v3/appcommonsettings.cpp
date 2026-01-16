@@ -30,6 +30,7 @@ QString AppCommonSettings::tabPageTitle(int p_kind)
         case dpkPool: return QString("Pool list");
         case dpkTx: return QString("TX log");
         case dpkPositions: return QString("Wallet positions");
+        case dpkStatPositions: return QString("Positions stat.");
         default: break;
     }
     return "ERR??";

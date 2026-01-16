@@ -111,12 +111,12 @@ struct DefiConfiguration
     QString nativeTokenName(QString) const; //получить имя нативного токена для указанной сети
     float lastPriceByTokenName(QString) const; // получить последнюю цену по тикеру токена
     void findPoolTokenAddresses(DefiPoolV3&); //найти и обновить адреса пары токенов для указанного пула
-    int getPoolTokenPriceIndex(QString) const; //найти в prioritet_data указанную пару и выдать индекс токена из пары для которого отображать цену
-    int getPoolTokenAmountIndex(QString) const; //найти в prioritet_data указанную пару и выдать индекс токена из пары для которого отображать количество
     int getPoolIndex(QString) const; // найти в контейнере pools пул по его адресу и выдать индекс
     int getPoolIndexByPosition(const DefiPosition&) const; // найти в контейнере pools пул по объекту позиции
     int getTokenIndex(QString, int) const; // найти в контейнере tokens asset по его адресу и ID_chain и выдать индекс
     QString tokenNameByAddress(QString, int) const; // найти в контейнере tokens asset по его адресу и ID_chain и выдать его название(тикер)
+    QString token0NameByPoolAddr(const QString&) const;  // выдать ticker токена_0 по адресу пула
+    QString token1NameByPoolAddr(const QString&) const;  // выдать ticker токена_1 по адресу пула
 
     //параметром может быть либо тикер токена либо его адрес.
     //возвращает признак того что указанный токен является стейблом.
@@ -125,7 +125,25 @@ struct DefiConfiguration
     //признак того что пул состоит из стейблов, по указанному адресу пула
     bool isStablePool(QString) const;
 
+    // краткое описание пула по его адресу.
+    // вернет строку вида 'TIKER0/TIKER1 (fee %)' или '?'
+    QString shortPoolDescByAddr(const QString&) const;
 
+
+
+    //priority funcs
+    int getPoolTokenPriceIndex(QString) const; //найти в prioritet_data указанную пару и выдать индекс токена из пары для которого отображать цену
+    int getPoolTokenAmountIndex(QString) const; //найти в prioritet_data указанную пару и выдать индекс токена из пары для которого отображать количество
+
+    //найти в prioritet_data пару указанного пула и выдать индекс токена из пары для которого отображать цену (0/1)
+    // параметр - адрес пула.
+    // в случае ошибки вернет -1.
+    int getPriorPriceIndexByPoolAddr(const QString&) const;
+
+    //найти в prioritet_data пару указанного пула и выдать индекс токена из пары в котором отображать вложенные/результирующие средства
+    // параметр - адрес пула.
+    // в случае ошибки вернет -1.
+    int getPriorAmountIndexByPoolAddr(const QString&) const;
 
 };
 

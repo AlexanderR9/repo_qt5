@@ -27,7 +27,7 @@ public:
     void autoCheckStatusLastTx(); // после выполнения транзакции и задержки после нее, необходимо автоматом проверить статус выполнения
 
 protected:
-    DefiTxLogger    *m_logger; //managet tx records
+    DefiTxLogger    *m_logger; //manager tx records
     bool  m_autoMode;   //признак того что выполнение проверки статуса происходит в автоматическом режиме а не из меню вручную.
 
     void initTable();
@@ -53,9 +53,14 @@ public slots:
     // теперь эту запись необходимо добавить в лог-файлы tx_*.txt
     void slotNewTx(const TxLogRecord&);
 
+    // слоты, которые выполняются по сигналам страницы DefiStatPosPage
+    void slotSetTxHashHistory(QStringList&); // получить историю всех хешей для этой сети и только успешно-выполненные
+    void slotSetTxLogger(const DefiTxLogger*&);
+
 
 protected slots:
     void slotTxStatus();
+
 
 signals:
     void signalStartTXDelay(QString); //запустить диалоговое окно для блокировки интерфейса на определенную задержку

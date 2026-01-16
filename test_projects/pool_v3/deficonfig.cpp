@@ -82,6 +82,22 @@ bool DefiConfiguration::isStablePool(QString p_addr) const
         if (v.address == p_addr) return v.is_stable;
     return false;
 }
+QString DefiConfiguration::token0NameByPoolAddr(const QString &p_addr) const
+{
+    int p_index = getPoolIndex(p_addr);
+    if (p_index < 0) return "?";
+
+    const DefiPoolV3 &p = pools.at(p_index);
+    return tokenNameByAddress(p.token0_addr, p.chain_id).trimmed(); // token0
+}
+QString DefiConfiguration::token1NameByPoolAddr(const QString &p_addr) const
+{
+    int p_index = getPoolIndex(p_addr);
+    if (p_index < 0) return "?";
+
+    const DefiPoolV3 &p = pools.at(p_index);
+    return tokenNameByAddress(p.token1_addr, p.chain_id).trimmed(); // token1
+}
 QString DefiConfiguration::tokenNameByAddress(QString t_addr, int cid) const
 {
     foreach (const DefiToken &v, tokens)
@@ -98,6 +114,32 @@ int DefiConfiguration::getPoolIndex(QString p_addr) const
         if (pools.at(i).address == p_addr) return i;
     }
     return -1;
+}
+int DefiConfiguration::getPriorAmountIndexByPoolAddr(const QString &p_addr) const
+{
+    int p_index = getPoolIndex(p_addr);
+    if (p_index < 0) return -1;
+
+    const DefiPoolV3 &p = pools.at(p_index);
+    QString token0 = tokenNameByAddress(p.token0_addr, p.chain_id).trimmed(); // token0
+    QString token1 = tokenNameByAddress(p.token1_addr, p.chain_id).trimmed(); // token1
+    if (token0.contains("?") || token1.contains("?")) return -1;
+
+    QString s_pair = QString("%1/%2").arg(token0).arg(token1);
+    return getPoolTokenAmountIndex(s_pair);
+}
+int DefiConfiguration::getPriorPriceIndexByPoolAddr(const QString &p_addr) const
+{
+    int p_index = DefiConfiguration::getPoolIndex(p_addr);
+    if (p_index < 0) return -1;
+
+    const DefiPoolV3 &p = pools.at(p_index);
+    QString token0 = tokenNameByAddress(p.token0_addr, p.chain_id).trimmed(); // token0
+    QString token1 = tokenNameByAddress(p.token1_addr, p.chain_id).trimmed(); // token1
+    if (token0.contains("?") || token1.contains("?")) return -1;
+
+    QString s_pair = QString("%1/%2").arg(token0).arg(token1);
+    return getPoolTokenPriceIndex(s_pair);
 }
 int DefiConfiguration::getPoolTokenPriceIndex(QString pair) const
 {
@@ -138,6 +180,18 @@ int DefiConfiguration::getPoolTokenAmountIndex(QString pair) const
         }
     }
     return 0;
+}
+QString DefiConfiguration::shortPoolDescByAddr(const QString &p_addr) const
+{
+    int pool_index = getPoolIndex(p_addr);
+    if (pool_index < 0) return QString("?");
+
+    const DefiPoolV3 &p = pools.at(pool_index);
+    QString token0 = tokenNameByAddress(p.token0_addr, p.chain_id).trimmed(); // token0
+    QString token1 = tokenNameByAddress(p.token1_addr, p.chain_id).trimmed(); // token1
+    if (token0.contains("?") || token1.contains("?")) return QString("?");
+
+    return QString("%1/%2 (%3)").arg(token0).arg(token1).arg(p.strFloatFee());
 }
 void DefiConfiguration::findPoolTokenAddresses(DefiPoolV3 &pool)
 {

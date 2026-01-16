@@ -8,7 +8,8 @@ HEADERS += $$PWD/approvepage.h \
         $$PWD/txpage.h \
         $$PWD/wallettabpage.h \
         $$PWD/poolspage.h \
-        $$PWD/positionspage.h
+        $$PWD/positionspage.h \
+    $$PWD/statpospage.h
 
 
 SOURCES += $$PWD/approvepage.cpp \
@@ -18,5 +19,6 @@ SOURCES += $$PWD/approvepage.cpp \
         $$PWD/txpage.cpp \
         $$PWD/wallettabpage.cpp \
         $$PWD/poolspage.cpp \
-        $$PWD/positionspage.cpp
+        $$PWD/positionspage.cpp \
+    $$PWD/statpospage.cpp
 

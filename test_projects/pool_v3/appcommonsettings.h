@@ -4,7 +4,7 @@
 #include <QString>
 
 // типы страниц таба для одной сети
-enum DefiPageKind {dpkWallet = 730, dpkBalance, dpkApproved, dpkPool, dpkPositions, dpkTx};
+enum DefiPageKind {dpkWallet = 730, dpkBalance, dpkApproved, dpkPool, dpkPositions, dpkTx, dpkStatPositions};
 
 
 //описание всех возможных запросов к сети на чтение

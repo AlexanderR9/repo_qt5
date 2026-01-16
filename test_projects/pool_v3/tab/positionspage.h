@@ -4,6 +4,8 @@
 #include "basetabpage_v3.h"
 #include "defiposition.h"
 
+#include <QMap>
+
 
 class QJsonObject;
 class QJsonValue;
@@ -65,6 +67,10 @@ protected slots:
 
     void slotSetPosIndexByPid(int pid, int &j) {j = posIndexOf(pid);} // запросить у страницы-родителя индекс позиции в контейнере m_positions по ее PID
     void slotSendTx(const TxDialogData&); // транслировать команду от m_txWorker в nodejs_bridge
+
+
+    void slotSetOpenedPosState(QMap<int, QStringList>&); // выдать инфу по текущим открытым позам странице DefiStatPosPage
+
 
     // TX actions
     void slotBurnPosSelected(); // сжечь выделенные позиции, можно сжечь позы только без ликвидности и с полностью выведенными токенами
