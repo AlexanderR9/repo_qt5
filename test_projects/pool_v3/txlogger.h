@@ -26,22 +26,23 @@
 // в этот файл записи попадают сразу после отправки транзакции в сеть и получения tx_hash.
 // ПОСЛЕ ПОЛУЧЕНИЯ СТАТУСА запись в файле обновляется, т.е. файл переписывается аналогично tx_state.txt.
 //    записи в файле имеют вид: tx_hash / status / (набор дополнительных полей, соответствующий tx_kind, через ';')
-//  дополнительное поле note присутствует во всех случаях и содержит просто поясняющий текст.
-//  дополнительное поле current_price присутвует там где участвует пул т.е. поле 'pool_addr'. Так как пул имеет 2 цены в любой момент времени, в конфиге предварительно должна быть описана секция,
-//  в которой указаны для какого токена рисовать цену в единицах 2-го для конкретной пары, если не указано то цена рисуется для token0 в единицах token1.
+//  дополнительное поле note присутствует во всех случаях и содержит просто поясняющий текст, читабельный для пользователя.
+//  дополнительное поле price0 присутвует там где участвует пул т.е. поле 'pool_addr', данное поле содержит цену token0 в единицах token1.
 
 //   комбинации полей при каждом типе транзакции:
 //  - wrap/unwrap: token_addr[0x_addr]; token_amount[value] (т.е. адрес токена и объем который был врапнут)
 //  - approve: token_addr[0x_addr]; token_amount[value]; to_contract[0x_addr] (т.е. адрес токена и объем который был апрувнут и адрес контракта для кого апрувнут)
 //  - transfer: token_addr[0x_addr]; token_amount[value]; to_wallet[0x_addr] (т.е. адрес токена и объем, адрес кошелька, на который отправили токены)
-//  - swap: pool_addr[0x_addr]; token_in[0x_addr]; token_amount_in[value]; current_price[value] (адрес пула в котором меняем, входной токен, который отдаем и сколько отдаем, текущая цена)
-//  - mint: pool_addr[0x_addr]; current_price[value]; tick[cur_tick]; token_sizes[value0:value1]; pid[-1]; tick_range[t_low:t_high]; price_range[p_low:p_high]
+
+//  - swap: pool_addr[0x_addr]; token_in[0x_addr]; token_amount_in[value]; price0[value] (адрес пула в котором меняем, входной токен, который отдаем и сколько отдаем, текущая цена token0)
+//  - mint: pool_addr[0x_addr]; price0[value]; tick[cur_tick]; token_sizes[value0:value1]; pid[-1]; tick_range[t_low:t_high]; price_range[p_low:p_high]
 //            примечание: pid можно получить только после создании позы, в следующем запросе, т.е. tx_status этой транзакции.
-//  - increase:  pid[value]; pool_addr[0x_addr]; current_price[value]; tick[cur_tick]; token_sizes[value0:value1]; tick_range[t_low:t_high]; price_range[p_low:p_high]
-//  - collect: pid[value]; pool_addr[0x_addr]; current_price[value]; tick[cur_tick]; note[rewards sizes]
-//  - decrease: pid[value]; pool_addr[0x_addr]; current_price[value]; tick[cur_tick]; token_sizes[value0:value1]; note[assets sizes | liq]
+//  - increase:  pid[value]; pool_addr[0x_addr]; price0[value]; tick[cur_tick]; token_sizes[value0:value1]; tick_range[t_low:t_high]; price_range[p_low:p_high]
+//  - collect: pid[value]; pool_addr[0x_addr]; price0[value]; tick_range[t_low:t_high]; tick[cur_tick]; note[rewards sizes]
+//  - decrease: pid[value]; pool_addr[0x_addr]; price0[value]; tick_range[t_low:t_high]; tick[cur_tick]; token_sizes[value0:value1]; note[assets sizes | liq]
+//  - take_away:  pid[value]; pool_addr[0x_addr]; price0[value]; tick_range[t_low:t_high]; tick[cur_tick]; token_sizes[value0:value1]; reward_sizes[value0:value1]; note[full_assets_sizes]
+
 //  - burn: note[pid1:pid2:...]; // при данном типе транзакции можно удалить сразу несколько позиций, поэтому в детализацию попадают только их PID
-//  - take_away:  pid[value]; pool_addr[0x_addr]; current_price[value]; tick[cur_tick]; token_sizes[value0:value1]; reward_sizes[value0:value1]; note[full_assets_sizes]
 
 
 //DefiTxLogger

@@ -52,7 +52,7 @@ struct TxLogRecord
         QString pool_addr; //адрес пула
         quint32 pid;
         int tick; //current tick of pool
-        float price; //current price of pool
+        float price0; //current price of pool (for TOKEN_0)
         QPair<int, int> tick_range;
         QPair<float, float> price_range;
         QPair<float, float> token_sizes;
@@ -62,7 +62,7 @@ struct TxLogRecord
         {
             pool_addr = token_in = "0x0";
             pid = tick = tick_range.first = tick_range.second = 0;
-            price = -1;
+            price0 = -1;
             price_range.first = price_range.second = 0;
             token_sizes.first = token_sizes.second = 0;
             reward_sizes.first = reward_sizes.second = 0;

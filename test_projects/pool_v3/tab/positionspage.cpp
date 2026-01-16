@@ -269,6 +269,7 @@ void DefiPositionsPage::updatePositionState(int i, const QJsonValue &js_value)
     t->item(i, REWARDS_COL)->setText(rec.interfaceRewards());
 
     t->item(i, PRICE_COL)->setToolTip(QString("tick: %1").arg(rec.state.pool_tick));
+    t->item(i, PRICE_COL)->setData(Qt::UserRole, rec.state.price0);
     t->item(i, ASSETS_COL)->setToolTip(rec.interfaceAssetAmountsDesired());
     t->item(i, REWARDS_COL)->setToolTip(rec.interfaceRewardsDesired());
 
@@ -367,7 +368,7 @@ void DefiPositionsPage::reloadTableByRecords()
         else t->item(i, POOL_COL)->setToolTip("WARNING: pool not found");
 
         t->item(i, RANGE_COL)->setToolTip(rec.interfaceTickRange());
-        t->item(i, RANGE_COL)->setData(Qt::UserRole, rec.interfaceTickRange());
+        //t->item(i, RANGE_COL)->setData(Qt::UserRole, rec.interfaceTickRange());
     }
 
     m_table->resizeByContents();

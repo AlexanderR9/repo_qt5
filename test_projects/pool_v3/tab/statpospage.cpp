@@ -122,7 +122,7 @@ QString DefiStatPosPage::strClosedUserRewards(const TxLogRecord *tx_rec) const
     int prior_index = defi_config.getPriorAmountIndexByPoolAddr(tx_rec->pool.pool_addr);
     float size0 = tx_rec->pool.reward_sizes.first;
     float size1 = tx_rec->pool.reward_sizes.second;
-    float p0 = tx_rec->pool.price;
+    float p0 = tx_rec->pool.price0;
 
     float amount = -1;
     QString token_name = "?";
@@ -146,12 +146,14 @@ QString DefiStatPosPage::strNestedUserAmount(const TxLogRecord *tx_rec) const
 {
     int p_index = defi_config.getPoolIndex(tx_rec->pool.pool_addr);
     if (p_index < 0) return "???";
-    const DefiPoolV3 &p = defi_config.pools.at(p_index);
+    //const DefiPoolV3 &p = defi_config.pools.at(p_index);
 
     int prior_index = defi_config.getPriorAmountIndexByPoolAddr(tx_rec->pool.pool_addr);
     float size0 = tx_rec->pool.token_sizes.first;
     float size1 = tx_rec->pool.token_sizes.second;
-    float p0 = tx_rec->pool.price;
+    float p0 = tx_rec->pool.price0;
+
+    qDebug()<<QString("strNestedUserAmount: prior_index=%1 size0=%2  size1=%3 p0=%4").arg(prior_index).arg(size0).arg(size1).arg(p0);
 
     float amount = -1;
     QString token_name = "?";
@@ -159,13 +161,13 @@ QString DefiStatPosPage::strNestedUserAmount(const TxLogRecord *tx_rec) const
     {
         amount = size0;
         if (size1 > 0) amount += (size1/p0);
-        token_name = defi_config.tokenNameByAddress(p.token0_addr, p.chain_id).trimmed(); // token0
+        token_name = defi_config.token0NameByPoolAddr(tx_rec->pool.pool_addr); // token0
     }
     else
     {
         amount = size1;
         if (size0 > 0) amount += (size0*p0);
-        token_name = defi_config.tokenNameByAddress(p.token1_addr, p.chain_id).trimmed(); // token1
+        token_name = defi_config.token1NameByPoolAddr(tx_rec->pool.pool_addr); // token1
     }
 
     quint8 prec = AppCommonSettings::interfacePricePrecision(amount);
@@ -242,9 +244,9 @@ void DefiStatPosPage::checkTx(const TxLogRecord *tx_rec)
         if (defi_config.isStablePool(tx_rec->pool.pool_addr))
             t->item(l_row, POOL_COL)->setTextColor("#808000");
 
-        float cur_pool_price = tx_rec->pool.price;
-        if (defi_config.getPriorPriceIndexByPoolAddr(tx_rec->pool.pool_addr) == 1 && tx_rec->pool.price > 0)
-            cur_pool_price = float(1)/tx_rec->pool.price;
+        float cur_pool_price = tx_rec->pool.price0;
+        if (defi_config.getPriorPriceIndexByPoolAddr(tx_rec->pool.pool_addr) == 1 && tx_rec->pool.price0 > 0)
+            cur_pool_price = float(1)/tx_rec->pool.price0;
         t->item(l_row, P_RANGE_COL)->setData(Qt::UserRole, cur_pool_price);
 
 
@@ -353,10 +355,11 @@ void DefiStatPosPage::calcClosedTotalResult(int row)
 
     QString s_result = "?";
     QString s_color = "#000000";
+    float d = 0;
     if (nested > 0 && closed > 0)
     {
         if (rwd > 0) closed += rwd;
-        float d = closed - nested;
+        d = closed - nested;
         result = float(100)*d/nested;
 
         if (d < 0) {s_result.clear(); s_color = "#AD0000";}
@@ -368,6 +371,14 @@ void DefiStatPosPage::calcClosedTotalResult(int row)
 
     t->item(row, YIELD_COL+1)->setText(s_result);
     t->item(row, YIELD_COL+1)->setTextColor(s_color);
+
+    // set tooltip absolute value amount changing
+    QString p_addr = t->item(row, POOL_COL)->toolTip();
+    int prior_index_amount = defi_config.getPriorAmountIndexByPoolAddr(p_addr);
+    QString token_name = ((prior_index_amount == 1) ? defi_config.token1NameByPoolAddr(p_addr) : defi_config.token0NameByPoolAddr(p_addr));
+    int prec = AppCommonSettings::interfacePricePrecision(d);
+    QString d_str = QString("%1 %2").arg(QString::number(d, 'f', prec)).arg(token_name);
+    t->item(row, YIELD_COL+1)->setToolTip(d_str);
 
 }
 void DefiStatPosPage::calcOpenedTotalResult(int row)

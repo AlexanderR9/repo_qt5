@@ -2,6 +2,7 @@
 #include "appcommonsettings.h"
 #include "lstring.h"
 #include "nodejsbridge.h"
+#include "deficonfig.h"
 
 
 #define FEE_COIN_PRECISION          8
@@ -74,7 +75,7 @@ void TxLogRecord::parseDetail(QString field, QString value)
     else if (field == "pool_addr") pool.pool_addr = value;
     else if (field == "token_in") pool.token_in = value;
     else if (field == "token_amount_in") pool.token_sizes.first = value.toFloat();
-    else if (field == "current_price") pool.price = value.toFloat();
+    else if (field == "price0") pool.price0 = value.toFloat();
     // pos TX
     else if (field == "tick") pool.tick = value.toInt();
     else if (field == "pid") pool.pid = value.toInt();
@@ -180,12 +181,12 @@ QString TxLogRecord::detailsFileLine() const
     {
         additions = QString("pool_addr[%1]; token_in[%2];").arg(pool.pool_addr).arg(pool.token_in);
         additions = QString("%1 token_amount_in[%2];").arg(additions).arg(pool.token_sizes.first);
-        additions = QString("%1 current_price[%2];").arg(additions).arg(pool.price);
+        additions = QString("%1 price0[%2];").arg(additions).arg(pool.price0);
     }
     else if (tx_kind == NodejsBridge::jsonCommandValue(txCollect) || tx_kind == NodejsBridge::jsonCommandValue(txDecrease))
     {
         additions = QString("pool_addr[%1]; pid[%2];").arg(pool.pool_addr).arg(pool.pid);
-        additions = QString("%1 current_price[%2]; tick[%3];").arg(additions).arg(pool.price).arg(pool.tick);
+        additions = QString("%1 price0[%2]; tick[%3];").arg(additions).arg(pool.price0).arg(pool.tick);
         if (tx_kind == NodejsBridge::jsonCommandValue(txDecrease))
         {
             QString sa0 = QString::number(pool.token_sizes.first, 'f', AppCommonSettings::interfacePricePrecision(pool.token_sizes.first));
@@ -197,7 +198,7 @@ QString TxLogRecord::detailsFileLine() const
     else if (tx_kind == NodejsBridge::jsonCommandValue(txTakeaway))
     {
         additions = QString("pool_addr[%1]; pid[%2];").arg(pool.pool_addr).arg(pool.pid);
-        additions = QString("%1 current_price[%2]; tick[%3];").arg(additions).arg(pool.price).arg(pool.tick);
+        additions = QString("%1 price0[%2]; tick[%3];").arg(additions).arg(pool.price0).arg(pool.tick);
 
         QString sa0 = QString::number(pool.token_sizes.first, 'f', AppCommonSettings::interfacePricePrecision(pool.token_sizes.first));
         QString sa1 = QString::number(pool.token_sizes.second, 'f', AppCommonSettings::interfacePricePrecision(pool.token_sizes.second));
@@ -212,7 +213,7 @@ QString TxLogRecord::detailsFileLine() const
     else if (tx_kind == NodejsBridge::jsonCommandValue(txMint) || tx_kind == NodejsBridge::jsonCommandValue(txIncrease))
     {
         additions = QString("pool_addr[%1]; pid[%2];").arg(pool.pool_addr).arg(pool.pid);
-        additions = QString("%1 current_price[%2]; tick[%3];").arg(additions).arg(pool.price).arg(pool.tick);
+        additions = QString("%1 price0[%2]; tick[%3];").arg(additions).arg(pool.price0).arg(pool.tick);
 
         QString sa0 = QString::number(pool.token_sizes.first, 'f', AppCommonSettings::interfacePricePrecision(pool.token_sizes.first));
         QString sa1 = QString::number(pool.token_sizes.second, 'f', AppCommonSettings::interfacePricePrecision(pool.token_sizes.second));
@@ -242,7 +243,10 @@ void TxLogRecord::formNote(QString extra_data)
     else if (tx_kind == NodejsBridge::jsonCommandValue(txSwap))
     {
         note = QString("%1 %2 %3").arg(note).arg(QString::number(pool.token_sizes.first, 'f', AppCommonSettings::interfacePricePrecision(wallet.token_amount))).arg(extra_data);
-        note = QString("%1  price=%2").arg(note).arg(QString::number(pool.price));
+        int prior_index = defi_config.getPriorPriceIndexByPoolAddr(pool.pool_addr);
+        float user_p = ( (prior_index == 1) ? (float(1)/pool.price0) : pool.price0);
+        quint8 prec = AppCommonSettings::interfacePricePrecision(user_p);
+        note = QString("%1  price=%2").arg(note).arg(QString::number(user_p, 'f', prec));
     }
     else if (tx_kind == NodejsBridge::jsonCommandValue(txBurn))
     {

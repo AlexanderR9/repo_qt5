@@ -257,6 +257,7 @@ void DefiPoolsTabPage::updatePoolStateRow(const QJsonObject &js_reply)
             float price = ((price_index == 0) ? js_reply.value("price0").toString().toFloat() : js_reply.value("price1").toString().toFloat());
             int pp = defi_config.pools.at(pos).is_stable ? 8 : AppCommonSettings::interfacePricePrecision(price);
             t->item(i, PRICE_COL)->setText(QString::number(price, 'f', pp));
+            t->item(i, PRICE_COL)->setData(Qt::UserRole, js_reply.value("price0").toString());
 
             //update tvl
             float tvl0 = js_reply.value("tvl0").toString().toFloat();
@@ -321,7 +322,7 @@ void DefiPoolsTabPage::logTxRecord(QString req, const QJsonObject &js_reply)
         signalError(QString("DefiPoolsTabPage: can't find row by pool[%1]").arg(tx_rec.pool.pool_addr));
         return;
     }
-    tx_rec.pool.price = t->item(row, PRICE_COL)->text().trimmed().toFloat();
+    tx_rec.pool.price0 = t->item(row, PRICE_COL)->data(Qt::UserRole).toFloat();
 
     QString extra_data = "?";
     int t_index = js_reply.value("input_index").toString().toInt();

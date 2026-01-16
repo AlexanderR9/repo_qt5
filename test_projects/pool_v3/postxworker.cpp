@@ -186,7 +186,7 @@ void PosTxWorker::prepareTxLog(const QJsonObject &js_reply, const QList<DefiPosi
 void PosTxWorker::fillTxMintLogRecord(TxLogRecord &rec, const QJsonObject &js_reply)
 {
     rec.pool.pool_addr = js_reply.value("pool_address").toString().trimmed();
-    rec.pool.price = js_reply.value("pool_price").toString().toFloat();
+    rec.pool.price0 = js_reply.value("pool_price").toString().toFloat();
     rec.pool.tick = js_reply.value("pool_tick").toString().toInt();
     rec.pool.token_sizes.first = js_reply.value("amount0").toString().toFloat();
     rec.pool.token_sizes.second = js_reply.value("amount1").toString().toFloat();
@@ -219,7 +219,7 @@ void PosTxWorker::fillTxLogRecord(TxLogRecord &rec, const QJsonObject &js_reply,
     if (m_lastTx.tx_kind == txCollect || m_lastTx.tx_kind == txDecrease)
     {
         rec.pool.tick = pos.state.pool_tick;
-        rec.pool.price = m_table->item(row, PRICE_COL)->text().toFloat();
+        rec.pool.price0 = m_table->item(row, PRICE_COL)->data(Qt::UserRole).toFloat();
         rec.pool.pool_addr = m_table->item(row, POOL_COL)->toolTip();
         if (m_lastTx.tx_kind == txDecrease)
         {
@@ -232,7 +232,9 @@ void PosTxWorker::fillTxLogRecord(TxLogRecord &rec, const QJsonObject &js_reply,
     else if (m_lastTx.tx_kind == txTakeaway)
     {
         rec.pool.tick = pos.state.pool_tick;
-        rec.pool.price = m_table->item(row, PRICE_COL)->text().toFloat();
+        //rec.pool.price = m_table->item(row, PRICE_COL)->text().toFloat();
+        rec.pool.price0 = m_table->item(row, PRICE_COL)->data(Qt::UserRole).toFloat();
+
         rec.pool.pool_addr = m_table->item(row, POOL_COL)->toolTip();
         rec.pool.token_sizes.first = pos.state.asset_amounts.first;
         rec.pool.token_sizes.second = pos.state.asset_amounts.second;
