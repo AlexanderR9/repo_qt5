@@ -235,7 +235,8 @@ DefiChain::DefiChain()
     :DefiEntityBase(),
     title(QString()),
     coin(QString()),
-    icon_file(QString())
+    icon_file(QString()),
+    gas_unit_price(-1)
 {
 
 }

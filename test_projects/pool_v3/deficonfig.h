@@ -24,6 +24,7 @@ struct DefiChain : public DefiEntityBase
     QString title;
     QString coin; //тикер нативной монеты (оплата газ)
     QString icon_file;
+    float gas_unit_price; // цены единицы газа, gw
 
     bool invalid() const;
     QString toStr() const;

@@ -84,6 +84,18 @@ void MainForm::initCommonSettings()
     key = QString("update_wallet");
     lCommonSettings.addParam(QString("Update wallet at startup"), LSimpleDialog::sdtBool, key);
     lCommonSettings.setDefValue(key, false);
+
+
+    // gas unit prices
+    key = QString("gas_price_polygon");
+    lCommonSettings.addParam(QString("Gas unit price, gw. (POLYGON)"), LSimpleDialog::sdtDoubleLine, key, 1, 65.0);
+    key = QString("gas_price_bnb");
+    lCommonSettings.addParam(QString("Gas unit price, gw. (BNB)"), LSimpleDialog::sdtDoubleLine, key, 2, 0.06);
+    key = QString("gas_price_arbitrum");
+    lCommonSettings.addParam(QString("Gas unit price, gw. (ARBITRUM)"), LSimpleDialog::sdtDoubleLine, key, 4, 0.022);
+    key = QString("gas_price_optimism");
+    lCommonSettings.addParam(QString("Gas unit price, gw. (OPTIMISM)"), LSimpleDialog::sdtDoubleLine, key, 6, 0.00002);
+
 }
 void MainForm::slotVisibleActionsUpdate(int p_kind)
 {
@@ -97,6 +109,7 @@ void MainForm::slotVisibleActionsUpdate(int p_kind)
             getAction(atData)->setVisible(true);
             break;
         }
+        case dpkStatPositions:
         case dpkWallet:
         {
             getAction(atRefresh)->setVisible(true);
@@ -150,6 +163,7 @@ void MainForm::load()
 
     //try load config
     m_configLoader->loadDefiConfiguration(defiConfig());
+    updateChainsGasPrices();
 
     //init central widget
     m_centralWidget->load(settings);
@@ -172,6 +186,13 @@ void MainForm::slotAppSettingsChanged(QStringList list)
     if (list.contains("nodejs_path"))
         AppCommonSettings::setNodejsPath(nodejsPath());
 
+
+    // check need change gas price
+    bool need_gp = false;
+    foreach (const QString &v, list)
+        if (v.contains("gas_price")) {need_gp = true; break;}
+    if (need_gp) updateChainsGasPrices();
+
 //    updateWindowTitle();
 }
 void MainForm::slotError(const QString &text)
@@ -184,6 +205,16 @@ void MainForm::slotMsg(const QString &text)
     m_protocol->addText(text, LProtocolBox::ttText);
     m_protocol->moveScrollDown();
 }
+void MainForm::updateChainsGasPrices()
+{
+    int n = defi_config.chains.count();
+    for (int i=0; i<n; i++)
+    {
+        float gp = chainGasPrice(defi_config.chains.at(i).name);
+        defi_config.chains[i].gas_unit_price = gp;
+    }
+}
+
 
 
 //private
@@ -199,5 +230,14 @@ bool MainForm::updateWalletAtStart() const
 {
     return lCommonSettings.paramValue("update_wallet").toBool();
 }
+float MainForm::chainGasPrice(QString chain_name) const
+{
+    chain_name = chain_name.trimmed().toLower();
+    if (chain_name == "polygon") return lCommonSettings.paramValue("gas_price_polygon").toFloat();
+    else if (chain_name == "bnb") return lCommonSettings.paramValue("gas_price_bnb").toFloat();
+    else if (chain_name == "arbitrum") return lCommonSettings.paramValue("gas_price_arbitrum").toFloat();
+    else if (chain_name == "optimism") return lCommonSettings.paramValue("gas_price_optimism").toFloat();
 
+    return -1;
+}
 

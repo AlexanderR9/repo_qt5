@@ -32,6 +32,7 @@ protected:
     void load();
     void actStartUpdating(); //send many request by timer
     void actMintPos();
+    void updateChainsGasPrices(); // обновить текущие цены на газ для всех сетей
 
 protected slots:
     void slotAction(int); //virtual slot from parent
@@ -45,6 +46,7 @@ private:
     QString defiConfig() const;
     QString nodejsPath() const;
     bool updateWalletAtStart() const;
+    float chainGasPrice(QString) const; // текущая цена газа из общих настроек для указанной сети
 
 };
 

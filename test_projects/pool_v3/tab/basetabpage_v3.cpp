@@ -76,6 +76,17 @@ void BaseTabPage_V3::sendTxNodejsRequest(const TxDialogData &tx_data)
         else j_params.insert(v, tx_data.dialog_params.value(v));
     }
 
+    // add gas price parameter
+    float gp = chainGasPrice();
+    QString s_gp = "-1.0";
+    if (gp > 0)
+    {
+        if (gp < 0.01) s_gp = QString::number(gp, 'f', 6);
+        else s_gp = QString::number(gp);
+    }
+    j_params.insert("gas_unit_price", s_gp);
+
+
     // second part
     emit signalRewriteJsonFile(j_params, AppCommonSettings::txParamsNodeJSFile()); //rewrite params json-file
 
@@ -115,6 +126,12 @@ void BaseTabPage_V3::selectRowByCellData(const QString &cell_data, int col)
         }
     }
 }
-
+float BaseTabPage_V3::chainGasPrice() const
+{
+    int cid = defi_config.getChainID(curChainName());
+    int chain_index = defi_config.chainIndexOf(cid);
+    if (chain_index < 0) return -1;
+    return defi_config.chains.at(chain_index).gas_unit_price;
+}
 
 

@@ -46,6 +46,8 @@ protected:
     virtual bool hasBalances() const {return false;} // проверка что балансы кошелька были получены
     virtual int tableRowByCellData(const QString&, int col) const; // вернет индекс строки таблицы, в которой значение ячеики в указанном столбце
 
+    float chainGasPrice() const; // цена единицы газа для текущей сети
+
 public slots:
     virtual void slotNodejsReply(const QJsonObject&) = 0; //получен успешный ответ от скрипта nodejs
 
