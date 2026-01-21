@@ -49,6 +49,7 @@ protected:
     QString strClosedRewards(const TxLogRecord*) const; // возращает количество активов полученных от сбора комиссий при закрытии позы (rewards)
     QString strNestedUserAmount(const TxLogRecord*) const; // возращает сумму вложенных активов в одном токене (согласно prior_data) на момент транзакции
     QString strClosedUserRewards(const TxLogRecord*) const; // возращает сумму полученных комиссий в одном токене (согласно prior_data) на момент закрытия
+    QString strStartExitPrices(const TxLogRecord*, int) const; // возращает возвращает пару цен (для привычного токена), на момент открытия и на момент закрытия позы
 
     // рассчитать итоговую дохоходность для указанной позы (закрытой).
     // рассчет проводится как отношение суммы полученных наград (в приоритетном токене) на момент закрытия к

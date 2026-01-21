@@ -198,8 +198,8 @@ void DefiPositionsPage::slotNodejsReply(const QJsonObject &js_reply)
             int tx = m_txWorker->lastTx();
             if (tx == txDecrease || tx == txIncrease || tx == txTakeaway)
             {
-                selectRowByCellData(QString::number(m_txWorker->lastPosPid()), 0);
-                slotGetSelectedPosState();
+                //selectRowByCellData(QString::number(m_txWorker->lastPosPid()), 0);
+                //slotGetSelectedPosState();
             }
         }
     }
@@ -368,7 +368,7 @@ void DefiPositionsPage::reloadTableByRecords()
         else t->item(i, POOL_COL)->setToolTip("WARNING: pool not found");
 
         t->item(i, RANGE_COL)->setToolTip(rec.interfaceTickRange());
-        //t->item(i, RANGE_COL)->setData(Qt::UserRole, rec.interfaceTickRange());
+        t->item(i, RANGE_COL)->setData(Qt::UserRole, rec.interfaceTickRange());
     }
 
     m_table->resizeByContents();

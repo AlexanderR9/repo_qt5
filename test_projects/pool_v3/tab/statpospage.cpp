@@ -24,9 +24,11 @@
 #define DEPOSITED_COL       5
 #define CUR_ASSETS_COL      6
 #define REWARDS_COL         8
-#define YIELD_COL           9
+#define PRICES_COL          9
+#define YIELD_COL           10
 
-#define YIELD_PRECISION     1
+#define YIELD_PRECISION             1
+#define DAYS_LASTING_PRECISION      2
 
 
 
@@ -142,6 +144,27 @@ QString DefiStatPosPage::strClosedUserRewards(const TxLogRecord *tx_rec) const
     quint8 prec = AppCommonSettings::interfacePricePrecision(amount);
     return QString("%1 %2").arg(QString::number(amount, 'f', prec)).arg(token_name);
 }
+QString DefiStatPosPage::strStartExitPrices(const TxLogRecord *tx_rec, int row) const
+{
+    QTableWidget *t = m_table->table();
+    bool ok = false;
+    float p_open = t->item(row, P_RANGE_COL)->data(Qt::UserRole).toFloat(&ok);
+    if (ok)
+    {
+        quint8 prec = AppCommonSettings::interfacePricePrecision(p_open);
+        if (tx_rec->tx_kind == NodejsBridge::jsonCommandValue(txMint) || tx_rec->tx_kind == NodejsBridge::jsonCommandValue(txIncrease))
+        {
+            return QString("%1 / -").arg(QString::number(p_open, 'f', prec));
+        }
+
+        float p_closed = tx_rec->pool.price0;
+        if (defi_config.getPriorPriceIndexByPoolAddr(tx_rec->pool.pool_addr) == 1 && p_closed > 0)
+            p_closed = float(1)/p_closed;
+
+        return QString("%1 / %2").arg(QString::number(p_open, 'f', prec)).arg(QString::number(p_closed, 'f', prec));
+    }
+    return QString("- / -");
+}
 QString DefiStatPosPage::strNestedUserAmount(const TxLogRecord *tx_rec) const
 {
     int p_index = defi_config.getPoolIndex(tx_rec->pool.pool_addr);
@@ -180,8 +203,8 @@ float DefiStatPosPage::lastingDays(int row) const
     QDateTime end_time = QDateTime::fromSecsSinceEpoch(t->item(row, DATE_COL+1)->data(Qt::UserRole).toInt());
     if (!start_time.isValid() || !end_time.isValid()) return -1;
 
-    int h_to = (start_time.secsTo(end_time)/3600);
-    float d_to = float(h_to)/float(24);
+    int min_to = (start_time.secsTo(end_time)/60);
+    float d_to = float(min_to)/float(1440);
     return d_to;
 }
 void DefiStatPosPage::checkClosedTx(const TxLogRecord *tx_rec)
@@ -197,7 +220,7 @@ void DefiStatPosPage::checkClosedTx(const TxLogRecord *tx_rec)
     t->item(row, DATE_COL+1)->setData(Qt::UserRole, tx_rec->dt.toSecsSinceEpoch());
 
     float d_to = lastingDays(row);
-    QString s_days = QString("%1 days").arg(QString::number(d_to, 'f', 1));
+    QString s_days = QString("%1 days").arg(QString::number(d_to, 'f', DAYS_LASTING_PRECISION));
     t->item(row, DATE_COL+1)->setToolTip(s_days);
 
     t->item(row, CUR_ASSETS_COL)->setText(QString("0.0 / 0.0"));
@@ -208,6 +231,9 @@ void DefiStatPosPage::checkClosedTx(const TxLogRecord *tx_rec)
     if (t->item(row, 0)->text().length() < 3)
         t->item(row, 0)->setText(QString::number(tx_rec->pool.pid));
     t->item(row, REWARDS_COL)->setToolTip(strClosedUserRewards(tx_rec));
+
+    t->item(row, PRICES_COL)->setText(strStartExitPrices(tx_rec, row));
+
 
 
     LTable::setTableRowColor(t, row, "#FFDEAD");
@@ -228,7 +254,7 @@ void DefiStatPosPage::checkTx(const TxLogRecord *tx_rec)
         row_data << strDepositedAssets(tx_rec);
 
 
-        for (int i=0; i<5; i++)
+        for (int i=0; i<6; i++)
             row_data << QString("-");
 
         LTable::addTableRow(t, row_data);
@@ -247,10 +273,11 @@ void DefiStatPosPage::checkTx(const TxLogRecord *tx_rec)
         float cur_pool_price = tx_rec->pool.price0;
         if (defi_config.getPriorPriceIndexByPoolAddr(tx_rec->pool.pool_addr) == 1 && tx_rec->pool.price0 > 0)
             cur_pool_price = float(1)/tx_rec->pool.price0;
-        t->item(l_row, P_RANGE_COL)->setData(Qt::UserRole, cur_pool_price);
+        t->item(l_row, P_RANGE_COL)->setData(Qt::UserRole, cur_pool_price); // текущая цена (прывычная для пользователя) в пуле на момент открытия
 
 
         t->item(l_row, DEPOSITED_COL)->setToolTip(strNestedUserAmount(tx_rec));
+        t->item(l_row, PRICES_COL)->setText(strStartExitPrices(tx_rec, l_row));
     }
 }
 void DefiStatPosPage::initTable()
@@ -260,8 +287,8 @@ void DefiStatPosPage::initTable()
     m_table->vHeaderHide();
 
     QStringList headers;
-    headers << "PID" << "Open date" << "Lasting" << "Pool" << "Price range" << "Deposited"
-            << "Current assets" << "Closed assets" << "Rewards" << "Yield" << "Total result";
+    headers << "PID" << "Open date" << "Lasting" << "Pool" << "Price range" << "Deposited" << "Current assets" << "Closed assets"
+                    << "Rewards" << "Start/Exit price" << "Yield" << "Total result";
     LTable::setTableHeaders(m_table->table(), headers);
     m_table->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
     m_table->setSelectionColor("#BFBFBF");
@@ -367,6 +394,7 @@ void DefiStatPosPage::calcClosedTotalResult(int row)
         else s_result.clear();
 
         s_result = QString("%1%2 %").arg(s_result).arg(QString::number(result, 'f', 2));
+        if (qAbs(result) < 0.5) s_color = "#000000";
     }
 
     t->item(row, YIELD_COL+1)->setText(s_result);
@@ -405,6 +433,7 @@ void DefiStatPosPage::calcOpenedTotalResult(int row)
         else s_result.clear();
 
         s_result = QString("%1%2 %").arg(s_result).arg(QString::number(result, 'f', 2));
+        if (qAbs(result) < 0.5) s_color = "#000000";
     }
 
     t->item(row, YIELD_COL+1)->setText(s_result);
@@ -478,7 +507,7 @@ void DefiStatPosPage::updateOpenedPosition(int row, int pid, const QStringList &
     // set current ts point
     t->item(row, DATE_COL+1)->setData(Qt::UserRole, QDateTime::currentDateTime().toSecsSinceEpoch());
     float d_to = lastingDays(row);
-    QString s_days = QString("%1 d").arg(QString::number(d_to, 'f', 1));
+    QString s_days = QString("%1 d").arg(QString::number(d_to, 'f', DAYS_LASTING_PRECISION));
     t->item(row, DATE_COL+1)->setText(s_days);
 
     ////////////////// calc assets in prior token ///////////////////////////
