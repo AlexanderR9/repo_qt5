@@ -31,7 +31,6 @@ public:
     //выполняется когда пользователь в тулбаре нажимает кнопку "Update"
     void sendUpdateDataRequest();
 
-
 protected:
     QStringList m_txHashList; // история хешей всех транзакций для этой сети (только со статусом "ОК")
 

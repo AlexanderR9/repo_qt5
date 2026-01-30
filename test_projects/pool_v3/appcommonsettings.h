@@ -4,8 +4,11 @@
 #include <QString>
 
 // типы страниц таба для одной сети
-enum DefiPageKind {dpkWallet = 730, dpkBalance, dpkApproved, dpkPool, dpkPositions, dpkTx, dpkStatPositions};
+enum DefiPageKind {dpkWallet = 730, dpkBalance, dpkApproved, dpkPool, dpkPositions, dpkTx,
+                   dpkStatPositions, dpkStrategy};
 
+// типы стратегий
+enum DefiStrategyType {dstFollowPrice = 760, dstMartingale, dstStable};
 
 //описание всех возможных запросов к сети на чтение
 enum NodejsReadCommand {nrcBalance = 830, nrcTXCount, nrcApproved, nrcGasPrice, nrcChainID,
@@ -35,6 +38,7 @@ public:
     static QString priceLogFile() {return "prices_history.log";}
     static QString balanceLogFile() {return "balance_history.log";}
     static QString positionsListFile() {return "positions.txt";}
+    static QString strategyDataFile() {return QString("strategy_data_%1.xml");}
 
 
     static QString timeUserMask() {return "hh:mm:ss";}

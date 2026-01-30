@@ -57,6 +57,9 @@ public slots:
     void slotSetTxHashHistory(QStringList&); // получить историю всех хешей для этой сети и только успешно-выполненные
     void slotSetTxLogger(const DefiTxLogger*&);
 
+    // слоты, которые выполняются по сигналам страницы DefiPositionsPage
+    void slotSetMintedBurnedTx(int&, int&); // выдать количество отчеканеных и сожженых поз (только с состоянием OK)
+
 
 protected slots:
     void slotTxStatus();

@@ -73,13 +73,21 @@ void MainForm::initWidgets()
 void MainForm::initCommonSettings()
 {
     qDebug("MainForm::initCommonSettings()");
-    QStringList combo_list;
 
     QString key = QString("defi_config");
     lCommonSettings.addParam(QString("Defi config file"), LSimpleDialog::sdtFilePath, key);
 
     key = QString("nodejs_path");
     lCommonSettings.addParam(QString("Path to Node_JS scripts"), LSimpleDialog::sdtDirPath, key);
+
+
+    key = QString("tx_delay");
+    lCommonSettings.addParam(QString("Delay after TX"), LSimpleDialog::sdtIntCombo, key);
+    QStringList combo_list;
+    for (int i=4; i<30; i+=2) combo_list.append(QString::number(i));
+    lCommonSettings.setComboList(key, combo_list);
+    lCommonSettings.setDefValue(key, 8);
+
 
     key = QString("update_wallet");
     lCommonSettings.addParam(QString("Update wallet at startup"), LSimpleDialog::sdtBool, key);
@@ -164,6 +172,8 @@ void MainForm::load()
     //try load config
     m_configLoader->loadDefiConfiguration(defiConfig());
     updateChainsGasPrices();
+    defi_config.delayAfterTX = txDelay();
+    qDebug()<<QString("defi_config.delayAfterTX = %1").arg(defi_config.delayAfterTX);
 
     //init central widget
     m_centralWidget->load(settings);
@@ -186,6 +196,9 @@ void MainForm::slotAppSettingsChanged(QStringList list)
     if (list.contains("nodejs_path"))
         AppCommonSettings::setNodejsPath(nodejsPath());
 
+    if (list.contains("tx_delay"))
+        defi_config.delayAfterTX = txDelay();
+
 
     // check need change gas price
     bool need_gp = false;
@@ -194,6 +207,8 @@ void MainForm::slotAppSettingsChanged(QStringList list)
     if (need_gp) updateChainsGasPrices();
 
 //    updateWindowTitle();
+
+    qDebug()<<QString("MainForm::slotAppSettingsChanged - defi_config.delayAfterTX = %1").arg(defi_config.delayAfterTX);
 }
 void MainForm::slotError(const QString &text)
 {
@@ -239,5 +254,9 @@ float MainForm::chainGasPrice(QString chain_name) const
     else if (chain_name == "optimism") return lCommonSettings.paramValue("gas_price_optimism").toFloat();
 
     return -1;
+}
+quint16 MainForm::txDelay() const
+{
+    return lCommonSettings.paramValue("tx_delay").toUInt();
 }
 

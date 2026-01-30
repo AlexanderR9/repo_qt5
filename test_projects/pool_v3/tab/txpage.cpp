@@ -315,6 +315,30 @@ void DefiTxTabPage::slotSetTxHashHistory(QStringList &list)
     }
 
 }
+void DefiTxTabPage::slotSetMintedBurnedTx(int &n_minted, int &n_burned)
+{
+    n_minted = n_burned = 0;
+    if (m_logger->logEmpty()) return;
+
+    int n = m_logger->logSize();
+    for (int i=0; i<n; i++)
+    {
+        const TxLogRecord &rec = m_logger->recordAt(i);
+        if (rec.resultOk())
+        {
+            if (rec.tx_kind == NodejsBridge::jsonCommandValue(txMint)) n_minted++;
+            else if (rec.tx_kind == NodejsBridge::jsonCommandValue(txBurn))
+            {
+                QString s_note = rec.note;
+                s_note.remove(NodejsBridge::jsonCommandValue(txBurn));
+                s_note.remove("PID_ARR");
+                s_note.remove("=>");
+                s_note = LString::removeSpaces(s_note);
+                n_burned += LString::trimSplitList(s_note, ":").count();
+            }
+        }
+    }
+}
 void DefiTxTabPage::slotSetTxLogger(const DefiTxLogger *&p)
 {
     p = m_logger;

@@ -195,12 +195,15 @@ void DefiPositionsPage::slotNodejsReply(const QJsonObject &js_reply)
         if (m_txWorker->needReupdatePage())
         {
             m_txWorker->setReupdatePage(false);
+            /*
             int tx = m_txWorker->lastTx();
             if (tx == txDecrease || tx == txIncrease || tx == txTakeaway)
             {
                 //selectRowByCellData(QString::number(m_txWorker->lastPosPid()), 0);
                 //slotGetSelectedPosState();
             }
+            */
+
         }
     }
     else if (req == NodejsBridge::jsonCommandValue(nrcPosState)) updatePositionsState(js_reply);
@@ -498,6 +501,13 @@ void DefiPositionsPage::updateIntegratedTable()
     if (n_liq > 0) t->item(1, 0)->setTextColor(Qt::darkGreen);
     if (reward > 9.9) t->item(5, 0)->setTextColor(Qt::blue);
     else t->item(5, 0)->setTextColor(Qt::lightGray);
+
+
+    int n_minted = 0;
+    int n_burned = 0;
+    emit signalGetMintedBurnedTxFromTxPage(n_minted, n_burned);
+    t->item(2, 0)->setText(QString::number(n_minted));
+    t->item(3, 0)->setText(QString::number(n_burned));
 
 
 }

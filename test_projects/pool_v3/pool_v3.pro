@@ -51,7 +51,8 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/defiposition.h \
         $$PWD/postxworker.h \
         $$PWD/defimintdialog.h \
-        $$PWD/mintrangeview.h
+        $$PWD/mintrangeview.h \
+    strategydata.h
 
 
 SOURCES += $$PWD/main.cpp \
@@ -69,7 +70,8 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/defiposition.cpp \
         $$PWD/postxworker.cpp \
         $$PWD/defimintdialog.cpp \
-        $$PWD/mintrangeview.cpp
+        $$PWD/mintrangeview.cpp \
+    strategydata.cpp
 
 
 FORMS += $$PWD/defimintdialog.ui

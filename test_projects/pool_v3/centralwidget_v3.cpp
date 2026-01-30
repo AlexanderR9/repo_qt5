@@ -16,6 +16,7 @@
 #include "balancehistorypage.h"
 #include "positionspage.h"
 #include "statpospage.h"
+#include "strategypage.h"
 
 
 #include <QStackedWidget>
@@ -311,6 +312,8 @@ void CentralWidgetV3::createTabPages(int chain_id)
     tab->tabWidget()->addTab(pos_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(pos_page->kind()));
     connect(pos_page, SIGNAL(signalGetPoolStateFromPoolPage(const QString&, QStringList&)), pool_page,
             SLOT(slotGetPoolStateForPosPage(const QString&, QStringList&)));
+    connect(pos_page, SIGNAL(signalGetMintedBurnedTxFromTxPage(int&, int&)), tx_page, SLOT(slotSetMintedBurnedTx(int&, int&)));
+
 
     // statistic of pos
     DefiStatPosPage *stat_page = new DefiStatPosPage(this);
@@ -320,6 +323,10 @@ void CentralWidgetV3::createTabPages(int chain_id)
     connect(stat_page, SIGNAL(signalGetTxLogger(const DefiTxLogger*&)), tx_page, SLOT(slotSetTxLogger(const DefiTxLogger*&)));
     connect(stat_page, SIGNAL(signalGetOpenedPosState(QMap<int, QStringList>&)), pos_page, SLOT(slotSetOpenedPosState(QMap<int, QStringList>&)));
 
+
+    // strategy
+    DefiStrategyPage *stg_page = new DefiStrategyPage(this);
+    tab->tabWidget()->addTab(stg_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(stg_page->kind()));
 
 
 }
@@ -395,7 +402,7 @@ void CentralWidgetV3::slotStartTXDelay(QString tx_kind)
     m_splashWidget->setTextSize(14, true);
     m_splashWidget->setTextColor("#DD4500");
 
-    int delay = defi_config.delayAfterTX;
+    quint16 delay = defi_config.delayAfterTX;
     if (tx_kind == "take_away" || tx_kind == "increase" || tx_kind == "mint") delay *= 2;
     m_splashWidget->updateProgressDelay(delay);
 

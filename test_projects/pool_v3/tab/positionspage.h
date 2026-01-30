@@ -81,6 +81,8 @@ protected slots:
 
 signals:
     void signalGetPoolStateFromPoolPage(const QString&, QStringList&);
+    void signalGetMintedBurnedTxFromTxPage(int&, int&); // получить со страницы TXPage количетсво отчеканеных и сожженных поз (только с состоянием OK)
+
 
 };
 
