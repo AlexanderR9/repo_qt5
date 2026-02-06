@@ -254,7 +254,9 @@ void StrategyLineData::loadLineSteps(const QDomNode &node, bool &ok)
             StrategyLineStepState l_step;
             l_step.loadStepNode(step_node, ok);
             if (!ok) return;
-            else steps.append(l_step);
+
+            l_step.setPriorIndex(pricePriorIndex(), amoutPriorIndex());
+            steps.append(l_step);
         }
         step_node = step_node.nextSibling();
     }
@@ -320,8 +322,32 @@ quint8 StrategyLineData::amoutPriorIndex() const
     int i = defi_config.getPriorAmountIndexByPoolAddr(pool_addr);
     return ((i == 1) ? 1 : 0);
 }
+QStringList StrategyLineData::tableStepRowData(int step_number) const
+{
+    if (steps.isEmpty()) return QStringList();
 
+    foreach (const StrategyLineStepState &v, steps)
+        if (v.number == step_number) return v.tableStepRowData();
 
+    return QStringList();
+}
+void StrategyLineData::getCurrentLiqSize(QPair<float, float> &liq) const
+{
+    liq.first = liq.second = 0;
+    quint8 p_index = amoutPriorIndex();
+    if (steps.isEmpty())
+    {
+        if (p_index == 0) liq.first = start_parameters.liq_size;
+        else liq.second = start_parameters.liq_size;
+        return;
+    }
+
+    if (steps.last().isOpened()) return;
+
+    const StrategyLineStepAmounts &a = steps.last().amounts;
+    liq.first = a.closed.first + a.rewards.first;
+    liq.second = a.closed.second + a.rewards.second;
+}
 
 /////////////////StrategyLineParameters///////////////////////////
 void StrategyLineParameters::reset()
@@ -335,7 +361,7 @@ void StrategyLineParameters::reset()
 void StrategyLineStepState::reset()
 {
     number = 0;
-    ts_open = ts_close = 0;
+    ts_open = ts_close = pid = 0;
     prices.reset();
     amounts.reset();
 }
@@ -378,6 +404,23 @@ void StrategyLineStepState::fillStepNode(QDomElement &step_node) const
             </amounts>
         </step>
     */
+}
+QStringList StrategyLineStepState::tableStepRowData() const
+{
+//    headers << "Step" << "Open time" << "Exit time" << "Price range" << "Deposited" <<
+  //             "Current assets" << "Rewards" << "Step result";
+
+    QStringList row_data;
+    row_data << QString::number(number) << DefiStrategyData::fromTsPointToStr(ts_open);
+    if (ts_close > 0) row_data << DefiStrategyData::fromTsPointToStr(ts_close);
+    else row_data << "---";
+    row_data << prices.strPriceRange();
+    row_data << amounts.strAssetsSum("nested");
+    row_data << amounts.strAssetsSum("assets");
+    row_data << amounts.strAssetsSum("reward");
+    row_data << strResult();
+
+    return row_data;
 }
 void StrategyLineStepState::loadStepNode(const QDomNode &node, bool &ok)
 {
@@ -439,11 +482,22 @@ void StrategyLineStepState::loadStepNode(const QDomNode &node, bool &ok)
 }
 void StrategyLineStepState::setPriorIndex(quint8 i_p, quint8 i_a)
 {
-    prices.prior_index = amounts.prior_index = 0;
-    if (i_p == 1) prices.prior_index = 1;
+    //prices.prior_index = 0;
+    amounts.prior_index = 0;
+    //if (i_p == 1) prices.prior_index = 1;
     if (i_a == 1) amounts.prior_index = 1;
 }
+QString StrategyLineStepState::strResult() const
+{
+    float res = amounts.totalStepResult();
+    if (res < -100) return "---";
 
+    QString s_res = QString::number(res, 'f', 1);
+    if (res < 0) return QString("%1 %").arg(s_res);
+    else if (res > 0.5) return QString("+%1 %").arg(s_res);
+
+    return QString("%1 %").arg(s_res);
+}
 
 /////////////////StrategyLineStepAmounts & StrategyLineStepPrices ///////////////////////////
 void StrategyLineStepAmounts::reset()
@@ -455,10 +509,56 @@ void StrategyLineStepAmounts::reset()
 }
 void StrategyLineStepPrices::reset()
 {
-    prior_index = 0;
+    //prior_index = 0;
     start_price = exit_price = -1;
     p_range.first = p_range.second = -1;
     t_range.first = t_range.second = 0;
+}
+QString StrategyLineStepPrices::strPriceRange() const
+{
+    float p1 = p_range.first;
+    float p2 = p_range.second;
+    quint8 prec = AppCommonSettings::interfacePricePrecision(p1);
+    return QString("[%1 : %2]").arg(QString::number(p1, 'f', prec)).arg(QString::number(p2, 'f', prec));
+}
+QString StrategyLineStepAmounts::strAssetsSum(QString amount_type) const
+{
+    float a0 = 0;
+    float a1 = 0;
+
+    if (amount_type == "nested") {a0 = deposited.first; a1 = deposited.second;}
+    else if (amount_type == "reward") {a0 = rewards.first; a1 = rewards.second;}
+    else if (amount_type == "assets") {a0 = closed.first; a1 = closed.second;}
+    else return "??";
+
+    //quint8 prec0 = AppCommonSettings::interfacePricePrecision(a0);
+    //quint8 prec1 = AppCommonSettings::interfacePricePrecision(a1);
+    //return QString("%1 / %2").arg(QString::number(a0, 'f', prec0)).arg(QString::number(a1, 'f', prec1));
+
+    return QString("%1 / %2").arg(QString::number(a0)).arg(QString::number(a1));
+}
+float StrategyLineStepAmounts::totalStepResult() const
+{
+
+    return -101;
+}
+float StrategyLineStepAmounts::userTokenSum(const QPair<float, float> &pair, float p_user) const
+{
+    float size0 = pair.first;
+    float size1 = pair.second;
+
+    float amount = -1;
+    if (prior_index == 0)
+    {
+        amount = size0;
+        if (size1 > 0) amount += (size1*p_user);
+    }
+    else
+    {
+        amount = size1;
+        if (size0 > 0) amount += (size0*p_user);
+    }
+    return amount;
 }
 
 

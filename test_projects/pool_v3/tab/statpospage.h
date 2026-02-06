@@ -91,6 +91,26 @@ signals:
 };
 
 
+//sort col by doubleclick table
+class JSPosTableWidgetBox: public LTableWidgetBox
+{
+    Q_OBJECT
+public:
+    JSPosTableWidgetBox(QWidget *parent = NULL);
+    virtual ~JSPosTableWidgetBox() {}
+
+    inline void setFilterCol(int a) {m_filterCol = a;}
+
+protected:
+    int m_filterCol;
+
+protected slots:
+    virtual void slotItemDoubleClicked(QTableWidgetItem*); //в базовом класе копируется содержимое итема в буфер обмена
+    virtual void slotDoubleClickEmptyArea(); //вызывается при двойном клике по пустой области таблицы
+
+};
+
+
 
 
 #endif // STATPOSPAGE_H

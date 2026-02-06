@@ -1,5 +1,6 @@
 #include "strategypage.h"
 #include "strategydata.h"
+#include "strategystepdialog.h"
 #include "appcommonsettings.h"
 #include "deficonfig.h"
 #include "ltable.h"
@@ -24,6 +25,8 @@
 #define FULL_LIQ_SIZE_KEY       QString("liq")
 #define RANGE_WIDTH_KEY         QString("rwidth")
 #define PRIOR_TOKEN_PART_KEY    QString("pt_part")
+#define PRIOR_TOKEN_NAME_KEY    QString("pt_name")
+#define START_TOKEN_KEY         QString("start_nested_token")
 
 
 // DefiStrategyPage
@@ -152,8 +155,10 @@ void DefiStrategyPage::initPageBoxes()
     m_table->vHeaderHide();
 
     QStringList headers;
-    headers << "Step" << "Open date" << "Exit date" << "Price range" << "Deposited" << "Current assets" << "Rewards" << "Step result";
+    headers << "Step" << "Open time" << "Exit time" << "Price range" << "Deposited" <<
+               "Current assets" << "Rewards" << "Step result";
     LTable::setTableHeaders(m_table->table(), headers);
+
     m_table->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
     //m_table->setSelectionColor("#BFBFBF");
     h_splitter->addWidget(m_table);
@@ -198,6 +203,15 @@ void DefiStrategyPage::initPageBoxes()
     /////////////////////////////////////////////////////////////////
 
     //controls line settings
+    g_lay->addWidget(new QLabel("Prior token", this), lay_row, 0);
+    QLineEdit *pt_edit = new QLineEdit(this);
+    pt_edit->setObjectName("prior_edit");
+    pt_edit->setReadOnly(true);
+    g_lay->addWidget(pt_edit, lay_row, 1);
+    m_controls.insert(PRIOR_TOKEN_NAME_KEY, pt_edit);
+    lay_row++;
+
+
     g_lay->addWidget(new QLabel("Liquidity size", this), lay_row, 0);
     QLineEdit *liq_edit = new QLineEdit(this);
     liq_edit->setObjectName("liq_edit");
@@ -223,6 +237,15 @@ void DefiStrategyPage::initPageBoxes()
     g_lay->addWidget(asize_combo, lay_row, 1);
     m_controls.insert(PRIOR_TOKEN_PART_KEY, asize_combo);
     lay_row++;
+
+    g_lay->addWidget(new QLabel("Nested asset by start", this), lay_row, 0);
+    QComboBox *start_token_combo = new QComboBox(this);
+    start_token_combo->setObjectName("start_token_combo");
+    start_token_combo->clear();
+    g_lay->addWidget(start_token_combo, lay_row, 1);
+    m_controls.insert(START_TOKEN_KEY, start_token_combo);
+    lay_row++;
+
 
     ////////////////////////////////////////////////
     g_lay->addWidget(new QLabel("Total line result", this), lay_row, 0);
@@ -323,9 +346,31 @@ void DefiStrategyPage::slotPoolChanged()
     qDebug()<<QString("DefiStrategyPage::slotPoolChanged(%0)  POOL[%1]  STG[%2]").arg(curChainName()).arg(pool_addr).arg(curStrategy());
     if (pool_addr.isEmpty()) return;
 
+    //find prior token
+    QLineEdit *pt_edit = qobject_cast<QLineEdit*>(m_controls.value(PRIOR_TOKEN_NAME_KEY));
+    if (pt_edit)
+    {
+        quint8 pt_index = ((defi_config.getPriorAmountIndexByPoolAddr(pool_addr) == 1) ? 1 : 0);
+        pt_edit->setToolTip(QString::number(pt_index));
+        if (pt_index == 1) pt_edit->setText(defi_config.token1NameByPoolAddr(pool_addr));
+        else pt_edit->setText(defi_config.token0NameByPoolAddr(pool_addr));
+    }
+
+    // fill start token combo
+    QComboBox *start_token_combo = qobject_cast<QComboBox*>(m_controls.value(START_TOKEN_KEY));
+    start_token_combo->clear();
+    QString t0 = defi_config.token0NameByPoolAddr(curPool());
+    QString t1 = defi_config.token1NameByPoolAddr(curPool());
+    start_token_combo->addItem(QString("0 - %1").arg(t0));
+    start_token_combo->addItem(QString("1 - %1").arg(t1));
+
+
+    // update controls state
     int l_index = m_dataObj->lineIndexOf(curStrategy(), pool_addr);
     qDebug()<<QString("DefiStrategyPage::slotPoolChanged()  l_index[%1]").arg(l_index);
     updateControlButtonsState(l_index);
+
+    updateStepsTable(l_index);
 }
 QString DefiStrategyPage::curPool() const
 {
@@ -339,6 +384,31 @@ bool DefiStrategyPage::curStrategyStable() const
 {
     return (curStrategy() == dstStable);
 }
+void DefiStrategyPage::updateStepsTable(int line_index)
+{
+    m_table->removeAllRows();
+    m_table->resizeByContents();
+    if (line_index < 0) return;
+
+    const StrategyLineData *line = m_dataObj->lineAt(line_index);
+    if (line)
+    {
+        int n = line->steps.count();
+        if (n > 0)
+        {
+            QTableWidget *t = m_table->table();
+            for (int step=1; step<=n; step++)
+            {
+                QStringList row_data(line->tableStepRowData(step));
+                if (!row_data.isEmpty())
+                    LTable::insertTableRow(0, t, row_data);
+            }
+
+            m_table->resizeByContents();
+        }
+    }
+}
+
 
 
 // button slots
@@ -403,8 +473,28 @@ void DefiStrategyPage::slotNextStep()
     QString pool_addr = curPool();
     int l_index = m_dataObj->lineIndexOf(curStrategy(), pool_addr);
 
-    m_dataObj->openNextStep(l_index);
-    updateControlButtonsState(l_index);
+    const StrategyLineData *line = m_dataObj->lineAt(l_index);
+    StrategyStepDialogData data;
+    if (line)
+    {
+        data.pool_addr = pool_addr;
+        data.next_step = line->steps.count() + 1;
+        data.first_token_index = fisrtStepTokenIndex();
+        data.price_width = line->start_parameters.range_width;
+        line->getCurrentLiqSize(data.line_liq);
+        data.prior_asset_size = line->start_parameters.prior_asset_size;
+
+    }
+
+    int action = ((data.next_step == 1) ? ssaFirstStep : ssaNextStep);
+    StrategyStepDialog d(action, data, this);
+    connect(&d, SIGNAL(signalRewriteJsonFile(const QJsonObject&, QString)), this, SIGNAL(signalRewriteJsonFile(const QJsonObject&, QString)));
+
+    d.exec();
+
+
+    //m_dataObj->openNextStep(l_index);
+    //updateControlButtonsState(l_index);
     qDebug("done!");
 }
 
@@ -467,5 +557,14 @@ QToolButton* DefiStrategyPage::nextStepBtn() const
 {
     return (qobject_cast<QToolButton*>(m_controls.value("next_step_button")));
 }
-
+quint8 DefiStrategyPage::fisrtStepTokenIndex() const
+{
+    const QComboBox *combo = qobject_cast<const QComboBox*>(m_controls.value(START_TOKEN_KEY));
+    if (combo)
+    {
+        if (combo->count() > 0) return combo->currentIndex();
+    }
+    else qDebug("START_TOKEN_KEY QComboBox is null");
+    return 0;
+}
 

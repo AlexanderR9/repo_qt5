@@ -28,6 +28,11 @@ NodejsBridge::NodejsBridge(QObject *parent, int cid)
 
     initProcessObj();
 }
+void NodejsBridge::breakProcessing()
+{
+    if (m_procObj)
+        m_procObj->breakCommand();
+}
 bool NodejsBridge::buzy() const
 {
     if (!m_procObj) return false;
@@ -154,7 +159,7 @@ void NodejsBridge::parseJsReply(const QString &js_reply, int &code)
 }
 void NodejsBridge::slotRunScriptArgs(const QStringList &args)
 {
-    qDebug()<<QString("NodejsBridge::slotRunScriptArgs tab_%1").arg(m_userSign);
+    qDebug()<<QString("NodejsBridge::slotRunScriptArgs tab_%1, args_size %2").arg(m_userSign).arg(args.count());
     if (!m_procObj) {emit signalError("m_procObj object is NULL"); return;}
 
     m_procObj->setArgs(args);
@@ -320,11 +325,6 @@ QString NodejsBridge::transformJsonResult(const QString &str_json) const
     result.append(QChar('}'));
     return result;
 }
-
-
-
-
-
 
 
 

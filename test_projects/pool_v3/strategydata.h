@@ -16,7 +16,7 @@ struct StrategyLineParameters
 {
     StrategyLineParameters() {reset();}
 
-    float liq_size; // вносимая ликвиднось (в приоритетном токене)
+    float liq_size; // вносимая ликвиднось (в приоритетном токене) на 1-м шаге
     float range_width; // width ценового диапазона (в приоритетном токене)
     int prior_asset_size; // доля приоритетного токена (%) от общей вносимой ликвидности
 
@@ -28,24 +28,30 @@ struct StrategyLineStepPrices
 {
     StrategyLineStepPrices() {reset();}
 
-    quint8 prior_index;
+    //quint8 prior_index; // ?????????????
     float start_price; // цена приоритетного токена на момент открытия позы
     float exit_price; // цена приоритетного токена на момент закрытия позы (завершение шага)
     QPair<float, float> p_range; // ценовой диапазон (в ценах приоритетного токена)
     QPair<int, int> t_range; // тиковый диапазон
 
     void reset();
+    QString strPriceRange() const;
+
 };
 struct StrategyLineStepAmounts
 {
     StrategyLineStepAmounts() {reset();}
 
-    quint8 prior_index;
+    quint8 prior_index; //
     QPair<float, float> deposited; // объемы пары вносимых токенов в позу на этом шаге
     QPair<float, float> closed; // объемы пары токенов извлеченных на этом шаге (заполняется при закрытии позы)
     QPair<float, float> rewards; // полученные комиссии на этом шаге (заполняется при закрытии позы)
 
     void reset();
+    QString strAssetsSum(QString) const;
+    float totalStepResult() const; // итоговый текущий/закрытый результат по шагу, учитывая rewards, %
+    float userTokenSum(const QPair<float, float>&, float) const;
+
 };
 struct StrategyLineStepState
 {
@@ -54,6 +60,7 @@ struct StrategyLineStepState
     quint16 number; // номер шага 1..N
     quint32 ts_open; // время открытия шага, сек. эпохи линукс.
     quint32 ts_close; // время закрытия шага, сек. эпохи линукс. (если 0 то шаг еще не закрыт)
+    quint32 pid; // ID of position
 
     StrategyLineStepPrices prices; // инфа по ценам (в приоритетном токене)
     StrategyLineStepAmounts amounts; // инфа по обьемам токенов на этом шаге
@@ -64,6 +71,10 @@ struct StrategyLineStepState
     void loadStepNode(const QDomNode&, bool &ok);
     void fillStepNode(QDomElement&) const;
     void setPriorIndex(quint8, quint8);
+    QStringList tableStepRowData() const; // возвращает готовую строку для таблицы по указанному шагу для отображения в интерфейсе пользователя
+
+    QString strResult() const; // итоговый текущий/закрытый результат по шагу, учитывая rewards, %
+
 
 };
 
@@ -98,6 +109,8 @@ struct StrategyLineData
     QString toStr() const;
     quint8 pricePriorIndex() const;
     quint8 amoutPriorIndex() const;
+    QStringList tableStepRowData(int) const; // возвращает готовую строку для таблицы по указанному шагу для отображения в интерфейсе пользователя
+    void getCurrentLiqSize(QPair<float, float>&) const; // возвращает текущую ликвидность линии по обоим токена, но только при закрытом последнем шаге или вовсе без шагов
 
 
     inline bool isFinished() const {return (ts_close > 0);}

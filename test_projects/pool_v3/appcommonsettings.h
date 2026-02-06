@@ -18,6 +18,15 @@ enum NodejsReadCommand {nrcBalance = 830, nrcTXCount, nrcApproved, nrcGasPrice, 
 enum NodejsTxCommand {txWrap = 870, txUnwrap, txApprove, txTransfer, txSwap, txMint, txIncrease, txDecrease, txCollect,
                       txTakeaway, txBurn, txInvalid = -1};
 
+// тип итерации при применении игр стратегий
+enum StrategyStepAction {ssaCloseStep = 15, ssaNextStep, ssaFirstStep};
+
+// стадии выполнения закрытия/открытия одного шага при применении игр стратегий
+enum StrategyStepStage {sssGetPoolState = 21, sssGetWalletTokenAmounts, sssReadLineSettings, sssDefineLineLiq,
+            sssCalcSwapPart, sssCheckWalletTokenAmounts, sssTxSwap, sssGetTxSwapResult, sssGetPriceRangeNextPos,
+            sssTxMint, sssGetTxMintResult, sssGetPositionsList, sssGetStepPositionState, sssSavePositionState,
+            sssTxClosePosition, sssGetTxClosePosResult,  sssCalcStepResult   };
+
 
 
 // AppCommonSettings

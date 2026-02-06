@@ -282,9 +282,10 @@ void DefiStatPosPage::checkTx(const TxLogRecord *tx_rec)
 }
 void DefiStatPosPage::initTable()
 {
-    m_table = new LTableWidgetBox(this);
+    m_table = new JSPosTableWidgetBox(this);
     m_table->setTitle("Wallet positions list");
     m_table->vHeaderHide();
+    (qobject_cast<JSPosTableWidgetBox*>(m_table))->setFilterCol(3);
 
     QStringList headers;
     headers << "PID" << "Open date" << "Lasting" << "Pool" << "Price range" << "Deposited" << "Current assets" << "Closed assets"
@@ -576,6 +577,50 @@ void DefiStatPosPage::updatePriorTokenOpenedPosition(int row, int col, const QSt
 }
 
 
+
+
+
+
+/////////////////////JSPosTableWidgetBox//////////////////////////
+JSPosTableWidgetBox::JSPosTableWidgetBox(QWidget *parent)
+    :LTableWidgetBox(parent)
+{
+    m_filterCol = -1;
+
+}
+void JSPosTableWidgetBox::slotItemDoubleClicked(QTableWidgetItem *item)
+{
+    qDebug("JSPosTableWidgetBox::slotItemDoubleClicked");
+    if (!item) return;
+    if (item->column() != m_filterCol)
+    {
+        LTableWidgetBox::slotItemDoubleClicked(item);
+        return;
+    }
+
+
+    QString f_text(item->text());
+    qDebug()<<QString("NEED FILTER: item(%1/%2)  text(%3)").arg(item->row()).arg(item->column()).arg(item->text());
+    int n_visible = 0;
+    for (int i=0; i<m_table->rowCount(); i++)
+    {
+        bool need_hide = (m_table->item(i, m_filterCol)->text() != f_text);
+        if (need_hide) m_table->hideRow(i);
+        else {m_table->showRow(i); n_visible++;}
+    }
+    //QString s = QString("Record number: %2/%3").arg(n_visible).arg(m_table->rowCount());
+    //m_searchLabel->setText(s);
+}
+void JSPosTableWidgetBox::slotDoubleClickEmptyArea()
+{
+    qDebug("JSPosTableWidgetBox::slotDoubleClickEmptyArea() CANCEL FILTER");
+    m_table->clearSelection();
+    for (int i=0; i<m_table->rowCount(); i++)
+        m_table->showRow(i);
+    //this->searchExec();
+
+    m_table->resizeColumnsToContents();
+}
 
 
 

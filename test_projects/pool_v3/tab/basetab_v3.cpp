@@ -271,6 +271,12 @@ void DefiChainTabV3::stopUpdating()
     //qDebug()<<QString("UG_BasePage::stopUpdating  page=%1").arg(userSign());
     m_timer->stop();
     emit signalEnableControls(true);
+
+    if (js_bridge->buzy())
+    {
+        emit signalError("try js_obj force stopping ...");
+        js_bridge->breakProcessing();
+    }
 }
 void DefiChainTabV3::mintPos()
 {

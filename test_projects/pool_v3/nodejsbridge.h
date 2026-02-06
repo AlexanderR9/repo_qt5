@@ -19,6 +19,7 @@ public:
     virtual ~NodejsBridge() {}
 
     bool buzy() const;
+    void breakProcessing(); // принудительный останов m_procObj, обычно вызывается по таймауту
 
     static QString jsonCommandValue(int); //значение поля 'req_name' в файле-параметрах  по коду команды
     static int commandCodeByTxKind(QString); //инерсное выполнение функции jsonCommandValue

@@ -131,6 +131,7 @@ void MainForm::slotVisibleActionsUpdate(int p_kind)
         case dpkBalance:
         case dpkPool:
         case dpkApproved:
+        case dpkStrategy:
         {
             getAction(atRefresh)->setVisible(false);
             break;

@@ -52,7 +52,8 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/postxworker.h \
         $$PWD/defimintdialog.h \
         $$PWD/mintrangeview.h \
-    strategydata.h
+    strategydata.h \
+    strategystepdialog.h
 
 
 SOURCES += $$PWD/main.cpp \
@@ -71,8 +72,13 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/postxworker.cpp \
         $$PWD/defimintdialog.cpp \
         $$PWD/mintrangeview.cpp \
-    strategydata.cpp
+    strategydata.cpp \
+    strategystepdialog.cpp
 
 
-FORMS += $$PWD/defimintdialog.ui
+FORMS += $$PWD/defimintdialog.ui \
+	$$PWD/strategystepdialog.ui
+
+
+
 
