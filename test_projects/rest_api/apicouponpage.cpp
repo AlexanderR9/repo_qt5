@@ -161,7 +161,7 @@ void APICouponPageAbstract::clearData()
 }
 void APICouponPageAbstract::loadData()
 {
-    qDebug()<<QString("APICouponPageAbstract::loadData()  page[%1]").arg(objectName());
+   // qDebug()<<QString("APICouponPageAbstract::loadData()  page[%1]").arg(objectName());
     clearData();
     emit signalMsg(QString("OPEN FILE: %1").arg(dataFile()));
 
@@ -169,7 +169,7 @@ void APICouponPageAbstract::loadData()
     QString err = LStaticXML::getDomRootNode(dataFile(), root_node, QString("calendar"));
     if (!err.isEmpty()) {emit signalError(err); return;}
 
-    qDebug() << QString("APICouponPageAbstract::loadData(%0): loaded root node OK - %1").arg(objectName()).arg(root_node.nodeName());
+ //   qDebug() << QString("APICouponPageAbstract::loadData(%0): loaded root node OK - %1").arg(objectName()).arg(root_node.nodeName());
     QDomNode node = root_node.firstChild();
     while (!node.isNull())
     {
@@ -235,7 +235,7 @@ void APICouponPageAbstract::reloadTableByData()
 }
 void APICouponPageAbstract::slotFilter(const QStringList &list)
 {
-    qDebug()<<QString("APICouponPage::slotFilter figi list size %1").arg(list.count());
+   // qDebug()<<QString("APICouponPage::slotFilter figi list size %1").arg(list.count());
     QTableWidget *t = m_tableBox->table();
     int n = t->rowCount();
     if (n == 0) return;

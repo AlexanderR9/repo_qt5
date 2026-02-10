@@ -4,6 +4,7 @@
 #include "apipages.h"
 #include "instrument.h"
 #include "ui_assetinfowidget.h"
+#include "lsimpledialog.h"
 
 #include <QStringList>
 
@@ -11,6 +12,7 @@ struct BondDesc;
 struct BCoupon;
 struct PlaceOrderData;
 class QTableWidgetItem;
+struct AssetFavorRecord;
 
 
 //APIProfitabilityPage
@@ -28,7 +30,7 @@ protected:
     int m_tick;
     PlaceOrderData m_buyData;
 
-    void syncTableData(const BondDesc&, const QStringList&, float);
+    void syncTableData(const BondDesc&, const QStringList&, float, float);
     int indexOf(const QString&) const; //find record in the table by figi, return row_index or -1
     void sortByProfitability(int, float);
     void initAssetInfoBox();
@@ -42,6 +44,8 @@ protected slots:
     void slotBuyOrder();
     void slotTableClicked(QTableWidgetItem*);
     void slotGetCurrentPriceBySelected(float&);
+    void slotAddFavor();
+    void slotRemoveFavor();
 
 signals:
     void signalGetCouponRec(const QString&, const BCoupon*&);
@@ -53,6 +57,10 @@ signals:
     void signalGetPaperCountByTicker(const QString&, int&, float&);
     void signalGetCouponInfoByTicker(const QString&, QDate&, float&);
     void signalGetEventsHistoryByTicker(const QString&, QStringList&);
+
+    //for APICandlesPage
+    void signalRemoveFavorAsset(const QString&);
+    void signalAddFavorAsset(const AssetFavorRecord&);
 
 private:
     float getCurrentPrice(int) const;
@@ -89,8 +97,31 @@ signals:
     void signalGetEventsHistoryByTicker(const QString&, QStringList&);
     void signalGetCurrentPriceBySelected(float&);
 
+};
+
+// AssetFavorDialog
+class AssetFavorDialog : public LSimpleDialog
+{
+    Q_OBJECT
+public:
+    AssetFavorDialog(QString, AssetFavorRecord&, QWidget*);
+    virtual ~AssetFavorDialog() {}
+
+protected:
+    AssetFavorRecord &m_record;
+
+    void init();
+    void updateTitle();
+    void setFieldsByRec();
+
+private:
+    bool isAddFavor() const;
+
+protected slots:
+    void slotApply();
 
 
 };
+
 
 #endif // APIPROFITABILITYPAGE_H

@@ -34,6 +34,8 @@ struct StrategyStepDialogData
 
     //данные полученные из сети в процессе выполнения сценария
     QPair<float, float> wallet_assets_balance; // текущие балансы пары токенов пула в кошельке
+    int pool_tick; // текущий тик в пуле
+    float pool_price; // текущая цена в пуле (приоритетного токена) т.е. привычная для пользователя
 
 
     void reset();
@@ -89,11 +91,13 @@ protected:
     void setFaultResult(QString note = "none");
 
     // check ethers_js reply
-    void readWalletAssetsBalance(const QJsonObject&);
+    void readWalletAssetsBalanceReply(const QJsonObject&);
+    void readPoolStateReply(const QJsonObject&);
 
 
 private:
     void getWalletTokenAmounts();
+    void getPoolState();
 
 protected slots:
     void slotTimerTick();

@@ -40,7 +40,9 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/apiprofitabilitypage.h \
         $$PWD/apitradedialog.h \
         $$PWD/apibagpage.h \
-        $$PWD/yieldstatpage.h
+        $$PWD/yieldstatpage.h \
+    moexbondhistorydownloader.h \
+    apicandlespage.h
 
 SOURCES += $$PWD/main.cpp \
 	$$PWD/apipages.cpp \
@@ -57,7 +59,9 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/apiprofitabilitypage.cpp \
         $$PWD/apitradedialog.cpp \
         $$PWD/apibagpage.cpp \
-        $$PWD/yieldstatpage.cpp
+        $$PWD/yieldstatpage.cpp \
+    moexbondhistorydownloader.cpp \
+    apicandlespage.cpp
 
 FORMS += $$PWD/ui/assetinfowidget.ui
 

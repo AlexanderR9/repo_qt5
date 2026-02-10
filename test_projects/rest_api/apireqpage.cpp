@@ -312,7 +312,7 @@ void APIReqPage::toDebugReqMetadata()
     {
         if (it.value().isObject())
         {
-            qDebug()<<QString("KEY[%1] => OBJ").arg(it.key());
+           qDebug()<<QString("KEY[%1] => OBJ").arg(it.key());
             QJsonObject::const_iterator it2 =  it.value().toObject().constBegin();
             while (it2 != it.value().toObject().constEnd())
             {
@@ -334,11 +334,11 @@ void APIReqPage::toDebugReqMetadata()
 }
 void APIReqPage::standardRequest(const QString &src, const PlaceOrderData *req_data)
 {
-    qDebug()<<QString("APIReqPage::standardRequest  src[%1]  req_data[%2]").arg(src).arg(req_data?"TRUE":"NULL");
+   // qDebug()<<QString("APIReqPage::standardRequest  src[%1]  req_data[%2]").arg(src).arg(req_data?"TRUE":"NULL");
     m_reqPreparer->prepare(src, req_data);
     if (m_reqPreparer->invalidReq())
     {
-        qDebug("req is FAULT");
+       // qDebug("req is FAULT");
         int e_code = hreUnknown;
         if (m_reqObj->metadata().value("err").isString()) e_code = m_reqObj->metadata().value("err").toString().toInt();
         else emit signalError(QString("invalid metadata err_value type"));
@@ -347,7 +347,7 @@ void APIReqPage::standardRequest(const QString &src, const PlaceOrderData *req_d
     }
     else
     {
-        qDebug("req was prepared OK!");
+        //qDebug("req was prepared OK!");
         printHeaders();
         emit signalMsg("request started ....");
         toDebugReqMetadata();
@@ -484,34 +484,6 @@ void APIReqPage::checkReply()
             if (s.contains("not found")) emit signalError(v);
             if (s.contains("forbidden")) emit signalError(v);
         }
-
-/*
-        QJsonObject::const_iterator it =  r.data.constBegin();
-        while (it != r.data.constEnd())
-        {
-            if (it.value().isObject())
-            {
-                qDebug()<<QString("KEY[%1] => OBJ").arg(it.key());
-                QJsonObject::const_iterator it2 =  it.value().toObject().constBegin();
-                while (it2 != it.value().toObject().constEnd())
-                {
-                    if (it2.value().isDouble()) qDebug()<<QString("   KEY[%1] => VALUE[%2] (DOUBLE)").arg(it2.key()).arg(it2.value().toDouble());
-                    else if (it2.value().isBool()) qDebug()<<QString("   KEY[%1] => VALUE[%2] (BOOL)").arg(it2.key()).arg(it2.value().toBool());
-                    else qDebug()<<QString("   KEY[%1] => VALUE[%2]").arg(it2.key()).arg(it2.value().toString());
-                    it2++;
-                }
-            }
-            else
-            {
-                if (it.value().isDouble()) qDebug()<<QString("   KEY[%1] => VALUE[%2] (DOUBLE)").arg(it.key()).arg(it.value().toDouble());
-                else if (it.value().isBool()) qDebug()<<QString("   KEY[%1] => VALUE[%2] (BOOL)").arg(it.key()).arg(it.value().toBool());
-                else qDebug()<<QString("KEY[%1] => VALUE[%2]").arg(it.key()).arg(it.value().toString());
-            }
-            it++;
-        }
-        qDebug()<<QString();
-        */
-
     }
 
     if (isNeedUpdateInfo()) needUpdateInfo();
@@ -527,7 +499,7 @@ void APIReqPage::setExpandLevel(int a)
 void APIReqPage::handleReplyData()
 {
     QString src = m_reqObj->fullUrl().toLower();
-    qDebug()<<QString("APIReqPage::handleReplyData() SRC [%1]").arg(src);
+   // qDebug()<<QString("APIReqPage::handleReplyData() SRC [%1]").arg(src);
 
     if (src.right(5) == "bonds")
     {
@@ -559,7 +531,7 @@ void APIReqPage::handleReplyData()
     }
     else if (src.right(13) == "getstoporders")
     {
-        qDebug("reply stop_orders");
+      //  qDebug("reply stop_orders");
         emit signalLoadStopOrders(m_reqObj->lastReply().data);
     }
     else if (src.right(10) == "lastprices")
@@ -615,7 +587,7 @@ void APIReqPage::saveBondsFile()
     quint16 rec_number = 9999;
     int pos = last_s.left(6).indexOf(".");
     if (pos > 0) rec_number = last_s.left(pos).toUInt() + 1;
-    qDebug()<<QString("cur data list size %1, next rec number %2").arg(cur_list.count()).arg(rec_number);
+   // qDebug()<<QString("cur data list size %1, next rec number %2").arg(cur_list.count()).arg(rec_number);
 
     //write new records to bonds-file
     int n = j_arr.count();
@@ -639,7 +611,7 @@ void APIReqPage::saveBondsFile()
 
                 has_isin = true;
                 break;
-                qDebug()<<QString("coincidence isin: ").toUpper()<<fline<<"\n";
+                //qDebug()<<QString("coincidence isin: ").toUpper()<<fline<<"\n";
             }
         }
 

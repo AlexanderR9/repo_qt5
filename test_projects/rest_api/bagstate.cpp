@@ -27,7 +27,7 @@ QStringList BagState::tableHeaders() const
 }
 void BagState::slotLoadPositions(const QJsonObject &j_obj)
 {
-    qDebug("BagState::slotLoadPositions");
+   // qDebug("BagState::slotLoadPositions");
     m_positions.clear();
     if (j_obj.isEmpty()) return;
     QStringList keys(j_obj.keys());
@@ -53,7 +53,7 @@ void BagState::slotLoadPositions(const QJsonObject &j_obj)
 }
 void BagState::slotLoadPortfolio(const QJsonObject &j_obj)
 {
-    qDebug("BagState::slotLoadPortfolio");
+  //  qDebug("BagState::slotLoadPortfolio");
     m_positions.clear();
     if (j_obj.isEmpty()) return;
 
@@ -144,7 +144,7 @@ void BagState::sortPositions()
 {
     int n = m_positions.count();
     if (n < 3) return;
-    qDebug()<<QString("BagState::sortPositions() 1    n=%1").arg(n);
+   // qDebug()<<QString("BagState::sortPositions() 1    n=%1").arg(n);
 
     //update finish dates
     for (int i=0; i<n; i++)
@@ -156,7 +156,7 @@ void BagState::sortPositions()
     for (int i=n-1; i>=0; i--)
         if (!m_positions.at(i).isBond()) mid_list.append(m_positions.takeAt(i));
 
-    qDebug()<<QString("BagState::sortPositions() 2    n=%1/%2").arg(m_positions.count()).arg(mid_list.count());
+  //  qDebug()<<QString("BagState::sortPositions() 2    n=%1/%2").arg(m_positions.count()).arg(mid_list.count());
 
     //try sort
     n = m_positions.count();
@@ -215,7 +215,7 @@ void BagState::addBalancePointToFile()
         if (!list.isEmpty())
         {
             QString s_date = list.last().trimmed().left(InstrumentBase::userDateMask().length());
-            qDebug()<<QString("Last balance date: %1").arg(s_date);
+          //  qDebug()<<QString("Last balance date: %1").arg(s_date);
             QDate l_date(QDate::fromString(s_date, InstrumentBase::userDateMask()));
             if (l_date.isValid())
             {

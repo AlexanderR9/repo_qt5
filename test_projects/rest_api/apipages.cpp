@@ -687,7 +687,7 @@ void APITablePageBase::slotSetCycleData(QStringList &list)
 }
 void APITablePageBase::slotCyclePrice(const QString &figi, float p)
 {
-    qDebug()<<QString("APITablePageBase::slotCyclePrice PAGE[%1]  figi=%2   p=%3").arg(objectName()).arg(figi).arg(p);
+   // qDebug()<<QString("APITablePageBase::slotCyclePrice PAGE[%1]  figi=%2   p=%3").arg(objectName()).arg(figi).arg(p);
     int n = m_tableBox->table()->rowCount();
     if (n <= 0) return;
 

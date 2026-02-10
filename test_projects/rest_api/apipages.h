@@ -9,7 +9,7 @@ class QComboBox;
 class BagState;
 
 enum APIPageType {aptReq = 181, aptBond, aptStock, aptCoupon, aptDiv, aptProfitability,
-                    aptEvent, aptYield, aptOrders, aptBag};
+                    aptEvent, aptYield, aptOrders, aptBag, aptCandles};
 
 
 //APITablePageBase

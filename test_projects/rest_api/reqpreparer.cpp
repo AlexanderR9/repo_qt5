@@ -34,7 +34,7 @@ void ApiReqPreparer::prepareHeaders(const QString &src)
 }
 void ApiReqPreparer::prepare(QString src, const PlaceOrderData *req_data)
 {
-    qDebug("ApiReqPreparer::prepare");
+   // qDebug("ApiReqPreparer::prepare");
     prepareHeaders(src);
 
     if (src.contains("OperationsService")) prepareReqOperations(src);
@@ -49,7 +49,7 @@ void ApiReqPreparer::prepare(QString src, const PlaceOrderData *req_data)
     //qDebug("ApiReqPreparer::prepare 1");
     QString furl = m_reqObj->fullUrl();
     emit signalMsg(QString("URL:   %1 \n").arg(m_reqObj->fullUrl()));
-    qDebug("preparing finished!");
+   // qDebug("preparing finished!");
 }
 void ApiReqPreparer::prepareReqOrders(const PlaceOrderData *req_data)
 {

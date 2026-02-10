@@ -16,6 +16,8 @@
 #include "apiprofitabilitypage.h"
 #include "apibagpage.h"
 #include "yieldstatpage.h"
+#include "apicandlespage.h"
+
 
 #include <QDebug>
 #include <QDir>
@@ -129,6 +131,10 @@ void MainForm::initPages()
     connect(yield_page, SIGNAL(signalGetPaperInfo(QStringList&)), bond_page, SLOT(slotGetPaperInfo(QStringList&)));
     connect(yield_page, SIGNAL(signalGetPaperInfo(QStringList&)), stock_page, SLOT(slotGetPaperInfo(QStringList&)));
 
+    APICandlesPage *candle_page = new APICandlesPage(this);
+    m_pages.insert(aptCandles, candle_page);
+
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     //for asset info box
@@ -137,6 +143,8 @@ void MainForm::initPages()
     connect(profit_page, SIGNAL(signalGetPaperCountByTicker(const QString&, int&, float&)), bag_page, SLOT(slotGetPaperCountByTicker(const QString&, int&, float&)));
     connect(profit_page, SIGNAL(signalGetEventsHistoryByTicker(const QString&, QStringList&)), events_page, SLOT(slotGetEventsHistoryByTicker(const QString&, QStringList&)));
 
+    connect(profit_page, SIGNAL(signalRemoveFavorAsset(const QString&)), candle_page, SLOT(slotRemoveFavorAsset(const QString&)));
+    connect(profit_page, SIGNAL(signalAddFavorAsset(const AssetFavorRecord&)), candle_page, SLOT(slotAddFavorAsset(const AssetFavorRecord&)));
 
     m_tab->clear();
     foreach (LSimpleWidget *page, m_pages)

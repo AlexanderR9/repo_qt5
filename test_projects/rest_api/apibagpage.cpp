@@ -49,7 +49,7 @@ APIBagPage::APIBagPage(QWidget *parent)
 }
 void APIBagPage::slotContextMenu(QPoint p)
 {
-    qDebug()<<QString("APIBagPage::slotContextMenu  %1/%2").arg(p.x()).arg(p.y());
+   // qDebug()<<QString("APIBagPage::slotContextMenu  %1/%2").arg(p.x()).arg(p.y());
     QTableWidget *t = m_tableBox->table();
     if (LTable::selectedRows(t).count() != 1) return;
 
@@ -155,7 +155,7 @@ void APIBagPage::slotBagUpdate()
 }
 void APIBagPage::reloadPosTable()
 {
-    qDebug()<<QString("APIBagPage::reloadPosTable() posCount=%1").arg(m_bag->posCount());
+  //  qDebug()<<QString("APIBagPage::reloadPosTable() posCount=%1").arg(m_bag->posCount());
     resetPage();
     if (!m_bag->hasPositions())
     {
@@ -332,7 +332,7 @@ void APIBagPage::tryPlaceOrder(TradeOperationData &t_data)
         if (m_orderData.nominal > 0)
             m_orderData.price = float(qRound((10000*m_orderData.price)/m_orderData.nominal))/float(100);
 
-        qDebug()<<QString("nominal=%1  result price: %2").arg(m_orderData.nominal).arg(m_orderData.price);
+      //  qDebug()<<QString("nominal=%1  result price: %2").arg(m_orderData.nominal).arg(m_orderData.price);
 
         emit signalSendOrderCommand(m_orderData);
     }

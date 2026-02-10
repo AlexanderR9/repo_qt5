@@ -39,7 +39,7 @@ QString APIOrdersPage::logFile()
 }
 void APIOrdersPage::slotContextMenu(QPoint p)
 {
-    qDebug()<<QString("APIOrdersPage::slotContextMenu  %1/%2").arg(p.x()).arg(p.y());
+  //  qDebug()<<QString("APIOrdersPage::slotContextMenu  %1/%2").arg(p.x()).arg(p.y());
     QTableWidget *t = m_tableBox->table();
     if (LTable::selectedRows(t).count() != 1) return;
 
@@ -72,7 +72,7 @@ void APIOrdersPage::clearData()
 }
 void APIOrdersPage::clearDataByKind(bool is_stop)
 {
-    qDebug()<<QString("APIOrdersPage::clearDataByKind  n_before=%1").arg(m_orders.count());
+ //   qDebug()<<QString("APIOrdersPage::clearDataByKind  n_before=%1").arg(m_orders.count());
     //look container
     int n = m_orders.count();
     for (int i=n-1; i>=0; i--)
@@ -84,7 +84,7 @@ void APIOrdersPage::clearDataByKind(bool is_stop)
             order = NULL;
         }
     }
-    qDebug()<<QString("APIOrdersPage::clearDataByKind  n_after=%1").arg(m_orders.count());
+ //   qDebug()<<QString("APIOrdersPage::clearDataByKind  n_after=%1").arg(m_orders.count());
 
     //look table
     QTableWidget *t = m_tableBox->table();
@@ -151,11 +151,11 @@ void APIOrdersPage::slotLoadStopOrders(const QJsonObject &j_obj)
 void APIOrdersPage::calcPapersInOrders()
 {
     QStringList keys;
-    qDebug("//////////////////calcPapersInOrders///////////////////");
+ //   qDebug("//////////////////calcPapersInOrders///////////////////");
     foreach (const OrderData *v, m_orders)
     {
         if (!v) continue;
-        qDebug() << v->toStr();
+     //   qDebug() << v->toStr();
         if (!keys.contains(v->uid)) keys.append(v->uid);
     }
 

@@ -262,6 +262,8 @@ void StrategyStepDialogData::reset()
     pool_tickers.second.clear();
     pool_token_addrs.first.clear();
     pool_token_addrs.second.clear();
+    pool_price = -1;
+    pool_tick = 0;
 
 
 }
@@ -453,10 +455,10 @@ void StrategyStageManagerObj::stop()
 }
 void StrategyStageManagerObj::execCurrentStage()
 {
-    if (m_userSign == sssGetWalletTokenAmounts)
-    {
-        getWalletTokenAmounts();
-    }
+    if (m_userSign == sssGetWalletTokenAmounts) getWalletTokenAmounts();
+    else if (m_userSign == sssGetPoolState) getPoolState();
+
+
 }
 void StrategyStageManagerObj::jsScriptRun()
 {
@@ -491,9 +493,11 @@ void StrategyStageManagerObj::setFaultResult(QString note)
 void StrategyStageManagerObj::slotNodejsReply(const QJsonObject &js_reply)
 {
     qDebug("StrategyStageManagerObj::slotNodejsReply OK!!!");
-    //QStringList keys = js_reply.keys();
+    QStringList keys = js_reply.keys();
+    if (keys.isEmpty()) {setFaultResult("js_reply is empty"); return;}
 
-    if (m_userSign == sssGetWalletTokenAmounts) readWalletAssetsBalance(js_reply);
+    if (m_userSign == sssGetWalletTokenAmounts) readWalletAssetsBalanceReply(js_reply);
+    else if (m_userSign == sssGetPoolState) readPoolStateReply(js_reply);
 
     //m_stageState.result = "ok";
 
@@ -506,11 +510,9 @@ void StrategyStageManagerObj::slotJSScriptFinished(int code)
         setFaultResult(QString("code = %1").arg(code));
     }
 }
-void StrategyStageManagerObj::readWalletAssetsBalance(const QJsonObject &js_reply)
+void StrategyStageManagerObj::readWalletAssetsBalanceReply(const QJsonObject &js_reply)
 {
     QStringList keys = js_reply.keys();
-    if (keys.isEmpty()) {setFaultResult("js_reply is empty"); return;}
-
     QString t0 = m_data.pool_tickers.first;
     QString t1 = m_data.pool_tickers.second;
     if (!keys.contains(t0) || !keys.contains(t1)) {setFaultResult("not found tickers"); return;}
@@ -519,6 +521,34 @@ void StrategyStageManagerObj::readWalletAssetsBalance(const QJsonObject &js_repl
     m_data.wallet_assets_balance.second = js_reply.value(t1).toString().toFloat();
     m_stageState.note = QString("%1 / %2").arg(m_data.wallet_assets_balance.first).arg(m_data.wallet_assets_balance.second);
     m_stageState.result = "ok";
+}
+void StrategyStageManagerObj::readPoolStateReply(const QJsonObject &js_reply)
+{
+    m_data.pool_tick = js_reply.value("tick").toString().toInt();
+    int p_index = defi_config.getPriorPriceIndexByPoolAddr(m_data.pool_addr);
+    if (p_index == 1) m_data.pool_price = js_reply.value("price1").toString().toFloat();
+    else m_data.pool_price = js_reply.value("price0").toString().toFloat();
+
+    // calc tvl
+    float p_t0 = (defi_config.isStableToken(m_data.pool_tickers.first) ? 1.0 : defi_config.lastPriceByTokenName(m_data.pool_tickers.first));
+    float p_t1 = (defi_config.isStableToken(m_data.pool_tickers.second) ? 1.0 : defi_config.lastPriceByTokenName(m_data.pool_tickers.second));
+    float tvl0 = js_reply.value("tvl0").toString().toFloat();
+    float tvl1 = js_reply.value("tvl1").toString().toFloat();
+    float tvl = tvl0*p_t0 + tvl1*p_t1;
+
+    m_stageState.note = QString("tvl=%1 price=%2 tick=%3").arg(tvl).arg(m_data.pool_price).arg(m_data.pool_tick);
+    m_stageState.result = "ok";
+
+
+    /*
+    "ROW_PAIR - req_name : pool_state"
+    "ROW_PAIR - pool_address : 0xb6e57ed85c4c9dbfef2a68711e9d6f36c56e0fcb"
+    "ROW_PAIR - tick : -299742"
+    "ROW_PAIR - tvl0 : 1590415.1"
+    "ROW_PAIR - tvl1 : 27488.6"
+    "ROW_PAIR - price0 : 0.0961707014"
+    "ROW_PAIR - price1 : 10.39817726"
+*/
 
 }
 
@@ -537,4 +567,19 @@ void StrategyStageManagerObj::getWalletTokenAmounts()
         jsScriptRun();
     }
 }
+void StrategyStageManagerObj::getPoolState()
+{
+    if (needToEthersReq())
+    {
+        QJsonObject j_params;
+        j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcPoolState));
+        int pos = defi_config.getPoolIndex(m_data.pool_addr);
+        j_params.insert("pool_address", m_data.pool_addr);
+        j_params.insert("token0_address", defi_config.pools.at(pos).token0_addr);
+        j_params.insert("token1_address", defi_config.pools.at(pos).token1_addr);
+        j_params.insert("fee", QString::number(defi_config.pools.at(pos).fee));
+        emit signalRewriteJsonFile(j_params, AppCommonSettings::readParamsNodeJSFile()); //rewrite params json-file
 
+        jsScriptRun();
+    }
+}

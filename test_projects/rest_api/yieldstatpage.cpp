@@ -98,7 +98,7 @@ void YieldStatPage::setChildEditText(QString child_name, QString text)
 }
 void YieldStatPage::slotReceivedEvents(const QList<EventOperation> &data)
 {
-    qDebug()<<QString("YieldStatPage::slotReceivedEvents  data size %1").arg(data.count());
+ //   qDebug()<<QString("YieldStatPage::slotReceivedEvents  data size %1").arg(data.count());
     resetPage();
     if (data.isEmpty()) return;
 
@@ -150,7 +150,7 @@ QDate YieldStatPage::bagStartDate() const
 }
 void YieldStatPage::recalcYield(const QList<EventOperation> &data)
 {
-    qDebug("YieldStatPage::recalcYield");
+   // qDebug("YieldStatPage::recalcYield");
     int n = data.count();
     int start_index = n-1;
     QStringList uid_list;
@@ -305,7 +305,7 @@ void YieldStatPage::recalcTotalYield()
 }
 void YieldStatPage::recolorTable()
 {
-    qDebug("YieldStatPage::sortTableByDate()");
+   // qDebug("YieldStatPage::sortTableByDate()");
 
     QTableWidget *t = m_tableBox->table();
     int n_rows = t->rowCount();
@@ -361,7 +361,7 @@ void YieldStatPage::recolorTable()
 }
 void YieldStatPage::sortTableByDate()
 {
-    qDebug("YieldStatPage::sortTableByDate()");
+  //  qDebug("YieldStatPage::sortTableByDate()");
     QTableWidget *t = m_tableBox->table();
     int n_rows = t->rowCount();
     if (n_rows == 0) return;

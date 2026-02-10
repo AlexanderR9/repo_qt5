@@ -112,8 +112,64 @@ void APIProfitabilityPage::slotContextMenu(QPoint p)
     menu->addAction(del_act);
     connect(del_act, SIGNAL(triggered()), this, SLOT(slotBuyOrder()));
 
+    QString i_path = QString(":/icons/images/list-add.svg");
+    QAction *favor_add_act = new QAction(QIcon(i_path), QString("Add to favorite"), this);
+    menu->addAction(favor_add_act);
+    connect(favor_add_act, SIGNAL(triggered()), this, SLOT(slotAddFavor()));
+
+    i_path = QString(":/icons/images/list-remove.svg");
+    QAction *favor_rm_act = new QAction(QIcon(i_path), QString("Remove favorite"), this);
+    menu->addAction(favor_rm_act);
+    connect(favor_rm_act, SIGNAL(triggered()), this, SLOT(slotRemoveFavor()));
+
+
     // Вызываем контекстное меню
     menu->popup(m_tableBox->table()->viewport()->mapToGlobal(p));
+}
+void APIProfitabilityPage::slotAddFavor()
+{
+    QTableWidget *t = m_tableBox->table();
+    int row = LTable::selectedRows(t).first();
+
+    AssetFavorRecord rec;
+    rec.name = t->item(row, NAME_COL)->text().trimmed();
+    rec.ticker = t->item(row, TICKER_COL)->text().trimmed();
+    rec.finish_date = t->item(row, DATE_COL)->text();
+
+    bool ok;
+    rec.d_coupon =  t->item(row, COUPON_COL)->data(Qt::UserRole).toFloat(&ok);
+    if (!ok || rec.d_coupon <= 0) rec.d_coupon = -1;
+
+
+    AssetFavorDialog d("add", rec, this);
+    d.exec();
+    if (!d.isApply())
+    {
+        emit signalMsg("operation was canceled!");
+        return;
+    }
+
+    emit signalAddFavorAsset(rec);
+}
+void APIProfitabilityPage::slotRemoveFavor()
+{
+    QTableWidget *t = m_tableBox->table();
+    int row = LTable::selectedRows(t).first();
+
+    AssetFavorRecord rec;
+    rec.name = t->item(row, NAME_COL)->text().trimmed();
+    rec.ticker = t->item(row, TICKER_COL)->text().trimmed();
+    rec.finish_date = t->item(row, DATE_COL)->text();
+
+    AssetFavorDialog d("remove", rec, this);
+    d.exec();
+    if (!d.isApply())
+    {
+        emit signalMsg("operation was canceled!");
+        return;
+    }
+
+    emit signalRemoveFavorAsset(rec.ticker);
 }
 void APIProfitabilityPage::slotBuyOrder()
 {
@@ -143,6 +199,8 @@ void APIProfitabilityPage::slotBuyOrder()
     m_buyData.price = t_data.price;
     emit signalMsg(QString("Try set BUY order id: [%1], paper: [%2]").arg(m_buyData.uid).arg(p_name));
     emit signalBuyOrder(m_buyData);
+
+
 }
 float APIProfitabilityPage::getCurrentPrice(int row) const
 {
@@ -199,9 +257,9 @@ void APIProfitabilityPage::slotRecalcProfitability(const BondDesc &bond_rec, flo
     row_data << QString("%1/%2").arg(QString::number(v_month, 'f', 3)).arg(QString::number(v_month*12, 'f', 1));
 
     //sync by table
-    syncTableData(bond_rec, row_data, v_month);
+    syncTableData(bond_rec, row_data, v_month, c_rec->daySize());
 }
-void APIProfitabilityPage::syncTableData(const BondDesc &bond_rec, const QStringList &row_data, float v_month)
+void APIProfitabilityPage::syncTableData(const BondDesc &bond_rec, const QStringList &row_data, float v_month, float coupon_day)
 {
     QTableWidget *t = m_tableBox->table();
     int row = indexOf(bond_rec.figi);
@@ -217,6 +275,7 @@ void APIProfitabilityPage::syncTableData(const BondDesc &bond_rec, const QString
         LTable::addTableRow(t, row_data);
         t->item(row, 0)->setData(Qt::UserRole, bond_rec.figi);
         t->item(row, 1)->setData(Qt::UserRole, bond_rec.uid);
+        t->item(row, COUPON_COL)->setData(Qt::UserRole, coupon_day);
     }
 
     //set cells color
@@ -405,4 +464,94 @@ void AssetInfoWidget::updateHistory(const QStringList &data)
     refreshTable();
 }
 
+
+
+//AssetFavorDialog
+AssetFavorDialog::AssetFavorDialog(QString type, AssetFavorRecord &rec, QWidget *parent)
+    :LSimpleDialog(parent),
+    m_record(rec)
+{
+    setObjectName(QString("asset_favor_dialog_%1").arg(type.trimmed()));
+
+    init();
+    addVerticalSpacer();
+    resize(600, 300);
+
+    updateTitle();
+    setFieldsByRec();
+    setCaptionsWidth(180);
+
+}
+void AssetFavorDialog::setFieldsByRec()
+{
+    QString key = "name";
+    setWidgetValue(key, m_record.name);
+
+    key = "ticker";
+    setWidgetValue(key, m_record.ticker);
+    if (!isAddFavor()) return;
+
+    key = "coupon";
+    if (m_record.d_coupon <= 0) setWidgetValue(key, "0.0");
+    else setWidgetValue(key, QString::number(m_record.d_coupon, 'f', 2));
+
+    key = "finish";
+    if (m_record.finish_date.trimmed().isEmpty()) setWidgetValue(key, "---");
+    else setWidgetValue(key, m_record.finish_date);
+
+    key = "rating";
+    if (m_record.rating.trimmed().isEmpty()) setWidgetValue(key, "---");
+    else setWidgetValue(key, m_record.rating);
+
+}
+void AssetFavorDialog::init()
+{
+    QString key = "name";
+    this->addSimpleWidget("Company", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_record.name);
+    widgetByKey(key)->edit->setReadOnly(true);
+
+    key = "ticker";
+    this->addSimpleWidget("Ticker", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_record.ticker);
+    widgetByKey(key)->edit->setReadOnly(true);
+    if (!isAddFavor()) return;
+
+    key = "coupon";
+    this->addSimpleWidget("Coupon size, day", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, "0.0");
+
+    key = "finish";
+    this->addSimpleWidget("Finish date", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, "---");
+
+    key = "rating";
+    this->addSimpleWidget("Rating", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, "---");
+
+
+}
+void AssetFavorDialog::updateTitle()
+{
+    if (isAddFavor()) setWindowTitle("Append asset to favorite list");
+    else setWindowTitle("Remove asset from favorite list");
+}
+void AssetFavorDialog::slotApply()
+{
+    bool ok;
+    m_record.d_coupon = widgetValue("coupon").toFloat(&ok);
+    if (!ok || m_record.d_coupon < 0) m_record.d_coupon = -1;
+
+    m_record.finish_date = widgetValue("finish").toString().trimmed();
+    if (m_record.finish_date.length() < 8 || !m_record.finish_date.contains(".")) m_record.finish_date.clear();
+
+    m_record.rating = widgetValue("rating").toString().trimmed();
+    if (m_record.rating.isEmpty() || m_record.rating.contains("?")) m_record.rating = "?";
+
+    LSimpleDialog::slotApply();
+}
+bool AssetFavorDialog::isAddFavor() const
+{
+    return (objectName().toLower().contains("add"));
+}
 

@@ -268,5 +268,21 @@ struct PlaceOrderData
 };
 
 
+/////////////////AssetFavor////////////////
+struct AssetFavorRecord
+{
+    AssetFavorRecord() {reset();}
+
+    QString name;
+    QString ticker;
+    float d_coupon;
+    QString finish_date;
+    QString rating;
+
+   void reset() {name.clear(); ticker.clear(); finish_date.clear(); rating="?"; d_coupon=-1;}
+};
+
+
+
 #endif
 

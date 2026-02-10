@@ -27,7 +27,7 @@ CycleWorker::CycleWorker(QObject *parent)
 }
 void CycleWorker::slotTimer()
 {
-    qDebug()<<QString("CycleWorker::slotTimer() m_cycleData size %1").arg(m_cycleData.count());
+    //qDebug()<<QString("CycleWorker::slotTimer() m_cycleData size %1").arg(m_cycleData.count());
     if (m_cycleData.isEmpty())
     {
         reset();

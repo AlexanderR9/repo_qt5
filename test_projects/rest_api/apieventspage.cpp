@@ -109,7 +109,7 @@ void APIEventsPage::initPaperResultWidget()
 }
 void APIEventsPage::slotGetEventsHistoryByTicker(const QString &ticker, QStringList &list)
 {
-    qDebug("APIEventsPage::slotGetEventsHistoryByTicker");
+   // qDebug("APIEventsPage::slotGetEventsHistoryByTicker");
     QTableWidget *t = m_tableBox->table();
     int n = t->rowCount();
     for (int i=0; i<n; i++)
@@ -606,7 +606,7 @@ void APIEventsPage::recalcPaperResult()
     }
     if (result == 0) return;
 
-    qDebug()<<QString("APIEventsPage::recalcPaperResult() result=%1").arg(result);
+  //  qDebug()<<QString("APIEventsPage::recalcPaperResult() result=%1").arg(result);
 
     plt.setColor(role, Qt::yellow);
     m_paperResultEdit->setPalette(plt);
@@ -637,8 +637,8 @@ void APIEventsPage::loadDataFromFile()
         else
         {
             qWarning() << QString("INVALID EVENTS LINE: [%1]").arg(v); n_invalid++;
-            qDebug()<<QString("kind=%1  date validity: %2,  time validity: %3").arg(rec.kind).
-                      arg(rec.date.date().isValid()?"ok":"invalid").arg(rec.date.time().isValid()?"ok":"invalid");
+           // qDebug()<<QString("kind=%1  date validity: %2,  time validity: %3").arg(rec.kind).
+                  //    arg(rec.date.date().isValid()?"ok":"invalid").arg(rec.date.time().isValid()?"ok":"invalid");
         }
     }
 
