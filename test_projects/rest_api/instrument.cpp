@@ -661,3 +661,52 @@ QString PlaceOrderData::toStr() const
     return s;
 }
 
+
+//HistoryCandle24
+void HistoryCandle24::reset()
+{
+    open = close = low = high = -1;
+    ts_open = QDate();
+    volume = 0;
+}
+bool HistoryCandle24::invalid() const
+{
+    if (open <= 0 || close <= 0 || low <= 0 || high <= 0) return true;
+    if (!ts_open.isValid() || volume == 0) return true;
+    return false;
+}
+void HistoryCandle24::loadFileLine(const QString &fline)
+{
+//    qDebug("HistoryCandle24::loadFileLine 1");
+    QStringList list = LString::trimSplitList(fline, ";");
+    if (list.count() != 8) return;
+
+    bool ok;
+    int i = 0;
+    float a = list.at(i).toFloat(&ok);
+    if (!ok) return;
+    open = a; i++;
+    a = list.at(i).toFloat(&ok);
+    if (!ok) return;
+    close = a; i++;
+    a = list.at(i).toFloat(&ok);
+    if (!ok) return;
+    high = a; i++;
+    a = list.at(i).toFloat(&ok);
+    if (!ok) return;
+    low = a; i++;
+
+
+    i++;
+    volume = list.at(i).toUInt(&ok);
+    if (!ok) {volume = 0; return;}
+
+
+    i++;
+    QDateTime dt = QDateTime::fromString(list.at(i), "yyyy-MM-dd hh:mm:ss");
+    if (!dt.isValid()) {ts_open = QDate(); return;}
+    ts_open = dt.date();
+
+}
+
+

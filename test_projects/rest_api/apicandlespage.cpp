@@ -30,24 +30,21 @@ APICandlesPage::APICandlesPage(QWidget *parent)
 {
     setObjectName("api_candles_page");
     m_userSign = aptCandles;
+    m_history.clear();
 
     reinitWidgets();
     initDownloader();
+    initChart();
 
     // init popup
     initPopupMenu();
 
-
-    /*
-
-    connect(m_tableBox, SIGNAL(signalSearched()), this, SLOT(slotFilter()));
-    */
 }
 void APICandlesPage::load(QSettings &settings)
 {
     LSimpleWidget::load(settings);
 
-    loadDataFile();
+    loadFavorDataFile();
     reloadAssetTable();
 }
 QString APICandlesPage::dataFile()
@@ -92,7 +89,7 @@ void APICandlesPage::slotAddFavorAsset(const AssetFavorRecord &rec)
 }
 void APICandlesPage::reloadAssetTable()
 {
-    qDebug("APICandlesPage::reloadAssetTable()");
+   // qDebug("APICandlesPage::reloadAssetTable()");
     if (!m_assetTable) return;
 
     QTableWidget *t = m_assetTable->table();
@@ -109,9 +106,28 @@ void APICandlesPage::reloadAssetTable()
     }
     //m_assetTable->resizeByContents();
 
-    qDebug("APICandlesPage::reloadAssetTable() end");
+  //  qDebug("APICandlesPage::reloadAssetTable() end");
 
     m_assetTable->searchExec();
+}
+void APICandlesPage::reloadHistoryTable()
+{
+    QTableWidget *t = m_candleTable->table();
+    if (m_history.isEmpty()) return;
+
+    QStringList row_data;
+    foreach (const HistoryCandle24 &rec, m_history)
+    {
+        row_data.clear();
+        row_data << rec.ts_open.toString("dd.MM.yyyy");
+        row_data << QString::number(rec.open) << QString::number(rec.close);
+        row_data << QString::number(rec.low) << QString::number(rec.high);
+        row_data << QString::number(rec.volume);
+        LTable::addTableRow(t, row_data);
+    }
+
+    //m_candleTable->resizeByContents();
+    m_candleTable->searchExec();
 }
 void APICandlesPage::initDownloader()
 {
@@ -152,16 +168,28 @@ void APICandlesPage::reinitWidgets()
     m_assetTable->resizeByContents();
     h_splitter->addWidget(m_assetTable);
 
-
-    // chart
+}
+void APICandlesPage::initChart()
+{
     m_chart = new LChartWidget(this);
     v_splitter->addWidget(m_chart);
 
+    m_chart->setCrossColor(QColor(150, 190, 150));
+    m_chart->setAxisXType(LChartAxisParams::xvtDate);
+    m_chart->setCrossXAxisTextViewMode(2);
+    m_chart->setPointSize(2);
+
+    LChartParams p;
+    p.lineColor = QColor(170, 50, 40);
+    p.pointsColor = QColor(0, 100, 0);
+    p.points.clear();
+    m_chart->addChart(p);
+    m_chart->updateAxis();
 
 }
-void APICandlesPage::loadDataFile()
+void APICandlesPage::loadFavorDataFile()
 {
-    qDebug("APICandlesPage::loadDataFile()");
+   // qDebug("APICandlesPage::loadFavorDataFile()");
 
     QString fname(dataFile().trimmed());
     emit signalMsg(QString("try loading favorite assets list [%1]").arg(fname));
@@ -203,7 +231,7 @@ void APICandlesPage::loadFileLine(const QString &fline)
 }
 void APICandlesPage::rewriteDataFile()
 {
-    qDebug("APICandlesPage::rewriteDataFile()");
+  //  qDebug("APICandlesPage::rewriteDataFile()");
     QString fname(dataFile().trimmed());
     emit signalMsg(QString("try rewrite favorite assets file [%1]").arg(fname));
     if (m_data.isEmpty()) {signalError("records list is empty"); return;}
@@ -249,26 +277,36 @@ void APICandlesPage::initPopupMenu()
 
     //connect OWN slots to popup actions
     int i_menu = 0;
-    m_assetTable->connectSlotToPopupAction(i_menu, this, SLOT(slotRepaintChart())); i_menu++;
+    m_assetTable->connectSlotToPopupAction(i_menu, this, SLOT(slotReloadHistoryFile())); i_menu++;
     m_assetTable->connectSlotToPopupAction(i_menu, this, SLOT(slotDownloadCandles())); i_menu++;
 
 }
-void APICandlesPage::slotRepaintChart()
+void APICandlesPage::slotReloadHistoryFile()
 {
-    qDebug("APICandlesPage::slotRepaintChart()");
-    if (!m_downloader) return;
+   // qDebug("APICandlesPage::slotReloadHistoryFile()");
+    m_chart->clearChartPoints();
+    m_chart->updateAxis();
+    m_history.clear();
+    m_candleTable->removeAllRows();
 
+    int row = LTable::selectedRows(m_assetTable->table()).first();
+    emit signalMsg(QString("try loading history file ....."));
+    loadHistoryFile(m_data.at(row).ticker);
+    emit signalMsg(QString("loaded %1 candles").arg(m_history.count()));
+
+    reloadHistoryTable();
+    repaintChart();
 }
 void APICandlesPage::slotDownloadCandles()
 {
-    qDebug("APICandlesPage::slotDownloadCandles()");
+   // qDebug("APICandlesPage::slotDownloadCandles()");
     if (!m_downloader) return;
 
     int row = LTable::selectedRows(m_assetTable->table()).first();
 
     enableControls(false);
     m_downloader->setTicker(m_data.at(row).ticker);
-    qDebug()<<QString("m_downloader ticker %1, path %2").arg(m_downloader->ticker()).arg(m_downloader->path());
+   // qDebug()<<QString("m_downloader ticker %1, path %2").arg(m_downloader->ticker()).arg(m_downloader->path());
 
     m_downloader->run();
 }
@@ -285,6 +323,75 @@ void APICandlesPage::enableControls(bool b)
 {
     m_assetTable->setEnabled(b);
     m_candleTable->setEnabled(b);
+
+}
+void APICandlesPage::loadHistoryFile(QString ticker)
+{
+    //qDebug("APICandlesPage::loadHistoryFile 1");
+    ticker = ticker.trimmed();
+    if (ticker.isEmpty()) {emit signalError("ticker is empty"); return;}
+
+  //  qDebug("APICandlesPage::loadHistoryFile 2");
+    QString fname = QString("%1%2/%3.txt").arg(historyPath()).arg(QDir::separator()).arg(ticker);
+    emit signalMsg(QString("FILE [%1]").arg(fname));
+    if (!LFile::fileExists(fname))
+    {
+        emit signalError(QString("history file not found [%1]").arg(fname));
+        return;
+    }
+  //  qDebug("APICandlesPage::loadHistoryFile 3");
+
+    // read file
+    QStringList list;
+    QString err = LFile::readFileSL(fname, list);
+    if (!err.isEmpty()) {emit signalError(err); return;}
+    if (list.isEmpty()) {emit signalError("history file data is empty"); return;}
+
+ //   qDebug("APICandlesPage::loadHistoryFile 4");
+
+    // find start index of line data
+    int start_row = 0;
+    while (2 > 1)
+    {
+        if (start_row >= list.count()) {start_row = -1; break;}
+        QString s = list.at(start_row).trimmed().toLower();
+        start_row++;
+        if (s.contains("open") && s.contains("close")) break;
+    }
+    if (start_row < 0) {emit signalError("invalid history file data"); return;}
+
+    // parse candles lines
+    for (int i=start_row; i<list.count(); i++)
+    {
+        HistoryCandle24 candle;
+        candle.loadFileLine(list.at(i));
+        if (candle.invalid()) qWarning()<<QString("candle line is invalid [%1]").arg(list.at(i));
+        else m_history.insert(0, candle);
+    }
+    if (m_history.count() > 5) m_history.removeFirst();
+}
+void APICandlesPage::repaintChart()
+{
+    if (m_history.isEmpty()) return;
+
+    // prepare points
+    QList<QPointF> points;
+    for (int i=m_history.count()-1; i>=0; i--)
+    {
+        QDateTime dt(m_history.at(i).ts_open);
+        QPointF p(dt.toSecsSinceEpoch(), m_history.at(i).open);
+        points.append(p);
+    }
+
+    //update chart widget
+    float a = 0;
+    foreach (const QPointF &p, points) a += p.y();
+    a /= points.count(); // calc average y-value
+
+    m_chart->addChartPoints(points, 0);
+    emit signalMsg(m_chart->strMinMax());
+    m_chart->setAxisPrecision(-1, 2);
+    m_chart->updateAxis();
 
 }
 

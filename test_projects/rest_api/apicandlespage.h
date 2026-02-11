@@ -33,22 +33,29 @@ public:
     static QString historyPath();
 
 protected:
-    LSearchTableWidgetBox   *m_assetTable;
-    LSearchTableWidgetBox   *m_candleTable;
-    LChartWidget            *m_chart;
+    LSearchTableWidgetBox       *m_assetTable;
+    LSearchTableWidgetBox       *m_candleTable;
+    LChartWidget                *m_chart;
     MoexBondHistoryDownloader   *m_downloader;
 
     QList<AssetFavorRecord> m_data;
+    QList<HistoryCandle24> m_history;
+
 
     void reinitWidgets();
     void initDownloader();
+    void initChart();
 
-    void loadDataFile();
+    void loadFavorDataFile();
     void loadFileLine(const QString&);
     void rewriteDataFile();
     void reloadAssetTable();
+    void reloadHistoryTable();
     int recIndexByTicker(const QString&) const;
     void enableControls(bool);
+    void repaintChart();
+
+    void loadHistoryFile(QString);
 
     void initPopupMenu(); //инициализировать элементы всплывающего меню
 
@@ -57,7 +64,7 @@ public slots:
     void slotAddFavorAsset(const AssetFavorRecord&);
 
 protected slots:
-    void slotRepaintChart();
+    void slotReloadHistoryFile();
     void slotDownloadCandles();
     void slotDownloadlerFinished(QString);
 

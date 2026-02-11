@@ -16,6 +16,9 @@
 #include <QDebug>
 
 #define SOURCE_SERV         QString("https://iss.moex.com")
+#define URL_PATH            QString("iss/engines/stock/markets/bonds/securities")
+#define URL_PATH_BOARD      QString("iss/engines/stock/markets/bonds/boards/TQOB/securities")
+
 
 
 
@@ -31,13 +34,6 @@ MoexBondHistoryDownloader::MoexBondHistoryDownloader(QObject *parent)
     m_nam = new QNetworkAccessManager(this);
 
 }
-/*
-QString MoexBondHistoryDownloader::buildOutFilePath() const
-{
-    QDir dir(m_path.isEmpty() ? QDir::currentPath() : m_path);
-    return dir.filePath(QString("%1.txt").arg(m_ticker));
-}
-*/
 void MoexBondHistoryDownloader::checkPathTicker(QString &err)
 {
     err.clear();
@@ -92,22 +88,19 @@ void MoexBondHistoryDownloader::run(int n_month)
 }
 void MoexBondHistoryDownloader::prepareUrl(QUrl &url, int n_month)
 {
-    url.setUrl(QString("%1/iss/engines/stock/markets/bonds/boards/TQOB/securities/%2/candles.csv").arg(SOURCE_SERV).arg(m_ticker));
+    url.setUrl(QString("%1/%2/%3/candles.csv").arg(SOURCE_SERV).arg(URL_PATH).arg(m_ticker));
 
     const QDate till = QDate::currentDate();
     const QDate from = till.addMonths(-1*n_month);
 
-    qDebug()<<QString("HISTORY RANGE: [%1 : %2]").arg(from.toString("yyyy-MM-dd")).arg(till.toString("yyyy-MM-dd"));
-
-    QString s_start = "2025-10-15";
-    QString s_end = "2026-02-06";
+    QString s_range = QString("HISTORY RANGE: [%1 : %2]").arg(from.toString("yyyy-MM-dd")).arg(till.toString("yyyy-MM-dd"));
+   // qDebug()<<s_range;
+    emit signalMsg(s_range);
 
     QUrlQuery q;
     q.addQueryItem("interval", "24");
-    //q.addQueryItem("from", from.toString("yyyy-MM-dd"));
-    //q.addQueryItem("till", till.toString("yyyy-MM-dd"));
-    q.addQueryItem("from", s_start);
-    q.addQueryItem("till", s_end);
+    q.addQueryItem("from", from.toString("yyyy-MM-dd"));
+    q.addQueryItem("till", till.toString("yyyy-MM-dd"));
     url.setQuery(q);
 }
 void MoexBondHistoryDownloader::slotReplyFinished()
@@ -146,7 +139,7 @@ void MoexBondHistoryDownloader::slotReplyFinished()
 }
 void MoexBondHistoryDownloader::slotReplyError()
 {
-    qDebug("MoexBondHistoryDownloader  ERROR ");
+    qWarning("MoexBondHistoryDownloader  ERROR ");
     QNetworkReply *rpl = qobject_cast<QNetworkReply*>(sender());
     if (!rpl) {qWarning("MoexBondHistoryDownloader::slotReplyError WARNING reply is NULL"); return;}
 

@@ -281,7 +281,23 @@ struct AssetFavorRecord
 
    void reset() {name.clear(); ticker.clear(); finish_date.clear(); rating="?"; d_coupon=-1;}
 };
+struct HistoryCandle24
+{
+    HistoryCandle24() {reset();}
 
+    float open;
+    float close;
+    float low;
+    float high;
+    QDate ts_open;
+    quint32 volume;
+
+    void reset();
+    bool invalid() const;
+    void loadFileLine(const QString&);
+
+
+};
 
 
 #endif
