@@ -16,8 +16,12 @@
 #include <QSettings>
 
 
-#define FAVOR_LIST_FILE     QString("favorite.txt")
-#define HISTORY_FOLDER      QString("candles")
+#define FAVOR_LIST_FILE         QString("favorite.txt")
+#define HISTORY_FOLDER          QString("candles")
+#define RSI_LEN                 30
+#define PRICE_DEVIATION_COL     6
+#define DEVIATION_LIGHT         0.8
+#define RSI_COL                 8
 
 
 //APICandlesPage
@@ -123,8 +127,12 @@ void APICandlesPage::reloadHistoryTable()
         row_data << QString::number(rec.open) << QString::number(rec.close);
         row_data << QString::number(rec.low) << QString::number(rec.high);
         row_data << QString::number(rec.volume);
+        row_data << QString() << QString() << QString();
         LTable::addTableRow(t, row_data);
     }
+
+    calcDeviationPrice(t);
+    calcRSI(t);
 
     //m_candleTable->resizeByContents();
     m_candleTable->searchExec();
@@ -147,7 +155,8 @@ void APICandlesPage::reinitWidgets()
     m_candleTable->setTitle("Candles history");
 
     QStringList headers;
-    headers << "Open date" << "Open" << "Close" << "Low" << "High" << "Volume";
+    headers << "Open date" << "Open" << "Close" << "Low" << "High" << "Volume" <<
+                "D Open/High" << "D Low/High" << "RSI, %";
     m_candleTable->setHeaderLabels(headers);
     m_candleTable->resizeByContents();
     m_candleTable->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::SingleSelection);
@@ -393,6 +402,69 @@ void APICandlesPage::repaintChart()
     m_chart->setAxisPrecision(-1, 2);
     m_chart->updateAxis();
 
+}
+void APICandlesPage::calcDeviationPrice(QTableWidget *t)
+{
+    if (m_history.isEmpty() || !t) return;
+
+    for (int i=0; i<m_history.count(); i++)
+    {
+        const HistoryCandle24 &rec = m_history.at(i);
+
+        float d = rec.high - rec.open;
+        t->item(i, PRICE_DEVIATION_COL)->setText(QString("%1 %").arg(QString::number(d, 'f', 2)));
+        if (d > DEVIATION_LIGHT) t->item(i, PRICE_DEVIATION_COL)->setTextColor("#0000dd");
+
+        d = rec.high - rec.low;
+        t->item(i, PRICE_DEVIATION_COL+1)->setText(QString("%1 %").arg(QString::number(d, 'f', 2)));
+        if (d > DEVIATION_LIGHT) t->item(i, PRICE_DEVIATION_COL+1)->setTextColor("#0000dd");
+    }
+}
+void APICandlesPage::calcRSI(QTableWidget *t)
+{
+    if (m_history.isEmpty() || !t) return;
+
+    for (int i=0; i<m_history.count(); i++)
+    {
+        float i_rsi = calcRSI_ps(i);
+
+        t->item(i, RSI_COL)->setText(QString::number(i_rsi, 'f', 1));
+        if (i_rsi < 0) t->item(i, RSI_COL)->setTextColor("#dddddd");
+        if (i_rsi > 70) t->item(i, RSI_COL)->setTextColor("#aa0000");
+    }
+}
+float APICandlesPage::calcRSI_ps(int i) const
+{
+    //qDebug()<<QString("calcRSI_ps  i=%1").arg(i);
+    float i_close = m_history.at(i).close; // current point
+    QPair<float, float> min_max;
+    min_max.first = min_max.second = 0;
+
+    int n = 0;
+    while (2 > 1)
+    {
+        i++;
+        if (m_history.count() <= i) return -1;
+
+        const HistoryCandle24 &rec = m_history.at(i);
+        if (rec.high > min_max.second) min_max.second = rec.high;
+        if (rec.low < min_max.first || n == 0) min_max.first = rec.low;
+
+        n++;
+        if (n == RSI_LEN) break;
+    }
+    //min_max.first /= float(RSI_LEN);
+    //min_max.second /= float(RSI_LEN);
+
+
+
+    float band_size = min_max.second - min_max.first;
+    qDebug()<<QString("min_max  %1/%2,  cur %3,  band_size=%4").arg(min_max.first).arg(min_max.second).arg(i_close).arg(band_size);
+
+    float cur_v = i_close - min_max.first;
+    if (band_size <= 0) return -1;
+
+    return float(100)*(cur_v/band_size);
 }
 
 

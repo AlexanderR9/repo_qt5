@@ -54,6 +54,9 @@ protected:
     int recIndexByTicker(const QString&) const;
     void enableControls(bool);
     void repaintChart();
+    void calcDeviationPrice(QTableWidget*);
+    void calcRSI(QTableWidget*);
+    float calcRSI_ps(int) const;
 
     void loadHistoryFile(QString);
 
