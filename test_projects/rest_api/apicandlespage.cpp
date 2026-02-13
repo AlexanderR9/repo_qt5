@@ -22,6 +22,9 @@
 #define PRICE_DEVIATION_COL     6
 #define DEVIATION_LIGHT         0.8
 #define RSI_COL                 8
+#define LOW_COL                 3
+#define HIGH_COL                LOW_COL+1
+//#define PERCENT_PRECISION       1
 
 
 //APICandlesPage
@@ -93,7 +96,6 @@ void APICandlesPage::slotAddFavorAsset(const AssetFavorRecord &rec)
 }
 void APICandlesPage::reloadAssetTable()
 {
-   // qDebug("APICandlesPage::reloadAssetTable()");
     if (!m_assetTable) return;
 
     QTableWidget *t = m_assetTable->table();
@@ -108,10 +110,6 @@ void APICandlesPage::reloadAssetTable()
         row_data << QString::number(rec.d_coupon) << rec.rating;
         LTable::addTableRow(t, row_data);
     }
-    //m_assetTable->resizeByContents();
-
-  //  qDebug("APICandlesPage::reloadAssetTable() end");
-
     m_assetTable->searchExec();
 }
 void APICandlesPage::reloadHistoryTable()
@@ -123,16 +121,16 @@ void APICandlesPage::reloadHistoryTable()
     foreach (const HistoryCandle24 &rec, m_history)
     {
         row_data.clear();
-        row_data << rec.ts_open.toString("dd.MM.yyyy");
-        row_data << QString::number(rec.open) << QString::number(rec.close);
-        row_data << QString::number(rec.low) << QString::number(rec.high);
-        row_data << QString::number(rec.volume);
+        row_data << rec.strTS() << rec.strOpen() << rec.strClose();
+        row_data << rec.strLow() << rec.strHigh() << QString::number(rec.volume);
         row_data << QString() << QString() << QString();
         LTable::addTableRow(t, row_data);
     }
 
     calcDeviationPrice(t);
     calcRSI(t);
+    lightUpLow(t);
+    lightUpHigh(t);
 
     //m_candleTable->resizeByContents();
     m_candleTable->searchExec();
@@ -198,8 +196,6 @@ void APICandlesPage::initChart()
 }
 void APICandlesPage::loadFavorDataFile()
 {
-   // qDebug("APICandlesPage::loadFavorDataFile()");
-
     QString fname(dataFile().trimmed());
     emit signalMsg(QString("try loading favorite assets list [%1]").arg(fname));
 
@@ -216,7 +212,6 @@ void APICandlesPage::loadFavorDataFile()
     }
 
     emit signalMsg(QString("loaded %1 favorite asset records").arg(m_data.count()));
-    qDebug()<<QString("loaded %1 recs").arg(m_data.count());
 }
 void APICandlesPage::loadFileLine(const QString &fline)
 {
@@ -240,7 +235,6 @@ void APICandlesPage::loadFileLine(const QString &fline)
 }
 void APICandlesPage::rewriteDataFile()
 {
-  //  qDebug("APICandlesPage::rewriteDataFile()");
     QString fname(dataFile().trimmed());
     emit signalMsg(QString("try rewrite favorite assets file [%1]").arg(fname));
     if (m_data.isEmpty()) {signalError("records list is empty"); return;}
@@ -292,7 +286,6 @@ void APICandlesPage::initPopupMenu()
 }
 void APICandlesPage::slotReloadHistoryFile()
 {
-   // qDebug("APICandlesPage::slotReloadHistoryFile()");
     m_chart->clearChartPoints();
     m_chart->updateAxis();
     m_history.clear();
@@ -308,7 +301,6 @@ void APICandlesPage::slotReloadHistoryFile()
 }
 void APICandlesPage::slotDownloadCandles()
 {
-   // qDebug("APICandlesPage::slotDownloadCandles()");
     if (!m_downloader) return;
 
     int row = LTable::selectedRows(m_assetTable->table()).first();
@@ -336,11 +328,9 @@ void APICandlesPage::enableControls(bool b)
 }
 void APICandlesPage::loadHistoryFile(QString ticker)
 {
-    //qDebug("APICandlesPage::loadHistoryFile 1");
     ticker = ticker.trimmed();
     if (ticker.isEmpty()) {emit signalError("ticker is empty"); return;}
 
-  //  qDebug("APICandlesPage::loadHistoryFile 2");
     QString fname = QString("%1%2/%3.txt").arg(historyPath()).arg(QDir::separator()).arg(ticker);
     emit signalMsg(QString("FILE [%1]").arg(fname));
     if (!LFile::fileExists(fname))
@@ -348,7 +338,6 @@ void APICandlesPage::loadHistoryFile(QString ticker)
         emit signalError(QString("history file not found [%1]").arg(fname));
         return;
     }
-  //  qDebug("APICandlesPage::loadHistoryFile 3");
 
     // read file
     QStringList list;
@@ -356,7 +345,6 @@ void APICandlesPage::loadHistoryFile(QString ticker)
     if (!err.isEmpty()) {emit signalError(err); return;}
     if (list.isEmpty()) {emit signalError("history file data is empty"); return;}
 
- //   qDebug("APICandlesPage::loadHistoryFile 4");
 
     // find start index of line data
     int start_row = 0;
@@ -435,7 +423,6 @@ void APICandlesPage::calcRSI(QTableWidget *t)
 }
 float APICandlesPage::calcRSI_ps(int i) const
 {
-    //qDebug()<<QString("calcRSI_ps  i=%1").arg(i);
     float i_close = m_history.at(i).close; // current point
     QPair<float, float> min_max;
     min_max.first = min_max.second = 0;
@@ -453,18 +440,75 @@ float APICandlesPage::calcRSI_ps(int i) const
         n++;
         if (n == RSI_LEN) break;
     }
-    //min_max.first /= float(RSI_LEN);
-    //min_max.second /= float(RSI_LEN);
 
 
 
     float band_size = min_max.second - min_max.first;
-    qDebug()<<QString("min_max  %1/%2,  cur %3,  band_size=%4").arg(min_max.first).arg(min_max.second).arg(i_close).arg(band_size);
+    //qDebug()<<QString("min_max  %1/%2,  cur %3,  band_size=%4").arg(min_max.first).arg(min_max.second).arg(i_close).arg(band_size);
 
     float cur_v = i_close - min_max.first;
     if (band_size <= 0) return -1;
 
     return float(100)*(cur_v/band_size);
+}
+void APICandlesPage::lightUpLow(QTableWidget *t)
+{
+    const int n = 15;
+    if (m_history.count() < n || !t) return;
+
+    const int nm = 3;
+    QList<int> min_idexes;
+    for (int i=0; i<nm; i++)
+    {
+        float min = 1000000;
+        int i_min = -1;
+        for (int j=0; j<n; j++)
+        {
+            if (min_idexes.contains(j)) continue;
+
+            const HistoryCandle24 &rec = m_history.at(j);
+            if (rec.low < min) {min = rec.low; i_min = j;}
+        }
+        min_idexes.append(i_min);
+    }
+
+    for (int i=0; i<nm; i++)
+    {
+        int row = min_idexes.at(i);
+        t->item(min_idexes.at(i), LOW_COL)->setTextColor(Qt::red);
+        float p_low = m_history.at(row).low * float(10);
+        t->item(row, LOW_COL)->setToolTip(QString::number(p_low, 'f', 1));
+
+    }
+}
+void APICandlesPage::lightUpHigh(QTableWidget *t)
+{
+    const int n = 15;
+    if (m_history.count() < n || !t) return;
+
+    const int nm = 3;
+    QList<int> max_idexes;
+    for (int i=0; i<nm; i++)
+    {
+        float max = -1;
+        int i_max = -1;
+        for (int j=0; j<n; j++)
+        {
+            if (max_idexes.contains(j)) continue;
+
+            const HistoryCandle24 &rec = m_history.at(j);
+            if (rec.high > max) {max = rec.high; i_max = j;}
+        }
+        max_idexes.append(i_max);
+    }
+
+    for (int i=0; i<nm; i++)
+    {
+        int row = max_idexes.at(i);
+        t->item(row, HIGH_COL)->setTextColor(Qt::darkGreen);
+        float p_high = m_history.at(row).high * float(10);
+        t->item(row, HIGH_COL)->setToolTip(QString::number(p_high, 'f', 1));
+    }
 }
 
 

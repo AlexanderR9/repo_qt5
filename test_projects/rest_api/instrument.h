@@ -297,6 +297,14 @@ struct HistoryCandle24
     void loadFileLine(const QString&);
 
 
+    static quint8 precision() {return 1;}
+
+    inline QString strOpen() const {return QString::number(open, 'f', precision());}
+    inline QString strClose() const {return QString::number(close, 'f', precision());}
+    inline QString strLow() const {return QString::number(low, 'f', precision());}
+    inline QString strHigh() const {return QString::number(high, 'f', precision());}
+    inline QString strTS() const {return ts_open.toString("dd.MM.yyyy");}
+
 };
 
 

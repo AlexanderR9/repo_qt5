@@ -46,7 +46,6 @@ private slots:
 
 signals:
     void finished(QString);
-    //void alreadyExists(const QString& filePath);
 
 };
 

@@ -57,6 +57,8 @@ protected:
     void calcDeviationPrice(QTableWidget*);
     void calcRSI(QTableWidget*);
     float calcRSI_ps(int) const;
+    void lightUpLow(QTableWidget*);
+    void lightUpHigh(QTableWidget*);
 
     void loadHistoryFile(QString);
 

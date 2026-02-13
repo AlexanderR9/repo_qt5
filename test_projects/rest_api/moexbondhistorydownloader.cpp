@@ -76,6 +76,9 @@ void MoexBondHistoryDownloader::run(int n_month)
 
     QUrl url;
     prepareUrl(url, n_month);
+    qDebug()<<QString("URL: %1").arg(url.url());
+    qDebug()<<QString("URL_PATH: %1").arg(url.path());
+    qDebug()<<QString("URL_QUERY: %1").arg(url.query());
 
     QNetworkRequest req(url);
     req.setHeader(QNetworkRequest::UserAgentHeader, "QtApp/1.0 (MoexBondHistoryDownloader)");
