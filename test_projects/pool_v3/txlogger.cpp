@@ -19,6 +19,36 @@ DefiTxLogger::DefiTxLogger(QString chain_name, QObject *parent)
     setObjectName("defi_tx_logger_obj");
 
 }
+void DefiTxLogger::removeRecord(const QString &hash, bool &ok)
+{
+    ok = false;
+    int i_rec = indexOf(hash);
+    if (i_rec < 0) return;
+
+    qDebug()<<QString("DefiTxLogger::removeRecord  finded tx_rec, index=%1, list size %2").arg(i_rec).arg(logSize());
+    m_logData.removeAt(i_rec);
+    qDebug()<<QString("list size %1").arg(logSize());
+
+    ok = true;
+    excludeRecFromFileByHash(hash, "tx_state.txt", ok);
+    if (!ok) {qWarning("result: FALED"); return;}
+    else qDebug("OK!");
+
+    excludeRecFromFileByHash(hash, "tx_details.txt", ok);
+    if (!ok) {qWarning("result: FALED"); return;}
+    else qDebug("OK!");
+
+    excludeRecFromFileByHash(hash, "tx_list.txt", ok);
+    if (!ok) {qWarning("result: FALED"); return;}
+    else qDebug("OK!");
+
+
+//    void loadTxListFile(); //load tx_list.txt
+//    void loadTxStateFile(); //load tx_state.txt
+//    void loadTxDetailsFile(); //load tx_details.txt
+
+
+}
 void DefiTxLogger::reloadLogFiles()
 {
     m_logData.clear();
@@ -148,6 +178,41 @@ void DefiTxLogger::updateRecStatus(const QString &hash, QString status, float fe
     else m_logData[pos].status.fee_cent = -1;
 
     rewriteStatusFiles(m_logData.at(pos));
+}
+void DefiTxLogger::excludeRecFromFileByHash(const QString &hash, QString fname, bool &ok)
+{
+    qDebug()<<QString("try remove record from [%1].........").arg(fname);
+    if (fname.trimmed().isEmpty()) return;
+    fname = QString("%1%2%3").arg(AppCommonSettings::appDataPath()).arg(QDir::separator()).arg(fname.trimmed());
+    if (!LFile::fileExists(fname)) return;
+
+    QStringList fdata;
+    QString err = LFile::readFileSL(fname, fdata);
+    if (!err.isEmpty())
+    {
+        emit signalError(err);
+        ok = false;
+        return;
+    }
+    if (fdata.isEmpty()) {qWarning("DefiTxLogger::excludeRecFromFileByHash WARNING fdata is empty"); return;}
+    qDebug()<<QString("fdata size %1").arg(fdata.count());
+
+    QStringList fdata_next;
+    bool fdata_has_hash = false;
+    foreach (const QString &fline, fdata)
+    {
+        QString s(fline.trimmed());
+        if (s.length() < 20) continue;
+        if (!s.contains(hash)) fdata_next.append(fline);
+        else fdata_has_hash = true; // найдена запись с таким хешом
+    }
+    if (fdata_next.isEmpty()) {qWarning("DefiTxLogger::excludeRecFromFileByHash WARNING fdata_next is empty"); return;}
+    if (!fdata_has_hash) {qDebug("record not found in this file"); return;} // запись не найдена, перезаписывать файл не требуется
+
+    qDebug()<<QString("rewite file, fdata_next size %1").arg(fdata_next.count());
+    err = LFile::writeFileSL(fname, fdata_next);
+    if (!err.isEmpty()) {emit signalError(err); ok = false;}
+    else ok = true;
 }
 void DefiTxLogger::rewriteStatusFiles(const TxLogRecord &rec)
 {

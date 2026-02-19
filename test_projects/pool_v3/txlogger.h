@@ -61,6 +61,7 @@ public:
     void updateRecStatus(const QString&, QString, float, quint32); // обновить статус записи по указанному хешу, т.е. запись должна уже присутствовать в m_logData
     const TxLogRecord* recByHash(const QString&) const;
     int indexOf(const QString&) const; // поиск записи в m_logData по хешу, вернет индекс в контейнере или -1
+    void removeRecord(const QString&, bool&); // удалить запись по указанному хешу(из файлов в том числе), во 2-й параметр запишет результат
 
     virtual QString name() const {return QString("defi_tx_logger");}
 
@@ -82,6 +83,11 @@ protected:
     // эти правки нужно внести в соответствующих строках в файлах tx_state.txt / tx_details.txt (т.е. просто переписать их).
     // т.е. предполагается что базовая инфа уже была добавлена ранее в tx_list.txt / tx_details.txt.
     void rewriteStatusFiles(const TxLogRecord&);
+
+    // переписывает указанный файл, исключая запись с указанным хешом(вообщем удаляет одну строку)
+    // имя файла указывается во 2-м параметре, короткое без полного пути
+    void excludeRecFromFileByHash(const QString&, QString, bool&);
+
 
 private:
     //происходит перезапись указанного файла, так что меняется только строка в которой присутствует хеш указанной записи,

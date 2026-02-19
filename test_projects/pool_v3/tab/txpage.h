@@ -63,6 +63,7 @@ public slots:
 
 protected slots:
     void slotTxStatus();
+    void slotRemoveTxRecord();
 
 
 signals:

@@ -151,6 +151,8 @@ void DefiTxTabPage::initPopupMenu()
     QList< QPair<QString, QString> > act_list;
     QPair<QString, QString> pair1("Check TX status", QString("%1/emblem-ok.svg").arg(AppCommonSettings::commonIconsPath()));
     act_list.append(pair1);
+    QPair<QString, QString> pair2("Remove TX record", QString("%1/list-remove.svg").arg(AppCommonSettings::commonIconsPath()));
+    act_list.append(pair2);
 
     //init popup menu actions
     m_table->popupMenuActivate(act_list);
@@ -158,6 +160,9 @@ void DefiTxTabPage::initPopupMenu()
     //connect OWN slots to popup actions
     int i_menu = 0;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotTxStatus())); i_menu++;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotRemoveTxRecord())); i_menu++;
+
+
 }
 void DefiTxTabPage::slotTxStatus()
 {
@@ -171,6 +176,20 @@ void DefiTxTabPage::slotTxStatus()
     j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcTXStatus));
     j_params.insert(AppCommonSettings::nodejsTxHashFieldName(), hash);
     sendReadNodejsRequest(j_params);
+}
+void DefiTxTabPage::slotRemoveTxRecord()
+{
+    qDebug("DefiTxTabPage::slotRemoveTxRecord()");
+    int row = m_table->curSelectedRow();
+    if (row < 0) {emit signalError("You must select row"); return;}
+
+    QString hash = m_table->table()->item(row, HASH_COL)->text().trimmed();
+    emit signalMsg(QString("try remove record by tx_hash [%1] .......").arg(hash));
+
+    bool ok;
+    m_logger->removeRecord(hash, ok);
+    if (!ok) emit signalError("can't remove record");
+    else emit signalMsg("done!");
 }
 void DefiTxTabPage::slotNodejsReply(const QJsonObject &js_reply)
 {
