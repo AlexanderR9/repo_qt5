@@ -140,6 +140,14 @@ QString LFile::shortDirName(QString full_name)
     QDir dir(full_name);
     return dir.dirName();
 }
+QString LFile::fileDelete(QString fname)
+{
+    if (!LFile::fileExists(fname)) return QString("file not found");
+
+    bool ok = QFile::remove(fname);
+    if (ok) return QString();
+    return QString("can't remove file");
+}
 QString LFile::fileCreate(QString fname)
 {
     QString err;

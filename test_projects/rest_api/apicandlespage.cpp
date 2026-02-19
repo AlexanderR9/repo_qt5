@@ -166,7 +166,7 @@ void APICandlesPage::reinitWidgets()
     m_assetTable = new LSearchTableWidgetBox(this);
     m_assetTable->setTitle("Favorite assets");
     m_assetTable->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::SingleSelection);
-    m_assetTable->setSelectionColor("#DDF4FF");
+    m_assetTable->setSelectionColor("#87CEEB");
     m_assetTable->vHeaderHide();
 
     headers.clear();
@@ -274,6 +274,10 @@ void APICandlesPage::initPopupMenu()
     act_list.append(pair1);
     QPair<QString, QString> pair2("Download history", QString("%1/candle.png").arg(i_path));
     act_list.append(pair2);
+    QPair<QString, QString> pair3("Destroy history", QString("%1/ball_red.svg").arg(i_path));
+    act_list.append(pair3);
+    QPair<QString, QString> pair4("Remove favor", QString("%1/list-remove.svg").arg(i_path));
+    act_list.append(pair4);
 
     //init popup menu actions
     m_assetTable->popupMenuActivate(act_list);
@@ -282,7 +286,42 @@ void APICandlesPage::initPopupMenu()
     int i_menu = 0;
     m_assetTable->connectSlotToPopupAction(i_menu, this, SLOT(slotReloadHistoryFile())); i_menu++;
     m_assetTable->connectSlotToPopupAction(i_menu, this, SLOT(slotDownloadCandles())); i_menu++;
+    m_assetTable->connectSlotToPopupAction(i_menu, this, SLOT(slotDeleteHistoryFile())); i_menu++;
+    m_assetTable->connectSlotToPopupAction(i_menu, this, SLOT(slotRemoveFromFavorites())); i_menu++;
 
+}
+void APICandlesPage::slotDeleteHistoryFile()
+{
+    qDebug("APICandlesPage::slotDeleteHistoryFile()");
+    int row = LTable::selectedRows(m_assetTable->table()).first();
+    QString ticker = m_data.at(row).ticker;
+    QString fname = QString("%1%2%3.txt").arg(historyPath()).arg(QDir::separator()).arg(ticker);
+    emit signalMsg(QString("try delete file [%1] .......").arg(fname));
+
+    if (!LFile::fileExists(fname))
+    {
+        emit signalError("history file is not exists");
+        return;
+    }
+
+    QString err = LFile::fileDelete(fname);
+    if (!err.isEmpty()) emit signalError(err);
+    else emit signalMsg("done!");
+}
+void APICandlesPage::slotRemoveFromFavorites()
+{
+    qDebug("APICandlesPage::slotRemoveFromFavorites()");
+    int row = LTable::selectedRows(m_assetTable->table()).first();
+    QString ticker = m_data.at(row).ticker;
+
+    // try remove history file
+    QString fname = QString("%1%2%3.txt").arg(historyPath()).arg(QDir::separator()).arg(ticker);
+    if (LFile::fileExists(fname)) slotDeleteHistoryFile();
+
+    // remove asset from favorites list
+    emit signalMsg(QString("removing asset from favorites [%1] .......").arg(ticker));
+    slotRemoveFavorAsset(ticker);
+    emit signalMsg("done!");
 }
 void APICandlesPage::slotReloadHistoryFile()
 {
@@ -331,7 +370,7 @@ void APICandlesPage::loadHistoryFile(QString ticker)
     ticker = ticker.trimmed();
     if (ticker.isEmpty()) {emit signalError("ticker is empty"); return;}
 
-    QString fname = QString("%1%2/%3.txt").arg(historyPath()).arg(QDir::separator()).arg(ticker);
+    QString fname = QString("%1%2%3.txt").arg(historyPath()).arg(QDir::separator()).arg(ticker);
     emit signalMsg(QString("FILE [%1]").arg(fname));
     if (!LFile::fileExists(fname))
     {

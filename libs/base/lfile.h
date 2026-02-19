@@ -33,6 +33,8 @@ public:
     static bool dirExists(QString);
     //создать пустой файл (указывать полный путь)
     static QString fileCreate(QString);
+    //удалить файл  (указывать полный путь)
+    static QString fileDelete(QString);
     //возращает имя файла без полного пути
     static QString shortFileName(QString);
     //возращает имя папки без полного пути

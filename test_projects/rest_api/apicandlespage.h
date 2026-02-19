@@ -71,7 +71,10 @@ public slots:
 protected slots:
     void slotReloadHistoryFile();
     void slotDownloadCandles();
+    void slotDeleteHistoryFile();
+    void slotRemoveFromFavorites();
     void slotDownloadlerFinished(QString);
+
 
 
 };
