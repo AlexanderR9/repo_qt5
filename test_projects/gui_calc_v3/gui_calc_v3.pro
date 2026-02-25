@@ -24,14 +24,15 @@ unix:!macx: LIBS += -L$$PWD/../../libs/uniswap/build/ -lluniswap
 
 # Input
 HEADERS += $$PWD/mainform.h \
-#    $$PWD/tickobj.h \
-    $$PWD/paramswidget.h
+    $$PWD/paramswidget.h \
+    $$PWD/lpputpage.h
 
 SOURCES += $$PWD/main.cpp \
-	$$PWD/mainform.cpp \
-#    $$PWD/tickobj.cpp \
-    $$PWD/paramswidget.cpp
+    $$PWD/mainform.cpp \
+    $$PWD/paramswidget.cpp \
+    $$PWD/lpputpage.cpp
 
-FORMS += $$PWD/poolparams.ui
+FORMS += $$PWD/poolparams.ui \
+    $$PWD/lpputpage.ui
 
 

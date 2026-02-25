@@ -4,6 +4,7 @@
 #include "paramswidget.h"
 //#include "tickobj.h"
 #include "calc_v3.h"
+#include "lpputpage.h"
 
 #include <QDebug>
 #include <QDir>
@@ -16,6 +17,7 @@
 #include <QListWidget>
 #include <QTreeWidget>
 #include <QColor>
+#include <QTableWidget>
 
 
 
@@ -25,7 +27,9 @@ MainForm::MainForm(QWidget *parent)
       m_protocol(NULL),
     m_paramsWidget(NULL),
     v_splitter(NULL),
-    m_calcObj(NULL)
+    m_calcObj(NULL),
+    m_lpWidget(NULL),
+    w_tab(NULL)
 {
     setObjectName("main_form_v3");
 
@@ -69,6 +73,12 @@ void MainForm::slotAction(int type)
 }
 void MainForm::actStart()
 {
+    if (w_tab->currentIndex() == 1)
+    {
+        m_lpWidget->calc();
+        return;
+    }
+
     InputPoolParams pp;
     m_paramsWidget->getParams(pp);
     m_paramsWidget->resetCalcParams();
@@ -91,10 +101,20 @@ void MainForm::initWidgets()
     v_splitter = new QSplitter(Qt::Vertical, this);
     addWidget(v_splitter, 0, 0);
 
+    w_tab = new QTabWidget(this);
+    w_tab->clear();
+
     m_paramsWidget = new ParamsWidget(this);
+    m_lpWidget = new LpPutPage(this);
     m_protocol = new LProtocolBox(false, this);
-    v_splitter->addWidget(m_paramsWidget);
+
+
+    //v_splitter->addWidget(m_paramsWidget);
+    v_splitter->addWidget(w_tab);
     v_splitter->addWidget(m_protocol);
+
+    w_tab->addTab(m_paramsWidget, "Pool range");
+    w_tab->addTab(m_lpWidget, "LP/Put calculation");
 
     connect(m_paramsWidget, SIGNAL(signalError(const QString&)), this, SLOT(slotError(const QString&)));
     connect(m_paramsWidget, SIGNAL(signalMsg(const QString&)), this, SLOT(slotMsg(const QString&)));
@@ -121,6 +141,11 @@ void MainForm::save()
     QSettings settings(companyName(), projectName());
     settings.setValue(QString("%1/v_splitter/state").arg(objectName()), v_splitter->saveState());
     if (m_paramsWidget) m_paramsWidget->save(settings);
+    if (m_lpWidget) m_lpWidget->save(settings);
+
+    if (w_tab)
+        settings.setValue(QString("%1/tab/index").arg(objectName()), w_tab->currentIndex());
+
 }
 void MainForm::load()
 {
@@ -130,6 +155,10 @@ void MainForm::load()
     QByteArray ba(settings.value(QString("%1/v_splitter/state").arg(objectName()), QByteArray()).toByteArray());
     if (!ba.isEmpty()) v_splitter->restoreState(ba);
     if (m_paramsWidget) m_paramsWidget->load(settings);
+    if (m_lpWidget) m_lpWidget->load(settings);
+
+    if (w_tab)
+         w_tab->setCurrentIndex(settings.value(QString("%1/tab/index").arg(objectName()), 0).toInt());
 }
 
 

@@ -7,6 +7,8 @@ class LProtocolBox;
 class QSplitter;
 class ParamsWidget;
 class LPoolCalcObj;
+class LpPutPage;
+class QTabWidget;
 
 
 // MainForm
@@ -20,8 +22,10 @@ public:
 protected:
     LProtocolBox                *m_protocol;
     ParamsWidget                *m_paramsWidget;
+    LpPutPage                   *m_lpWidget;
     QSplitter                   *v_splitter;
     LPoolCalcObj                *m_calcObj;
+    QTabWidget                  *w_tab;
 
     QString projectName() const {return "uni_calc_v3";}
     QString mainTitle() const {return QString("Pool calculator (Qt5)!");}
