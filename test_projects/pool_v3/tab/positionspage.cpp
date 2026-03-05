@@ -187,7 +187,7 @@ void DefiPositionsPage::setChain(int cid)
 void DefiPositionsPage::slotNodejsReply(const QJsonObject &js_reply)
 {
     QString req = js_reply.value(AppCommonSettings::nodejsReqFieldName()).toString();
-    qDebug()<<QString("DefiPositionsPage::slotNodejsReply - req kind: [%1]").arg(req);
+   // qDebug()<<QString("DefiPositionsPage::slotNodejsReply - req kind: [%1]").arg(req);
 
     if (req == NodejsBridge::jsonCommandValue(nrcPositions))
     {
@@ -223,10 +223,10 @@ void DefiPositionsPage::slotNodejsReply(const QJsonObject &js_reply)
 }
 void DefiPositionsPage::getPoolStateFromPoolPage(const QJsonObject &js_reply)
 {
-    qDebug("DefiPositionsPage::getPoolStateFromPoolPage 1");
+  //  qDebug("DefiPositionsPage::getPoolStateFromPoolPage 1");
     if (!m_txWorker->mintDialogActivated()) return;
 
-    qDebug("DefiPositionsPage::getPoolStateFromPoolPage 2");
+ //   qDebug("DefiPositionsPage::getPoolStateFromPoolPage 2");
     QString p_addr = js_reply.value("pool_address").toString().trimmed();
     QStringList p_state;
     emit signalGetPoolStateFromPoolPage(p_addr, p_state);
@@ -287,7 +287,7 @@ void DefiPositionsPage::updatePositionsData(const QJsonObject &js_reply)
     m_positions.clear();
     m_table->removeAllRows();
 
-    qDebug("--DefiPositionsPage::updatePositionsData--");
+   // qDebug("--DefiPositionsPage::updatePositionsData--");
     bool result = false;
     if (js_reply.contains("result")) result = (js_reply.value("result").toString().trimmed().toLower() == "true");
     int n_pos = js_reply.value("pos_count").toString().trimmed().toInt();
@@ -340,14 +340,14 @@ void DefiPositionsPage::readNodejsPosFile()
             rec.calcTIndex(curChainName());
             if (rec.hasLiquidity()) m_positions.insert(0, rec);
             else m_positions.append(rec);
-            qDebug()<<rec.toStr();
+           // qDebug()<<rec.toStr();
         }
         else qWarning()<<QString("DefiPositionsPage: WARNING invalid fline_pos: %1").arg(fline);
     }
 }
 void DefiPositionsPage::reloadTableByRecords()
 {
-    qDebug()<<QString("DefiPositionsPage::reloadTableByRecords()  pos_count=%1").arg(posCount());
+   // qDebug()<<QString("DefiPositionsPage::reloadTableByRecords()  pos_count=%1").arg(posCount());
     if (!hasPos()) return;
 
     QTableWidget *t = m_table->table();
@@ -389,7 +389,7 @@ QString DefiPositionsPage::poolInfo(const DefiPosition &rec) const
 }
 void DefiPositionsPage::slotGetSelectedPosState()
 {
-    qDebug("DefiPositionsPage::slotGetSelectedPosState()");
+   // qDebug("DefiPositionsPage::slotGetSelectedPosState()");
     QTableWidget *t = m_table->table();
     QList<int> list = LTable::selectedRows(t);
     if (list.isEmpty()) {emit signalError("DefiPositionsPage: You must select several positions"); return;}
@@ -412,7 +412,7 @@ void DefiPositionsPage::slotGetSelectedPosState()
 }
 void DefiPositionsPage::slotGetLiquidityPosState()
 {
-    qDebug("DefiPositionsPage::slotGetLiquidityPosState()");
+   // qDebug("DefiPositionsPage::slotGetLiquidityPosState()");
     if (m_positions.isEmpty()) return;
 
     QJsonObject j_params;
@@ -437,7 +437,7 @@ void DefiPositionsPage::slotGetLiquidityPosState()
 }
 void DefiPositionsPage::slotGetNoneLiqPosState()
 {
-    qDebug("DefiPositionsPage::slotGetNoneLiqPosState()");
+    //qDebug("DefiPositionsPage::slotGetNoneLiqPosState()");
     if (m_positions.isEmpty()) return;
 
     QJsonObject j_params;
@@ -542,7 +542,7 @@ void DefiPositionsPage::checkTxResult(QString req, const QJsonObject &js_reply)
 }
 void DefiPositionsPage::slotGetPoolState(const QString &pool_addr)
 {
-    qDebug()<<QString("DefiPoolsTabPage::slotGetPoolState() pool_addr[%1]").arg(pool_addr);
+   // qDebug()<<QString("DefiPoolsTabPage::slotGetPoolState() pool_addr[%1]").arg(pool_addr);
 
     QJsonObject j_params;
     j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcPoolState));

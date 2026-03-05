@@ -176,7 +176,7 @@ QString DefiStatPosPage::strNestedUserAmount(const TxLogRecord *tx_rec) const
     float size1 = tx_rec->pool.token_sizes.second;
     float p0 = tx_rec->pool.price0;
 
-    qDebug()<<QString("strNestedUserAmount: prior_index=%1 size0=%2  size1=%3 p0=%4").arg(prior_index).arg(size0).arg(size1).arg(p0);
+   // qDebug()<<QString("strNestedUserAmount: prior_index=%1 size0=%2  size1=%3 p0=%4").arg(prior_index).arg(size0).arg(size1).arg(p0);
 
     float amount = -1;
     QString token_name = "?";
@@ -213,7 +213,7 @@ void DefiStatPosPage::checkClosedTx(const TxLogRecord *tx_rec)
     if ((tx_rec->tx_kind != NodejsBridge::jsonCommandValue(txTakeaway)) && (tx_rec->tx_kind != NodejsBridge::jsonCommandValue(txDecrease))) return;
 
     int row = findRowClosedPosision(tx_rec);
-    if (row < 0) {qDebug()<<QString("not found row, pid=%1").arg(tx_rec->pool.pid); return;}
+    if (row < 0) {qWarning()<<QString("WARNING: not found row, pid=%1").arg(tx_rec->pool.pid); return;}
 
     QTableWidget *t = m_table->table();
     t->item(row, DATE_COL+1)->setText(tx_rec->strDate());
@@ -590,7 +590,7 @@ JSPosTableWidgetBox::JSPosTableWidgetBox(QWidget *parent)
 }
 void JSPosTableWidgetBox::slotItemDoubleClicked(QTableWidgetItem *item)
 {
-    qDebug("JSPosTableWidgetBox::slotItemDoubleClicked");
+    //qDebug("JSPosTableWidgetBox::slotItemDoubleClicked");
     if (!item) return;
     if (item->column() != m_filterCol)
     {
@@ -600,7 +600,7 @@ void JSPosTableWidgetBox::slotItemDoubleClicked(QTableWidgetItem *item)
 
 
     QString f_text(item->text());
-    qDebug()<<QString("NEED FILTER: item(%1/%2)  text(%3)").arg(item->row()).arg(item->column()).arg(item->text());
+    //qDebug()<<QString("NEED FILTER: item(%1/%2)  text(%3)").arg(item->row()).arg(item->column()).arg(item->text());
     int n_visible = 0;
     for (int i=0; i<m_table->rowCount(); i++)
     {
@@ -613,7 +613,7 @@ void JSPosTableWidgetBox::slotItemDoubleClicked(QTableWidgetItem *item)
 }
 void JSPosTableWidgetBox::slotDoubleClickEmptyArea()
 {
-    qDebug("JSPosTableWidgetBox::slotDoubleClickEmptyArea() CANCEL FILTER");
+    //qDebug("JSPosTableWidgetBox::slotDoubleClickEmptyArea() CANCEL FILTER");
     m_table->clearSelection();
     for (int i=0; i<m_table->rowCount(); i++)
         m_table->showRow(i);

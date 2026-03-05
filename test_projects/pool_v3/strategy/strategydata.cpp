@@ -111,7 +111,7 @@ void DefiStrategyData::loadLineNode(const QDomNode &node)
 }
 int DefiStrategyData::lineIndexOf(int s_type, const QString &pool_addr) const
 {
-    qDebug()<<QString("DefiStrategyData::lineIndexOf s_type[%1]  pool_addr[%2]").arg(s_type).arg(pool_addr);
+  //  qDebug()<<QString("DefiStrategyData::lineIndexOf s_type[%1]  pool_addr[%2]").arg(s_type).arg(pool_addr);
     if (linesEmpty()) return -1;
 
     int n = lineCount();
@@ -188,6 +188,7 @@ void StrategyLineData::fillLineNode(QDomElement &line_node) const
     LStaticXML::setAttrNode(settings_node, "liq_size", QString::number(start_parameters.liq_size));
     LStaticXML::setAttrNode(settings_node, "range_width", QString::number(start_parameters.range_width));
     LStaticXML::setAttrNode(settings_node, "prior_token_part", QString::number(start_parameters.prior_asset_size)); // %
+    LStaticXML::setAttrNode(settings_node, "first_token_index", QString::number(start_parameters.first_token_index)); // %
     line_node.appendChild(settings_node);
 
     fillLineStepsNodes(line_node);
@@ -236,8 +237,11 @@ void StrategyLineData::loadLineParameters(const QDomNode &params_node, bool &ok)
     start_parameters.range_width = LStaticXML::getDoubleAttrValue("range_width", params_node);
     if (start_parameters.range_width <= 0) {qWarning("DefiStrategyData::loadLineParameters WARNING - invalid value range_width"); return;}
 
-    start_parameters.prior_asset_size = LStaticXML::getDoubleAttrValue("prior_token_part", params_node);
+    start_parameters.prior_asset_size = LStaticXML::getIntAttrValue("prior_token_part", params_node);
     if (start_parameters.prior_asset_size <= 0) {qWarning("DefiStrategyData::loadLineParameters WARNING - invalid value prior_token_part"); return;}
+
+    start_parameters.first_token_index = uint(LStaticXML::getIntAttrValue("first_token_index", params_node, 0));
+    if (start_parameters.first_token_index > 1) {qWarning("DefiStrategyData::loadLineParameters WARNING - invalid value first_token_index"); return;}
 
     ok= true;
 }
@@ -333,15 +337,16 @@ QStringList StrategyLineData::tableStepRowData(int step_number) const
 }
 void StrategyLineData::getCurrentLiqSize(QPair<float, float> &liq) const
 {
-    liq.first = liq.second = 0;
-    quint8 p_index = amoutPriorIndex();
+    //quint8 p_index = amoutPriorIndex();
     if (steps.isEmpty())
     {
-        if (p_index == 0) liq.first = start_parameters.liq_size;
-        else liq.second = start_parameters.liq_size;
+        //if (p_index == 0) liq.first = start_parameters.liq_size;
+        //else liq.second = start_parameters.liq_size;
+        liq.first = liq.second = -1;
         return;
     }
 
+    liq.first = liq.second = 0;
     if (steps.last().isOpened()) return;
 
     const StrategyLineStepAmounts &a = steps.last().amounts;
@@ -353,7 +358,7 @@ void StrategyLineData::getCurrentLiqSize(QPair<float, float> &liq) const
 void StrategyLineParameters::reset()
 {
     liq_size = range_width = -1;
-    prior_asset_size = 0;
+    prior_asset_size = first_token_index = 0;
 }
 
 

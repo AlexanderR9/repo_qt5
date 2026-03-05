@@ -63,7 +63,7 @@ void WalletBalanceLogger::parseFileData(const QStringList &fdata)
 void WalletBalanceLogger::initEmptyFile()
 {
     QString fname = balanceFileName();
-    qDebug()<<QString("WalletBalanceLogger::initEmptyFile() [%1]").arg(fname);
+    //qDebug()<<QString("WalletBalanceLogger::initEmptyFile() [%1]").arg(fname);
     emit signalMsg("creating log file .....");
     QString err = LFile::fileCreate(fname);
     if (err.isEmpty()) emit signalMsg("done!");

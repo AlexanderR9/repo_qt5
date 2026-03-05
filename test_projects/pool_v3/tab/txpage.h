@@ -36,6 +36,7 @@ protected:
     void updateRowColor(int); // обновить цвета  некоторых ячеек строки (tx_kind/status)
     void updateTotalTable(); //обновить поля обобщенной таблицы
     void setRecordIcon(int, const TxLogRecord&); // обновить тултип и иконку для типа транзакции
+    void createTableByNewRec(const TxLogRecord&); // добавить в таблицу строку с новой записью
 
     // после получения статуса транзакции и обновления самой записи в m_logger необходимо обновить соответствующую строку в таблице
     void updateTableRowByRecord(const QString&);
@@ -52,6 +53,12 @@ public slots:
     // выполняется после успешного получения в ответе tx_hash на любой другой странице.
     // теперь эту запись необходимо добавить в лог-файлы tx_*.txt
     void slotNewTx(const TxLogRecord&);
+
+    // тоже самое что и slotNewTx, только сигнал приходит со страницы DefiStrategyPage.
+    // засись добавляется но не запускается задержка и автопроверка статуса.
+    void slotStrategyTx(const TxLogRecord&);
+    void slotStrategyTxStatus(const QMap<QString, QString>&); // сигнал приходит со страницы DefiStrategyPage о получении статуса TX.
+
 
     // слоты, которые выполняются по сигналам страницы DefiStatPosPage
     void slotSetTxHashHistory(QStringList&); // получить историю всех хешей для этой сети и только успешно-выполненные

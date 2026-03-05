@@ -7,21 +7,30 @@ OBJECTS_DIR = obj
 QT -= gui
 QT *= core
 
-
 INCLUDEPATH += .\
             $$PWD/../base \
+            $$PWD/../process \
             $$PWD
 
 #path for libs files
 DEPENDPATH += $$PWD/../base/build
+DEPENDPATH += $$PWD/../process/build
 
 #include libs
 unix:!macx: LIBS += -L$$PWD/../base/build/ -llbase
+unix:!macx: LIBS += -L$$PWD/../process/build/ -llprocess
+
 
 
 # Input
 HEADERS += $$PWD/zipobj.h \
-	$$PWD/zip_global.h
+	$$PWD/zip_global.h \
+        $$PWD/unzipobj.h \
+        $$PWD/zipobj_base.h
 
 
-SOURCES += $$PWD/zipobj.cpp
+SOURCES += $$PWD/zipobj.cpp \
+        $$PWD/unzipobj.cpp \
+        $$PWD/zipobj_base.cpp
+
+

@@ -97,7 +97,7 @@ void DefiPoolsTabPage::initPopupMenu()
 }
 void DefiPoolsTabPage::slotGetPoolState()
 {
-    qDebug("DefiPoolsTabPage::slotGetPoolState()");
+    //qDebug("DefiPoolsTabPage::slotGetPoolState()");
     int row = m_table->curSelectedRow();
     if (row < 0) {emit signalError("DefiPoolsTabPage: You must select row"); return;}
     QTableWidget *t = m_table->table();
@@ -117,7 +117,7 @@ void DefiPoolsTabPage::slotGetPoolState()
 }
 void DefiPoolsTabPage::slotGetPoolStateForPosPage(const QString &p_addr, QStringList &p_state)
 {
-    qDebug("DefiPoolsTabPage::slotGetPoolStateForPosPage");
+    //qDebug("DefiPoolsTabPage::slotGetPoolStateForPosPage");
     p_state.clear();
     QTableWidget *t = m_table->table();
     int n_rows = t->rowCount();
@@ -173,7 +173,7 @@ bool DefiPoolsTabPage::poolStateUpdated() const
 }
 void DefiPoolsTabPage::slotTxSwap()
 {
-    qDebug("DefiPoolsTabPage::slotTxSwap()");
+    //qDebug("DefiPoolsTabPage::slotTxSwap()");
     int row = m_table->curSelectedRow();
     if (row < 0) {emit signalError("DefiPoolsTabPage: You must select row"); return;}
     QTableWidget *t = m_table->table();
@@ -224,7 +224,7 @@ void DefiPoolsTabPage::slotTxSwap()
 void DefiPoolsTabPage::slotNodejsReply(const QJsonObject &js_reply)
 {
     QString req = js_reply.value(AppCommonSettings::nodejsReqFieldName()).toString();
-    qDebug()<<QString("DefiPoolsTabPage::slotNodejsReply - req kind: [%1]").arg(req);
+    //qDebug()<<QString("DefiPoolsTabPage::slotNodejsReply - req kind: [%1]").arg(req);
 
 
     if (req == NodejsBridge::jsonCommandValue(nrcPoolState)) updatePoolStateRow(js_reply);
@@ -235,7 +235,7 @@ void DefiPoolsTabPage::slotNodejsReply(const QJsonObject &js_reply)
 }
 void DefiPoolsTabPage::updatePoolStateRow(const QJsonObject &js_reply)
 {
-    qDebug("DefiPoolsTabPage::updatePoolStateRow");
+    //qDebug("DefiPoolsTabPage::updatePoolStateRow");
     QTableWidget *t = m_table->table();
     int n_rows = t->rowCount();
 
@@ -284,7 +284,7 @@ void DefiPoolsTabPage::updatePoolStateRow(const QJsonObject &js_reply)
 }
 void DefiPoolsTabPage::checkTxResult(QString req, const QJsonObject &js_reply)
 {
-    qDebug("DefiPoolsTabPage::checkTxResult(QString req");
+   // qDebug("DefiPoolsTabPage::checkTxResult(QString req");
     bool is_simulate = (js_reply.value(AppCommonSettings::nodejsTxSimulateFieldName()).toString() == "yes");
     emit signalMsg("");
     emit signalMsg(QString("//////////// REPLY form TX request [%1] ///////////////").arg(req));
@@ -305,7 +305,7 @@ void DefiPoolsTabPage::checkTxResult(QString req, const QJsonObject &js_reply)
 }
 void DefiPoolsTabPage::logTxRecord(QString req, const QJsonObject &js_reply)
 {
-    qDebug("DefiPoolsTabPage::logTxRecord");
+   // qDebug("DefiPoolsTabPage::logTxRecord");
 
     TxLogRecord tx_rec(req, curChainName());
     tx_rec.tx_hash = js_reply.value(AppCommonSettings::nodejsTxHashFieldName()).toString().trimmed().toLower();
@@ -313,7 +313,7 @@ void DefiPoolsTabPage::logTxRecord(QString req, const QJsonObject &js_reply)
     tx_rec.pool.token_in = js_reply.value("tokenIn").toString().trimmed();
     tx_rec.pool.token_sizes.first = js_reply.value("input_amount").toString().toFloat();
 
-    qDebug()<<QString("tx_hash[%1]").arg(tx_rec.tx_hash);
+    //qDebug()<<QString("tx_hash[%1]").arg(tx_rec.tx_hash);
     QTableWidget *t = m_table->table();
     int row = findRowByPool(tx_rec.pool.pool_addr);
     if (row < 0)
@@ -336,7 +336,7 @@ void DefiPoolsTabPage::logTxRecord(QString req, const QJsonObject &js_reply)
     tx_rec.formNote(extra_data);
     //  - swap: pool_addr[0x_addr]; token_in[0x_addr]; token_amount[value]; current_price[value] (адрес пула в котором меняем, входной токен, который отдаем и сколько отдаем, текущая цена)
 
-    qDebug()<<QString("DefiPoolsTabPage::logTxRecord   emit signalNewTx(tx_rec);  tx_rec.note[%1]").arg(tx_rec.note);
+    //qDebug()<<QString("DefiPoolsTabPage::logTxRecord   emit signalNewTx(tx_rec);  tx_rec.note[%1]").arg(tx_rec.note);
     emit signalNewTx(tx_rec);
 }
 

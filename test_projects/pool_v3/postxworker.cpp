@@ -267,7 +267,7 @@ int PosTxWorker::tableRowIndexOf(int pid) const
 
 void PosTxWorker::burnSelected(const QList<DefiPosition> &pos_data)
 {
-    qDebug("PosTxWorker::burnSelected()");
+  //  qDebug("PosTxWorker::burnSelected()");
     QList<int> list = LTable::selectedRows(m_table);
     if (list.isEmpty()) {emit signalError("PosTxWorker: You must select several positions"); return;}
 
@@ -305,7 +305,7 @@ void PosTxWorker::burnSelected(const QList<DefiPosition> &pos_data)
 }
 void PosTxWorker::collectSelected(const QList<DefiPosition> &pos_data)
 {
-    qDebug("PosTxWorker::collectSelected()");
+   // qDebug("PosTxWorker::collectSelected()");
     QList<int> list = LTable::selectedRows(m_table);
     if (list.isEmpty()) {emit signalError("PosTxWorker: You must select several positions"); return;}
     if (list.count() > 1) {emit signalError("PosTxWorker: You must select only one position"); return;}
@@ -343,7 +343,7 @@ void PosTxWorker::collectSelected(const QList<DefiPosition> &pos_data)
 }
 void PosTxWorker::decreaseSelected(const QList<DefiPosition> &pos_data)
 {
-    qDebug("PosTxWorker::decreaseSelected()");
+   // qDebug("PosTxWorker::decreaseSelected()");
     QList<int> list = LTable::selectedRows(m_table);
     if (list.isEmpty()) {emit signalError("PosTxWorker: You must select several positions"); return;}
     if (list.count() > 1) {emit signalError("PosTxWorker: You must select only one position"); return;}
@@ -382,7 +382,7 @@ void PosTxWorker::decreaseSelected(const QList<DefiPosition> &pos_data)
 }
 void PosTxWorker::increaseSelected(const QList<DefiPosition> &pos_data)
 {
-    qDebug("PosTxWorker::increaseSelected()");
+  //  qDebug("PosTxWorker::increaseSelected()");
     QList<int> list = LTable::selectedRows(m_table);
     if (list.isEmpty()) {emit signalError("PosTxWorker: You must select position"); return;}
     if (list.count() > 1) {emit signalError("PosTxWorker: You must select only one position"); return;}
@@ -422,7 +422,7 @@ void PosTxWorker::increaseSelected(const QList<DefiPosition> &pos_data)
 }
 void PosTxWorker::takeawaySelected(const QList<DefiPosition> &pos_data)
 {
-    qDebug("PosTxWorker::takeawaySelected()");
+   // qDebug("PosTxWorker::takeawaySelected()");
     QList<int> list = LTable::selectedRows(m_table);
     if (list.isEmpty()) {emit signalError("PosTxWorker: You must select several positions"); return;}
     if (list.count() > 1) {emit signalError("PosTxWorker: You must select only one position"); return;}
@@ -480,13 +480,13 @@ void PosTxWorker::mintPos()
     if (d.isApply())
     {
         m_mintDialog = NULL;
-        qDebug("PosTxWorker::mintPos()  send MINT_TX");
+       // qDebug("PosTxWorker::mintPos()  send MINT_TX");
         emit signalSendTx(data);
     }
     else
     {
         m_mintDialog = NULL;
-        qDebug("cancel mint");
+      //  qDebug("cancel mint");
         emit signalMsg("operation was canceled!");
     }
 }

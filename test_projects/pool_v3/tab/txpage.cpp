@@ -47,22 +47,30 @@ DefiTxTabPage::DefiTxTabPage(QWidget *parent)
     //init context menu
     initPopupMenu();
 }
-void DefiTxTabPage::slotNewTx(const TxLogRecord &rec)
+void DefiTxTabPage::createTableByNewRec(const TxLogRecord &rec)
 {
-    m_logger->addNewRecord(rec);
-
     QTableWidget *t = m_table->table();
     QStringList row_data;
     row_data << rec.tx_hash << rec.strDate() << rec.strTime() << rec.tx_kind;
     row_data << QString::number(rec.status.gas_used) << QString::number(rec.status.fee_coin) << QString::number(rec.status.fee_cent);
     row_data << rec.status.result;
 
-    LTable::insertTableRow(0, t, row_data);   
+    LTable::insertTableRow(0, t, row_data);
     setRecordIcon(0, rec);
     updateRowColor(0);
     m_table->resizeByContents();
+}
+void DefiTxTabPage::slotNewTx(const TxLogRecord &rec)
+{
+    m_logger->addNewRecord(rec);
+    createTableByNewRec(rec);
 
     emit signalStartTXDelay(rec.tx_kind.trimmed().toLower());
+}
+void DefiTxTabPage::slotStrategyTx(const TxLogRecord &rec)
+{
+    m_logger->addNewRecord(rec);
+    createTableByNewRec(rec);
 }
 void DefiTxTabPage::setChain(int cid)
 {
@@ -161,8 +169,6 @@ void DefiTxTabPage::initPopupMenu()
     int i_menu = 0;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotTxStatus())); i_menu++;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotRemoveTxRecord())); i_menu++;
-
-
 }
 void DefiTxTabPage::slotTxStatus()
 {
@@ -171,7 +177,7 @@ void DefiTxTabPage::slotTxStatus()
     if (row < 0) {emit signalError("You must select row"); return;}
 
     QString hash = m_table->table()->item(row, HASH_COL)->text().trimmed();
-    qDebug()<<QString("DefiTxTabPage::slotTxStatus()  row %1  hash[%2]").arg(row).arg(hash);
+   // qDebug()<<QString("DefiTxTabPage::slotTxStatus()  row %1  hash[%2]").arg(row).arg(hash);
     QJsonObject j_params;
     j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcTXStatus));
     j_params.insert(AppCommonSettings::nodejsTxHashFieldName(), hash);
@@ -179,7 +185,7 @@ void DefiTxTabPage::slotTxStatus()
 }
 void DefiTxTabPage::slotRemoveTxRecord()
 {
-    qDebug("DefiTxTabPage::slotRemoveTxRecord()");
+  //  qDebug("DefiTxTabPage::slotRemoveTxRecord()");
     int row = m_table->curSelectedRow();
     if (row < 0) {emit signalError("You must select row"); return;}
 
@@ -191,10 +197,27 @@ void DefiTxTabPage::slotRemoveTxRecord()
     if (!ok) emit signalError("can't remove record");
     else emit signalMsg("done!");
 }
+void DefiTxTabPage::slotStrategyTxStatus(const QMap<QString, QString> &map)
+{
+    qDebug("DefiTxTabPage::slotStrategyTxStatus");
+    QString hash = map.value("hash", QString());
+    int gas_used = map.value("gas_used", QString("-9999")).toUInt();
+    float fee_native = map.value("fee", QString("-9999")).toFloat();
+    QString status = map.value("status", QString());
+    qDebug()<<QString("hash[%1]   gas_used[%2]   fee_native[%3]   status[%4]").arg(hash).arg(gas_used).arg(fee_native).arg(status);
+
+    if (fee_native <= 0 || gas_used < 0 || status.isEmpty()) return;
+    const TxLogRecord *rec = m_logger->recByHash(hash);
+    if (!rec) return;
+    if (rec->status.result.trimmed().toLower() == status.trimmed().toLower()) return; // status already updated
+
+    qDebug("UPDATING RECORD STATUS...");
+    m_logger->updateRecStatus(hash, status, fee_native, quint32(gas_used));
+}
 void DefiTxTabPage::slotNodejsReply(const QJsonObject &js_reply)
 {
     QString req = js_reply.value(AppCommonSettings::nodejsReqFieldName()).toString();
-    qDebug()<<QString("DefiTxTabPage::slotNodejsReply - req kind: [%1]").arg(req);
+    //qDebug()<<QString("DefiTxTabPage::slotNodejsReply - req kind: [%1]").arg(req);
 
     if (req == NodejsBridge::jsonCommandValue(nrcTXStatus))
     {
@@ -288,7 +311,7 @@ void DefiTxTabPage::updateRowColor(int row)
 }
 void DefiTxTabPage::autoCheckStatusLastTx()
 {
-    qDebug("DefiTxTabPage::checkStatusLastTx()");
+ //   qDebug("DefiTxTabPage::checkStatusLastTx()");
     QTableWidget *t = m_table->table();
     t->clearSelection();
     t->selectRow(0);
@@ -303,19 +326,19 @@ void DefiTxTabPage::analyzeStatusLastTx()
         const TxLogRecord &rec = m_logger->recordLast();
         if (rec.resultOk())
         {
-            qDebug()<<QString("DefiTxTabPage::analyzeStatusLastTx() recordLast[%1] ").arg(rec.tx_hash);
+           // qDebug()<<QString("DefiTxTabPage::analyzeStatusLastTx() recordLast[%1] ").arg(rec.tx_hash);
             int x = startTimer(TIMER_DELAY_AFTER_STATUS);
-            qDebug() << QString("DefiTxTabPage::analyzeStatusLastTx()  start timer ID=%1").arg(x);
+            //qDebug() << QString("DefiTxTabPage::analyzeStatusLastTx()  start timer ID=%1").arg(x);
         }
     }
 }
 void DefiTxTabPage::timerEvent(QTimerEvent *event)
 {
     int t_id = event->timerId();
-    qDebug() << QString("KILL Timer ID:  %1").arg(t_id);
+   // qDebug() << QString("KILL Timer ID:  %1").arg(t_id);
     this->killTimer(t_id);
 
-    qDebug("DefiTxTabPage::timerEvent: next step [emit signalUpdatePageBack]");
+   // qDebug("DefiTxTabPage::timerEvent: next step [emit signalUpdatePageBack]");
     const TxLogRecord &rec = m_logger->recordLast();
     QString extra_data = QString();
     if (rec.tx_kind == NodejsBridge::jsonCommandValue(txApprove)) extra_data = rec.wallet.token_addr;

@@ -1,6 +1,7 @@
 #include "strategypage.h"
 #include "strategydata.h"
 #include "strategystepdialog.h"
+#include "strategystepdialogstruct.h"
 #include "appcommonsettings.h"
 #include "deficonfig.h"
 #include "ltable.h"
@@ -17,6 +18,7 @@
 #include <QLineEdit>
 #include <QToolButton>
 #include <QDir>
+#include <QJsonObject>
 
 
 #define DT_LINE_ENABLED_COLOR       QString("#F5F5DC")
@@ -48,7 +50,7 @@ DefiStrategyPage::DefiStrategyPage(QWidget *parent)
 }
 void DefiStrategyPage::controlButtonsDisable()
 {
-    qDebug("DefiStrategyPage::controlButtonsDisable()");
+   // qDebug("DefiStrategyPage::controlButtonsDisable()");
     startLineBtn()->setEnabled(false);
     stopLineBtn()->setEnabled(false);
     closeStepBtn()->setEnabled(false);
@@ -56,20 +58,22 @@ void DefiStrategyPage::controlButtonsDisable()
 }
 void DefiStrategyPage::resetStartParamsControls()
 {
-    qDebug("DefiStrategyPage::resetStartParamsControls()");
+  //  qDebug("DefiStrategyPage::resetStartParamsControls()");
     QLineEdit *edit_liq = qobject_cast<QLineEdit*>(m_controls.value(FULL_LIQ_SIZE_KEY));
     if (edit_liq) {edit_liq->setEnabled(true); edit_liq->setText("---");}
     QLineEdit *edit_range = qobject_cast<QLineEdit*>(m_controls.value(RANGE_WIDTH_KEY));
     if (edit_range) {edit_range->setEnabled(true); edit_range->setText("---");}
     QComboBox *combo_part = qobject_cast<QComboBox*>(m_controls.value(PRIOR_TOKEN_PART_KEY));
     if (combo_part) {combo_part->setEnabled(true); combo_part->setCurrentIndex(2);}
+    QComboBox *combo_first_i = qobject_cast<QComboBox*>(m_controls.value(START_TOKEN_KEY));
+    if (combo_first_i) {combo_first_i->setEnabled(true); combo_first_i->setCurrentIndex(0);}
 
     m_startTimeEdit->setStyleSheet(QString("background-color: %1").arg(DT_LINE_DISABLED_COLOR));
     m_startTimeEdit->setText(QString());
 }
 void DefiStrategyPage::restoreStartParamsByLine(const StrategyLineData *line)
 {
-    qDebug()<<QString("DefiStrategyPage::restoreStartParamsByLine()  pool[%1]").arg(line->pool_addr);
+   // qDebug()<<QString("DefiStrategyPage::restoreStartParamsByLine()  pool[%1]").arg(line->pool_addr);
     const StrategyLineParameters& sp = line->start_parameters;
     QLineEdit *edit_liq = qobject_cast<QLineEdit*>(m_controls.value(FULL_LIQ_SIZE_KEY));
     if (edit_liq) {edit_liq->setEnabled(false); edit_liq->setText(QString::number(sp.liq_size));}
@@ -83,6 +87,12 @@ void DefiStrategyPage::restoreStartParamsByLine(const StrategyLineData *line)
         if (i < 0) i = 2;
         combo_part->setCurrentIndex(i);
     }
+    QComboBox *combo_first_i = qobject_cast<QComboBox*>(m_controls.value(START_TOKEN_KEY));
+    if (combo_first_i)
+    {
+        combo_first_i->setEnabled(false);
+        combo_first_i->setCurrentIndex(sp.first_token_index);
+    }
 
     m_startTimeEdit->setStyleSheet(QString("background-color: %1").arg(DT_LINE_ENABLED_COLOR));
     m_startTimeEdit->setText(DefiStrategyData::fromTsPointToStr(line->ts_open));
@@ -90,7 +100,7 @@ void DefiStrategyPage::restoreStartParamsByLine(const StrategyLineData *line)
 }
 void DefiStrategyPage::updateControlButtonsState(int line_index)
 {
-    qDebug()<<QString("DefiStrategyPage::updateControlButtonsState() line_index=%1").arg(line_index);
+   // qDebug()<<QString("DefiStrategyPage::updateControlButtonsState() line_index=%1").arg(line_index);
     controlButtonsDisable();
     resetStartParamsControls();
     if (line_index < 0)
@@ -238,7 +248,7 @@ void DefiStrategyPage::initPageBoxes()
     m_controls.insert(PRIOR_TOKEN_PART_KEY, asize_combo);
     lay_row++;
 
-    g_lay->addWidget(new QLabel("Nested asset by start", this), lay_row, 0);
+    g_lay->addWidget(new QLabel("Nested asset by start line", this), lay_row, 0);
     QComboBox *start_token_combo = new QComboBox(this);
     start_token_combo->setObjectName("start_token_combo");
     start_token_combo->clear();
@@ -323,7 +333,7 @@ void DefiStrategyPage::initControlButtons(QFrame *b_frame)
 }
 void DefiStrategyPage::slotUpdateComboPools()
 {
-    qDebug()<<QString("DefiStrategyPage::slotUpdateComboPools()  strategy count %1, cur strategy %2").arg(m_strategyCombo->count()).arg(curStrategy());
+    //qDebug()<<QString("DefiStrategyPage::slotUpdateComboPools()  strategy count %1, cur strategy %2").arg(m_strategyCombo->count()).arg(curStrategy());
     m_poolCombo->clear();
 
     bool st_stable = curStrategyStable();
@@ -343,7 +353,7 @@ void DefiStrategyPage::slotPoolChanged()
     if (!m_dataObj) return;
 
     QString pool_addr = curPool();
-    qDebug()<<QString("DefiStrategyPage::slotPoolChanged(%0)  POOL[%1]  STG[%2]").arg(curChainName()).arg(pool_addr).arg(curStrategy());
+    //qDebug()<<QString("DefiStrategyPage::slotPoolChanged(%0)  POOL[%1]  STG[%2]").arg(curChainName()).arg(pool_addr).arg(curStrategy());
     if (pool_addr.isEmpty()) return;
 
     //find prior token
@@ -367,7 +377,7 @@ void DefiStrategyPage::slotPoolChanged()
 
     // update controls state
     int l_index = m_dataObj->lineIndexOf(curStrategy(), pool_addr);
-    qDebug()<<QString("DefiStrategyPage::slotPoolChanged()  l_index[%1]").arg(l_index);
+  //  qDebug()<<QString("DefiStrategyPage::slotPoolChanged()  l_index[%1]").arg(l_index);
     updateControlButtonsState(l_index);
 
     updateStepsTable(l_index);
@@ -408,6 +418,18 @@ void DefiStrategyPage::updateStepsTable(int line_index)
         }
     }
 }
+void DefiStrategyPage::slotAddGasPriceField(QJsonObject &tx_params_req)
+{
+    // add gas price parameter
+    float gp = chainGasPrice();
+    QString s_gp = "-1.0";
+    if (gp > 0)
+    {
+        if (gp < 0.01) s_gp = QString::number(gp, 'f', 6);
+        else s_gp = QString::number(gp);
+    }
+    tx_params_req.insert("gas_unit_price", s_gp);
+}
 
 
 
@@ -439,6 +461,7 @@ void DefiStrategyPage::slotStartLine()
         return;
     }
     line.start_parameters.prior_asset_size = priorTokenPart();
+    line.start_parameters.first_token_index = fisrtStepTokenIndex();
 
 
     emit signalMsg("Line started OK!");
@@ -474,21 +497,26 @@ void DefiStrategyPage::slotNextStep()
     int l_index = m_dataObj->lineIndexOf(curStrategy(), pool_addr);
 
     const StrategyLineData *line = m_dataObj->lineAt(l_index);
-    StrategyStepDialogData data;
+    StrategyStepDialogData data(curChainName());
     if (line)
     {
         data.pool_addr = pool_addr;
         data.next_step = line->steps.count() + 1;
-        data.first_token_index = fisrtStepTokenIndex();
         data.price_width = line->start_parameters.range_width;
         line->getCurrentLiqSize(data.line_liq);
         data.prior_asset_size = line->start_parameters.prior_asset_size;
+        data.first_token_index = line->start_parameters.first_token_index;
+        data.start_line_liq = line->start_parameters.liq_size;
+
 
     }
 
     int action = ((data.next_step == 1) ? ssaFirstStep : ssaNextStep);
     StrategyStepDialog d(action, data, this);
     connect(&d, SIGNAL(signalRewriteJsonFile(const QJsonObject&, QString)), this, SIGNAL(signalRewriteJsonFile(const QJsonObject&, QString)));
+    connect(&d, SIGNAL(signalAddGasPriceField(QJsonObject&)), this, SLOT(slotAddGasPriceField(QJsonObject&)));
+    connect(&d, SIGNAL(signalStrategyTx(const TxLogRecord&)), this, SIGNAL(signalStrategyTx(const TxLogRecord&)));
+    connect(&d, SIGNAL(signalStrategyTxStatus(const QMap<QString, QString>&)), this, SIGNAL(signalStrategyTxStatus(const QMap<QString, QString>&)));
 
     d.exec();
 

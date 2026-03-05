@@ -61,6 +61,7 @@ QString NodejsBridge::jsonCommandValue(int cmd)
         case nrcPoolState:  return QString("pool_state");
         case nrcPositions:  return QString("positions");
         case nrcPosState:  return QString("pos_state");
+        case nrcPosRange:  return QString("pos_range");
 
         //tx reqs
         case txWrap:        return QString("wrap");
@@ -159,7 +160,7 @@ void NodejsBridge::parseJsReply(const QString &js_reply, int &code)
 }
 void NodejsBridge::slotRunScriptArgs(const QStringList &args)
 {
-    qDebug()<<QString("NodejsBridge::slotRunScriptArgs tab_%1, args_size %2").arg(m_userSign).arg(args.count());
+  //  qDebug()<<QString("NodejsBridge::slotRunScriptArgs tab_%1, args_size %2").arg(m_userSign).arg(args.count());
     if (!m_procObj) {emit signalError("m_procObj object is NULL"); return;}
 
     m_procObj->setArgs(args);
@@ -213,7 +214,7 @@ void NodejsBridge::parseNextJsonElement(QString &raw_json, QString &s_el) const
         if (value.isEmpty()) return;
     }
 
-    qDebug()<<QString("ROW_PAIR - %1 : %2").arg(key).arg(value);
+   // qDebug()<<QString("ROW_PAIR - %1 : %2").arg(key).arg(value);
 
 
     wrapValueQuotes(key); // обрамляем ключ кавычками

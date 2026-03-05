@@ -43,7 +43,7 @@ DefiWalletTabPage::DefiWalletTabPage(QWidget *parent)
 }
 void DefiWalletTabPage::updatePageBack(QString extra_data)
 {
-    qDebug("DefiWalletTabPage::updatePageBack");
+  //  qDebug("DefiWalletTabPage::updatePageBack");
     Q_UNUSED(extra_data);
     sendUpdateDataRequest();
 }
@@ -178,7 +178,7 @@ void DefiWalletTabPage::initTokenList(int cid)
 }
 void DefiWalletTabPage::sendUpdateDataRequest()
 {
-    qDebug("DefiWalletTabPage::sendUpdateDataRequest()");
+   // qDebug("DefiWalletTabPage::sendUpdateDataRequest()");
     //prepare json params
     QJsonObject j_params;
     j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcBalance));
@@ -207,7 +207,7 @@ void DefiWalletTabPage::slotSetTokenBalance(QString t_name, float &amount) const
 void DefiWalletTabPage::slotNodejsReply(const QJsonObject &js_reply)
 {
     QString req = js_reply.value(AppCommonSettings::nodejsReqFieldName()).toString();
-    qDebug()<<QString("DefiWalletTabPage::slotNodejsReply - req kind: [%1]").arg(req);
+    //qDebug()<<QString("DefiWalletTabPage::slotNodejsReply - req kind: [%1]").arg(req);
 
     if (req == NodejsBridge::jsonCommandValue(nrcBalance)) updateAmounts(js_reply);
     else if (req == NodejsBridge::jsonCommandValue(nrcTXCount)) updateIntegratedTable(req, js_reply);
@@ -419,7 +419,7 @@ void DefiWalletTabPage::slotUnwrap()
 }
 void DefiWalletTabPage::slotTransfer()
 {
-    qDebug("DefiWalletTabPage::slotTransfer()");
+   // qDebug("DefiWalletTabPage::slotTransfer()");
     if (!hasBalances()) {emit signalError("DefiWalletTabPage: Balances must updated"); return;}
 
     int row = m_table->curSelectedRow();
@@ -437,21 +437,21 @@ void DefiWalletTabPage::slotTransfer()
 }
 void DefiWalletTabPage::slotGetTxCount()
 {
-    qDebug("DefiWalletTabPage::slotGetTxCount()");
+    //qDebug("DefiWalletTabPage::slotGetTxCount()");
     QJsonObject j_params;
     j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcTXCount));
     sendReadNodejsRequest(j_params);
 }
 void DefiWalletTabPage::slotGetGasPrice()
 {
-    qDebug("DefiWalletTabPage::slotGetGasPrice()");
+    //qDebug("DefiWalletTabPage::slotGetGasPrice()");
     QJsonObject j_params;
     j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcGasPrice));
     sendReadNodejsRequest(j_params);
 }
 void DefiWalletTabPage::slotGetChainID()
 {
-    qDebug("DefiWalletTabPage::slotGetChainID()");
+    //qDebug("DefiWalletTabPage::slotGetChainID()");
     QJsonObject j_params;
     j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcChainID));
     sendReadNodejsRequest(j_params);

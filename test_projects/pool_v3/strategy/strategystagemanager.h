@@ -1,53 +1,22 @@
-#ifndef STRATEGYSTEPDIALOG_H
-#define STRATEGYSTEPDIALOG_H
+#ifndef STRATEGY_STAGE_MANAGER_H
+#define STRATEGY_STAGE_MANAGER_H
 
 
 #include "lsimpleobj.h"
-#include "ui_strategystepdialog.h"
 
-#include <QDialog>
 #include <QDateTime>
 
 
 class QTimer;
-class NodejsBridge;
 class QJsonObject;
-
-
-
-// интерфейс для взаимодействия основного виджета с диалогом StrategyStepDialog
-// хранит промежуточные данные по линии, а так же после выполнения действия в нее записываются новые.
-struct StrategyStepDialogData
-{
-    StrategyStepDialogData() {reset();}
-
-    //настройки линии
-    QString pool_addr;
-    QPair<float, float> line_liq; // текущая ликвидность линии
-    float price_width; // ширина диапазона
-    int prior_asset_size; // доля приоритетного токена (%) от общей вносимой ликвидности
-    quint8 next_step; // номер шага к которому переходим на этом этапе
-    quint8 first_token_index; // индекс токена из пары пула, который будет использоваться для внесения ликвидности на 1-м шаге
-
-    QPair<QString, QString> pool_tickers; // определяется по pool_addr при старте
-    QPair<QString, QString> pool_token_addrs; // определяется по pool_addr при старте
-
-    //данные полученные из сети в процессе выполнения сценария
-    QPair<float, float> wallet_assets_balance; // текущие балансы пары токенов пула в кошельке
-    int pool_tick; // текущий тик в пуле
-    float pool_price; // текущая цена в пуле (приоритетного токена) т.е. привычная для пользователя
-
-
-    void reset();
-    bool invalid() const;
-    void out();
-
-};
-
+struct StrategyStepDialogData;
 
 
 
 //StrategyStageManagerObj
+// объект который выполняет стадии сценария и отслеживает их состояния.
+// в процессе выполнения запрашивает необходимые данные из сети, а так же производит расчеты и
+// все это записывает в промежуточную структуру m_data.
 class StrategyStageManagerObj : public LSimpleObject
 {
     Q_OBJECT
@@ -89,15 +58,27 @@ protected:
     void jsScriptRun();
     bool needToEthersReq() const; // признак что для текущей стадии нужен запрос к ethers_js (read/write)
     void setFaultResult(QString note = "none");
+    quint16 txDelay() const; // задержка после отправленной транзакции
+    void continueAfterDelay(); // задержка после отправленной транзакции закончилась, необходимо продолжить сценарий
 
     // check ethers_js reply
     void readWalletAssetsBalanceReply(const QJsonObject&);
     void readPoolStateReply(const QJsonObject&);
+    void readSwapTxReply(const QJsonObject&);
+    void readSwapTxStatusReply(const QJsonObject&);
+    void readWalletAssetsBalanceAfterSwapReply(const QJsonObject&);
 
 
 private:
     void getWalletTokenAmounts();
     void getPoolState();
+    void readLineSettings();
+    void calcSwapParts();
+    void checkBalancesBeforeSwap();
+    void makeSwap_TX();
+    void checkTxSwapStatus();
+    void getNextPosRange();
+
 
 protected slots:
     void slotTimerTick();
@@ -112,49 +93,21 @@ signals:
     void signalStageFinished(QString);
     void signalRunScriptArgs(const QStringList&);
     void signalRewriteJsonFile(const QJsonObject&, QString);
+    void signalAddGasPriceField(QJsonObject&);
+
+    // имитится когда была совершена транзакция, т.е. получена реальная hash (но еще неизвестен результат выполнения)
+    // сигнал передается в StrategyTxLogMaker для формирования соответствующего лога и помещения его в файлы логов TX.
+    void signalTxWasDone(const QJsonObject&);
+    void signalTxStatusDone(const QJsonObject&); // был получен ответ при запросе статуса TX
+
+    void signalDelayAfterTx(int);
 
 };
 
 
 
 
-
-// StrategyStepDialog
-class StrategyStepDialog : public QDialog, public Ui::StrategyStepDialog
-{
-    Q_OBJECT
-public:
-    StrategyStepDialog(int, StrategyStepDialogData&, QWidget *parent = 0);
-    virtual ~StrategyStepDialog();
-
-protected:
-    int m_actionType; // element of StrategyStepAction
-    StrategyStepDialogData &m_data;
-    int m_stage;
-    NodejsBridge *js_obj;
-    StrategyStageManagerObj *m_stageManager;
-
-    void initTables();
-    void initActionEdit();
-    void initJsObj();
-    void fillParamsTable();
-    void startScenario();
-    void definePoolAssets(); // заполнить m_data.pool_tickers и  m_data.pool_token_addrs, выпоняется при старте
-
-protected slots:
-    void slotStartStage(int);
-    void slotFinishedAll();
-    void slotStageFinished(QString);
-
-signals:
-    void signalRewriteJsonFile(const QJsonObject&, QString);
-
-
-};
-
-
-
-#endif // STRATEGYSTEPDIALOG_H
+#endif // STRATEGY_STAGE_MANAGER_H
 
 
 

@@ -33,33 +33,82 @@ LpPutPage::LpPutPage(QWidget *parent)
 }
 void LpPutPage::initTable()
 {
+    //////////////LP table//////////////////////////
     LTable::fullClearTable(resultTable);
     resultTable->verticalHeader()->hide();
 
     QStringList headers;
-    headers << "Step" << "Nested" << "Nested, %" << "Open P" << "Range" << "Deposited" <<
-               "Range size" << "Left point" << "Loss" << "Loss, %" << "Range yield" << "Integrated yield";
+    headers << "Step" << "Nested" << "Nested, %" << "Open P" << "r_step" << "Range" << "Deposited (Asset/Stable)" <<
+               "Range size" << "Left point assets" << "Loss" << "Loss, %" << "Range yield" << "Integrated yield";
     LTable::setTableHeaders(resultTable, headers);
     LTable::resizeTableContents(resultTable);
+    resultTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    resultTable->setSelectionMode(QAbstractItemView::SingleSelection);
 
-    /////////////////////////////////////////
+    /////////////////PUT table////////////////////////
 
     LTable::fullClearTable(putTable);
     putTable->verticalHeader()->hide();
 
     headers.clear();
-    headers << "Expiration price" << "Put cost" << "Put result" << "LP reward" << "Total reward" << "LP loss" << "Total result";
+    headers << "Expiration price" << "Put cost" << "Put result" << "LP reward" << "LP + PUT" <<
+               "LP point loss" << "Total result" << "Point result, %";
     LTable::setTableHeaders(putTable, headers);
     LTable::resizeTableContents(putTable);
+    putTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    putTable->setSelectionMode(QAbstractItemView::SingleSelection);
+
+    /////////////////Total table////////////////////////
+    LTable::fullClearTable(totalTable);
+    //putTable->verticalHeader()->hide();
+
+    headers.clear();
+    headers << "Value";
+    LTable::setTableHeaders(totalTable, headers);
+    headers.clear();
+    headers << "P0" << "Low P" << "Falling P" << "LP average yield" << "LP liq" << "Put cost";
+    headers << "Full nested" << "Put costly of full"  << "Working months";
+    headers << "LP fee per period" << "LP result, %" << "Min total result" << "Period result, %";
+    LTable::setTableHeaders(totalTable, headers, Qt::Vertical);
+    LTable::createAllItems(totalTable);
+    totalTable->setSelectionMode(QAbstractItemView::NoSelection);
+    LTable::resizeTableContents(totalTable);
 }
+void LpPutPage::updateTotalTable()
+{
+    int i = 0;
+    totalTable->item(i, 0)->setText(floatToStr(m_params.P0)); i++;
+    QString low_p = QString("%1 (%2)").arg(floatToStr(m_result.low_lp_price)).arg(floatToStr(m_result.low_lp_price-m_params.P0));
+    totalTable->item(i, 0)->setText(low_p); i++;
+    float low_pp = float(100)*(m_result.low_lp_price-m_params.P0)/m_params.P0;
+    totalTable->item(i, 0)->setText(QString("%1 %").arg(QString::number(low_pp, 'f', 1))); i++;
+    totalTable->item(i, 0)->setText(QString("%1 %").arg(floatToStr(m_result.average_yield_lp))); i++;
+
+
+    totalTable->item(i, 0)->setText(floatToStr(m_result.lp_liq)); i++;
+    totalTable->item(i, 0)->setText(floatToStr(m_result.put_cost)); i++;
+    totalTable->item(i, 0)->setText(floatToStr(m_result.fullNested())); i++;
+    totalTable->item(i, 0)->setText(QString("%1 %").arg(QString::number(m_result.put_cost_p, 'f', 2))); i++;
+    totalTable->item(i, 0)->setText(QString::number(m_params.expiration_month)); i++;
+
+    totalTable->item(i, 0)->setText(floatToStr(m_result.result_lp)); i++;
+    totalTable->item(i, 0)->setText(QString("%1 %").arg(QString::number(m_result.result_lp_p, 'f', 1))); i++;
+    totalTable->item(i, 0)->setText(floatToStr(m_result.full_result));
+    totalTable->item(i, 0)->setTextColor("#008080"); i++;
+    totalTable->item(i, 0)->setText(QString("%1 %").arg(QString::number(m_result.full_result_p, 'f', 1)));
+    totalTable->item(i, 0)->setTextColor("#008080"); i++;
+
+    LTable::resizeTableContents(totalTable);
+}
+
 void LpPutPage::calc()
 {
-    average_yield = -1;
-
+    m_result.reset();
     LTable::removeAllRowsTable(resultTable);
     LTable::resizeTableContents(resultTable);
     LTable::removeAllRowsTable(putTable);
     LTable::resizeTableContents(putTable);
+    LTable::clearAllItemsText(totalTable);
 
     QString err;
     checkParams(err);
@@ -72,9 +121,13 @@ void LpPutPage::calc()
     put_data.clear();
 
     calcLP();
+    calcTotal();
     calcPut();
+    calcFullResult();
+
     updateTable();
     updatePutTable();
+    updateTotalTable();
 
 }
 void LpPutPage::calcLP()
@@ -116,21 +169,31 @@ void LpPutPage::calcLP()
         step_data.append(state);
     }
 
+}
+void LpPutPage::calcTotal()
+{
     // calc percent
-    start_liq = step_data.last().nested_stables;
-    average_yield = 0;
+    m_result.lp_liq = step_data.last().nested_stables;
+    m_result.average_yield_lp = 0;
     for (int i=0; i<m_params.steps; i++)
     {
-        step_data[i].nested_persent = float(100)*step_data.at(i).nested_stables/start_liq;
-        step_data[i].loss_persent = float(100)*step_data.at(i).loss_stable/start_liq;
+        step_data[i].nested_persent = float(100)*step_data.at(i).nested_stables/m_result.lp_liq;
+        step_data[i].loss_persent = float(100)*step_data.at(i).loss_stable/m_result.lp_liq;
 
         float nf = step_data.at(i).nested_persent/float(100);
         step_data[i].integrated_yield = step_data.at(i).range_yield*nf + (1-nf)*m_params.yield_stable;
 
-        average_yield += step_data.at(i).integrated_yield;
+        m_result.average_yield_lp += step_data.at(i).integrated_yield;
     }
-    average_yield /= float(m_params.steps);
-    qDebug()<<QString("INTEGRATED YIELD: %1").arg(floatToStr(average_yield));
+    m_result.average_yield_lp /= float(m_params.steps);
+    qDebug()<<QString("INTEGRATED YIELD: %1").arg(floatToStr(m_result.average_yield_lp));
+
+    m_result.put_cost = m_params.put_price*m_params.put_lots;
+    m_result.low_lp_price = step_data.last().range.first;
+    m_result.put_cost_p = float(100)*m_result.put_cost/m_result.fullNested();
+    m_result.result_lp = m_result.lpYearYield()*m_params.expiration_month/float(12);
+    m_result.result_lp_p = float(100)*m_result.result_lp/m_result.fullNested();
+
 }
 void LpPutPage::calcPut()
 {
@@ -138,17 +201,41 @@ void LpPutPage::calcPut()
     {
         ExpirationPointResult e_point;
         e_point.point_price = m_params.P0 - (i+1)*m_params.point_step;
-        e_point.put_cost = m_params.put_price*m_params.put_lots;
+        //e_point.put_cost = m_params.put_price*m_params.put_lots;
 
-        float a = 0;
-        if (m_params.put_strike > e_point.point_price) a = m_params.put_strike - e_point.point_price;
-        e_point.put_result = a*m_params.put_lots - e_point.put_cost;
+        float y_put = 0; // доход от пута без учета его стоимости ЗА 1 ЛОТ (в текущей точке)
+        if (m_params.put_strike > e_point.point_price) y_put = m_params.put_strike - e_point.point_price;
+        e_point.put_result = y_put*m_params.put_lots - m_result.put_cost;
 
-        e_point.lp_reward = ((start_liq*average_yield/float(100))*m_params.expiration_month)/float(12);
+        e_point.lp_reward = (m_result.lpYearYield()*m_params.expiration_month)/float(12);
         e_point.lp_loss = lpLossByPoint(e_point.point_price);
         put_data.append(e_point);
     }
 }
+void LpPutPage::calcFullResult()
+{
+    // calc average min result
+    QMap<int, float> min_points;
+    m_result.full_result = 0;
+    while (2 > 1)
+    {
+        float min = 1000000;
+        int j = -1;
+        for (int i=0; i<m_params.expiration_points; i++)
+        {
+            if (min_points.contains(i)) continue;
+            //if (put_data.at(i).point_price < (m_result.low_lp_price-m_params.point_step)) continue;
+            if (min > put_data.at(i).totalResult()) {min = put_data.at(i).totalResult(); j=i;}
+        }
+        min_points.insert(j, min);
+        m_result.full_result += min;
+
+        if (min_points.count() >= 3) break;
+    }
+    m_result.full_result /= float(3);
+    m_result.full_result_p = float(100)*m_result.full_result/m_result.fullNested();
+}
+
 void LpPutPage::updatePutTable()
 {
     if (put_data.isEmpty()) return;
@@ -156,19 +243,28 @@ void LpPutPage::updatePutTable()
     QStringList row_data;
     for (int i=0; i<put_data.count(); i++)
     {
-        //headers << "Expiration price" << "Put cost" << "Put result" << "LP reward" << "Total reward" << "LP loss" << "Total result";
-
         const ExpirationPointResult& point = put_data.at(i);
         row_data.clear();
         row_data << floatToStr(point.point_price);
-        row_data << floatToStr(point.put_cost);
+        row_data << floatToStr(m_result.put_cost);
         row_data << floatToStr(point.put_result);
         row_data << floatToStr(point.lp_reward);
         row_data << floatToStr(point.totalReward());
         row_data << floatToStr(point.lp_loss);
         row_data << floatToStr(point.totalResult());
 
+        float total_p = float(100)*point.totalResult()/m_result.fullNested();
+        row_data << QString("%1 %").arg(QString::number(total_p, 'f', 1));
+
+
+
         LTable::addTableRow(putTable, row_data);
+
+        if (point.point_price < m_result.low_lp_price)
+            LTable::setTableRowColor(putTable, i, "#FFdadb");
+
+        if (point.put_result < 0) putTable->item(i, 2)->setTextColor(Qt::red);
+        if (point.put_result > 0) putTable->item(i, 2)->setTextColor("#008000");
     }
 
     LTable::resizeTableContents(putTable);
@@ -177,6 +273,13 @@ void LpPutPage::updatePutTable()
 float LpPutPage::lpLossByPoint(float point_price) const
 {
     if (step_data.isEmpty()) return 0;
+    if (point_price >= m_params.P0) return 1;
+
+    if (point_price < m_result.low_lp_price)
+    {
+        float cur_liq = step_data.last().left_point_asset*point_price;
+        return (cur_liq - m_result.lp_liq);
+    }
 
     float loss = 0;
     int i_step = 0;
@@ -188,13 +291,10 @@ float LpPutPage::lpLossByPoint(float point_price) const
         {
             loss += step_data.at(i_step).loss_stable;
         }
-        else
-        {
-            break;
-        }
+        else break;
+
         i_step++;
     }
-
     if (i_step < 0) return loss;
 
     const StepState& state = step_data.at(i_step);
@@ -226,7 +326,7 @@ void LpPutPage::updateTable()
 
         row_data << QString::number(state.number);
         row_data << QString::number(state.nested_stables, 'f', NESTED_PRECISION) << floatToStr(state.nested_persent);
-        row_data << floatToStr(state.avrP);
+        row_data << floatToStr(state.avrP) << floatToStr(state.rangeSize()/2);
 
         row_data << QString("[%1 : %2]").arg(floatToStr(state.range.first)).arg(floatToStr(state.range.second));
         row_data << QString("%1 / %2").arg(floatToStr(state.deposited.first)).arg(floatToStr(state.deposited.second));
@@ -266,7 +366,7 @@ void LpPutPage::checkParams(QString &err)
     m_params.put_strike = strikeLineEdit->text().toFloat(&ok);
     if (!ok || m_params.put_strike <= 0) {err = "put_strike is invalid"; m_params.reset(); return;}
     m_params.put_lots = lotLineEdit->text().toFloat(&ok);
-    if (!ok || m_params.put_lots <= 0) {err = "put_lots is invalid"; m_params.reset(); return;}
+    if (!ok || m_params.put_lots < 0) {err = "put_lots is invalid"; m_params.reset(); return;}
     m_params.point_step = pointStepLineEdit->text().toFloat(&ok);
     if (!ok) {err = "point_step is invalid"; m_params.reset(); return;}
 
@@ -343,7 +443,7 @@ void LpPutPage::CalcParams::reset()
 bool LpPutPage::CalcParams::invalid() const
 {
     if (P0 <= 0 || r1 <= 0 || e0 <= 0 || yield1 <= 0 || yield_stable <= 0) return true;
-    if (put_price <= 0 || put_strike <= 0 || put_lots <= 0) return true;
+    if (put_price <= 0 || put_strike <= 0 || put_lots < 0) return true;
     return false;
 }
 QString LpPutPage::CalcParams::toStr() const
@@ -356,5 +456,15 @@ QString LpPutPage::CalcParams::toStr() const
     s = QString("%1 expiration_points=%2 point_step=%3").arg(s).arg(expiration_points).arg(point_step);
     return s;
 }
-
+// TotalResult
+void LpPutPage::TotalResult::reset()
+{
+    lp_liq = 0;
+    put_cost = 0;
+    average_yield_lp = -1;
+    max_drawdown = result_lp = 0;
+    max_drawdown_p = put_cost_p = result_lp_p = -1;
+    low_lp_price = 0;
+    full_result = full_result_p = 0;
+}
 

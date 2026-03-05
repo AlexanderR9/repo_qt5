@@ -12,7 +12,7 @@ enum DefiStrategyType {dstFollowPrice = 760, dstMartingale, dstStable};
 
 //описание всех возможных запросов к сети на чтение
 enum NodejsReadCommand {nrcBalance = 830, nrcTXCount, nrcApproved, nrcGasPrice, nrcChainID,
-                        nrcTXStatus, nrcPositions, nrcPoolState, nrcPosState, nrcInvalid = -1};
+                        nrcTXStatus, nrcPositions, nrcPoolState, nrcPosState, nrcPosRange, nrcInvalid = -1};
 
 //TX Orepation Type
 enum NodejsTxCommand {txWrap = 870, txUnwrap, txApprove, txTransfer, txSwap, txMint, txIncrease, txDecrease, txCollect,
@@ -22,10 +22,10 @@ enum NodejsTxCommand {txWrap = 870, txUnwrap, txApprove, txTransfer, txSwap, txM
 enum StrategyStepAction {ssaCloseStep = 15, ssaNextStep, ssaFirstStep};
 
 // стадии выполнения закрытия/открытия одного шага при применении игр стратегий
-enum StrategyStepStage {sssGetPoolState = 21, sssGetWalletTokenAmounts, sssReadLineSettings, sssDefineLineLiq,
+enum StrategyStepStage {sssGetPoolState = 21, sssGetWalletBalances, sssReadLineSettings, sssDefineLineLiq,
             sssCalcSwapPart, sssCheckWalletTokenAmounts, sssTxSwap, sssGetTxSwapResult, sssGetPriceRangeNextPos,
             sssTxMint, sssGetTxMintResult, sssGetPositionsList, sssGetStepPositionState, sssSavePositionState,
-            sssTxClosePosition, sssGetTxClosePosResult,  sssCalcStepResult   };
+            sssTxClosePosition, sssGetTxClosePosResult,  sssCalcStepResult, sssGetWalletBalancesAfterSwap  };
 
 
 

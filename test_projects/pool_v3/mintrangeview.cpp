@@ -222,7 +222,7 @@ void MintRangeView::initScene()
 }
 void MintRangeView::slotPriceChanged(qreal p)
 {
-    qDebug()<<QString("MintRangeView::slotPriceChanged   sender[%1]  p=%2").arg(sender()->objectName()).arg(p);
+    //qDebug()<<QString("MintRangeView::slotPriceChanged   sender[%1]  p=%2").arg(sender()->objectName()).arg(p);
 
 }
 void MintRangeView::slotSetCurrentPrice(qreal price)

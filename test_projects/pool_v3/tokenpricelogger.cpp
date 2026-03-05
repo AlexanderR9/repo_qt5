@@ -50,7 +50,7 @@ void TokenPriceLogger::loadLogFile()
         m_log.append(rec);
     }
 
-    qDebug()<<QString("TokenPriceLogger::loadFile() loaded %1 records").arg(logSize());
+  //  qDebug()<<QString("TokenPriceLogger::loadFile() loaded %1 records").arg(logSize());
 }
 void TokenPriceLogger::checkLastPrices()
 {

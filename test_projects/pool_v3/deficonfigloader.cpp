@@ -136,7 +136,7 @@ void DefiConfigLoader::readPoolsNode(const QDomNode &root_node)
         return;
     }
 
-    qDebug("<pools> node ok");
+    //qDebug("<pools> node ok");
     QDomNode pool_node = node.firstChild();
     while (!pool_node.isNull())
     {

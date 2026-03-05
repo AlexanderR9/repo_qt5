@@ -102,7 +102,7 @@ void DefiMintDialog::initBaseTokens()
 }
 void DefiMintDialog::slotPoolChanged()
 {
-    qDebug("DefiMintDialog::slotPoolChanged()");
+   // qDebug("DefiMintDialog::slotPoolChanged()");
 
     resetPoolStateTable();
     resetPreviewTable();
@@ -148,7 +148,7 @@ void DefiMintDialog::updateTokensBalances()
 }
 void DefiMintDialog::slotAmountsEdited()
 {
-    qDebug("DefiMintDialog::slotAmountsEdited()");
+  //  qDebug("DefiMintDialog::slotAmountsEdited()");
     if (!sender()) {qWarning("DefiMintDialog::slotAmountsEdited() WARNING sender is NULL"); return;}
     const QLineEdit *edit = qobject_cast<const QLineEdit*>(sender());
     if (!edit) {qWarning("DefiMintDialog::slotAmountsEdited() WARNING sender can not qobject_cast<const QLineEdit*>"); return;}
@@ -169,12 +169,12 @@ void DefiMintDialog::slotAmountsEdited()
 
 
     slotPrevewTableReset();
-    qDebug("DefiMintDialog::slotAmountsEdited() end");
+   // qDebug("DefiMintDialog::slotAmountsEdited() end");
 }
 void DefiMintDialog::slotBaseTokenChanged()
 {
-    qDebug("------------");
-    qDebug("DefiMintDialog::slotBaseTokenChanged()");
+   // qDebug("------------");
+    //qDebug("DefiMintDialog::slotBaseTokenChanged()");
     disconnect(poolComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotPoolChanged()));
 
     int cid = defi_config.getChainID(m_data.chain_name);
@@ -184,7 +184,7 @@ void DefiMintDialog::slotBaseTokenChanged()
     QString pool_info;
     poolComboBox->clear();
     QString t_addr = baseTokenAddrSelected();
-    qDebug()<<QString("DefiMintDialog::slotBaseTokenChainged() token[%1]  address[%2]").arg(tokenComboBox->currentText()).arg(t_addr);
+   // qDebug()<<QString("DefiMintDialog::slotBaseTokenChainged() token[%1]  address[%2]").arg(tokenComboBox->currentText()).arg(t_addr);
     foreach (const DefiPoolV3 &v, defi_config.pools)
     {
         if (v.chain_id != cid) continue;
@@ -204,7 +204,7 @@ void DefiMintDialog::slotBaseTokenChanged()
 }
 void DefiMintDialog::slotUpdatePoolState()
 {
-    qDebug("DefiMintDialog::slotUpdatePoolState()");
+   // qDebug("DefiMintDialog::slotUpdatePoolState()");
     updatePoolStateButton->setEnabled(false);
     this->buttonBox->setEnabled(false);
 
@@ -219,7 +219,7 @@ QString DefiMintDialog::baseTokenAddrSelected() const
 }
 void DefiMintDialog::slotApply()
 {
-    qDebug("DefiMintDialog::slotApply()");
+   // qDebug("DefiMintDialog::slotApply()");
     m_apply = true;
     close();
 }
@@ -237,7 +237,7 @@ void DefiMintDialog::resetPreviewTable()
 }
 void DefiMintDialog::poolStateReceived(const QStringList &p_state) const
 {
-    qDebug("DefiMintDialog::poolStateReceived()");
+  //  qDebug("DefiMintDialog::poolStateReceived()");
     updatePoolStateButton->setEnabled(true);
     this->buttonBox->setEnabled(true);
 
@@ -252,7 +252,7 @@ void DefiMintDialog::poolStateReceived(const QStringList &p_state) const
 }
 void DefiMintDialog::initMintSettings() const
 {
-    qDebug("DefiMintDialog::initMintSettings() 1");
+   // qDebug("DefiMintDialog::initMintSettings() 1");
     bool ok = false;
     bool stb = (poolStateTable->item(5, 0)->text() == "yes");
     float p = poolStateTable->item(2, 0)->text().toFloat(&ok);
@@ -379,7 +379,7 @@ void DefiMintDialog::fillMintParams(int pool_index)
 void DefiMintDialog::slotMint()
 {
     bool ok;
-    qDebug("DefiMintDialog::slotMint()");
+   // qDebug("DefiMintDialog::slotMint()");
     m_data.dialog_params.clear();
     m_data.dialog_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(txMint));
 
@@ -408,7 +408,7 @@ void DefiMintDialog::slotMint()
     QString btn_caption = buttonBox->button(QDialogButtonBox::Apply)->text().toLower();
     if (btn_caption.contains("mint")) // real TX
     {
-        qDebug("----------- REAL MINT CMD----------------");
+       // qDebug("----------- REAL MINT CMD----------------");
         m_data.dialog_params.insert(AppCommonSettings::nodejsTxSimulateFieldName(), "no");
         slotApply();
     }

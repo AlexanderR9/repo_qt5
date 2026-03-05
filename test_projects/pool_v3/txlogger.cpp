@@ -25,9 +25,9 @@ void DefiTxLogger::removeRecord(const QString &hash, bool &ok)
     int i_rec = indexOf(hash);
     if (i_rec < 0) return;
 
-    qDebug()<<QString("DefiTxLogger::removeRecord  finded tx_rec, index=%1, list size %2").arg(i_rec).arg(logSize());
+   // qDebug()<<QString("DefiTxLogger::removeRecord  finded tx_rec, index=%1, list size %2").arg(i_rec).arg(logSize());
     m_logData.removeAt(i_rec);
-    qDebug()<<QString("list size %1").arg(logSize());
+  //  qDebug()<<QString("list size %1").arg(logSize());
 
     ok = true;
     excludeRecFromFileByHash(hash, "tx_state.txt", ok);
@@ -173,7 +173,7 @@ void DefiTxLogger::updateRecStatus(const QString &hash, QString status, float fe
     m_logData[pos].status.gas_used = gas_used;
 
     float p = defi_config.lastPriceByTokenName(defi_config.nativeTokenName(m_chain));
-    qDebug()<<QString("DefiTxLogger::updateRecStatus - cur price nativeTokenName %1").arg(p);
+   // qDebug()<<QString("DefiTxLogger::updateRecStatus - cur price nativeTokenName %1").arg(p);
     if (p > 0) m_logData[pos].status.fee_cent = (p*fee_native*float(100));
     else m_logData[pos].status.fee_cent = -1;
 
@@ -181,7 +181,7 @@ void DefiTxLogger::updateRecStatus(const QString &hash, QString status, float fe
 }
 void DefiTxLogger::excludeRecFromFileByHash(const QString &hash, QString fname, bool &ok)
 {
-    qDebug()<<QString("try remove record from [%1].........").arg(fname);
+  //  qDebug()<<QString("try remove record from [%1].........").arg(fname);
     if (fname.trimmed().isEmpty()) return;
     fname = QString("%1%2%3").arg(AppCommonSettings::appDataPath()).arg(QDir::separator()).arg(fname.trimmed());
     if (!LFile::fileExists(fname)) return;
@@ -195,7 +195,7 @@ void DefiTxLogger::excludeRecFromFileByHash(const QString &hash, QString fname, 
         return;
     }
     if (fdata.isEmpty()) {qWarning("DefiTxLogger::excludeRecFromFileByHash WARNING fdata is empty"); return;}
-    qDebug()<<QString("fdata size %1").arg(fdata.count());
+    //qDebug()<<QString("fdata size %1").arg(fdata.count());
 
     QStringList fdata_next;
     bool fdata_has_hash = false;
@@ -209,7 +209,7 @@ void DefiTxLogger::excludeRecFromFileByHash(const QString &hash, QString fname, 
     if (fdata_next.isEmpty()) {qWarning("DefiTxLogger::excludeRecFromFileByHash WARNING fdata_next is empty"); return;}
     if (!fdata_has_hash) {qDebug("record not found in this file"); return;} // запись не найдена, перезаписывать файл не требуется
 
-    qDebug()<<QString("rewite file, fdata_next size %1").arg(fdata_next.count());
+    //qDebug()<<QString("rewite file, fdata_next size %1").arg(fdata_next.count());
     err = LFile::writeFileSL(fname, fdata_next);
     if (!err.isEmpty()) {emit signalError(err); ok = false;}
     else ok = true;

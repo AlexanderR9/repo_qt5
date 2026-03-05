@@ -306,13 +306,21 @@ void DefiChainTabV3::connectPageSignals()
             connect(w, SIGNAL(signalRunNodejsBridge(QString, const QStringList&)), this, SLOT(slotPageSendReq(QString, const QStringList&)));
             connect(js_bridge, SIGNAL(signalNodejsReply(const QJsonObject&)), w, SLOT(slotNodejsReply(const QJsonObject&)));
 
-            if (w->kind() != dpkTx)
+            if (w->kind() == dpkTx)
             {
-                connect(w, SIGNAL(signalNewTx(const TxLogRecord&)), tx_page, SLOT(slotNewTx(const TxLogRecord&)));
+                connect(w, SIGNAL(signalUpdatePageBack(QString, QString)), this, SLOT(slotUpdatePageBack(QString, QString)));
             }
             else
             {
-                connect(w, SIGNAL(signalUpdatePageBack(QString, QString)), this, SLOT(slotUpdatePageBack(QString, QString)));
+                if (w->kind() == dpkStrategy)
+                {
+                    connect(w, SIGNAL(signalStrategyTx(const TxLogRecord&)), tx_page, SLOT(slotStrategyTx(const TxLogRecord&)));
+                    connect(w, SIGNAL(signalStrategyTxStatus(const QMap<QString, QString>&)), tx_page, SLOT(slotStrategyTxStatus(const QMap<QString, QString>&)));
+                }
+                else
+                {
+                    connect(w, SIGNAL(signalNewTx(const TxLogRecord&)), tx_page, SLOT(slotNewTx(const TxLogRecord&)));
+                }
             }
 
             if (w->kind() != dpkWallet)

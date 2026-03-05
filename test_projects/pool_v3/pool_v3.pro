@@ -14,6 +14,7 @@ QT += webenginewidgets
 INCLUDEPATH += . \
             $$PWD \
             $$PWD/tab \
+            $$PWD/strategy \
             $$PWD/../../libs/base \
             $$PWD/../../libs/base/ui_h \
             $$PWD/../../libs/web \
@@ -34,6 +35,7 @@ unix:!macx: LIBS += -L$$PWD/../../libs/uniswap/build/ -lluniswap
 
 # include pri
 include(tab/tab.pri)
+include(strategy/strategy.pri)
 
 
 # Input
@@ -52,8 +54,6 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/postxworker.h \
         $$PWD/defimintdialog.h \
         $$PWD/mintrangeview.h \
-    strategydata.h \
-    strategystepdialog.h
 
 
 SOURCES += $$PWD/main.cpp \
@@ -72,12 +72,9 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/postxworker.cpp \
         $$PWD/defimintdialog.cpp \
         $$PWD/mintrangeview.cpp \
-    strategydata.cpp \
-    strategystepdialog.cpp
 
 
-FORMS += $$PWD/defimintdialog.ui \
-	$$PWD/strategystepdialog.ui
+FORMS += $$PWD/defimintdialog.ui
 
 
 

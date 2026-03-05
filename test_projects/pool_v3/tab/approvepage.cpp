@@ -34,7 +34,7 @@ DefiApproveTabPage::DefiApproveTabPage(QWidget *parent)
 }
 void DefiApproveTabPage::updatePageBack(QString extra_data)
 {
-    qDebug()<<QString("DefiApproveTabPage::updatePageBack  extra_data[%1]").arg(extra_data);
+    //qDebug()<<QString("DefiApproveTabPage::updatePageBack  extra_data[%1]").arg(extra_data);
 
     m_table->table()->clearSelection();
     selectRowByCellData(extra_data.trimmed(), ADDRESS_COL);
@@ -98,7 +98,7 @@ void DefiApproveTabPage::initPopupMenu()
 }
 void DefiApproveTabPage::slotGetApproved()
 {
-    qDebug("DefiApproveTabPage::slotGetApproved()");
+   // qDebug("DefiApproveTabPage::slotGetApproved()");
     int row = m_table->curSelectedRow();
     if (row < 0) {emit signalError("DefiWalletTabPage: You must select row"); return;}
     QTableWidget *t = m_table->table();
@@ -110,7 +110,7 @@ void DefiApproveTabPage::slotGetApproved()
 }
 void DefiApproveTabPage::slotTxApprove()
 {
-    qDebug("DefiApproveTabPage::slotTxApprove()");
+   // qDebug("DefiApproveTabPage::slotTxApprove()");
     int row = m_table->curSelectedRow();
     if (row < 0) {emit signalError("DefiApproveTabPage: You must select row"); return;}
     QTableWidget *t = m_table->table();
@@ -126,7 +126,7 @@ void DefiApproveTabPage::slotTxApprove()
 void DefiApproveTabPage::slotNodejsReply(const QJsonObject &js_reply)
 {
     QString req = js_reply.value(AppCommonSettings::nodejsReqFieldName()).toString();
-    qDebug()<<QString("DefiApproveTabPage::slotNodejsReply - req kind: [%1]").arg(req);
+    //qDebug()<<QString("DefiApproveTabPage::slotNodejsReply - req kind: [%1]").arg(req);
 
     if (req == NodejsBridge::jsonCommandValue(nrcApproved)) updateApprovedAmounts(js_reply);
     else if (req == NodejsBridge::jsonCommandValue(txApprove)) checkTxResult(req, js_reply);
@@ -136,7 +136,7 @@ void DefiApproveTabPage::slotNodejsReply(const QJsonObject &js_reply)
 }
 void DefiApproveTabPage::updateApprovedAmounts(const QJsonObject &js_reply)
 {
-    qDebug("DefiApproveTabPage::updateApprovedAmounts");
+   // qDebug("DefiApproveTabPage::updateApprovedAmounts");
     QTableWidget *t = m_table->table();
     int n_rows = t->rowCount();
 
@@ -145,7 +145,7 @@ void DefiApproveTabPage::updateApprovedAmounts(const QJsonObject &js_reply)
     {
         if (t->item(i, ADDRESS_COL)->text().trimmed() == t_addr)
         {
-            qDebug()<<QString("find asset row: %1 / %2").arg(i).arg(t->item(i, TOKEN_COL)->text());
+           // qDebug()<<QString("find asset row: %1 / %2").arg(i).arg(t->item(i, TOKEN_COL)->text());
             float pm = js_reply.value("pos_manager").toString().toFloat();
             float sr = js_reply.value("swap_router").toString().toFloat();
             t->item(i, 1)->setText(js_reply.value("pos_manager").toString());

@@ -72,7 +72,7 @@ void MainForm::initWidgets()
 }
 void MainForm::initCommonSettings()
 {
-    qDebug("MainForm::initCommonSettings()");
+   // qDebug("MainForm::initCommonSettings()");
 
     QString key = QString("defi_config");
     lCommonSettings.addParam(QString("Defi config file"), LSimpleDialog::sdtFilePath, key);
@@ -107,7 +107,7 @@ void MainForm::initCommonSettings()
 }
 void MainForm::slotVisibleActionsUpdate(int p_kind)
 {
-    qDebug()<<QString("MainForm::slotVisibleActionsUpdate  p_kind=%1").arg(p_kind);
+   // qDebug()<<QString("MainForm::slotVisibleActionsUpdate  p_kind=%1").arg(p_kind);
     getAction(atData)->setVisible(false);
     switch(p_kind)
     {
@@ -174,7 +174,7 @@ void MainForm::load()
     m_configLoader->loadDefiConfiguration(defiConfig());
     updateChainsGasPrices();
     defi_config.delayAfterTX = txDelay();
-    qDebug()<<QString("defi_config.delayAfterTX = %1").arg(defi_config.delayAfterTX);
+  //  qDebug()<<QString("defi_config.delayAfterTX = %1").arg(defi_config.delayAfterTX);
 
     //init central widget
     m_centralWidget->load(settings);
@@ -191,7 +191,7 @@ void MainForm::slotEnableControls(bool b)
 }
 void MainForm::slotAppSettingsChanged(QStringList list)
 {
-    qDebug("MainForm::slotAppSettingsChanged");
+   // qDebug("MainForm::slotAppSettingsChanged");
     LMainWidget::slotAppSettingsChanged(list);
 
     if (list.contains("nodejs_path"))
@@ -209,7 +209,7 @@ void MainForm::slotAppSettingsChanged(QStringList list)
 
 //    updateWindowTitle();
 
-    qDebug()<<QString("MainForm::slotAppSettingsChanged - defi_config.delayAfterTX = %1").arg(defi_config.delayAfterTX);
+  // qDebug()<<QString("MainForm::slotAppSettingsChanged - defi_config.delayAfterTX = %1").arg(defi_config.delayAfterTX);
 }
 void MainForm::slotError(const QString &text)
 {

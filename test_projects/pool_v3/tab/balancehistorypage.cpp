@@ -21,7 +21,7 @@
 #define COLOR_DAY_ODD       QString("#EEFFFF")
 
 
-#define BALANCE_SENSIVITY   0.5 // %
+#define BALANCE_SENSIVITY   0.1 // %
 
 // BalanceHistoryPage
 BalanceHistoryPage::BalanceHistoryPage(QWidget *parent)
