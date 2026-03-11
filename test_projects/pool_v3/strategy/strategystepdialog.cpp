@@ -13,14 +13,11 @@
 #include <QDebug>
 #include <QPushButton>
 #include <QDialogButtonBox>
-//#include <QTimer>
 #include <QTableWidget>
 #include <QJsonObject>
 #include <QJsonValue>
 
 
-//#define STAGE_TIMER_INTERVAL    1200
-//#define STAGE_TIMEOUT           7 // seconds
 #define STAGE_NOTE_COL          3
 
 
@@ -114,6 +111,7 @@ void StrategyStepDialog::definePoolAssets()
         m_data.pool_token_addrs.second = defi_config.pools.at(i_pool).token1_addr;
         m_data.prior_amount_i = defi_config.getPriorAmountIndexByPoolAddr(m_data.pool_addr);
         m_data.prior_price_i = defi_config.getPriorPriceIndexByPoolAddr(m_data.pool_addr);
+        m_data.pool_fee = defi_config.pools.at(i_pool).fee;
     }
 
     if (m_data.invalid())
@@ -157,7 +155,7 @@ void StrategyStepDialog::initTables()
     QStringList headers;
     headers << "Next step" << "Pool" << "TVL, k" << "Current price" << "Current tick"  << "Price range" << "Tick range";
     headers << "Line amounts"  << "Wallet amounts" << "Prior liq part, %" << "Swapping info" << "Prior indexes (amount/price)";
-    headers << "After swap result" << "Line amounts (after swap)";
+    headers << "After swap result" << "Line amounts (after swap)" << "Next position amounts" << "After mint result";
     LTable::fullClearTable(stepParamsTable);
     LTable::setTableHeaders(stepParamsTable,headers, Qt::Vertical);
     headers.clear();
@@ -189,6 +187,10 @@ void StrategyStepDialog::updateTableAfterStage()
         {
             stepParamsTable->item(12, 0)->setText(m_data.afterSwapResult());
             updateLineAmountsCell(13);
+        }
+        if (m_data.mintDone())
+        {
+            stepParamsTable->item(15, 0)->setText(m_data.afterMintResult());
         }
     }
     else if (m_stage == sssGetPoolState)
@@ -222,15 +224,24 @@ void StrategyStepDialog::updateTableAfterStage()
         jsProcessingTable->item(rows-1, STAGE_NOTE_COL)->setText(m_stageManager->resultNote());
         updateSwapInfoCell();
     }
+    else if (m_stage == sssGetPriceRangeNextPos)
+    {
+        jsProcessingTable->item(rows-1, STAGE_NOTE_COL)->setText(m_stageManager->resultNote());
+        updateRangeInfoCell();
+    }
     else  if (m_stage == sssCheckWalletTokenAmounts)
     {
         stepParamsTable->item(8, 0)->setTextColor(Qt::darkGreen);
         jsProcessingTable->item(rows-1, STAGE_NOTE_COL)->setText(m_stageManager->resultNote());
     }
-    else  if (m_stage == sssTxSwap || m_stage == sssGetTxSwapResult)
+    else  if (m_stage == sssTxSwap || m_stage == sssGetTxSwapResult || m_stage == sssTxMint || m_stage == sssGetTxMintResult)
     {
         jsProcessingTable->item(rows-1, STAGE_NOTE_COL)->setText(m_stageManager->resultNote());
         jsProcessingTable->item(rows-1, STAGE_NOTE_COL)->setTextColor(Qt::darkBlue);
+    }
+    else  if (m_stage == sssGetPositionsList)
+    {
+        jsProcessingTable->item(rows-1, STAGE_NOTE_COL)->setText(m_stageManager->resultNote());
     }
 
     LTable::resizeTableContents(stepParamsTable);
@@ -392,6 +403,23 @@ void StrategyStepDialog::updateSwapInfoCell()
 
     stepParamsTable->item(10, 0)->setText(swap_info);
 }
+void StrategyStepDialog::updateRangeInfoCell()
+{
+    QString ticks = QString("[%1 : %2]").arg(m_data.pos_range_tick.first).arg(m_data.pos_range_tick.second);
+    stepParamsTable->item(6, 0)->setText(ticks);
+
+    QString p1 = QString::number(m_data.pos_range.first, 'f', AppCommonSettings::interfacePricePrecision(m_data.pos_range.first));
+    QString p2 = QString::number(m_data.pos_range.second, 'f', AppCommonSettings::interfacePricePrecision(m_data.pos_range.second));
+    stepParamsTable->item(5, 0)->setText(QString("[%1 : %2]").arg(p1).arg(p2));
+
+    QString a0 = QString::number(m_data.real_mint_amounts.first, 'f', AppCommonSettings::interfacePricePrecision(m_data.real_mint_amounts.first));
+    QString a1 = QString::number(m_data.real_mint_amounts.second, 'f', AppCommonSettings::interfacePricePrecision(m_data.real_mint_amounts.second));
+    stepParamsTable->item(14, 0)->setText(QString("%1 / %2").arg(a0).arg(a1));
+
+}
+
+
+
 
 /*
 

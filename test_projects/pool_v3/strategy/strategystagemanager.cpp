@@ -4,6 +4,8 @@
 #include "deficonfig.h"
 #include "appcommonsettings.h"
 #include "lcommonsettings.h"
+#include "lfile.h"
+#include "defiposition.h"
 
 
 #include <QDebug>
@@ -11,9 +13,9 @@
 #include <QJsonObject>
 #include <QJsonValue>
 
-#define STAGE_TIMER_INTERVAL    500
-#define STAGE_TIMEOUT           7 // seconds
-
+#define STAGE_TIMER_INTERVAL    1500
+#define STAGE_TIMEOUT           45 // seconds
+#define MIN_SWAP_PART_ERR       3 // %, насколько должен отличатся объем приоритеного токена от заданной величины чтобы применить своп
 
 
 
@@ -117,11 +119,16 @@ void StrategyStageManagerObj::fillStagesList(int a_type)
               sssCheckWalletTokenAmounts << sssTxSwap << sssGetTxSwapResult << sssGetWalletBalancesAfterSwap <<
               sssGetPriceRangeNextPos << sssTxMint << sssGetTxMintResult << sssGetPositionsList << sssGetWalletBalances;
 
-
               */
 
 
-            m_actionStages << sssReadLineSettings << sssGetPriceRangeNextPos;
+
+        m_actionStages << sssReadLineSettings << sssGetPositionsList << sssGetWalletBalances;
+
+        /*
+            m_actionStages << sssGetWalletBalances  << sssGetPoolState << sssReadLineSettings << sssGetPriceRangeNextPos <<
+                              sssTxMint << sssGetTxMintResult;
+                              */
 
             break;
 
@@ -249,6 +256,13 @@ void StrategyStageManagerObj::execCurrentStage()
     }
     else if (m_userSign == sssGetWalletBalancesAfterSwap) getWalletTokenAmounts();
     else if (m_userSign == sssGetPriceRangeNextPos) getNextPosRange();
+    else if (m_userSign == sssTxMint) makeMint_TX();
+    else if (m_userSign == sssGetTxMintResult)
+    {
+        m_data.delay_after_tx = -55;
+        checkTxSwapStatus();
+    }
+    else if (m_userSign == sssGetPositionsList) getPositionsList();
 
 
 }
@@ -282,8 +296,8 @@ void StrategyStageManagerObj::setFaultResult(QString note)
 quint16 StrategyStageManagerObj::txDelay() const
 {
     quint16 a = lCommonSettings.paramValue("tx_delay").toUInt();
-    if (a < 5) return 5;
-    if (a > 500) return 500;
+    if (a < 10) return 10;
+    if (a > 300) return 300;
     return a;
 }
 void StrategyStageManagerObj::continueAfterDelay()
@@ -294,9 +308,51 @@ void StrategyStageManagerObj::continueAfterDelay()
     emit signalDelayAfterTx(m_data.delay_after_tx);
 
     if (m_userSign == sssGetTxSwapResult) checkTxSwapStatus();
+    else if (m_userSign == sssGetTxMintResult) checkTxMintStatus();
+}
+void StrategyStageManagerObj::readNodejsPosFile()
+{
+
+    QString fname = QString("%1/%2").arg(AppCommonSettings::nodejsPath()).arg(AppCommonSettings::positionsListFile());
+
+    QStringList fdata;
+    QString err = LFile::readFileSL(fname, fdata);
+    if (!err.isEmpty())
+    {
+        m_stageState.note = "Err positions file";
+        emit signalError(QString("DefiPositionsPage: %1").arg(err));
+        return;
+    }
+    if (fdata.isEmpty())
+    {
+        m_stageState.note = "positions is empty";
+        return;
+    }
+
+    foreach (const QString &fline, fdata)
+    {
+        DefiPosition   rec;
+        rec.fromFileLine(fline);
+        if (rec.invalid()) continue;
+
+        if (rec.hasLiquidity())
+        {
+            if (rec.token_addrs.first.trimmed() == m_data.pool_token_addrs.first.trimmed() &&
+                    rec.token_addrs.second.trimmed() == m_data.pool_token_addrs.second.trimmed() &&
+                    rec.tick_range.first == m_data.pos_range_tick.first &&
+                    rec.tick_range.second == m_data.pos_range_tick.second &&
+                    rec.fee == m_data.pool_fee)
+            {
+                m_data.mint_pid = rec.pid;
+                break;
+            }
+        }
+    }
 
 
 }
+
+
 
 
 // -----------------NodejsReply----------------------
@@ -311,6 +367,11 @@ void StrategyStageManagerObj::slotNodejsReply(const QJsonObject &js_reply)
     else if (currentStage() == sssTxSwap) readSwapTxReply(js_reply);
     else if (currentStage() == sssGetTxSwapResult) readSwapTxStatusReply(js_reply);
     else if (currentStage() == sssGetWalletBalancesAfterSwap) readWalletAssetsBalanceAfterSwapReply(js_reply);
+    else if (currentStage() == sssGetPriceRangeNextPos) readPriceRangeNextPosReply(js_reply);
+    else if (currentStage() == sssTxMint) readMintTxReply(js_reply);
+    else if (currentStage() == sssGetTxMintResult) readMintTxStatusReply(js_reply);
+    else if (currentStage() == sssGetPositionsList) readPositionsReply(js_reply);
+
 
 
 }
@@ -329,9 +390,18 @@ void StrategyStageManagerObj::readWalletAssetsBalanceReply(const QJsonObject &js
     QString t1 = m_data.pool_tickers.second;
     if (!keys.contains(t0) || !keys.contains(t1)) {setFaultResult("not found tickers"); return;}
 
-    m_data.wallet_assets_balance.first = js_reply.value(t0).toString().toFloat();
-    m_data.wallet_assets_balance.second = js_reply.value(t1).toString().toFloat();
-    m_stageState.note = QString("%1 / %2").arg(m_data.wallet_assets_balance.first).arg(m_data.wallet_assets_balance.second);
+    if (m_data.mintDone())
+    {
+        m_data.wallet_balances_after_mint.first = js_reply.value(t0).toString().toFloat();
+        m_data.wallet_balances_after_mint.second = js_reply.value(t1).toString().toFloat();
+        m_stageState.note = QString("%1 / %2").arg(m_data.wallet_balances_after_mint.first).arg(m_data.wallet_balances_after_mint.second);
+    }
+    else
+    {
+        m_data.wallet_assets_balance.first = js_reply.value(t0).toString().toFloat();
+        m_data.wallet_assets_balance.second = js_reply.value(t1).toString().toFloat();
+        m_stageState.note = QString("%1 / %2").arg(m_data.wallet_assets_balance.first).arg(m_data.wallet_assets_balance.second);
+    }
     m_stageState.result = "ok";
 }
 void StrategyStageManagerObj::readPoolStateReply(const QJsonObject &js_reply)
@@ -396,6 +466,93 @@ void StrategyStageManagerObj::readWalletAssetsBalanceAfterSwapReply(const QJsonO
     m_data.line_liq.second += (m_data.wallet_balances_after_swap.second - m_data.wallet_assets_balance.second);
 
 }
+void StrategyStageManagerObj::readPriceRangeNextPosReply(const QJsonObject &js_reply)
+{
+    if (js_reply.contains("error"))
+    {
+        m_stageState.result = "fault";
+        return;
+    }
+
+    m_data.pos_range.first = js_reply.value("p1").toString().toFloat();
+    m_data.pos_range.second = js_reply.value("p2").toString().toFloat();
+    m_data.pos_range_tick.first = js_reply.value("tick1").toString().toInt();
+    m_data.pos_range_tick.second = js_reply.value("tick2").toString().toInt();
+    if (m_data.prior_price_i == 1)
+    {
+        float p2 = float(1)/m_data.pos_range.first;
+        m_data.pos_range.first = float(1)/m_data.pos_range.second;
+        m_data.pos_range.second = p2;
+    }
+
+    m_data.real_mint_amounts.first = js_reply.value("amount0").toString().toFloat();
+    m_data.real_mint_amounts.second = js_reply.value("amount1").toString().toFloat();
+    m_stageState.result = "ok";
+
+    m_stageState.note = QString("[%1 : %2]").arg(m_data.pos_range_tick.first).arg(m_data.pos_range_tick.second);
+
+}
+void StrategyStageManagerObj::readMintTxReply(const QJsonObject &js_reply)
+{
+    qDebug()<<QString("StrategyStageManagerObj::readMintTxReply");
+
+    m_stageState.note = "done";
+    m_stageState.result = "fault";
+
+
+    int result_code = js_reply.value("code").toString().toInt();
+    if (result_code != 0) {m_stageState.note = QString("error: %1").arg(result_code); return;}
+    QString tx_hash = js_reply.value(AppCommonSettings::nodejsTxHashFieldName()).toString().trimmed().toLower();
+    if (tx_hash.length() < 30) {m_stageState.note = QString("is_emulate"); return;}
+
+    //test
+    //m_stageState.result = "ok";
+    //return;
+    //------
+
+    // TX was done
+    emit signalTxWasDone(js_reply);
+    m_stageState.result = "ok";
+
+}
+void StrategyStageManagerObj::readMintTxStatusReply(const QJsonObject &js_reply)
+{
+    qDebug("StrategyStageManagerObj::readMintTxStatusReply()");
+
+    m_stageState.note = "done";
+    m_stageState.result = "fault";
+    QString status = js_reply.value("status").toString().trimmed();
+    if (js_reply.contains(AppCommonSettings::nodejsTxHashFieldName()))
+    {
+        if (status.toLower() == "ok") {m_stageState.result = "ok"; }
+        if (status.isEmpty()) m_stageState.note = QString("status: ?");
+        else m_stageState.note = QString("status: %1").arg(status);
+
+        emit signalTxStatusDone(js_reply);
+    }
+    else qWarning("StrategyStageManagerObj: WARNING nodejs reply has't field <tx_hash>");
+}
+void StrategyStageManagerObj::readPositionsReply(const QJsonObject &js_reply)
+{
+    qDebug("StrategyStageManagerObj::readPositionsReply");
+    m_stageState.result = "fault";
+
+    bool result_ok = false;
+    if (js_reply.contains("result")) result_ok = (js_reply.value("result").toString().trimmed().toLower() == "true");
+    int n_pos = js_reply.value("pos_count").toString().trimmed().toInt();
+    QString("n_pos = %1").arg(n_pos);
+
+    if (!result_ok)
+    {
+        m_stageState.note = QString("result: FAULT");
+        return;
+    }
+
+    readNodejsPosFile();
+    m_stageState.note = QString("Minted PID: %1").arg(m_data.mint_pid);
+    if (m_data.mint_pid > 0) m_stageState.result = "ok";
+}
+
 
 
 //private funcs
@@ -418,11 +575,11 @@ void StrategyStageManagerObj::getPoolState()
     {
         QJsonObject j_params;
         j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcPoolState));
-        int pos = defi_config.getPoolIndex(m_data.pool_addr);
+        //int pos = defi_config.getPoolIndex(m_data.pool_addr);
         j_params.insert("pool_address", m_data.pool_addr);
-        j_params.insert("token0_address", defi_config.pools.at(pos).token0_addr);
-        j_params.insert("token1_address", defi_config.pools.at(pos).token1_addr);
-        j_params.insert("fee", QString::number(defi_config.pools.at(pos).fee));
+        j_params.insert("token0_address", m_data.pool_token_addrs.first);
+        j_params.insert("token1_address", m_data.pool_token_addrs.second);
+        j_params.insert("fee", QString::number(m_data.pool_fee));
         emit signalRewriteJsonFile(j_params, AppCommonSettings::readParamsNodeJSFile()); //rewrite params json-file
 
         jsScriptRun();
@@ -436,9 +593,12 @@ void StrategyStageManagerObj::readLineSettings()
     //m_data.wallet_assets_balance.second = 500;
     //m_data.tx_swap_hash = "0xf990fcaef81b9b0441666661735c261144d69f4d83c8afcd16f856ae91ec917a";
     //m_data.none_swap = false;
-    m_data.line_liq.first = 3.68;
-    m_data.line_liq.second = 0.4;
-    return;
+
+    //m_data.line_liq.first = 3.68;
+    //m_data.line_liq.second = 0.5;
+    //m_data.pos_range_tick.first = -301820;
+    //m_data.pos_range_tick.second = -297610;
+    //return;
 /////////////////////////////////////////////////
 
     m_stageState.note = QString("START_LIQ: %1 %2").arg(m_data.start_line_liq).
@@ -466,6 +626,7 @@ void StrategyStageManagerObj::readLineSettings()
 void StrategyStageManagerObj::calcSwapParts()
 {
     m_data.none_swap = true;
+    float min_part_err = float(MIN_SWAP_PART_ERR)/float(100);
 
     qDebug("StrategyStageManagerObj::calcSwapParts()");
     //quint8 i_prior = defi_config.getPriorAmountIndexByPoolAddr(m_data.pool_addr);
@@ -484,7 +645,7 @@ void StrategyStageManagerObj::calcSwapParts()
         float sum = liq0 + liq1; // полная ликвидность на текущем шаге (в приоритетном токене)
         if (sum == 0) {qWarning("WARNING: sum == 0"); return;}
         float p_liq0 = liq0/sum;
-        if (qAbs(p_liq0 - t) < 0.01) return; // отличие от требуемой величины менее 1%, менять не будем
+        if (qAbs(p_liq0 - t) < min_part_err) return; // отличие от требуемой величины менее 1%, менять не будем
 
         float d_liq = qAbs(p_liq0 - t);
         m_data.none_swap = false;
@@ -509,7 +670,7 @@ void StrategyStageManagerObj::calcSwapParts()
         float sum = liq0 + liq1; // полная ликвидность на текущем шаге (в приоритетном токене)
         if (sum == 0) {qWarning("WARNING: sum == 0"); return;}
         float p_liq1 = liq1/sum;
-        if (qAbs(p_liq1 - t) < 0.01) return; // отличие от требуемой величины менее 1%, менять не будем
+        if (qAbs(p_liq1 - t) < min_part_err) return; // отличие от требуемой величины менее 1%, менять не будем
 
         float d_liq = qAbs(p_liq1 - t);
         //qDebug()<<QString("p_liq1=%1  d_liq=%2").arg(p_liq1).arg(d_liq);
@@ -554,11 +715,10 @@ void StrategyStageManagerObj::makeSwap_TX()
     emit signalAddGasPriceField(j_params);
 
     // fill pool data
-    int pos = defi_config.getPoolIndex(m_data.pool_addr);
     j_params.insert("pool_address", m_data.pool_addr);
-    j_params.insert("token0_address", defi_config.pools.at(pos).token0_addr);
-    j_params.insert("token1_address", defi_config.pools.at(pos).token1_addr);
-    j_params.insert("fee", QString::number(defi_config.pools.at(pos).fee));
+    j_params.insert("token0_address", m_data.pool_token_addrs.first);
+    j_params.insert("token1_address", m_data.pool_token_addrs.second);
+    j_params.insert("fee", QString::number(m_data.pool_fee));
 
     // fill input
     float v_input = qAbs(m_data.swap_info.first);
@@ -605,24 +765,82 @@ void StrategyStageManagerObj::getNextPosRange()
     QJsonObject j_params;
     j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcPosRange));
 
-    int pos = defi_config.getPoolIndex(m_data.pool_addr);
+    //int pos = defi_config.getPoolIndex(m_data.pool_addr);
+    //j_params.insert("pool_address", m_data.pool_addr);
+    //j_params.insert("token0_address", defi_config.pools.at(pos).token0_addr);
+    //j_params.insert("token1_address", defi_config.pools.at(pos).token1_addr);
+    //j_params.insert("fee", QString::number(defi_config.pools.at(pos).fee));
+
     j_params.insert("pool_address", m_data.pool_addr);
-    j_params.insert("token0_address", defi_config.pools.at(pos).token0_addr);
-    j_params.insert("token1_address", defi_config.pools.at(pos).token1_addr);
-    j_params.insert("fee", QString::number(defi_config.pools.at(pos).fee));
+    j_params.insert("token0_address", m_data.pool_token_addrs.first);
+    j_params.insert("token1_address", m_data.pool_token_addrs.second);
+    j_params.insert("fee", QString::number(m_data.pool_fee));
+
 
     j_params.insert("range_width", QString::number(m_data.price_width));
     j_params.insert("price_index", QString::number(m_data.prior_price_i));
     j_params.insert("amount0", QString::number(m_data.line_liq.first, 'f', 6));
     j_params.insert("amount1", QString::number(m_data.line_liq.second, 'f', 6));
 
+    emit signalRewriteJsonFile(j_params, AppCommonSettings::readParamsNodeJSFile()); //rewrite params json-file
+    jsScriptRun();
+}
+void StrategyStageManagerObj::makeMint_TX()
+{
+    qDebug("StrategyStageManagerObj::makeMint_TX()");
+    m_data.tx_mint_hash.clear();
+
+    QJsonObject j_params;
+    j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(txMint));
+    j_params.insert("simulate_mode", "no");
+    emit signalAddGasPriceField(j_params);
+
+    // fill pool data  
+    j_params.insert("pool_address", m_data.pool_addr);
+    j_params.insert("token0_address", m_data.pool_token_addrs.first);
+    j_params.insert("token1_address", m_data.pool_token_addrs.second);
+    j_params.insert("fee", QString::number(m_data.pool_fee));
 
 
+    // fill mint params
+    j_params.insert("tick1", QString::number(m_data.pos_range_tick.first));
+    j_params.insert("tick2", QString::number(m_data.pos_range_tick.second));
+    j_params.insert("token0_amount", QString::number(m_data.real_mint_amounts.first));
+    j_params.insert("token1_amount", QString::number(-1));
+
+
+    emit signalRewriteJsonFile(j_params, AppCommonSettings::txParamsNodeJSFile()); //rewrite params json-file for TX
+    jsScriptRun();
+}
+void StrategyStageManagerObj::checkTxMintStatus()
+{
+    qDebug("StrategyStageManagerObj::checkTxMintStatus()");
+    if (m_data.needDelay())
+    {
+        qDebug("send delay command");
+        m_data.delay_after_tx = txDelay();
+        emit signalDelayAfterTx(m_data.delay_after_tx);
+        return;
+    }
+
+    qDebug("continue checkTxMintStatus");
+    // send nodejs req
+    QJsonObject j_params;
+    j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcTXStatus));
+    j_params.insert("tx_hash", m_data.tx_mint_hash);
     emit signalRewriteJsonFile(j_params, AppCommonSettings::readParamsNodeJSFile()); //rewrite params json-file
 
-//    jsScriptRun();
-
+    jsScriptRun();
 }
+void StrategyStageManagerObj::getPositionsList()
+{
+    QJsonObject j_params;
+    j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcPositions));
+    emit signalRewriteJsonFile(j_params, AppCommonSettings::readParamsNodeJSFile()); //rewrite params json-file
+
+    jsScriptRun();
+}
+
 
 
 

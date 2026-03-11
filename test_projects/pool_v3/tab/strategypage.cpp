@@ -507,8 +507,6 @@ void DefiStrategyPage::slotNextStep()
         data.prior_asset_size = line->start_parameters.prior_asset_size;
         data.first_token_index = line->start_parameters.first_token_index;
         data.start_line_liq = line->start_parameters.liq_size;
-
-
     }
 
     int action = ((data.next_step == 1) ? ssaFirstStep : ssaNextStep);
@@ -523,6 +521,8 @@ void DefiStrategyPage::slotNextStep()
 
     //m_dataObj->openNextStep(l_index);
     //updateControlButtonsState(l_index);
+    qDebug("--------------");
+    data.out();
     qDebug("done!");
 }
 

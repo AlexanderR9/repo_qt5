@@ -3,6 +3,7 @@
 #include "appcommonsettings.h"
 #include "nodejsbridge.h"
 #include "txlogrecord.h"
+#include "deficonfig.h"
 
 
 
@@ -31,6 +32,10 @@ void StrategyTxLogMaker::slotTxWasDone(const QJsonObject &js_reply)
     if (tx_info.req == NodejsBridge::jsonCommandValue(txSwap))
     {
         makeSwapLog(js_reply);
+    }
+    else if (tx_info.req == NodejsBridge::jsonCommandValue(txMint))
+    {
+        makeMintLog(js_reply);
     }
 }
 void StrategyTxLogMaker::slotTxStatusDone(const QJsonObject &js_reply)
@@ -105,5 +110,35 @@ void StrategyTxLogMaker::makeSwapLog(const QJsonObject &js_reply)
 
     emit signalStrategyTx(tx_rec);
 }
+void StrategyTxLogMaker::makeMintLog(const QJsonObject &js_reply)
+{
+    qDebug("StrategyTxLogMaker::makeMintLog");
 
+    m_data.tx_mint_hash = m_txList.last().hash;
+
+    TxLogRecord tx_rec(m_txList.last().req, m_data.cur_chain);
+    tx_rec.tx_hash = m_txList.last().hash;
+    tx_rec.pool.pool_addr = m_data.pool_addr;
+
+
+    tx_rec.pool.price0 = js_reply.value("pool_price").toString().toFloat();
+    tx_rec.pool.tick = js_reply.value("pool_tick").toString().toInt();
+    tx_rec.pool.token_sizes.first = js_reply.value("amount0").toString().toFloat();
+    tx_rec.pool.token_sizes.second = js_reply.value("amount1").toString().toFloat();
+    tx_rec.pool.price_range.first = js_reply.value("p1").toString().toFloat();
+    tx_rec.pool.price_range.second = js_reply.value("p2").toString().toFloat();
+    tx_rec.pool.tick_range.first = js_reply.value("tick1").toString().toInt();
+    tx_rec.pool.tick_range.second = js_reply.value("tick2").toString().toInt();
+
+    int pos = defi_config.getPoolIndex(m_data.pool_addr);
+    QString extra_data = QString("%1/%2 (%3)").arg(m_data.pool_tickers.first).arg(m_data.pool_tickers.second).arg(defi_config.pools.at(pos).strFloatFee());
+    extra_data.replace(QChar('/'), QChar('|'));
+    tx_rec.formNote(extra_data);
+
+    qDebug()<<QString("extra_data [%1]").arg(extra_data);
+    qDebug()<<QString("note [%1]").arg(tx_rec.note);
+    qDebug()<<QString("hash [%1]").arg(tx_rec.tx_hash);
+
+    emit signalStrategyTx(tx_rec);
+}
 

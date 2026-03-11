@@ -28,6 +28,7 @@ struct StrategyStepDialogData
     // ---------------- параметры которые определяются при старте диалога ------------------------
     QPair<QString, QString> pool_tickers; // определяется по pool_addr
     QPair<QString, QString> pool_token_addrs; // определяется по pool_addr
+    quint16 pool_fee; // 100(0.01%) /  500(0.05%) / 3000(0.3%) / 10000 (1.0%)
     quint8 prior_amount_i; // определяется по pool_addr приоритетный индекс актива для расчетов количества
     quint8 prior_price_i; // определяется по pool_addr  приоритетный индекс актива для отображения цен
 
@@ -46,10 +47,15 @@ struct StrategyStepDialogData
     bool none_swap; // признак что своп не требуется
     QString tx_swap_hash; // заполняется если была транзакция swap
     QPair<float, float> wallet_balances_after_swap; // текущие балансы пары токенов пула в кошельке после успешного свопа
-    bool swap_done; // признак что в сценарии произаодился своп и при этом был успешно выполнен
+    bool swap_done; // признак что в сценарии производился своп и при этом был успешно выполнен
 
+    // mint data
     QPair<float, float> pos_range; // ценовые границы диапазона следующей позы (в нормальных единицах т.е. для приоритетного токена)
     QPair<int, int> pos_range_tick; // тиковые границы диапазона следующей позы
+    QPair<float, float> real_mint_amounts; // реальные расчетные объемы токенов для открытия сл. позы, они подходят по тиковый диапазон pos_range_tick
+    QString tx_mint_hash; // заполняется если была транзакция mint
+    quint32 mint_pid; // PID новой позы, если > 0 признак что в сценарии производился mint и при этом был успешно выполнен
+    QPair<float, float> wallet_balances_after_mint; // текущие балансы пары токенов пула в кошельке после успешного MINT
 
 
     // после выполнения каждой транзакции необходимо выдержать паузу
@@ -61,7 +67,7 @@ struct StrategyStepDialogData
 
     /////////////funcs//////////////////
 
-    QString afterSwapResult() const
+    QString afterSwapResult() const // показывает дельты, насколько убавились/прибавились объемы пары токенов пула после свопа
     {
         float s0 = wallet_balances_after_swap.first - wallet_assets_balance.first;
         float s1 = wallet_balances_after_swap.second - wallet_assets_balance.second;
@@ -69,8 +75,24 @@ struct StrategyStepDialogData
         QString ss1 = ((s1 > 0) ? QString("+%1").arg(QString::number(s1, 'f', 4)) : QString::number(s1, 'f', 4));
         return QString("%1 / %2").arg(s0).arg(s1);
     }
+    QString afterMintResult() const // показывает дельты, насколько убавились объемы пары токенов пула после минта
+    {
+        float s0 = wallet_balances_after_mint.first - wallet_balances_after_swap.first;
+        float s1 = wallet_balances_after_mint.second - wallet_balances_after_swap.second;
+        if (none_swap)
+        {
+            s0 = wallet_balances_after_mint.first - wallet_assets_balance.first;
+            s1 = wallet_balances_after_mint.second - wallet_assets_balance.second;
+        }
+        return QString("%1 / %2").arg(QString::number(s0, 'f', 5)).arg(QString::number(s1, 'f', 5));
+    }
+
     bool needDelay() const {return (delay_after_tx == -55);}
     bool delayRunning() const {return (delay_after_tx > 0);}
+    bool mintDone() const {return (mint_pid > 0);}
+
+
+
     void reset()
     {
         pool_addr.clear();
@@ -81,6 +103,7 @@ struct StrategyStepDialogData
         next_step = first_token_index = 0;
         wallet_assets_balance.first = wallet_assets_balance.second = 0;
         wallet_balances_after_swap.first = wallet_balances_after_swap.second = 0;
+        wallet_balances_after_mint.first = wallet_balances_after_mint.second = 0;
 
         prior_amount_i = prior_price_i = 0;
         start_line_liq = -1;
@@ -90,7 +113,7 @@ struct StrategyStepDialogData
         pool_token_addrs.first.clear();
         pool_token_addrs.second.clear();
         pool_price = -1;
-        pool_tick = 0;
+        pool_tick = pool_fee = 0;
 
         none_swap = true;
         swap_done = false;
@@ -99,6 +122,9 @@ struct StrategyStepDialogData
 
         pos_range.first = pos_range.second = -1;
         pos_range_tick.first = pos_range_tick.second = 0;
+        real_mint_amounts.first = real_mint_amounts.second = 0;
+        tx_mint_hash.clear();
+        mint_pid = 0;
 
     }
     bool invalid() const
@@ -117,12 +143,27 @@ struct StrategyStepDialogData
         qDebug()<<QString("prior_asset_size: %1").arg(prior_asset_size);
         qDebug()<<QString("first_token_index: %1").arg(first_token_index);
         qDebug()<<QString("line_liq: %1 / %2").arg(line_liq.first).arg(line_liq.second);
-
         qDebug()<<QString("pool_tickers: %1 / %2").arg(pool_tickers.first).arg(pool_tickers.second);
         qDebug()<<QString("pool_token_addrs: %1 / %2").arg(pool_token_addrs.first).arg(pool_token_addrs.second);
 
-    }
+        qDebug()<<QString("IMPLEMENTATION_SWAP:");
+        qDebug()<<QString("swap_info: %1 / %2").arg(swap_info.first).arg(swap_info.second);
+        qDebug()<<QString("none_swap: %1").arg(none_swap?"TRUE":"FALSE");
+        qDebug()<<QString("tx_swap_hash: %1").arg(tx_swap_hash);
+        qDebug()<<QString("wallet_balances_after_swap: %1 / %2").arg(wallet_balances_after_swap.first).arg(wallet_balances_after_swap.second);
+        qDebug()<<QString("swap_done: %1").arg(swap_done?"YES":"NO");
+        if (swap_done) qDebug()<<QString("afterSwapResult: %1").arg(afterSwapResult());
 
+        qDebug()<<QString("IMPLEMENTATION_MINT:");
+        qDebug()<<QString("price_range: [%1 : %2]").arg(pos_range.first).arg(pos_range.second);
+        qDebug()<<QString("tick_range: [%1 : %2]").arg(pos_range_tick.first).arg(pos_range_tick.second);
+        qDebug()<<QString("real_mint_amounts: %1 / %2").arg(real_mint_amounts.first).arg(real_mint_amounts.second);
+        qDebug()<<QString("tx_mint_hash: %1").arg(tx_mint_hash);
+        qDebug()<<QString("Minted PID: %1").arg(mint_pid);
+        qDebug()<<QString("wallet_balances_after_mint: %1 / %2").arg(wallet_balances_after_mint.first).arg(wallet_balances_after_mint.second);
+        if (mintDone()) qDebug()<<QString("afterMintResult: %1").arg(afterMintResult());
+
+    }
 
 
 };

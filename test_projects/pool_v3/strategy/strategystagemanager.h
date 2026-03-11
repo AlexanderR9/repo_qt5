@@ -60,13 +60,19 @@ protected:
     void setFaultResult(QString note = "none");
     quint16 txDelay() const; // задержка после отправленной транзакции
     void continueAfterDelay(); // задержка после отправленной транзакции закончилась, необходимо продолжить сценарий
+    void readNodejsPosFile(); // после успешного запроса позиций необходимо считать файл positions.txt
 
     // check ethers_js reply
     void readWalletAssetsBalanceReply(const QJsonObject&);
     void readPoolStateReply(const QJsonObject&);
     void readSwapTxReply(const QJsonObject&);
     void readSwapTxStatusReply(const QJsonObject&);
-    void readWalletAssetsBalanceAfterSwapReply(const QJsonObject&);
+    void readWalletAssetsBalanceAfterSwapReply(const QJsonObject&); // корректируем поле m_data.line_liq после выполненного свопа
+    void readPriceRangeNextPosReply(const QJsonObject&);
+    void readMintTxReply(const QJsonObject&);
+    void readMintTxStatusReply(const QJsonObject&);
+    void readPositionsReply(const QJsonObject&);
+
 
 
 private:
@@ -78,6 +84,9 @@ private:
     void makeSwap_TX();
     void checkTxSwapStatus();
     void getNextPosRange();
+    void makeMint_TX();
+    void checkTxMintStatus();
+    void getPositionsList();
 
 
 protected slots:

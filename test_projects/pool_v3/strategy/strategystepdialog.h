@@ -48,6 +48,7 @@ protected:
 private:
     void updateLineAmountsCell(int);
     void updateSwapInfoCell();
+    void updateRangeInfoCell();
 
 protected slots:
     void slotStartStage(int);

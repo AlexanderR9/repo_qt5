@@ -37,6 +37,7 @@ protected:
     QList<SM_TxInfo> m_txList; // инфа о транзакциях(реальных) выполненных в процессе выполнения сценария
 
     void makeSwapLog(const QJsonObject&);
+    void makeMintLog(const QJsonObject&);
 
 protected slots:
     // выполняется когда была совершена транзакция, т.е. получена реальная hash (но еще неизвестен результат выполнения)

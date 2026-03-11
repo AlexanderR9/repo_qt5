@@ -11,9 +11,9 @@ QString AppCommonSettings::m_nodejsPath = QString("none");
 
 quint8 AppCommonSettings::interfacePricePrecision(float p)
 {
-    if (p <= 0) return 1;
-    if (p < 0.1) return 6;
-    if (p < 2) return 4;
+    if (p == 0 || p == -1) return 1;
+    if (qAbs(p) < 0.1) return 6;
+    if (qAbs(p) < 2) return 4;
     return 2;
 }
 QString AppCommonSettings::appDataPath()
