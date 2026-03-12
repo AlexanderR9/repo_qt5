@@ -145,6 +145,8 @@ struct StrategyStepDialogData
         qDebug()<<QString("line_liq: %1 / %2").arg(line_liq.first).arg(line_liq.second);
         qDebug()<<QString("pool_tickers: %1 / %2").arg(pool_tickers.first).arg(pool_tickers.second);
         qDebug()<<QString("pool_token_addrs: %1 / %2").arg(pool_token_addrs.first).arg(pool_token_addrs.second);
+        qDebug()<<QString("prior_index amount/price: %1 / %2").arg(prior_amount_i).arg(prior_price_i);
+        qDebug()<<QString("wallet_balances_begin: %1 / %2").arg(wallet_assets_balance.first).arg(wallet_assets_balance.second);
 
         qDebug()<<QString("IMPLEMENTATION_SWAP:");
         qDebug()<<QString("swap_info: %1 / %2").arg(swap_info.first).arg(swap_info.second);

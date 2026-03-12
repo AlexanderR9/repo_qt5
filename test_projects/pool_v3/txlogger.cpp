@@ -163,17 +163,20 @@ void DefiTxLogger::addNewRecord(const TxLogRecord &rec)
 }
 void DefiTxLogger::updateRecStatus(const QString &hash, QString status, float fee_native, quint32 gas_used)
 {
+    qDebug()<<QString("DefiTxLogger::updateRecStatus  hash[%1] status[%2]").arg(hash).arg(status);
     if (logEmpty()) return;
+
 
     int pos = indexOf(hash);
     if (pos < 0) {emit signalError(QString("DefiTxLogger: not found rec in tx_log with hash [%1]").arg(hash)); return;}
+    qDebug()<<QString("find rec by pos %1").arg(pos);
 
-    m_logData[pos].status.result = status;
+    m_logData[pos].status.result = status.trimmed().toUpper();
     m_logData[pos].status.fee_coin = fee_native;
     m_logData[pos].status.gas_used = gas_used;
 
     float p = defi_config.lastPriceByTokenName(defi_config.nativeTokenName(m_chain));
-   // qDebug()<<QString("DefiTxLogger::updateRecStatus - cur price nativeTokenName %1").arg(p);
+    qDebug()<<QString("DefiTxLogger::updateRecStatus - cur price nativeTokenName %1").arg(p);
     if (p > 0) m_logData[pos].status.fee_cent = (p*fee_native*float(100));
     else m_logData[pos].status.fee_cent = -1;
 
@@ -216,7 +219,8 @@ void DefiTxLogger::excludeRecFromFileByHash(const QString &hash, QString fname, 
 }
 void DefiTxLogger::rewriteStatusFiles(const TxLogRecord &rec)
 {
-    if (!rec.isFinishedStatus()) return;
+    qDebug("DefiTxLogger::rewriteStatusFiles");
+    if (!rec.isFinishedStatus()) {qWarning("WARNING: rec is not FinishedStatus"); return;}
 
     // rewrite status file
     QString fname = QString("%1%2%3").arg(AppCommonSettings::appDataPath()).arg(QDir::separator()).arg(AppCommonSettings::txStateFile());
@@ -234,6 +238,7 @@ void DefiTxLogger::rewriteFileRecState(QString fname, const TxLogRecord &rec, co
 {
     if (fname.trimmed().isEmpty()) {emit signalError("DefiTxLogger: log filename is empty"); return;}
 
+    qDebug()<<QString("rewriteFileRecState  fname[%1]").arg(fname);
     QStringList fdata;
     QString err = LFile::readFileSL(fname, fdata);
     if (!err.isEmpty()) emit signalError(QString("DefiTxLogger: %1").arg(err));

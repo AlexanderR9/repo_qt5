@@ -242,7 +242,7 @@ void TxLogRecord::formNote(QString extra_data)
     }
     else if (tx_kind == NodejsBridge::jsonCommandValue(txSwap))
     {
-        note = QString("%1 %2 %3").arg(note).arg(QString::number(pool.token_sizes.first, 'f', AppCommonSettings::interfacePricePrecision(wallet.token_amount))).arg(extra_data);
+        note = QString("%1 %2 %3").arg(note).arg(QString::number(pool.token_sizes.first, 'f', AppCommonSettings::interfacePricePrecision(pool.token_sizes.first))).arg(extra_data);
         int prior_index = defi_config.getPriorPriceIndexByPoolAddr(pool.pool_addr);
         float user_p = ( (prior_index == 1) ? (float(1)/pool.price0) : pool.price0);
         quint8 prec = AppCommonSettings::interfacePricePrecision(user_p);

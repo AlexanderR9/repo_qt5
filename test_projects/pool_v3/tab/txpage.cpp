@@ -200,19 +200,22 @@ void DefiTxTabPage::slotRemoveTxRecord()
 void DefiTxTabPage::slotStrategyTxStatus(const QMap<QString, QString> &map)
 {
     qDebug("DefiTxTabPage::slotStrategyTxStatus");
-    QString hash = map.value("hash", QString());
+    QString hash = map.value("hash", QString()).trimmed();
     int gas_used = map.value("gas_used", QString("-9999")).toUInt();
     float fee_native = map.value("fee", QString("-9999")).toFloat();
     QString status = map.value("status", QString());
     qDebug()<<QString("hash[%1]   gas_used[%2]   fee_native[%3]   status[%4]").arg(hash).arg(gas_used).arg(fee_native).arg(status);
 
-    if (fee_native <= 0 || gas_used < 0 || status.isEmpty()) return;
+    if (fee_native < 0 || gas_used < 0 || status.isEmpty()) return;
     const TxLogRecord *rec = m_logger->recByHash(hash);
-    if (!rec) return;
+    if (!rec) {qWarning("WARNING record by hash is NULL!!"); return;}
     if (rec->status.result.trimmed().toLower() == status.trimmed().toLower()) return; // status already updated
 
     qDebug("UPDATING RECORD STATUS...");
     m_logger->updateRecStatus(hash, status, fee_native, quint32(gas_used));
+
+    // update table row
+    updateTableRowByIndex(0, rec);
 }
 void DefiTxTabPage::slotNodejsReply(const QJsonObject &js_reply)
 {
@@ -247,7 +250,13 @@ void DefiTxTabPage::updateTableRowByRecord(const QString &hash)
     int row = m_table->curSelectedRow();
     if (row < 0) {emit signalError(QString("DefiTxTabPage: can't select row by hash [%1]").arg(hash)); return;}
 
+    updateTableRowByIndex(row, rec);
+}
+void DefiTxTabPage::updateTableRowByIndex(int row, const TxLogRecord *rec)
+{
     QTableWidget *t = m_table->table();
+    if (row < 0 || row >= t->rowCount() || !rec) return;
+
     t->item(row, GAS_USED_COL)->setText(QString::number(rec->status.gas_used));
     t->item(row, FEE_NATIVE_COL)->setText(QString::number(rec->status.fee_coin, 'f', FEE_COIN_PRECISION));
     t->item(row, FEE_CENT_COL)->setText(QString::number(rec->status.fee_cent, 'f', FEE_CENT_PRECISION));
@@ -255,6 +264,9 @@ void DefiTxTabPage::updateTableRowByRecord(const QString &hash)
 
     updateRowColor(row);
 }
+
+
+
 void DefiTxTabPage::updateTotalTable()
 {
     QTableWidget *t = m_integratedTable->table();

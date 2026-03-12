@@ -123,12 +123,9 @@ void StrategyStageManagerObj::fillStagesList(int a_type)
 
 
 
-        m_actionStages << sssReadLineSettings << sssGetPositionsList << sssGetWalletBalances;
 
-        /*
-            m_actionStages << sssGetWalletBalances  << sssGetPoolState << sssReadLineSettings << sssGetPriceRangeNextPos <<
-                              sssTxMint << sssGetTxMintResult;
-                              */
+    m_actionStages << sssGetWalletBalances  << sssGetPoolState << sssReadLineSettings << sssCalcSwapPart <<
+                      sssCheckWalletTokenAmounts << sssTxSwap << sssGetTxSwapResult;
 
             break;
 
