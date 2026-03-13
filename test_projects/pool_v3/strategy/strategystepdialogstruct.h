@@ -137,6 +137,7 @@ struct StrategyStepDialogData
     }
     void out()
     {
+        qDebug()<<QString();
         qDebug("-----------StrategyStepDialogData-----------");
         qDebug()<<QString("pool_addr: %1").arg(pool_addr);
         qDebug()<<QString("price_width: %1").arg(price_width);

@@ -202,7 +202,11 @@ void StrategyStepDialog::updateTableAfterStage()
             foreach (const QString &v, list)
             {
                 int pos = v.indexOf("=");
-                if (v.contains("tvl")) stepParamsTable->item(2, 0)->setText(LString::strTrimLeft(v, pos+1));
+                if (v.contains("tvl"))
+                {
+                    float tvl = LString::strTrimLeft(v, pos+1).toFloat();
+                    stepParamsTable->item(2, 0)->setText(QString::number(tvl/1000, 'f', 1));
+                }
                 else if (v.contains("price"))
                 {
                     float p = LString::strTrimLeft(v, pos+1).toFloat();

@@ -3,6 +3,7 @@
 #include "deficonfig.h"
 #include "lfile.h"
 #include "lstaticxml.h"
+#include "strategystepdialogstruct.h"
 
 #include <QDir>
 #include <QDebug>
@@ -164,11 +165,11 @@ void DefiStrategyData::closeLastStep(int l_index)
     m_lines[l_index].closeLastStep();
     rewriteStrategyFile();
 }
-void DefiStrategyData::openNextStep(int l_index)
+void DefiStrategyData::openNextStep(int l_index, const StrategyStepDialogData &data)
 {
     if (l_index < 0 || l_index >= lineCount()) {emit signalError(QString("invalid line_index: %1").arg(l_index)); return;}
 
-    m_lines[l_index].openNextStep();
+    m_lines[l_index].openNextStep(data);
     rewriteStrategyFile();
 }
 
@@ -259,7 +260,7 @@ void StrategyLineData::loadLineSteps(const QDomNode &node, bool &ok)
             l_step.loadStepNode(step_node, ok);
             if (!ok) return;
 
-            l_step.setPriorIndex(pricePriorIndex(), amoutPriorIndex());
+            //l_step.setPriorIndex(amoutPriorIndex());
             steps.append(l_step);
         }
         step_node = step_node.nextSibling();
@@ -297,23 +298,27 @@ void StrategyLineData::closeLastStep()
     steps[i].amounts.rewards.second = 0.05;
 
 }
-void StrategyLineData::openNextStep()
+void StrategyLineData::openNextStep(const StrategyStepDialogData &data)
 {
     StrategyLineStepState next_step;
     next_step.ts_open = DefiStrategyData::curTsPoint();
     next_step.number = steps.count() + 1;
+    next_step.pid = data.mint_pid;
 
-    // set TEST values
-    next_step.prices.start_price = 99.99;
-    next_step.prices.p_range.first = 155;
-    next_step.prices.p_range.second = 175;
-    next_step.prices.t_range.first = -288654;
-    next_step.prices.t_range.second = -262654;
+    // set prices values
+    next_step.prices.start_price = data.pool_price;
+    next_step.prices.p_range.first = data.pos_range.first;
+    next_step.prices.p_range.second = data.pos_range.second;
+    next_step.prices.t_range.first = data.pos_range_tick.first;;
+    next_step.prices.t_range.second = data.pos_range_tick.second;
 
-    next_step.amounts.deposited.first = 1.0;
-    next_step.amounts.deposited.second = 2.0;
+    // set amounts values
+    next_step.amounts.line_liq.first = data.line_liq.first;
+    next_step.amounts.line_liq.second = data.line_liq.second;
+    next_step.amounts.deposited.first = data.real_mint_amounts.first;
+    next_step.amounts.deposited.second = data.real_mint_amounts.second;
 
-    next_step.setPriorIndex(pricePriorIndex(), amoutPriorIndex());
+    //next_step.setPriorIndex(amoutPriorIndex());
     steps.append(next_step);
 }
 quint8 StrategyLineData::pricePriorIndex() const
@@ -373,21 +378,32 @@ void StrategyLineStepState::reset()
 void StrategyLineStepState::fillStepNode(QDomElement &step_node) const
 {
     LStaticXML::setAttrNode(step_node, "ts_open", QString::number(ts_open), "ts_close", QString::number(ts_close));
+    LStaticXML::setAttrNode(step_node, "pid", QString::number(pid));
+
 
     QDomDocument dom;
     //fill prices block
-    QDomElement price_node = dom.createElement("price");
-    LStaticXML::setAttrNode(price_node, "start", QString::number(prices.start_price), "exit", QString::number(prices.exit_price));
-    step_node.appendChild(price_node);
-    QDomElement range_node = dom.createElement("range");
-    LStaticXML::setAttrNode(range_node, "p1", QString::number(prices.p_range.first), "p2", QString::number(prices.p_range.second));
-    LStaticXML::setAttrNode(range_node, "tick1", QString::number(prices.t_range.first), "tick2", QString::number(prices.t_range.second));
-    step_node.appendChild(range_node);
+    QDomElement prices_node = dom.createElement("prices"); // create container node
+    step_node.appendChild(prices_node);
+
+    QDomElement position_node = dom.createElement("position");
+    LStaticXML::setAttrNode(position_node, "start", QString::number(prices.start_price), "exit", QString::number(prices.exit_price));
+    prices_node.appendChild(position_node);
+    QDomElement p_range_node = dom.createElement("p_range");
+    LStaticXML::setAttrNode(p_range_node, "p1", QString::number(prices.p_range.first), "p2", QString::number(prices.p_range.second));
+    prices_node.appendChild(p_range_node);
+    QDomElement t_range_node = dom.createElement("t_range");
+    LStaticXML::setAttrNode(t_range_node, "tick1", QString::number(prices.t_range.first), "tick2", QString::number(prices.t_range.second));
+    prices_node.appendChild(t_range_node);
+
 
     //fill amounts block
-    QDomElement amounts_node = dom.createElement("amounts");
+    QDomElement amounts_node = dom.createElement("amounts"); // create container node
     step_node.appendChild(amounts_node);
 
+    QDomElement line_liq_node = dom.createElement("line_liq");
+    LStaticXML::setAttrNode(line_liq_node, "asset0", QString::number(amounts.line_liq.first), "asset1", QString::number(amounts.line_liq.second));
+    amounts_node.appendChild(line_liq_node);
     QDomElement deposited_node = dom.createElement("deposited");
     LStaticXML::setAttrNode(deposited_node, "asset0", QString::number(amounts.deposited.first), "asset1", QString::number(amounts.deposited.second));
     amounts_node.appendChild(deposited_node);
@@ -398,17 +414,6 @@ void StrategyLineStepState::fillStepNode(QDomElement &step_node) const
     LStaticXML::setAttrNode(rewards_node, "asset0", QString::number(amounts.rewards.first), "asset1", QString::number(amounts.rewards.second));
     amounts_node.appendChild(rewards_node);
 
-    /*
-        <step number="1" ts_open="234234234" ts_close="0" >
-            <price start="178.9" exit="-1" />
-            <range p1="130.65" p2="230.16" tick1="-283748" tick2="-263781" />
-            <amounts>
-                <deposited asset0="0.51" asset1="165.45" />
-                <closed asset0="0.0" asset1="265.45" />
-                <rewards asset0="0.0056" asset1="5.45" />
-            </amounts>
-        </step>
-    */
 }
 QStringList StrategyLineStepState::tableStepRowData() const
 {
@@ -485,13 +490,16 @@ void StrategyLineStepState::loadStepNode(const QDomNode &node, bool &ok)
 
     ok= true;
 }
-void StrategyLineStepState::setPriorIndex(quint8 i_p, quint8 i_a)
+
+/*
+void StrategyLineStepState::setPriorIndex(quint8 i_a)
 {
     //prices.prior_index = 0;
     amounts.prior_index = 0;
     //if (i_p == 1) prices.prior_index = 1;
     if (i_a == 1) amounts.prior_index = 1;
 }
+*/
 QString StrategyLineStepState::strResult() const
 {
     float res = amounts.totalStepResult();
@@ -507,14 +515,14 @@ QString StrategyLineStepState::strResult() const
 /////////////////StrategyLineStepAmounts & StrategyLineStepPrices ///////////////////////////
 void StrategyLineStepAmounts::reset()
 {
-    prior_index = 0;
+    //prior_index = 0;
     deposited.first = deposited.second = 0;
     closed.first = closed.second = 0;
     rewards.first = rewards.second = 0;
+    line_liq.first = line_liq.second = 0;
 }
 void StrategyLineStepPrices::reset()
 {
-    //prior_index = 0;
     start_price = exit_price = -1;
     p_range.first = p_range.second = -1;
     t_range.first = t_range.second = 0;
@@ -547,12 +555,15 @@ float StrategyLineStepAmounts::totalStepResult() const
 
     return -101;
 }
+
+/*
 float StrategyLineStepAmounts::userTokenSum(const QPair<float, float> &pair, float p_user) const
 {
     float size0 = pair.first;
     float size1 = pair.second;
 
     float amount = -1;
+
     if (prior_index == 0)
     {
         amount = size0;
@@ -563,8 +574,9 @@ float StrategyLineStepAmounts::userTokenSum(const QPair<float, float> &pair, flo
         amount = size1;
         if (size0 > 0) amount += (size0*p_user);
     }
+
     return amount;
 }
-
+*/
 
 

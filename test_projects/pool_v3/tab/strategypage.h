@@ -11,7 +11,7 @@ class QLineEdit;
 class QFrame;
 class QToolButton;
 struct StrategyLineData;
-//class QJsonObject;
+struct StrategyStepDialogData;
 
 
 // страница для управления линией игры различных стратегий.
@@ -102,6 +102,11 @@ protected:
     void controlButtonsDisable();
     void restoreStartParamsByLine(const StrategyLineData*); // восстановить на форме значения настроек линии при переключении пулов (если линия открыта)
     void resetStartParamsControls(); // сбросить на форме настройки линии
+
+
+    void addFirstStepToLine(int, const StrategyStepDialogData&); // добавить данные 1-го шага к указанной линии
+
+
 
 public slots:
     void slotNodejsReply(const QJsonObject&) {} //получен успешный ответ от скрипта nodejs

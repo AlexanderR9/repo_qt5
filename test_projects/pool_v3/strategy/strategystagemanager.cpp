@@ -122,10 +122,12 @@ void StrategyStageManagerObj::fillStagesList(int a_type)
               */
 
 
+        m_actionStages << sssGetWalletBalances << sssGetPoolState << sssReadLineSettings << sssCalcSwapPart <<
+              sssCheckWalletTokenAmounts << sssTxSwap << sssGetTxSwapResult << sssGetWalletBalancesAfterSwap <<
+              sssGetPriceRangeNextPos << sssTxMint << sssGetTxMintResult << sssGetPositionsList << sssGetWalletBalances;
 
 
-    m_actionStages << sssGetWalletBalances  << sssGetPoolState << sssReadLineSettings << sssCalcSwapPart <<
-                      sssCheckWalletTokenAmounts << sssTxSwap << sssGetTxSwapResult;
+       // m_actionStages << sssGetWalletBalances << sssReadLineSettings << sssGetPriceRangeNextPos;
 
             break;
 
@@ -591,8 +593,8 @@ void StrategyStageManagerObj::readLineSettings()
     //m_data.tx_swap_hash = "0xf990fcaef81b9b0441666661735c261144d69f4d83c8afcd16f856ae91ec917a";
     //m_data.none_swap = false;
 
-    //m_data.line_liq.first = 3.68;
-    //m_data.line_liq.second = 0.5;
+    //m_data.line_liq.first = 0.56;
+    //m_data.line_liq.second = 2.04;
     //m_data.pos_range_tick.first = -301820;
     //m_data.pos_range_tick.second = -297610;
     //return;

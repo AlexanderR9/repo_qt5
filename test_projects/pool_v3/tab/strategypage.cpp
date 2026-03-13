@@ -242,7 +242,7 @@ void DefiStrategyPage::initPageBoxes()
     QComboBox *asize_combo = new QComboBox(this);
     asize_combo->setObjectName("asize_combo");
     asize_combo->clear();
-    for (int i=3; i<=7; i++)
+    for (int i=2; i<=8; i++)
         asize_combo->addItem(QString("%1 %").arg(i*10));
     g_lay->addWidget(asize_combo, lay_row, 1);
     m_controls.insert(PRIOR_TOKEN_PART_KEY, asize_combo);
@@ -505,6 +505,8 @@ void DefiStrategyPage::slotNextStep()
         data.price_width = line->start_parameters.range_width;
         line->getCurrentLiqSize(data.line_liq);
         data.prior_asset_size = line->start_parameters.prior_asset_size;
+
+        // for first step
         data.first_token_index = line->start_parameters.first_token_index;
         data.start_line_liq = line->start_parameters.liq_size;
     }
@@ -521,9 +523,21 @@ void DefiStrategyPage::slotNextStep()
 
     //m_dataObj->openNextStep(l_index);
     //updateControlButtonsState(l_index);
-    qDebug("--------------");
     data.out();
     qDebug("done!");
+
+    if (data.next_step == 1) addFirstStepToLine(l_index, data);
+}
+void DefiStrategyPage::addFirstStepToLine(int l_index, const StrategyStepDialogData &data)
+{
+    if (!data.mintDone())
+    {
+        emit signalError("scenario did not execute!");
+        return;
+    }
+
+    m_dataObj->openNextStep(l_index, data);
+    updateControlButtonsState(l_index);
 }
 
 
