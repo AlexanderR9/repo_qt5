@@ -97,17 +97,26 @@ void DefiStrategyData::loadLineNode(const QDomNode &node)
     qDebug("---------------DefiStrategyData::loadLineNode for chain----------------");
     bool ok;
     StrategyLineData line;
-    const QDomNode params_node = node.namedItem("settings");
+
+    // load main line_node
     line.loadLineNode(node, ok);
     if (!ok) {qWarning("DefiStrategyData::loadLineNode WARNING - can't load line_node"); return;}
+    qDebug() << line.toStr();
+
+    // load line parameters from node  <settings>
+    const QDomNode params_node = node.namedItem("settings");
     line.loadLineParameters(params_node, ok);
     if (!ok) {qWarning("DefiStrategyData::loadLineNode WARNING - can't load line_params"); return;}
+    qDebug() << line.start_parameters.toStr();
+
+
+    // load line steps nodes
     line.loadLineSteps(node, ok);
     if (!ok) {qWarning("DefiStrategyData::loadLineNode WARNING - can't load line_steps"); return;}
 
 
     m_lines.append(line);
-    qDebug()<<m_lines.last().toStr();
+    //qDebug()<<m_lines.last().toStr();
     qDebug("LINE LOADED OK!!");
 }
 int DefiStrategyData::lineIndexOf(int s_type, const QString &pool_addr) const
@@ -183,6 +192,7 @@ void StrategyLineData::fillLineNode(QDomElement &line_node) const
 
     LStaticXML::setAttrNode(line_node, "pool", pool_addr, "strategy", QString::number(strategy_type));
     LStaticXML::setAttrNode(line_node, "ts_open", QString::number(ts_open));
+    LStaticXML::setAttrNode(line_node, "info", defi_config.shortPoolDescByAddr(pool_addr));
 
     QDomDocument dom;
     QDomElement settings_node = dom.createElement("settings");
@@ -214,10 +224,6 @@ void StrategyLineData::loadLineNode(const QDomNode &line_node, bool &ok)
 
     pool_addr = LStaticXML::getStringAttrValue("pool", line_node).trimmed().toLower();
     if (pool_addr.length() < 20) {qWarning("DefiStrategyData::loadLineNode WARNING - invalid pool_addr"); return;}
-
-    // QString str_ts_open = LStaticXML::getStringAttrValue("ts_open", params_node.parentNode());
-    // ts_open = str_ts_open.toUInt(&ok);
-     //    if (!ok || ts_open == 0) {        qWarning()<<QString("DefiStrategyData::loadLineParameters WARNING - invalid value ts_open(%1), ok(%2)").arg(str_ts_open).arg(ok?"true":"false");        return;}
 
      ts_open = LStaticXML::getIntAttrValue("ts_open", line_node, 0);
      if (ts_open == 0) {qWarning("DefiStrategyData::loadLineNode WARNING - invalid value ts_open"); return;}
@@ -254,7 +260,7 @@ void StrategyLineData::loadLineSteps(const QDomNode &node, bool &ok)
     QDomNode step_node = node.firstChild();
     while (!step_node.isNull())
     {
-        if (step_node.nodeName() == "step")
+        if (step_node.nodeName() == "step") // found node <step>, need parse
         {
             StrategyLineStepState l_step;
             l_step.loadStepNode(step_node, ok);
@@ -284,7 +290,8 @@ bool StrategyLineData::lastStepOpened() const
 QString StrategyLineData::toStr() const
 {
     QString s("StrategyLineData: ");
-    s = QString("%1  pool[%2]  type=%3 steps[%4])").arg(s).arg(pool_addr).arg(strategy_type).arg(steps.count());
+    s = QString("%1  pool[%2]  type=%3 steps[%4]  pool_info:  %5  ").arg(s).arg(pool_addr).arg(strategy_type).
+            arg(steps.count()).arg(defi_config.shortPoolDescByAddr(pool_addr));
     return s ;
 }
 void StrategyLineData::closeLastStep()
@@ -365,6 +372,13 @@ void StrategyLineParameters::reset()
     liq_size = range_width = -1;
     prior_asset_size = first_token_index = 0;
 }
+QString StrategyLineParameters::toStr() const
+{
+    QString s("StrategyLineParameters: ");
+    s = QString("%1  liq_size[%2]  range_width=%3  prior_asset_size=%4%  first_token_index=%5").arg(s).arg(liq_size).arg(range_width).
+            arg(prior_asset_size).arg(first_token_index);
+    return s ;
+}
 
 
 /////////////////StrategyLineStepState///////////////////////////
@@ -417,13 +431,16 @@ void StrategyLineStepState::fillStepNode(QDomElement &step_node) const
 }
 QStringList StrategyLineStepState::tableStepRowData() const
 {
-//    headers << "Step" << "Open time" << "Exit time" << "Price range" << "Deposited" <<
-  //             "Current assets" << "Rewards" << "Step result";
+
+//    headers << "Step" << "PID" << "Open time" << "Exit time" << "Start/Exit price" << "Pool price" << "Price range" <<
+  //              "Deposited" << "Current assets" << "Rewards" << "Step result";
 
     QStringList row_data;
-    row_data << QString::number(number) << DefiStrategyData::fromTsPointToStr(ts_open);
+    row_data << QString::number(number) << QString::number(pid) << DefiStrategyData::fromTsPointToStr(ts_open);
     if (ts_close > 0) row_data << DefiStrategyData::fromTsPointToStr(ts_close);
     else row_data << "---";
+
+    row_data << prices.strStartExit() << "-";
     row_data << prices.strPriceRange();
     row_data << amounts.strAssetsSum("nested");
     row_data << amounts.strAssetsSum("assets");
@@ -437,59 +454,91 @@ void StrategyLineStepState::loadStepNode(const QDomNode &node, bool &ok)
     ok = false;
     if (node.isNull()) return;
 
+    // load main step node <step>
     number = LStaticXML::getIntAttrValue("number", node, 0);
     if (number == 0) {qWarning("StrategyLineStepState WARNING: invalid number attr"); return;}
     ts_open = LStaticXML::getIntAttrValue("ts_open", node, 0);
     if (ts_open < 1000000) {qWarning("StrategyLineStepState WARNING: invalid ts_open attr"); return;}
-    ts_close = LStaticXML::getIntAttrValue("ts_close", node, 0);
+    ts_close = LStaticXML::getIntAttrValue("ts_close", node, 0);     
+    pid = LStaticXML::getIntAttrValue("pid", node, 0);
 
     //load prices block
-    const QDomNode price_node = node.namedItem("price");
-    if (price_node.isNull()) {qWarning("StrategyLineStepState WARNING: price_node is NULL"); return;}
-    prices.start_price = LStaticXML::getDoubleAttrValue("start", price_node);
-    if (prices.start_price <= 0) {qWarning("StrategyLineStepState WARNING: invalid start_price attr"); return;}
-    prices.exit_price = LStaticXML::getDoubleAttrValue("exit", price_node);
-
-    const QDomNode range_node = node.namedItem("range");
-    if (range_node.isNull()) {qWarning("StrategyLineStepState WARNING: range_node is NULL"); return;}
-    prices.p_range.first = LStaticXML::getDoubleAttrValue("p1", range_node, -1);
-    if (prices.p_range.first <= 0) {qWarning("StrategyLineStepState WARNING: invalid p1 attr"); return;}
-    prices.p_range.second = LStaticXML::getDoubleAttrValue("p2", range_node, -1);
-    if (prices.p_range.second <= 0 || prices.p_range.first >= prices.p_range.second) {qWarning("StrategyLineStepState WARNING: invalid p2 attr"); return;}
-    prices.t_range.first = LStaticXML::getIntAttrValue("tick1", range_node, -999);
-    if (prices.t_range.first == 0) {qWarning("StrategyLineStepState WARNING: invalid tick1 attr"); return;}
-    prices.t_range.second = LStaticXML::getIntAttrValue("tick2", range_node, -999);
-    if (prices.t_range.second == 0 || prices.t_range.first >= prices.t_range.second) {qWarning("StrategyLineStepState WARNING: invalid tick2 attr"); return;}
+    const QDomNode prices_node = node.namedItem("prices");
+    if (prices_node.isNull()) {qWarning("StrategyLineStepState WARNING: prices_node is NULL"); return;}
+    loadPricesNode(prices_node, ok);
+    if (!ok) return;
 
     //load amounts block
-    const QDomNode amount_node = node.namedItem("amounts");
-    if (amount_node.isNull()) {qWarning("StrategyLineStepState WARNING: amounts_node is NULL"); return;}
-    const QDomNode deposited_node = amount_node.namedItem("deposited");
-    if (deposited_node.isNull()) {qWarning("StrategyLineStepState WARNING: amounts deposited_node is NULL"); return;}
-    const QDomNode closed_node = amount_node.namedItem("closed");
-    if (closed_node.isNull()) {qWarning("StrategyLineStepState WARNING: amounts closed_node is NULL"); return;}
-    const QDomNode rewards_node = amount_node.namedItem("rewards");
-    if (rewards_node.isNull()) {qWarning("StrategyLineStepState WARNING: amounts rewards_node is NULL"); return;}
-
-    //deposited
-    amounts.deposited.first = LStaticXML::getDoubleAttrValue("asset0", deposited_node, -1);
-    if (amounts.deposited.first < 0) {qWarning("StrategyLineStepState WARNING: invalid deposited_amounts.asset0 attr"); return;}
-    amounts.deposited.second = LStaticXML::getDoubleAttrValue("asset1", deposited_node, -1);
-    if (amounts.deposited.second < 0) {qWarning("StrategyLineStepState WARNING: invalid deposited_amounts.asset1 attr"); return;}
-    //closed
-    amounts.closed.first = LStaticXML::getDoubleAttrValue("asset0", closed_node, -1);
-    if (amounts.closed.first < 0) {qWarning("StrategyLineStepState WARNING: invalid closed_amounts.asset0 attr"); return;}
-    amounts.closed.second = LStaticXML::getDoubleAttrValue("asset1", closed_node, -1);
-    if (amounts.closed.second < 0) {qWarning("StrategyLineStepState WARNING: invalid closed_amounts.asset1 attr"); return;}
-    //rewards
-    amounts.rewards.first = LStaticXML::getDoubleAttrValue("asset0", rewards_node, -1);
-    if (amounts.rewards.first < 0) {qWarning("StrategyLineStepState WARNING: invalid rewards.asset0 attr"); return;}
-    amounts.rewards.second = LStaticXML::getDoubleAttrValue("asset1", rewards_node, -1);
-    if (amounts.rewards.second < 0) {qWarning("StrategyLineStepState WARNING: invalid rewards.asset1 attr"); return;}
-
-
-    ok= true;
+    const QDomNode amounts_node = node.namedItem("amounts");
+    if (amounts_node.isNull()) {qWarning("StrategyLineStepState WARNING: amounts_node is NULL"); return;}
+    loadAmountsNode(amounts_node, ok);
 }
+void StrategyLineStepState::loadPricesNode(const QDomNode &prices_node, bool &ok)
+{
+    ok = false;
+
+    const QDomNode position_node = prices_node.namedItem("position");
+    if (position_node.isNull()) {qWarning("StrategyLineStepState WARNING: prices/position_node is NULL"); return;}
+    prices.start_price = LStaticXML::getDoubleAttrValue("start", position_node);
+    if (prices.start_price <= 0) {qWarning("StrategyLineStepState WARNING: invalid start_price attr"); return;}
+    prices.exit_price = LStaticXML::getDoubleAttrValue("exit", position_node);
+
+    const QDomNode p_range_node = prices_node.namedItem("p_range");
+    if (p_range_node.isNull()) {qWarning("StrategyLineStepState WARNING: prices/p_range_node is NULL"); return;}
+    prices.p_range.first = LStaticXML::getDoubleAttrValue("p1", p_range_node);
+    if (prices.p_range.first <= 0) {qWarning("StrategyLineStepState WARNING: invalid p_range/p1 attr"); return;}
+    prices.p_range.second = LStaticXML::getDoubleAttrValue("p2", p_range_node);
+    if (prices.p_range.second <= 0) {qWarning("StrategyLineStepState WARNING: invalid p_range/p2 attr"); return;}
+    if (prices.p_range.second <= prices.p_range.first) {qWarning("StrategyLineStepState WARNING: invalid p_range - P2 < P1"); return;}
+
+    const QDomNode t_range_node = prices_node.namedItem("t_range");
+    if (t_range_node.isNull()) {qWarning("StrategyLineStepState WARNING: prices/t_range_node is NULL"); return;}
+    prices.t_range.first = LStaticXML::getDoubleAttrValue("tick1", t_range_node, 0);
+    prices.t_range.second = LStaticXML::getDoubleAttrValue("tick2", t_range_node, 0);
+    if (prices.t_range.second <= prices.t_range.first) {qWarning("StrategyLineStepState WARNING: invalid t_range - tick2 < tick1"); return;}
+
+    ok = true;
+}
+void StrategyLineStepState::loadAmountsNode(const QDomNode &amounts_node, bool &ok)
+{
+    ok = false;
+
+    const QDomNode line_liq_node = amounts_node.namedItem("line_liq");
+    if (line_liq_node.isNull()) {qWarning("StrategyLineStepState WARNING: amounts/line_liq_node is NULL"); return;}
+    amounts.line_liq.first = LStaticXML::getDoubleAttrValue("asset0", line_liq_node);
+    if (amounts.line_liq.first < 0) {qWarning("StrategyLineStepState WARNING: invalid amounts.line_liq/asset0 attr"); return;}
+    amounts.line_liq.second = LStaticXML::getDoubleAttrValue("asset1", line_liq_node);
+    if (amounts.line_liq.second < 0) {qWarning("StrategyLineStepState WARNING: invalid amounts.line_liq/asset1 attr"); return;}
+
+    const QDomNode deposited_node = amounts_node.namedItem("deposited");
+    if (deposited_node.isNull()) {qWarning("StrategyLineStepState WARNING: amounts/deposited_node is NULL"); return;}
+    amounts.deposited.first = LStaticXML::getDoubleAttrValue("asset0", deposited_node);
+    if (amounts.deposited.first < 0) {qWarning("StrategyLineStepState WARNING: invalid amounts.deposited/asset0 attr"); return;}
+    amounts.deposited.second = LStaticXML::getDoubleAttrValue("asset1", deposited_node);
+    if (amounts.deposited.second < 0) {qWarning("StrategyLineStepState WARNING: invalid amounts.deposited/asset1 attr"); return;}
+
+    const QDomNode closed_node = amounts_node.namedItem("closed");
+    if (closed_node.isNull()) {qWarning("StrategyLineStepState WARNING: amounts/closed_node is NULL"); return;}
+    amounts.closed.first = LStaticXML::getDoubleAttrValue("asset0", closed_node);
+    if (amounts.closed.first < 0) {qWarning("StrategyLineStepState WARNING: invalid amounts.closed/asset0 attr"); return;}
+    amounts.closed.second = LStaticXML::getDoubleAttrValue("asset1", closed_node);
+    if (amounts.closed.second < 0) {qWarning("StrategyLineStepState WARNING: invalid amounts.closed/asset1 attr"); return;}
+
+    const QDomNode rewards_node = amounts_node.namedItem("rewards");
+    if (rewards_node.isNull()) {qWarning("StrategyLineStepState WARNING: amounts/rewards_node is NULL"); return;}
+    amounts.rewards.first = LStaticXML::getDoubleAttrValue("asset0", rewards_node);
+    if (amounts.rewards.first < 0) {qWarning("StrategyLineStepState WARNING: invalid amounts.rewards/asset0 attr"); return;}
+    amounts.rewards.second = LStaticXML::getDoubleAttrValue("asset1", rewards_node);
+    if (amounts.rewards.second < 0) {qWarning("StrategyLineStepState WARNING: invalid amounts.rewards/asset1 attr"); return;}
+
+    ok = true;
+}
+
+
+
+
+
+
 
 /*
 void StrategyLineStepState::setPriorIndex(quint8 i_a)
@@ -534,6 +583,15 @@ QString StrategyLineStepPrices::strPriceRange() const
     quint8 prec = AppCommonSettings::interfacePricePrecision(p1);
     return QString("[%1 : %2]").arg(QString::number(p1, 'f', prec)).arg(QString::number(p2, 'f', prec));
 }
+QString StrategyLineStepPrices::strStartExit() const
+{
+    float p1 = start_price;
+    quint8 prec = AppCommonSettings::interfacePricePrecision(p1);
+    if (exit_price <= 0) return QString("%1 / ---").arg(QString::number(p1, 'f', prec));
+
+    return QString("%1 / %2").arg(QString::number(p1, 'f', prec)).arg(QString::number(exit_price, 'f', prec));
+}
+
 QString StrategyLineStepAmounts::strAssetsSum(QString amount_type) const
 {
     float a0 = 0;

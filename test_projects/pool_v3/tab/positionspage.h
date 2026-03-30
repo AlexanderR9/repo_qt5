@@ -67,8 +67,6 @@ protected slots:
 
     void slotSetPosIndexByPid(int pid, int &j) {j = posIndexOf(pid);} // запросить у страницы-родителя индекс позиции в контейнере m_positions по ее PID
     void slotSendTx(const TxDialogData&); // транслировать команду от m_txWorker в nodejs_bridge
-
-
     void slotSetOpenedPosState(QMap<int, QStringList>&); // выдать инфу по текущим открытым позам странице DefiStatPosPage
 
 

@@ -26,6 +26,8 @@ struct StrategyLineParameters
     int prior_asset_size; // доля приоритетного токена (%) от общей вносимой ликвидности, распределение в долях пары токенов при окрытии поз
 
     void reset();
+    QString toStr() const;
+
 };
 
 // данные по одному шагу линии
@@ -43,6 +45,7 @@ struct StrategyLineStepPrices
     //funcs
     void reset();
     QString strPriceRange() const;
+    QString strStartExit() const;
 
 };
 struct StrategyLineStepAmounts
@@ -83,6 +86,10 @@ struct StrategyLineStepState
 
     void reset();
     void loadStepNode(const QDomNode&, bool &ok);
+    void loadPricesNode(const QDomNode&, bool &ok);
+    void loadAmountsNode(const QDomNode&, bool &ok);
+
+
     void fillStepNode(QDomElement&) const;
     //void setPriorIndex(quint8);
     QStringList tableStepRowData() const; // возвращает готовую строку для таблицы по указанному шагу для отображения в интерфейсе пользователя
@@ -139,7 +146,7 @@ struct StrategyLineData
     если по комбинации нет открытой линии, то здесь по ней ничего не будет.
 
     пример ноды-линии:
-    <line pool="pool_addr" strategy="DefiStrategyType_enum" chain="chainName" ts_open="5465465"  >
+    <line pool="pool_addr" strategy="DefiStrategyType_enum" chain="chainName" ts_open="5465465" info="token0/token1/fee" >
         <settings liq_size="prior_token_size" range_width="prior_token_price_delta"  prior_token_part="30"(%) first_token_index="0" />
 
 

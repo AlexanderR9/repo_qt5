@@ -187,7 +187,7 @@ void DefiPositionsPage::setChain(int cid)
 void DefiPositionsPage::slotNodejsReply(const QJsonObject &js_reply)
 {
     QString req = js_reply.value(AppCommonSettings::nodejsReqFieldName()).toString();
-   // qDebug()<<QString("DefiPositionsPage::slotNodejsReply - req kind: [%1]").arg(req);
+    qDebug()<<QString("DefiPositionsPage::slotNodejsReply - req kind: [%1]").arg(req);
 
     if (req == NodejsBridge::jsonCommandValue(nrcPositions))
     {

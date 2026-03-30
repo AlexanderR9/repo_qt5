@@ -8,9 +8,9 @@ QT -= gui
 QT *= core
 
 INCLUDEPATH += .\
+            $$PWD \
             $$PWD/../base \
             $$PWD/../process \
-            $$PWD
 
 #path for libs files
 DEPENDPATH += $$PWD/../base/build

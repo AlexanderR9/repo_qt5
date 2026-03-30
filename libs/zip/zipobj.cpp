@@ -5,12 +5,10 @@
 #include "lstring.h"
 
 
-//#include <QProcess>
-//#include <QTimer>
 #include <QDebug>
 #include <QDir>
 #include <QDateTime>
-
+#include <QMutexLocker>
 
 
 /////////////// LZipObj ///////////////////
@@ -24,29 +22,30 @@ LZipObj::LZipObj(QObject *parent)
 {
     setObjectName("zip_obj");
 
-    //initProcessor();
     reset();
-
 }
-
-/*
-void LZipObj::initProcessor()
-{
-    m_proc = new LProcessObj(this);
-    connect(m_proc, SIGNAL(signalMsg(const QString&)), this, SIGNAL(signalMsg(const QString&)));
-    connect(m_proc, SIGNAL(signalError(const QString&)), this, SIGNAL(signalError(const QString&)));
-    connect(m_proc, SIGNAL(signalFinished()), this, SLOT(slotProcFinished()));
-
-}
-*/
-
-
 void LZipObj::slotProcFinished()
-{
+{    
     qDebug()<<QString("%1 ..... processor finished").arg(LTime::strCurrentTime());
+    bool was_zip = (m_state == zosProcessZipping);
+    m_state = zosIdle;
+    int code = ((m_proc->isOk()) ? 0 : -1);
+    emit signalProcFinished(code);
+    if (code < 0) reset();
+
+    if (was_zip && (code == 0)) emit signalZippingFinished();
 
 }
-
+void LZipObj::setAppendTmpInterval(int t)
+{
+    if (t <= 0) m_tmpAppendInterval = -1;
+    else if (t > 10) m_tmpAppendInterval = t;
+}
+bool LZipObj::tmpOpened() const
+{
+    if (f_tmp) return true;
+    return false;
+}
 void LZipObj::openTmpFile()
 {
     m_workingFolder = m_workingFolder.trimmed();
@@ -88,7 +87,7 @@ void LZipObj::closeTmpFile(bool add_cur_buff)
 
     if (add_cur_buff)
     {
-        appendTmpFile();
+        tryAppendBufferToTmpFile();
         m_lastTs = -1;
     }
 
@@ -103,25 +102,26 @@ void LZipObj::addBufferData(const QByteArray &ba)
     if (ba.isEmpty()) return;
 
     m_buffer.append(ba);
-    if (m_tmpAppendInterval <= 0)
-    {
-        appendTmpFile();
-        return;
-    }
-
+    if (m_tmpAppendInterval <= 0) // данные сразу добавляются в tmp файл, без накопления
+        tryAppendBufferToTmpFile();
+}
+void LZipObj::checkTmpTimeout()
+{
     // check TS
     qint64 ts = QDateTime::currentDateTime().toSecsSinceEpoch();
     if (m_lastTs <= 0) {m_lastTs = ts; return;}
     if ((ts - m_lastTs) < m_tmpAppendInterval) return;
 
-    appendTmpFile();
+    QMutexLocker locker(&m_mutex);
+    tryAppendBufferToTmpFile();
     m_lastTs = ts;
 }
-void LZipObj::appendTmpFile()
+void LZipObj::tryAppendBufferToTmpFile()
 {
     if (!f_tmp || !f_tmp->isOpen())
     {
         emit signalError("tmp file was not opened");
+        f_tmp = NULL;
     }
     else
     {
@@ -135,9 +135,18 @@ void LZipObj::reset()
 {
     m_buffer.clear();
     m_lastTs = -1;
+    m_state = zosIdle;
 }
 void LZipObj::tryZipFile(QString fname)
 {
+    if (processBuzy())
+    {
+        qWarning("ZIP process аlready running");
+        emit signalError("process is buzy");
+        return;
+    }
+
+
     qDebug()<<QString("LZipObj::tryZipFile [%1]").arg(fname);
     m_workingFolder = m_workingFolder.trimmed();
     fname = fname.trimmed();
@@ -151,8 +160,11 @@ void LZipObj::tryZipFile(QString fname)
         emit signalError("archiving filename is empty");
         return;
     }
-
-    //fname = QString("%1%2%3").arg(m_workingFolder).arg(QDir::separator()).arg(fname);
+    if (LZipObj_base::isArchiveFile(fname))
+    {
+        emit signalError(QString("archiving file is already archive: %1 ").arg(fname));
+        return;
+    }
     if (!LFile::fileExists(QString("%1%2%3").arg(m_workingFolder).arg(QDir::separator()).arg(fname)))
     {
         emit signalError(QString("archiving file not found: %1 ").arg(fname));
@@ -160,35 +172,10 @@ void LZipObj::tryZipFile(QString fname)
     }
 
     startZipProcess(fname);
-
-    /*
-    compress_result.clear();
-    if (m_buffer.isEmpty())
-    {
-        emit signalError("LZipObj: buffer is empty");
-        return;
-    }
-
-    qDebug()<<QString("%1  compress %2 bytes started (level %3) ......").arg(LTime::strCurrentTime()).arg(m_buffer.size()).arg(m_compressLevel);
-    compress_result = qCompress(m_buffer, m_compressLevel);
-
-
-    qDebug()<<QString("%1  compress finished, result %2 bytes!").arg(LTime::strCurrentTime()).arg(compress_result.size());
-    */
-
-
 }
 void LZipObj::startZipProcess(const QString &fname)
 {
     qDebug()<<QString("%1 ..... processor started").arg(LTime::strCurrentTime());
-    if (!m_proc) {qWarning("LZipObj: WARNING - m_proc is NULL"); return;}
-    if (m_proc->isRunning())
-    {
-        emit signalError("LZipObj: process object is buzy");
-        qWarning("LZipObj: WARNING - m_proc is buzy");
-        return;
-    }
-
     QStringList args;
     m_proc->setProcessDir(m_workingFolder);
 
@@ -215,8 +202,21 @@ void LZipObj::startZipProcess(const QString &fname)
     }
 
     if (!args.isEmpty())
-        m_proc->startCommand();;
+    {
+        m_state = zosProcessZipping;
+        m_proc->startCommand();
+    }
 }
+void LZipObj::slotZipTimer()
+{
+    LZipObj_base::slotZipTimer();
+    if (processBuzy()) return;
+    if (m_tmpAppendInterval <= 0) return;
+
+    checkTmpTimeout();
+}
+
+
 
 // private
 QString LZipObj::zipExtentionByInputFile(const QString &fname) const

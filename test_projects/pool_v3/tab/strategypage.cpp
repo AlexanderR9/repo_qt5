@@ -5,6 +5,7 @@
 #include "appcommonsettings.h"
 #include "deficonfig.h"
 #include "ltable.h"
+#include "nodejsbridge.h"
 
 #include <QTableWidget>
 #include <QTableWidgetItem>
@@ -19,6 +20,7 @@
 #include <QToolButton>
 #include <QDir>
 #include <QJsonObject>
+#include <QJsonArray>
 
 
 #define DT_LINE_ENABLED_COLOR       QString("#F5F5DC")
@@ -29,6 +31,12 @@
 #define PRIOR_TOKEN_PART_KEY    QString("pt_part")
 #define PRIOR_TOKEN_NAME_KEY    QString("pt_name")
 #define START_TOKEN_KEY         QString("start_nested_token")
+
+#define POOL_PRICE_COL      5
+#define ASSTES_COL          8
+#define REWARD_COL          9
+
+
 
 
 // DefiStrategyPage
@@ -55,6 +63,7 @@ void DefiStrategyPage::controlButtonsDisable()
     stopLineBtn()->setEnabled(false);
     closeStepBtn()->setEnabled(false);
     nextStepBtn()->setEnabled(false);
+    getPosStateBtn()->setEnabled(false);
 }
 void DefiStrategyPage::resetStartParamsControls()
 {
@@ -118,6 +127,7 @@ void DefiStrategyPage::updateControlButtonsState(int line_index)
         if (line->lastStepOpened())
         {
             closeStepBtn()->setEnabled(true);
+            getPosStateBtn()->setEnabled(true);
         }
         else
         {
@@ -165,8 +175,8 @@ void DefiStrategyPage::initPageBoxes()
     m_table->vHeaderHide();
 
     QStringList headers;
-    headers << "Step" << "Open time" << "Exit time" << "Price range" << "Deposited" <<
-               "Current assets" << "Rewards" << "Step result";
+    headers << "Step" << "PID" << "Open time" << "Exit time" << "Start/Exit price" << "Pool price" << "Price range" <<
+                "Deposited" << "Current assets" << "Rewards" << "Step result";
     LTable::setTableHeaders(m_table->table(), headers);
 
     m_table->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
@@ -326,10 +336,22 @@ void DefiStrategyPage::initControlButtons(QFrame *b_frame)
     next_step_button->setIconSize(QSize(64, 32));
     m_controls.insert("next_step_button", next_step_button);
 
+    icon_file = QString("%1%2%3").arg(path).arg(QDir::separator()).arg(QString("system-search.svg"));
+    QToolButton *pos_state_button = new  QToolButton(b_frame);
+    pos_state_button->setObjectName("pos_state_button");
+    pos_state_button->setIcon(QIcon(icon_file));
+    b_frame->layout()->addWidget(pos_state_button);
+    pos_state_button->setToolTip("Get position state");
+    pos_state_button->setIconSize(QSize(64, 32));
+    m_controls.insert("pos_state_button", pos_state_button);
+
+
     connect(start_line_button, SIGNAL(clicked(bool)), this, SLOT(slotStartLine()));
     connect(stop_line_button, SIGNAL(clicked(bool)), this, SLOT(slotStopLine()));
     connect(close_step_button, SIGNAL(clicked(bool)), this, SLOT(slotCloseStep()));
     connect(next_step_button, SIGNAL(clicked(bool)), this, SLOT(slotNextStep()));
+    connect(pos_state_button, SIGNAL(clicked(bool)), this, SLOT(slotGetPosState()));
+
 }
 void DefiStrategyPage::slotUpdateComboPools()
 {
@@ -528,6 +550,34 @@ void DefiStrategyPage::slotNextStep()
 
     if (data.next_step == 1) addFirstStepToLine(l_index, data);
 }
+void DefiStrategyPage::slotGetPosState()
+{
+    qDebug("--------DefiStrategyPage::slotGetPosState()---------");
+    QString pool_addr = curPool();
+    int l_index = m_dataObj->lineIndexOf(curStrategy(), pool_addr);
+    const StrategyLineData *line = m_dataObj->lineAt(l_index);
+    if (line)
+    {
+        if (line->steps.count() > 0)
+        {
+            quint32 pid = line->steps.last().pid;
+            if (pid > 0)
+            {
+                QJsonObject j_params;
+                j_params.insert(AppCommonSettings::nodejsReqFieldName(), NodejsBridge::jsonCommandValue(nrcPosState));
+
+                QJsonArray j_arr_pid;
+                QJsonArray j_arr_pool;
+                j_arr_pid.push_back(QString::number(pid));
+                j_arr_pool.push_back(pool_addr);
+                j_params.insert("pid_arr", j_arr_pid);
+                j_params.insert("pool_addresses", j_arr_pool);
+
+                sendReadNodejsRequest(j_params);
+            }
+        }
+    }
+}
 void DefiStrategyPage::addFirstStepToLine(int l_index, const StrategyStepDialogData &data)
 {
     if (!data.mintDone())
@@ -538,6 +588,63 @@ void DefiStrategyPage::addFirstStepToLine(int l_index, const StrategyStepDialogD
 
     m_dataObj->openNextStep(l_index, data);
     updateControlButtonsState(l_index);
+}
+void DefiStrategyPage::slotNodejsReply(const QJsonObject &js_reply)
+{
+    QString req = js_reply.value(AppCommonSettings::nodejsReqFieldName()).toString();
+    qDebug()<<QString("DefiStrategyPage::slotNodejsReply - req kind: [%1]").arg(req);
+
+    if (req == NodejsBridge::jsonCommandValue(nrcPosState))
+    {
+        int l_index = m_dataObj->lineIndexOf(curStrategy(), curPool());
+        const StrategyLineData *line = m_dataObj->lineAt(l_index);
+        if (line && !line->steps.isEmpty())
+        {
+            QString s_pid = QString::number(line->steps.last().pid);
+            if (js_reply.contains(s_pid))
+            {
+                const QJsonValue &jv = js_reply.value(s_pid);
+                if (!jv.isObject()) {qWarning("DefiStrategyPage::slotNodejsReply WARNING invalid pos_state reply"); return;}
+
+                updatePosTableRow(jv.toObject(), line);
+            }
+        }
+    }
+}
+void DefiStrategyPage::updatePosTableRow(const QJsonObject &jv_obj, const StrategyLineData *line)
+{
+    QTableWidget *t = m_table->table();
+    int n_row = t->rowCount();
+    if (n_row <= 0) return;
+
+    float p0 = jv_obj.value("price0").toString().toFloat();
+    int tick = jv_obj.value("tick").toString().toInt();
+    QPair<float, float> cur_assets;
+    QPair<float, float> cur_reward;
+    cur_assets.first = jv_obj.value("asset0").toString().toFloat();
+    cur_assets.second = jv_obj.value("asset1").toString().toFloat();
+    cur_reward.first = jv_obj.value("reward0").toString().toFloat();
+    cur_reward.second = jv_obj.value("reward1").toString().toFloat();
+
+
+    qint8 i_price = defi_config.getPriorPriceIndexByPoolAddr(line->pool_addr);
+    qint8 i_amount = defi_config.getPriorAmountIndexByPoolAddr(line->pool_addr);
+    if (i_price == 1) p0 = 1/p0;
+    quint8 prec = AppCommonSettings::interfacePricePrecision(p0);
+    t->item(n_row-1, POOL_PRICE_COL)->setText(QString::number(p0, 'f', prec));
+    t->item(n_row-1, POOL_PRICE_COL)->setToolTip(QString("tick: %1").arg(tick));
+
+    quint8 prec0 = AppCommonSettings::interfacePricePrecision(cur_assets.first);
+    quint8 prec1 = AppCommonSettings::interfacePricePrecision(cur_assets.second);
+    QString s_assets = QString("%1 / %2").arg(QString::number(cur_assets.first, 'f', prec0)).arg(QString::number(cur_assets.second, 'f', prec1));
+    t->item(n_row-1, ASSTES_COL)->setText(s_assets);
+
+    prec0 = AppCommonSettings::interfacePricePrecision(cur_reward.first);
+    prec1 = AppCommonSettings::interfacePricePrecision(cur_reward.second);
+    s_assets = QString("%1 / %2").arg(QString::number(cur_reward.first, 'f', prec0)).arg(QString::number(cur_reward.second, 'f', prec1));
+    t->item(n_row-1, REWARD_COL)->setText(s_assets);
+
+    m_table->resizeByContents();
 }
 
 
@@ -598,6 +705,10 @@ QToolButton* DefiStrategyPage::closeStepBtn() const
 QToolButton* DefiStrategyPage::nextStepBtn() const
 {
     return (qobject_cast<QToolButton*>(m_controls.value("next_step_button")));
+}
+QToolButton* DefiStrategyPage::getPosStateBtn() const
+{
+    return (qobject_cast<QToolButton*>(m_controls.value("pos_state_button")));
 }
 quint8 DefiStrategyPage::fisrtStepTokenIndex() const
 {

@@ -102,28 +102,23 @@ protected:
     void controlButtonsDisable();
     void restoreStartParamsByLine(const StrategyLineData*); // восстановить на форме значения настроек линии при переключении пулов (если линия открыта)
     void resetStartParamsControls(); // сбросить на форме настройки линии
-
-
     void addFirstStepToLine(int, const StrategyStepDialogData&); // добавить данные 1-го шага к указанной линии
-
-
+    void updatePosTableRow(const QJsonObject&, const StrategyLineData*); // после получения состояния позы из сети, обновить таблицу линии
 
 public slots:
-    void slotNodejsReply(const QJsonObject&) {} //получен успешный ответ от скрипта nodejs
-
+    void slotNodejsReply(const QJsonObject&);  //получен успешный ответ от скрипта nodejs
 
 private:
     QToolButton* startLineBtn() const;
     QToolButton* stopLineBtn() const;
     QToolButton* closeStepBtn() const;
     QToolButton* nextStepBtn() const;
+    QToolButton* getPosStateBtn() const;
 
     float liqSize() const; // полный объем вносимой ликвидности в позу (в приоритетном токене)
     float rangeWidth() const; // ширина ценового диапазона
     quint16 priorTokenPart() const; // доля приоритетного токена от общей ликвидности, %
     quint8 fisrtStepTokenIndex() const; // индекс токена из пары пула, который будет использоваться для внесения ликвидности на 1-м шаге
-
-
 
 protected slots:    
     void slotUpdateComboPools();
@@ -134,6 +129,7 @@ protected slots:
     void slotStopLine();
     void slotCloseStep();
     void slotNextStep();
+    void slotGetPosState();
 
 
 signals:
@@ -145,11 +141,7 @@ signals:
 
 
 
-
 #endif // STRATEGYPAGE_H
-
-
-
 
 
 
