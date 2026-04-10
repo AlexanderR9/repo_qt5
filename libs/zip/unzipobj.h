@@ -40,6 +40,11 @@ protected slots:
 signals:
     void signalUnzippingFinished(); // имитится по завершению разархивации всего списка f_list, при этом команда выполнилась успешно
 
+    // сигнал имитится когда невозможно выполнить задачу , параметр - код ошибки
+    // -1 - процесс уже выполняется
+    // -2 - m_state == (zosSettingsInvalid)
+    // -3 - f_list is empty
+    //void signalInvalidState(int);
 
 };
 

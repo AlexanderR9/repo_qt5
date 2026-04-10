@@ -8,7 +8,7 @@ class QJsonObject;
 
 //типы страниц пользовательского интерфейса
 enum BB_ReqType {rtCandles = 181, rtPositions, rtSpotAssets, rtSportOrders, rtOrders, rtHistory, rtSpotHistory,
-                 rtBag, rtJsonView, rtFundRate, rtPrices, rtShadows};
+                 rtBag, rtJsonView, rtFundRate, rtPrices, rtShadows, rtOptions};
 
 
 //необходимые данные для формирования запроса перед отправкой
@@ -204,6 +204,7 @@ struct BB_PricesContainer
     inline quint32 size() const {return data.count();}
 
     static QString priceFile() {return QString("prices.txt");} //file data
+    static QString optionFile() {return QString("options.txt");} //file data
     static quint32 minIntervalPrices() {return 3600;} //secs, min interval between neighbors points
 
     void reset() {data.clear();}
@@ -252,5 +253,27 @@ struct BB_Bar
 
 };
 
+// информация о опционе
+struct BB_Option
+{
+    BB_Option() {reset();}
+
+    float strike;
+    QString ticker;
+    qint64 expiration; // time of expiration, secs
+    QString type; // PUT / CALL
+
+    void reset() {ticker.clear(); type="none"; strike = -1; expiration = 0;}
+    QString strExpiration() const;
+    float daysToExpiration() const;
+    QString toFileLine() const;
+    void fromFileLine(const QString&);
+
+    inline bool isCall() const {return (type.trimmed().toLower() == "call");}
+    inline bool isPut() const {return (type.trimmed().toLower() == "put");}
+    quint8 filedsCount() const {return 4;}
+    bool invalid() const;
+
+};
 
 #endif // BB_APISTRUCT_H

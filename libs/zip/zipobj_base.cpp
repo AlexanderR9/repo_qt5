@@ -38,6 +38,11 @@ void LZipObj_base::initProcessor()
     connect(m_proc, SIGNAL(signalFinished()), this, SLOT(slotProcFinished()));
 
 }
+QString LZipObj_base::processState() const
+{
+    if (!m_proc) return "NULL";
+    return m_proc->strProcessState();
+}
 bool LZipObj_base::processBuzy() const
 {
     if (!m_proc) return false;

@@ -36,6 +36,7 @@ struct APIConfig
     static qint64 toTimeStamp(quint16 d, quint16 m, quint16 y); //перевод во временную метку указанной даты в 00:00 (ms UTC from SinceEpoch)
     static QString fromTimeStamp(qint64, QString mask = QString("dd.MM.yyyy (hh:mm)")); //вернет временную метку в строком формате (UTC)
     static QString userDateMask() {return QString("dd.MM.yyyy");}
+    static QString commonIconsPath() {return QString(":/icons/images");} //базовый путь к иконкам проекта
 
     void loadTickers();
     void saveFavorTickers();

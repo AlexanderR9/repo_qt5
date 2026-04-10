@@ -2,6 +2,7 @@
 #include "lhttp_types.h"
 #include "lstring.h"
 #include "apiconfig.h"
+#include "ltime.h"
 
 
 #include <QtMath>
@@ -65,6 +66,7 @@ QString BB_APIReqParams::strReqTypeByType(int t, QString s_extra)
         case rtSpotHistory: {s = "GET_SPOT_HISTORY"; break;}
         case rtBag:         {s = "GET_WALLET"; break;}
         case rtFundRate:    {s = "GET_FUND_RATES"; break;}
+        case rtOptions:     {s = "GET_OPTIONS_DATA"; break;}
 
         default: return "???";
     }
@@ -564,8 +566,58 @@ bool BB_Bar::invalid() const
     return !(p_open>0 && p_close>0 && p_high>0 && p_low>0);
 }
 
+// BB_Option
+bool BB_Option::invalid() const
+{
+    if (ticker.length() < 10) return true;
+    if (type != "CALL" && type != "PUT")  return true;
+    if (expiration <= 0 || strike <= 0)  return true;
+    return false;
+}
+QString BB_Option::strExpiration() const
+{
+    return LTime::strDateTime(QDateTime::fromSecsSinceEpoch(expiration), "dd.MM.yyyy hh:mm");
+}
+float BB_Option::daysToExpiration() const
+{
+    qint64 d_sec = expiration - QDateTime::currentSecsSinceEpoch();
+    return float(d_sec)/float(3600*24);
+}
+QString BB_Option::toFileLine() const
+{
+    QString s = QString("%1 / %2 / %3").arg(ticker).arg(type).arg(expiration);
+    s = QString("%1 / %2").arg(s).arg(QString::number(strike, 'f', 2));
+    return s;
+}
+void BB_Option::fromFileLine(const QString &line)
+{
+    reset();
+    QStringList list(LString::trimSplitList(line, " / "));
+    if (list.count() != filedsCount())
+    {
+        qWarning()<<QString("BB_Option::fromFileLine WARNING - list.count(%1) != filedsCount(%2)").arg(list.count()).arg(filedsCount());
+        return;
+    }
+
+    bool ok;
+    int i = 0;
+    ticker = list.at(i).trimmed(); i++;
+    type = list.at(i).trimmed(); i++;
+    expiration = list.at(i).trimmed().toLong(&ok); i++;
+    if (!ok)
+    {
+        expiration = 0;
+        qWarning()<<QString("BB_Option::fromFileLine WARNING - invalid expiration value [%1]").arg(list.at(i-1));
+    }
 
 
+    strike = list.at(i).trimmed().toFloat(&ok); i++;
+    if (!ok)
+    {
+        strike = -1;
+        qWarning()<<QString("BB_Option::fromFileLine WARNING - invalid lot value [%1]").arg(list.at(i-1));
+    }
+}
 
 
 

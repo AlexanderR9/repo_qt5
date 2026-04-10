@@ -39,7 +39,8 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/bb_basepage.h \
         $$PWD/bb_spothistorypage.h \
         $$PWD/bb_pricespage.h \
-        $$PWD/bb_shadowexplorer.h
+        $$PWD/bb_shadowexplorer.h \
+    bb_optionpage.h
 
 
 SOURCES += $$PWD/main.cpp \
@@ -55,6 +56,7 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/bb_basepage.cpp \
         $$PWD/bb_spothistorypage.cpp \
         $$PWD/bb_pricespage.cpp \
-        $$PWD/bb_shadowexplorer.cpp
+        $$PWD/bb_shadowexplorer.cpp \
+    bb_optionpage.cpp
 
 

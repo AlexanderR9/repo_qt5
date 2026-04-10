@@ -1,12 +1,10 @@
 #include "unzipobj.h"
 #include "processobj.h"
-//#include "lstring.h"
 #include "ltime.h"
 #include "lfile.h"
 
 
-//#include <QProcess>
-//#include <QTimer>
+
 #include <QDebug>
 #include <QDir>
 #include <QDateTime>
@@ -47,12 +45,14 @@ void LUnzipObj::tryUnzip()
     if (f_list.isEmpty())
     {
         emit signalError("archive-files is empty");
+        emit signalInvalidState(-3);
         return;
     }
     if (processBuzy())
     {
         qWarning("ZIP process аlready running");
         emit signalError("process is buzy");
+        emit signalInvalidState(-1);
         return;
     }
 
@@ -65,10 +65,12 @@ void LUnzipObj::tryUnzip()
         default:
         {
             emit signalError(QString("invalid zip type: %1").arg(m_zipType));
+            emit signalInvalidState(-2);
             return;
         }
     }
 
+    qDebug()<<QString("f_list %1 / STATE %2").arg(f_list.count()).arg(objState());
     m_state = zosProcessUnzipping;
     unzipNextFile();
 }
@@ -84,6 +86,9 @@ void LUnzipObj::unzipNextFile()
         case ztGZip: {args << "-k" << m_curFile; break;}
         case ztTar: {args << "-xzf" << m_curFile; break;}
     }
+    m_proc->setArgs(args);
+
+    qDebug()<<m_proc->fullCommand();
     m_proc->startCommand();
 }
 void LUnzipObj::slotProcFinished()

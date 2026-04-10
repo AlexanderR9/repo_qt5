@@ -24,6 +24,8 @@ public:
     inline void setCompressMetod(int m) {m_zipType = m;}
 
     bool processBuzy() const; // признак что объект m_proc что-то выполняет в текущий момент
+    QString processState() const;
+    int objState() const {return m_state;}
 
     static bool isArchiveFile(const QString&); // признак того что указанные файл является архивом, т.е. имя содержит '.gz'
 
@@ -47,8 +49,14 @@ protected slots:
       virtual void slotZipTimer(); // выполняется по сигналу m_timer
 
 signals:
-    void signalProcFinished(int); // сигнал имитится всегда по завершению выполнения m_proc, параметр - код ошибки, 0 - ОК.
+    // сигнал имитится всегда по завершению выполнения m_proc, параметр - код ошибки, 0 - ОК.
+    void signalProcFinished(int);
 
+
+    // сигнал имитится когда невозможно выполнить задачу , параметр - код ошибки
+    // -1 - процесс уже выполняется
+    // -2 - m_state == (zosSettingsInvalid)
+    void signalInvalidState(int);
 
 };
 
