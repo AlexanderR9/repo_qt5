@@ -40,7 +40,8 @@ HEADERS += $$PWD/mainform.h \
         $$PWD/bb_spothistorypage.h \
         $$PWD/bb_pricespage.h \
         $$PWD/bb_shadowexplorer.h \
-    bb_optionpage.h
+        $$PWD/apitradedialog.h \
+        $$PWD/bb_optionpage.h
 
 
 SOURCES += $$PWD/main.cpp \
@@ -57,6 +58,7 @@ SOURCES += $$PWD/main.cpp \
         $$PWD/bb_spothistorypage.cpp \
         $$PWD/bb_pricespage.cpp \
         $$PWD/bb_shadowexplorer.cpp \
-    bb_optionpage.cpp
+        $$PWD/apitradedialog.cpp \
+        $$PWD/bb_optionpage.cpp
 
 

@@ -5,6 +5,9 @@
 #include "ltime.h"
 #include "lfile.h"
 #include "lstring.h"
+#include "apitradedialog.h"
+#include "lhttp_types.h"
+
 
 #include <QJsonArray>
 #include <QJsonValue>
@@ -20,7 +23,14 @@
 
 #define TYPE_COL        3
 #define STRIKE_COL      4
+#define DAY_TO_COL      5
+#define MARKET_COL      6
+#define DAY_PROFIT_COL  7
+#define ASSET_PRICE     3
 
+
+#define IN_MONEY_COLOR      QString("#FF4500")
+#define OPTIONS_INFO_LIMIT  350
 
 // Получение цен опционов
 #define API_TICKERS_URI           QString("v5/market/tickers")
@@ -71,7 +81,8 @@ result.list[]
 
 //📜 6. История ордеров GET /v5/order/history
 
-
+// создать лимитный ордер
+#define  API_OPTION_CREATE_ORDER_URI QString("v5/order/create")
 
 
 
@@ -110,7 +121,11 @@ void BB_OptionPage::initPopupMenu()
     //prepare menu actions data for assets table
     QList< QPair<QString, QString> > act_list;
     QPair<QString, QString> pair1("Get state", QString("%1/view-refresh.svg").arg(path));
+    QPair<QString, QString> pair2("Buy", QString("%1/ball_green.svg").arg(path));
+    QPair<QString, QString> pair3("Sell", QString("%1/ball_red.svg").arg(path));
     act_list.append(pair1);
+    act_list.append(pair2);
+    act_list.append(pair3);
 
     //init popup menu actions
     m_table->popupMenuActivate(act_list, false);
@@ -118,6 +133,9 @@ void BB_OptionPage::initPopupMenu()
     //connect OWN slots to popup actions
     int i_menu = 0;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotUpdateOptionsPrices())); i_menu++;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotOptionBuy())); i_menu++;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotOptionSell())); i_menu++;
+
 }
 void BB_OptionPage::init()
 {
@@ -129,7 +147,7 @@ void BB_OptionPage::init()
 
     //headers
     QStringList list;
-    list << "Ticker" << "Time (expiration)" << "To expiration, d" << "Strike" << "Type";
+    list << "Ticker" << "Time (expiration)" << "To expiration, d" << "Type" << "Strike";
     m_monitTable->setHeaderLabels(list);
     h_splitter->addWidget(m_monitTable);
 
@@ -141,7 +159,7 @@ void BB_OptionPage::init()
     m_table->setSelectionMode(QAbstractItemView::SelectRows, QAbstractItemView::ExtendedSelection);
 
     list.clear();
-    list << "Ticker" << "Ask" << "Bid" << "ETH" << "Days to" << "Strike";
+    list << "Ticker" << "Ask" << "Bid" << "ETH" << "Strike" << "Days to" << "Market" << "Profit/d";
     m_table->setHeaderLabels(list);
     h_splitter->addWidget(m_table);
     m_table->removeAllRows();
@@ -163,7 +181,7 @@ void BB_OptionPage::updateDataPage(bool force)
 
     m_reqData->uri = API_OPTIONS_INFO_URI;
 
-    int limit = -1;
+    int limit = OPTIONS_INFO_LIMIT;
     if (m_reqData->uri == API_OPTIONS_POS_CLOSED_URI) {setTSNextInterval(); limit=30;}
     sendRequest(limit);
 }
@@ -201,6 +219,9 @@ void BB_OptionPage::parseInfoRecord(const QJsonObject &j_el)
     rec.expiration = deliveryTime/1000;
     rec.type = type;
 
+    if (rec.daysToExpiration() > 180) return;
+
+
     // define strike
     QString name = j_el.value("displayName").toString().trimmed();
     name = LString::strTrimRight(name, 2).trimmed();
@@ -218,15 +239,13 @@ void BB_OptionPage::parsePriceRecord(const QJsonObject &j_el)
     if (pos < 0) return;
 
     float days_to = m_container.at(pos).daysToExpiration();
-    if (days_to > 180) return;
-
-    //if (!hasContainerTicker(symbol)) return;
-
+    //if (days_to > 180) return;
 
     QTableWidget *t = m_table->table();
     float ask = j_el.value("ask1Price").toString().toFloat();
     float bid = j_el.value("bid1Price").toString().toFloat();
     float eth_p = j_el.value("indexPrice").toString().toFloat();
+    float market_p = j_el.value("markPrice").toString().toFloat();
 
     float strike = m_container.at(pos).strike;
     float d = qAbs(eth_p - strike);
@@ -234,16 +253,22 @@ void BB_OptionPage::parsePriceRecord(const QJsonObject &j_el)
     if (eth_p < strike) s_strike = QString("%1 (+%2)").arg(s_strike).arg(QString::number(d, 'f', 1));
     else s_strike = QString("%1 (-%2)").arg(s_strike).arg(QString::number(d, 'f', 1));
 
+    float day_profit = (market_p - d)/days_to;
 
 
     QStringList row_data;
     row_data << symbol << QString::number(ask, 'f', 2) << QString::number(bid, 'f', 2);
-    row_data << QString::number(eth_p, 'f', 1) << QString::number(days_to, 'f', 1) << s_strike;
+    row_data << QString::number(eth_p, 'f', 1) << s_strike << QString::number(days_to, 'f', 1);
+    row_data << QString::number(market_p, 'f', 1) << QString::number(day_profit, 'f', 2);
     LTable::addTableRow(t, row_data);
 
     int last_i = t->rowCount() - 1;
     if (m_container.at(pos).isPut()) LTable::setTableRowColor(t, last_i, "#FFD9DD");
     else LTable::setTableRowColor(t, last_i, "#D9FFDD");
+
+    t->item(last_i, t->columnCount()-1)->setData(Qt::UserRole, m_container.at(pos).expiration);
+    t->item(last_i, 0)->setData(Qt::UserRole, m_container.at(pos).type);
+    t->item(last_i, STRIKE_COL)->setData(Qt::UserRole, pos);
 
 }
 bool BB_OptionPage::hasContainerTicker(const QString &symbol) const
@@ -270,8 +295,17 @@ void BB_OptionPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
         for (int i=0; i<n; i++)
             parseInfoRecord(j_arr.at(i).toObject());
 
-        updateInfoTable();
-        rewriteFile();
+        QString npc = jv.toObject().value("nextPageCursor").toString().trimmed();
+        if (!npc.isEmpty())
+        {
+            m_reqData->params.insert("cursor", npc);
+            sendRequest(OPTIONS_INFO_LIMIT);
+        }
+        else
+        {
+            updateInfoTable();
+            rewriteFile();
+        }
     }
     else if (m_reqData->uri == API_TICKERS_URI)
     {
@@ -280,6 +314,8 @@ void BB_OptionPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
             parsePriceRecord(j_arr.at(i).toObject());
 
         sortPricesTable();
+        sortDayStrikes();
+        setColorInMoney();
         m_table->searchExec();
     }
 
@@ -295,21 +331,6 @@ void BB_OptionPage::getTSNextInterval(qint64 &ts1, qint64 &ts2)
     QDate d2 = d1.addDays(m_polledDays);
     ts1 = APIConfig::toTimeStamp(d1.day(), d1.month(), d1.year());
     ts2 = APIConfig::toTimeStamp(d2.day(), d2.month(), d2.year());
-
-    /*
-    if (m_polledDays > 0) d1 = m_startDate.addDays(m_polledDays);
-    ts1 = APIConfig::toTimeStamp(d1.day(), d1.month(), d1.year());
-    m_polledDays += daysSeparator();
-
-    QDate d2 = d1.addDays(daysSeparator());
-    if (needPollDays() < daysSeparator()) {d2 = d1.addDays(needPollDays()); m_polledDays = needPollDays();}
-
-    qDebug()<<QString("BB_SpotHistoryPage::getTSNextInterval  %1 / %2").arg(d1.toString(APIConfig::userDateMask())).
-              arg((d2 >= cur_d) ? "-1" : d2.toString(APIConfig::userDateMask()));
-
-    if (d2 >= cur_d) m_polledDays = -1;
-    else ts2 = APIConfig::toTimeStamp(d2.day(), d2.month(), d2.year());
-    */
 }
 void BB_OptionPage::rewriteFile()
 {
@@ -380,20 +401,20 @@ void BB_OptionPage::sortPricesTable()
     int x = -1;
     while (2 > 1)
     {
-        float min_days = LTable::minNumericColValue(t, 4, x, row_first);
-        float max_days = LTable::maxNumericColValue(t, 4, x, row_first);
+        float min_days = LTable::minNumericColValue(t, DAY_TO_COL, x, row_first);
+        float max_days = LTable::maxNumericColValue(t, DAY_TO_COL, x, row_first);
         qDebug()<<QString("min_days=%1  max_days=%2").arg(min_days).arg(max_days);
         if (min_days == max_days) break;
 
 
-        QString s_min = QString::number(min_days);
+        QString s_min = QString::number(min_days, 'f', 1);
         int n_finded = 0;
         for (int i=row_first; i<n_rows; i++)
         {
-            if (s_min == t->item(i, 4)->text())
+            if (s_min == t->item(i, DAY_TO_COL)->text())
             {
                 QString symbol = t->item(i, 0)->text();
-                qDebug()<<QString("finded: i=%1  symbol[%2]  n_finded=%3").arg(i).arg(symbol).arg(n_finded);
+                //qDebug()<<QString("finded: i=%1  symbol[%2]  n_finded=%3").arg(i).arg(symbol).arg(n_finded);
 
                 int pos = findRecByTicker(symbol);
                 if (i > row_first)
@@ -405,12 +426,255 @@ void BB_OptionPage::sortPricesTable()
                 n_finded++;
             }
         }
-        if (n_finded == 0) break;
+
+        if (n_finded == 0) {qDebug("n_finded == 0, breaked!"); break;}
         row_first += n_finded;
-
-
-        //break;
     }
 
 }
+void BB_OptionPage::sortDayStrikes()
+{
+    QTableWidget *t = m_table->table();
+    int n_rows = t->rowCount();
+    int n_col = t->columnCount();
+    if (n_rows < 5) return;
+
+    qDebug()<<QString("start sortDayStrikes ...............");
+    int start_row = 0;
+    int start_row_next = 0;
+    int n_strikes = -1;
+    while (2>1)
+    {
+        if (start_row_next < 0) break;
+
+        start_row = start_row_next;
+        start_row_next = -1;
+        //qDebug()<<QString("start_row=%1").arg(start_row);
+
+        n_strikes = 1;
+        QPair<QString, qint64> pair; // opt type / expiration
+        pair.first = t->item(start_row, 0)->data(Qt::UserRole).toString();
+        pair.second = t->item(start_row, n_col-1)->data(Qt::UserRole).toLongLong();
+        if ((start_row+1) >= n_rows) break;
+
+
+        for (int i=(start_row+1); i<n_rows; i++)
+        {
+            if (t->item(i, 0)->data(Qt::UserRole).toString() != pair.first ||
+                    t->item(i, n_col-1)->data(Qt::UserRole).toLongLong() != pair.second)
+            {
+                start_row_next = i;
+                break;
+            }
+            else n_strikes++;
+        }
+
+        //qDebug()<<QString("n_strikes=%1").arg(n_strikes);
+        if (n_strikes < 2) continue;
+
+
+        // sort by max/min
+        quint8 n_it = 0;
+        if (pair.first == "CALL")
+        {
+            while (true)
+            {
+                float max = 0;
+                float max_i = -1;
+                for (int i=(start_row+n_it); i<(start_row+n_strikes); i++)
+                {
+                    int pos = t->item(i, STRIKE_COL)->data(Qt::UserRole).toInt();
+                    if (m_container.at(pos).strike > max) {max = m_container.at(pos).strike; max_i = i;}
+                }
+                //qDebug()<<QString("n_it=%1  max=%2  max_i=%3").arg(n_it).arg(max).arg(max_i);
+
+                if (max_i > n_it)
+                {
+                    int shift = int(n_it) - (max_i-start_row);
+                    //qDebug()<<QString("shift=%1").arg(shift);
+
+                    LTable::shiftTableRow(t, max_i, shift);
+                }
+
+                n_it++;
+                if ((n_it+1) >= n_strikes) break;
+            }
+        }
+        else
+        {
+            while (true)
+            {
+                float min = 1000000;
+                float min_i = -1;
+                for (int i=(start_row+n_it); i<(start_row+n_strikes); i++)
+                {
+                    int pos = t->item(i, STRIKE_COL)->data(Qt::UserRole).toInt();
+                    if (m_container.at(pos).strike < min) {min = m_container.at(pos).strike; min_i = i;}
+                }
+                //qDebug()<<QString("n_it=%1  min=%2  min_i=%3").arg(n_it).arg(min).arg(min_i);
+
+                if (min_i > n_it)
+                {
+                    int shift = int(n_it) - (min_i-start_row);
+                    //qDebug()<<QString("shift=%1").arg(shift);
+
+                    LTable::shiftTableRow(t, min_i, shift);
+                }
+
+                n_it++;
+                if ((n_it+1) >= n_strikes) break;
+            }
+        }
+
+
+
+        if (start_row_next < 0) break;
+
+        //if (start_row > 3) break;
+    }
+}
+void BB_OptionPage::setColorInMoney()
+{
+    QTableWidget *t = m_table->table();
+    int n_rows = t->rowCount();
+    float eth_p = t->item(0, 3)->text().toFloat();
+    for (int i=0; i<n_rows; i++)
+    {
+        int pos = t->item(i, STRIKE_COL)->data(Qt::UserRole).toInt();
+        if (m_container.at(pos).isCall())
+        {
+            if (eth_p > m_container.at(pos).strike)
+                t->item(i, MARKET_COL)->setTextColor(IN_MONEY_COLOR);
+        }
+        else
+        {
+            if (eth_p < m_container.at(pos).strike)
+                t->item(i, MARKET_COL)->setTextColor(IN_MONEY_COLOR);
+        }
+    }
+}
+void BB_OptionPage::slotOptionBuy()
+{
+    //m_reqData->params.remove("limit");
+
+
+    QTableWidget *t = m_table->table();
+    QList<int> sel_rows = LTable::selectedRows(t);
+    if (sel_rows.isEmpty() || sel_rows.count() > 1)
+    {
+        emit signalError("can't buy, selection record is invalid");
+        return;
+    }
+
+    QString ticker = t->item(sel_rows.first(), 0)->text().trimmed();
+    qDebug()<<QString("try buy option [%1]").arg(ticker);
+
+    int pos = findRecByTicker(ticker);
+    if (pos < 0) return;
+
+    TradeOperationData data(totBuyLimit);
+    data.ticker = m_container.at(pos).ticker;
+    data.strike = m_container.at(pos).strike;
+    data.type = m_container.at(pos).type;
+    data.expirate = m_container.at(pos).expiration;
+    data.award = t->item(sel_rows.first(), MARKET_COL)->text().toFloat();
+    data.asset_price = t->item(sel_rows.first(), ASSET_PRICE)->text().toFloat();
+
+    APITradeDialog d(data, this);
+    d.exec();
+    if (d.isApply())
+    {
+        qDebug("d.isApply()");
+        sendTradeReq(data);
+    }
+    else
+    {
+        qDebug("canceled operation");
+        emit signalError("Operation canceled!");
+    }
+}
+void BB_OptionPage::slotOptionSell()
+{
+    QTableWidget *t = m_table->table();
+    QList<int> sel_rows = LTable::selectedRows(t);
+    if (sel_rows.isEmpty() || sel_rows.count() > 1)
+    {
+        emit signalError("can't sell, selection record is invalid");
+        return;
+    }
+
+    QString ticker = t->item(sel_rows.first(), 0)->text().trimmed();
+    qDebug()<<QString("try sell option [%1]").arg(ticker);
+}
+void BB_OptionPage::sendTradeReq(const TradeOperationData &data)
+{
+    emit signalMsg("Try send request on trade command ...........");
+
+    m_reqData->uri = API_OPTION_CREATE_ORDER_URI;
+    m_reqData->metod = hrmPost;
+
+
+    m_reqData->params.insert("symbol", data.ticker);
+    m_reqData->params.insert("side", (data.isBuy() ? "Buy" : "Sell"));
+    m_reqData->params.insert("orderType", "Limit");
+    m_reqData->params.insert("timeInForce", "GTC");
+
+
+    m_reqData->params.insert("qty", QString::number(data.lot_size));
+    m_reqData->params.insert("price", QString::number(data.award, 'f', 2));
+
+    //extra params
+    //m_reqData->params.insert("reduceOnly", "false");
+    m_reqData->params.insert("orderLinkId", "my_custom_id");
+
+    emit signalMsg(m_reqData->toStr());
+
+    m_reqData->outParams();
+}
+
+
+
+
+
+/*
+опционов (нужно category=option)^M
+📊 2. Параметры для лимитного ордера (опционы)^M
+🔹 Минимально необходимое:^M
+{^M
+  "category": "option",^M
+  "symbol": "ETH-30JUN23-2000-C",^M
+  "side": "Buy",^M
+  "orderType": "Limit",^M
+  "qty": "1",^M
+  "price": "100",^M
+  "timeInForce": "GTC"^M
+}^M
+📌 Пояснение^M
+category → обязательно "option"^M
+symbol → конкретный опцион^M
+side → "Buy" или "Sell"^M
+orderType → "Limit"^M
+qty → количество контрактов^M
+price → лимитная цена^M
+timeInForce:^M
+GTC — держать до исполнения^M
+IOC — сразу или отмена^M
+^M
+^M
+5. Ответ^M
+{^M
+  "retCode": 0,^M
+  "retMsg": "OK",^M
+  "result": {^M
+    "orderId": "..."^M
+  }^M
+}^M
+
+*/
+
+
+
+
+
+
 

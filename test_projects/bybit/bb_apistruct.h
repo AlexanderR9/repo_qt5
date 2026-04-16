@@ -29,6 +29,7 @@ struct BB_APIReqParams
     QString fullUri() const; //uri?params
     QString paramsLine() const; //params => str_line(key=value&...)
     QString toStr() const;
+    void outParams() const;
 
     static QString strReqTypeByType(int, QString = "");
     static QString userDateMask() {return QString("dd.MM.yyyy");}

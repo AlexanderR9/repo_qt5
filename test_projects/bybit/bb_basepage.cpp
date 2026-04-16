@@ -25,8 +25,10 @@ void BB_BasePage::reset()
 }
 void BB_BasePage::sendRequest(int limit, QString name_extra)
 {
-    if (limit > 0)
-        m_reqData->params.insert("limit", QString::number(limit));
+    qDebug()<<QString("BB_BasePage::sendRequest  limit=%1  metod=%2  URI[%3]").arg(limit).arg(m_reqData->metod).arg(m_reqData->uri);
+    if (limit > 0) m_reqData->params.insert("limit", QString::number(limit));
+    else m_reqData->params.remove("limit");
+
 
     m_reqData->name = BB_APIReqParams::strReqTypeByType(m_reqData->req_type, name_extra);
     m_reqData->is_running = true;

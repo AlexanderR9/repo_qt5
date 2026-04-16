@@ -49,6 +49,16 @@ QString BB_APIReqParams::toStr() const
     s = QString("%1 validity[%2]").arg(s).arg(invalid()?"FAULT":"OK");
     return s;
 }
+void BB_APIReqParams::outParams() const
+{
+    qDebug()<<QString("----------- BB_APIReqParams %1 -------------------").arg(params.count());
+    QStringList keys(params.keys());
+    foreach (const QString &v, keys)
+    {
+          qDebug()<<QString("KEY[%1] / VALUE[%2]").arg(v).arg(params.value(v));
+    }
+    qDebug()<<paramsLine();
+}
 QString BB_APIReqParams::strReqTypeByType(int t, QString s_extra)
 {
     QString s;

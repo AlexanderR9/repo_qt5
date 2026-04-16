@@ -9,7 +9,7 @@ class QJsonObject;
 class QJsonArray;
 class QJsonValue;
 class QSettings;
-
+struct TradeOperationData;
 
 
 // BB_OptionPage
@@ -41,6 +41,8 @@ protected:
     void parseInfoRecord(const QJsonObject&);
     void parsePriceRecord(const QJsonObject&);
     void sortPricesTable();
+    void sortDayStrikes();
+    void setColorInMoney(); // пометить строки которые сейчас в деньгах
 
     void updateInfoTable(); // переписать таблицу m_monitTable по m_container
     void rewriteFile();
@@ -49,11 +51,18 @@ protected:
 
     bool hasContainerTicker(const QString&) const;
 
+
+private:
+    void sendTradeReq(const TradeOperationData&);
+
 public slots:
     void slotJsonReply(int, const QJsonObject&);
 
+
 protected slots:
     void slotUpdateOptionsPrices();
+    void slotOptionBuy();
+    void slotOptionSell();
 
 
 };
