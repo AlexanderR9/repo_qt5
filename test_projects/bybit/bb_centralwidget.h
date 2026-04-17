@@ -44,7 +44,9 @@ protected:
     void createPages();
     void initReqObject();
     int pageCount() const;
-    void prepareReq(const BB_APIReqParams*);
+    void prepareHeadersReq(const BB_APIReqParams*);
+    void prepareParamsReq(const BB_APIReqParams*);
+    QString signString(const BB_APIReqParams*, qint64) const;
 
 protected slots:
     void slotReqFinished(int);

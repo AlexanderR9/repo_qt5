@@ -54,6 +54,7 @@ protected:
 
 private:
     void sendTradeReq(const TradeOperationData&);
+    void prepareTradeOperationData(TradeOperationData&, bool&);
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);

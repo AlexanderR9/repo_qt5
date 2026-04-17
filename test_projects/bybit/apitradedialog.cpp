@@ -9,6 +9,7 @@
 #include <QLabel>
 #include <QComboBox>
 #include <QDateTime>
+#include <QtMath>
 
 
 //APITradeDialog
@@ -215,8 +216,14 @@ void APITradeDialog::slotRecalcAwardByDeviation()
     float market_award = this->widgetValue("award").toFloat(&ok);
     if (!ok) {qWarning("APITradeDialog::slotRecalcAwardByDeviation() WARNING - market_award invalid value"); return;}
 
-    float require_award = (dev/float(100) + 1)*market_award;
-    setWidgetValue("require_award", QString::number(require_award, 'f', precision()));
+    float require_award = (dev/float(100) + 1)*market_award;        
+    int r = int(qFloor(require_award*10));
+    qDebug()<<QString("require_award=%1  r=%2").arg(require_award).arg(r);
+
+    require_award = float(r)/float(10);
+    if (require_award < 0.1) require_award = 0.1;
+
+    setWidgetValue("require_award", QString::number(require_award, 'f', 4));
 
 }
 quint8 APITradeDialog::precision() const

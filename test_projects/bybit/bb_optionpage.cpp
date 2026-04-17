@@ -180,6 +180,8 @@ void BB_OptionPage::updateDataPage(bool force)
     }
 
     m_reqData->uri = API_OPTIONS_INFO_URI;
+    m_reqData->metod = hrmGet;
+
 
     int limit = OPTIONS_INFO_LIMIT;
     if (m_reqData->uri == API_OPTIONS_POS_CLOSED_URI) {setTSNextInterval(); limit=30;}
@@ -220,6 +222,7 @@ void BB_OptionPage::parseInfoRecord(const QJsonObject &j_el)
     rec.type = type;
 
     if (rec.daysToExpiration() > 180) return;
+    if (rec.daysToExpiration() < 0.5) return;
 
 
     // define strike
@@ -259,7 +262,7 @@ void BB_OptionPage::parsePriceRecord(const QJsonObject &j_el)
     QStringList row_data;
     row_data << symbol << QString::number(ask, 'f', 2) << QString::number(bid, 'f', 2);
     row_data << QString::number(eth_p, 'f', 1) << s_strike << QString::number(days_to, 'f', 1);
-    row_data << QString::number(market_p, 'f', 1) << QString::number(day_profit, 'f', 2);
+    row_data << QString::number(market_p, 'f', 2) << QString::number(day_profit, 'f', 2);
     LTable::addTableRow(t, row_data);
 
     int last_i = t->rowCount() - 1;
@@ -387,6 +390,8 @@ void BB_OptionPage::slotUpdateOptionsPrices()
 {
     qDebug("BB_OptionPage::slotUpdateOptionsPrices()");
     m_reqData->uri = API_TICKERS_URI;
+    m_reqData->metod = hrmGet;
+
     m_table->removeAllRows();
 
     sendRequest();
@@ -555,8 +560,49 @@ void BB_OptionPage::setColorInMoney()
 }
 void BB_OptionPage::slotOptionBuy()
 {
-    //m_reqData->params.remove("limit");
+    bool ok = false;
+    TradeOperationData data(totBuyLimit);
+    prepareTradeOperationData(data, ok);
+    if (!ok) return;
 
+
+    APITradeDialog d(data, this);
+    d.exec();
+    if (d.isApply())
+    {
+        qDebug("d.isApply(LONG)");
+        sendTradeReq(data);
+    }
+    else
+    {
+        qDebug("canceled operation [LONG]");
+        emit signalError("Operation canceled! [LONG]");
+    }
+}
+void BB_OptionPage::slotOptionSell()
+{
+    bool ok = false;
+    TradeOperationData data(totSellLimit);
+    prepareTradeOperationData(data, ok);
+    if (!ok) return;
+
+
+    APITradeDialog d(data, this);
+    d.exec();
+    if (d.isApply())
+    {
+        qDebug("d.isApply(SHORT)");
+        sendTradeReq(data);
+    }
+    else
+    {
+        qDebug("canceled operation [SHORT]");
+        emit signalError("Operation canceled! [SHORT]");
+    }
+}
+void BB_OptionPage::prepareTradeOperationData(TradeOperationData &data, bool &ok)
+{
+    ok = false;
 
     QTableWidget *t = m_table->table();
     QList<int> sel_rows = LTable::selectedRows(t);
@@ -572,7 +618,6 @@ void BB_OptionPage::slotOptionBuy()
     int pos = findRecByTicker(ticker);
     if (pos < 0) return;
 
-    TradeOperationData data(totBuyLimit);
     data.ticker = m_container.at(pos).ticker;
     data.strike = m_container.at(pos).strike;
     data.type = m_container.at(pos).type;
@@ -580,31 +625,7 @@ void BB_OptionPage::slotOptionBuy()
     data.award = t->item(sel_rows.first(), MARKET_COL)->text().toFloat();
     data.asset_price = t->item(sel_rows.first(), ASSET_PRICE)->text().toFloat();
 
-    APITradeDialog d(data, this);
-    d.exec();
-    if (d.isApply())
-    {
-        qDebug("d.isApply()");
-        sendTradeReq(data);
-    }
-    else
-    {
-        qDebug("canceled operation");
-        emit signalError("Operation canceled!");
-    }
-}
-void BB_OptionPage::slotOptionSell()
-{
-    QTableWidget *t = m_table->table();
-    QList<int> sel_rows = LTable::selectedRows(t);
-    if (sel_rows.isEmpty() || sel_rows.count() > 1)
-    {
-        emit signalError("can't sell, selection record is invalid");
-        return;
-    }
-
-    QString ticker = t->item(sel_rows.first(), 0)->text().trimmed();
-    qDebug()<<QString("try sell option [%1]").arg(ticker);
+    ok = true;
 }
 void BB_OptionPage::sendTradeReq(const TradeOperationData &data)
 {
@@ -618,60 +639,23 @@ void BB_OptionPage::sendTradeReq(const TradeOperationData &data)
     m_reqData->params.insert("side", (data.isBuy() ? "Buy" : "Sell"));
     m_reqData->params.insert("orderType", "Limit");
     m_reqData->params.insert("timeInForce", "GTC");
-
-
     m_reqData->params.insert("qty", QString::number(data.lot_size));
     m_reqData->params.insert("price", QString::number(data.award, 'f', 2));
 
+    // m_reqData->params.insert("qty", "1");
+
     //extra params
     //m_reqData->params.insert("reduceOnly", "false");
-    m_reqData->params.insert("orderLinkId", "my_custom_id");
+    QString custom_id = QString("my_custom_id_%1").arg(data.isBuy()?"long":"short");
+    m_reqData->params.insert("orderLinkId", custom_id);
 
     emit signalMsg(m_reqData->toStr());
 
     m_reqData->outParams();
+
+
+    sendRequest();
 }
-
-
-
-
-
-/*
-опционов (нужно category=option)^M
-📊 2. Параметры для лимитного ордера (опционы)^M
-🔹 Минимально необходимое:^M
-{^M
-  "category": "option",^M
-  "symbol": "ETH-30JUN23-2000-C",^M
-  "side": "Buy",^M
-  "orderType": "Limit",^M
-  "qty": "1",^M
-  "price": "100",^M
-  "timeInForce": "GTC"^M
-}^M
-📌 Пояснение^M
-category → обязательно "option"^M
-symbol → конкретный опцион^M
-side → "Buy" или "Sell"^M
-orderType → "Limit"^M
-qty → количество контрактов^M
-price → лимитная цена^M
-timeInForce:^M
-GTC — держать до исполнения^M
-IOC — сразу или отмена^M
-^M
-^M
-5. Ответ^M
-{^M
-  "retCode": 0,^M
-  "retMsg": "OK",^M
-  "result": {^M
-    "orderId": "..."^M
-  }^M
-}^M
-
-*/
-
 
 
 

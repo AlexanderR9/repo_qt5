@@ -23,6 +23,7 @@
 #include <QJsonArray>
 #include <QJsonValue>
 #include <QJsonObject>
+#include <QJsonDocument>
 
 #define API_SERV    QString("api.bybit.com")
 
@@ -198,17 +199,75 @@ void BB_CentralWidget::slotReqFinished(int result)
     emit signalMsg(QString("------------headers %1---------------").arg(r.headers.count()));
     foreach (const QString v, r.headers) emit signalMsg(v);
 }
-void BB_CentralWidget::prepareReq(const BB_APIReqParams *req_data)
+QString BB_CentralWidget::signString(const BB_APIReqParams *req_data, qint64 ts) const
 {
+    QString hmac_msg = QString("%1%2%3").arg(ts).arg(api_config.api_key).arg(api_config.req_delay);
+    if (req_data->metod == hrmPost)
+    {
+        QJsonDocument jdoc(m_reqObj->metadata());
+        QString str_json = QString::fromUtf8(jdoc.toJson(QJsonDocument::Indented));
+        hmac_msg.append(str_json);
+    }
+    else hmac_msg.append(req_data->paramsLine());
+
+    return hmac_msg;
+}
+void BB_CentralWidget::prepareHeadersReq(const BB_APIReqParams *req_data)
+{
+    //m_reqObj->clearMetaData();
+
     qint64 ts = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
-    QString hmac_msg = QString("%1%2%3%4").arg(ts).arg(api_config.api_key).arg(api_config.req_delay).arg(req_data->paramsLine());
+    //QString hmac_msg = QString("%1%2%3%4").arg(ts).arg(api_config.api_key).arg(api_config.req_delay).arg(req_data->paramsLine());
+    QString hmac_msg = signString(req_data, ts);
     QByteArray ba_sign(APIConfig::calcHMACSha256(api_config.api_key_private.toLatin1(), hmac_msg.toLatin1()));
 
     m_reqObj->addReqHeader(QString("X-BAPI-API-KEY"), api_config.api_key);
     m_reqObj->addReqHeader(QString("X-BAPI-TIMESTAMP"), QString::number(ts));
     m_reqObj->addReqHeader(QString("X-BAPI-SIGN"), QString(ba_sign.toHex()));
     m_reqObj->addReqHeader(QString("X-BAPI-RECV-WINDOW"), QString::number(api_config.req_delay));
-    m_reqObj->setUri(req_data->fullUri());
+    if (req_data->metod == hrmPost)
+        m_reqObj->addReqHeader(QString("Content-Type"), QString("application/json"));
+
+    // out request headers
+    QStringList sender_headers;
+    m_reqObj->getReqHeaders(sender_headers);
+    qDebug("\n---------- REQ_HEADER ---------");
+    foreach (const QString &v, sender_headers)
+    {
+        qDebug()<<QString("REQ_HEADER[%1]").arg(v);
+    }
+
+
+}
+void BB_CentralWidget::prepareParamsReq(const BB_APIReqParams *req_data)
+{
+    if (req_data->metod != hrmPost)
+    {
+        m_reqObj->setUri(req_data->fullUri());
+        return;
+    }
+
+    m_reqObj->setUri(req_data->uri);
+
+    //prepare metadata (json for POST)
+    QStringList keys(req_data->params.keys());
+    foreach (const QString &v, keys)
+    {
+        m_reqObj->addMetaData(v, req_data->params.value(v));
+    }
+
+    QJsonDocument jdoc(m_reqObj->metadata());
+    QByteArray ba(jdoc.toJson(QJsonDocument::Compact));
+
+    qDebug()<<QString::fromUtf8(ba);
+
+
+
+    //EXAMPLE
+    //m_reqObj->addMetaData("currency", "RUB");
+    //m_reqObj->addMetaData("accountId", QString::number(api_commonSettings.user_id));
+
+
 }
 void BB_CentralWidget::slotSendReq(const BB_APIReqParams *req_data)
 {
@@ -219,12 +278,18 @@ void BB_CentralWidget::slotSendReq(const BB_APIReqParams *req_data)
 
     qDebug()<<QString("BB_CentralWidget::slotSendReq req_type=%1").arg(req_data->req_type);
     m_userSign = req_data->req_type;
-    prepareReq(req_data);
+    m_reqObj->reinitReq();
+    prepareParamsReq(req_data);
+    prepareHeadersReq(req_data);
+
     emit signalMsg(QString("URL: %1").arg(m_reqObj->fullUrl()));
     emit signalEnableControls(false);
 
-   // qDebug()<<req_data->toStr();
-    m_reqObj->start(req_data->metod);
+    qDebug()<<req_data->toStr();
+    //qDebug()<<QString("full req URL: [%1] \n").arg(m_reqObj->fullUrl());
+    if (req_data->metod == hrmGet || req_data->metod == hrmPost)
+    //if (req_data->metod == hrmGet)
+        m_reqObj->start(req_data->metod);
 }
 void BB_CentralWidget::slotEnableControls(bool b)
 {
