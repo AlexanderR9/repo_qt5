@@ -56,7 +56,6 @@ void APITradeDialog::updateWidgetsSizePolicy()
 
     this->setCaptionsWidth(230);
 }
-
 void APITradeDialog::init()
 {
     QString key = "kind";
@@ -104,11 +103,16 @@ void APITradeDialog::init()
     this->addSimpleWidget(QString("Lot size (x 1_ETH)"), LSimpleDialog::sdtDoubleCombo, key);
 
     key = "deviation";
-    this->addSimpleWidget(QString("Award deviation, %"), LSimpleDialog::sdtIntCombo, key);
+    this->addSimpleWidget(QString("Award deviation, %"), LSimpleDialog::sdtDoubleCombo, key);
 
     key = "require_award";
     this->addSimpleWidget("Require award of oprtion", LSimpleDialog::sdtDoubleLine, key, precision());
     this->setWidgetValue(key, 0.05);
+
+    key = "custom_id";
+    this->addSimpleWidget("Custom order_ID", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, genCustomId());
+    m_data.custom_id.clear();
 
 
     fillLots();
@@ -127,7 +131,11 @@ void APITradeDialog::fillLots()
     if (m_data.isBuy()) sign = -1;
 
     sw = this->widgetByKey("deviation");
-    for (int i=1; i<=10; i++)
+
+    for (int i=1; i<=5; i++)
+        sw->comboBox->addItem(QString::number(-1*sign*i));
+
+    for (int i=0; i<=10; i++)
         sw->comboBox->addItem(QString::number(sign*i));
 
     for (int i=2; i<=9; i++)
@@ -136,10 +144,8 @@ void APITradeDialog::fillLots()
 
     connect(sw->comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotRecalcAwardByDeviation()));
 
-    sw->comboBox->setCurrentIndex(4);
-
+    sw->comboBox->setCurrentIndex(6);
 }
-
 QString APITradeDialog::captionByOrderType(int t)
 {
     switch (t)
@@ -236,25 +242,112 @@ quint8 APITradeDialog::precision() const
     return 2;
 }
 
-/*
-void APITradeDialog::trimPrice()
-{
-    if (m_data.asset_price > 10000) m_data.asset_price = 10*qRound(m_data.asset_price/10);
-    else if (m_data.asset_price > 1500) m_data.asset_price = qRound(m_data.asset_price);
-    else if (m_data.asset_price > 10)  m_data.asset_price = float(qRound(m_data.asset_price*10))/float(10);
-}
-*/
-
 
 void APITradeDialog::slotApply()
 {
     m_data.lot_size = widgetValue("lots").toFloat();
     m_data.award = widgetValue("require_award").toFloat();
+    m_data.custom_id = widgetValue("custom_id").toString().trimmed();
 
     LSimpleDialog::slotApply();
+}
+QString APITradeDialog::genCustomId() const
+{
+    QString s_time = QTime::currentTime().toString("hhmmss");
+    QString kind = m_data.isBuy() ? "buy" :  "sell";
+    return QString("%1_%2_%3").arg(kind).arg(m_data.type.trimmed().toLower()).arg(s_time);
 }
 
 
 
 
+
+//APILinearTradeDialog
+APILinearTradeDialog::APILinearTradeDialog(TradeOperationData &data, QWidget *parent)
+    :APITradeDialog(data, parent)
+{
+    setObjectName(QString("api_linear_trade_dialog_%1").arg(data.order_type));
+
+    /*
+    init();
+    addVerticalSpacer();
+    resize(600, 500);
+    updateTitle();
+    updateKindWidget();
+    updateToStrikeWidget();
+    updateWidgetsSizePolicy();
+    */
+
+
+    reinitWidgeys();
+    slotRecalcAwardByDeviation();
+}
+void APILinearTradeDialog::reinitWidgeys()
+{
+    removeAllLineSeparators();
+    removeSimpleWidget("type");
+    removeSimpleWidget("strike");
+    removeSimpleWidget("to_strike");
+    removeSimpleWidget("award");
+    removeSimpleWidget("expirate");
+    removeSimpleWidget("custom_id");
+
+
+    const SimpleWidget *sw = this->widgetByKey("require_award");
+    sw->label->setText("Limit price");
+    sw = this->widgetByKey("deviation");
+    sw->label->setText("Price deviation, %");
+    sw = this->widgetByKey("require_award");
+    sw->edit->setReadOnly(false);
+
+    fillLots();
+}
+void APILinearTradeDialog::fillLots()
+{
+    const SimpleWidget *sw = this->widgetByKey("lots");
+    sw->comboBox->clear();
+
+    float step = 0.01;
+    for (int i=1; i<=30; i++)
+        sw->comboBox->addItem(QString::number(i*step));
+
+    sw = this->widgetByKey("deviation");
+    for (int i=0; i<=sw->comboBox->count(); i++)
+    {
+        float v = sw->comboBox->itemText(i).toFloat();
+        v /= 10;
+        sw->comboBox->setItemText(i, QString::number(v, 'f', 1));
+    }
+
+}
+void APILinearTradeDialog::slotApply()
+{
+    m_data.custom_id.clear();
+    m_data.lot_size = widgetValue("lots").toFloat();
+    m_data.award = widgetValue("require_award").toFloat();
+    //m_data.custom_id = widgetValue("custom_id").toString().trimmed();
+
+    LSimpleDialog::slotApply();
+}
+void APILinearTradeDialog::slotRecalcAwardByDeviation()
+{
+    qDebug("APILinearTradeDialog::slotRecalcLimitPriceByDeviation()");
+
+    bool ok;
+    float dev = this->widgetValue("deviation").toFloat(&ok);
+    if (!ok) {qWarning("APILinearTradeDialog::slotRecalcAwardByDeviation() WARNING - deviation invalid value"); return;}
+
+    float cur_price = this->widgetValue("price").toFloat(&ok);
+    if (!ok) {qWarning("APILinearTradeDialog::slotRecalcAwardByDeviation() WARNING - cur_price invalid value"); return;}
+
+    float limit_price = (dev/float(100) + 1)*cur_price;
+    //int r = int(qFloor(limit_price*10));
+    qDebug()<<QString("deviation=%1  cur_price=%2  limit_price=%3").arg(dev).arg(cur_price).arg(limit_price);
+
+    //limit_price = float(r)/float(10);
+    //if (limit_price < 0.1) limit_price = 0.1;
+
+    setWidgetValue("require_award", QString::number(limit_price, 'f', 2));
+
+}
 

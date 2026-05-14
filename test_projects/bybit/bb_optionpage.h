@@ -20,7 +20,7 @@ public:
     BB_OptionPage(QWidget*);
     virtual ~BB_OptionPage() {}
 
-    QString iconPath() const {return QString(":/icons/images/coins.png");}
+    QString iconPath() const {return QString(":/icons/images/option.png");}
     QString caption() const {return QString("Options");}
 
 
@@ -55,6 +55,7 @@ protected:
 private:
     void sendTradeReq(const TradeOperationData&);
     void prepareTradeOperationData(TradeOperationData&, bool&);
+    void resetReqParams(int);
 
 public slots:
     void slotJsonReply(int, const QJsonObject&);

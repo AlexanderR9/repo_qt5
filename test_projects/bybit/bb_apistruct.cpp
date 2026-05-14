@@ -77,6 +77,8 @@ QString BB_APIReqParams::strReqTypeByType(int t, QString s_extra)
         case rtBag:         {s = "GET_WALLET"; break;}
         case rtFundRate:    {s = "GET_FUND_RATES"; break;}
         case rtOptions:     {s = "GET_OPTIONS_DATA"; break;}
+        case rtOptionPositions:     {s = "GET_OPTION_POSITIONS"; break;}
+        case rtOptionOrders:        {s = "GET_OPTION_ORDERS"; break;}
 
         default: return "???";
     }

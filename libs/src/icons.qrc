@@ -101,6 +101,8 @@
         <file>images/server.png</file>
         <file>images/gas.png</file>
         <file>images/gas2.png</file>
+        <file>images/option.png</file>
+        <file>images/timer_option.png</file>
 
     </qresource>
 </RCC>

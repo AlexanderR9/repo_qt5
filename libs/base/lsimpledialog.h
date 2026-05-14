@@ -25,21 +25,25 @@ public:
 
     struct SimpleWidget
     {
-    	SimpleWidget() :label(NULL), edit(NULL), comboBox(NULL), checkBox(NULL), button(NULL), caption(QString()), data_type(sdtString), precision(2) {}
-    	SimpleWidget(QString s, int t) :label(NULL), edit(NULL), comboBox(NULL), checkBox(NULL), button(NULL), caption(s), data_type(t), precision(2) {}
+        SimpleWidget() :label(NULL), edit(NULL), comboBox(NULL), checkBox(NULL), button(NULL), caption(QString()), data_type(sdtString), precision(2), based_widget(NULL) {}
+        SimpleWidget(QString s, int t) :label(NULL), edit(NULL), comboBox(NULL), checkBox(NULL), button(NULL), caption(s), data_type(t), precision(2), based_widget(NULL) {}
 
-	QLabel			*label;
+        QLabel			*label;
     	QLineEdit		*edit;
     	QComboBox		*comboBox;
-	QCheckBox		*checkBox;
-	QToolButton		*button;
+        QCheckBox		*checkBox;
+        QToolButton		*button;
+
+        QWidget   *based_widget; // виджет - основа, на котором лежит текущаяя связка виджетов
 
     	QString			 caption;
     	int 			 data_type; //тип данных, в зависимости от него виджет преобретает тот или иной вид
-	QString			 key; //уникальное слово виджета для поиска
-	int 			 precision; //влияет только на вещественный тип	
+        QString			 key; //уникальное слово виджета для поиска
+        int 			 precision; //влияет только на вещественный тип
 
-	bool invalid() const {return (!edit && !comboBox && !checkBox);}
+        bool invalid() const {return (!edit && !comboBox && !checkBox);}
+        void destroyWidget();
+
     };
 
     LSimpleDialog(QWidget *parent = 0);
@@ -59,6 +63,10 @@ public:
     void setCaptionsWidth(int);
     void setExpandWidgets();
 
+    //new func
+    void removeSimpleWidget(QString key); // удалить widget с окна по ключу
+    void removeLineSeparator(int); // удалить горизонтальный разделитель по индексу [0..i]
+    void removeAllLineSeparators();
 
 
 protected slots:
@@ -68,11 +76,13 @@ protected slots:
 
 protected:
     QList<SimpleWidget> m_widgets;
+    QList<QFrame*> m_lineSeparators; // простые горизонтальные линии на форме
+
     bool m_apply;
 //    int m_captionsWidth;
 
     const SimpleWidget* widgetByKey(QString) const; //key
-    void placeSimpleWidget(const SimpleWidget&);
+    void placeSimpleWidget(SimpleWidget&);
     void addVerticalSpacer();
     void addLineSeparator(quint8 w = 1, QString color = "#696969");
     virtual void save() {}

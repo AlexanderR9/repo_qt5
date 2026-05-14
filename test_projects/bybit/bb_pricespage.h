@@ -9,6 +9,8 @@ class QJsonObject;
 class QJsonArray;
 class QJsonValue;
 class QSettings;
+struct TradeOperationData;
+
 
 
 // BB_PricesPage
@@ -42,8 +44,19 @@ protected:
     void newPricesReceived(const QJsonArray&);
     void rewriteFile();
 
+    // trade funcs
+    void initPopupMenu(); //инициализировать элементы всплывающего меню
+    void prepareTradeOperationData(TradeOperationData&, bool&);
+    void sendTradeReq(const TradeOperationData&);
+    void resetReqParams(int);
+
+
 public slots:
     void slotJsonReply(int, const QJsonObject&);
+
+protected slots:
+    void slotOrderBuy();
+    void slotOrderSell();
 
 };
 

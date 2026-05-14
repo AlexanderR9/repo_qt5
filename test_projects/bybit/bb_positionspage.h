@@ -74,5 +74,37 @@ public slots:
 };
 
 
+//BB_OptionPositionsPage
+class BB_OptionPositionsPage : public BB_PositionsPage
+{
+    Q_OBJECT
+public:
+    BB_OptionPositionsPage(QWidget*);
+    virtual ~BB_OptionPositionsPage() {}
+
+    QString iconPath() const {return QString(":/icons/images/timer_option.png");}
+    QString caption() const {return QString("Positions (OPTION)");}
+
+    virtual void updateDataPage(bool force = false);
+
+
+protected:
+    virtual void fillPosTable(const QJsonArray&);
+    virtual void fillOrdersTable(const QJsonArray&);
+
+    void reinitWidgets();
+    void reinitReqData();
+
+    void initPopupMenu(); //инициализировать элементы всплывающего меню
+
+public slots:
+    virtual void slotJsonReply(int, const QJsonObject&);
+
+protected slots:
+    void slotOptionOrderModify();
+    void slotOptionOrderCancel();
+
+};
+
 
 #endif // BB_POSITIONSPAGE_H

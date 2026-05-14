@@ -389,3 +389,183 @@ void BB_SpotPositionsPage::fillOrdersTable(const QJsonArray &j_arr)
     BB_PositionsPage::fillOrdersTable(j_arr);
 }
 
+
+
+//BB_OptionPositionsPage
+BB_OptionPositionsPage::BB_OptionPositionsPage(QWidget *parent)
+    :BB_PositionsPage(parent)
+{
+    setObjectName("option_positions_page");
+    reinitWidgets();
+
+    m_userSign = rtOptionPositions;
+    reinitReqData();
+
+    // init popup
+    initPopupMenu();
+
+}
+void BB_OptionPositionsPage::reinitWidgets()
+{
+    QStringList list;
+    list << "Trigger time" << "Ticker" << "Action" << "Lot" << "Open price" << "Market price" << "Theta/Vega" << "Result";
+
+    m_table->setHeaderLabels(list);
+    m_table->resizeByContents();
+    m_table->setTitle("Active options");
+
+    list.clear();
+    list << "Date" << "Ticker" << "Lot" << "Action" << "Open price" << "Status" << "Custom ID" << "Exec qty";
+    m_orderTable->setHeaderLabels(list);
+    m_orderTable->resizeByContents();
+
+
+
+}
+void BB_OptionPositionsPage::reinitReqData()
+{
+    m_reqData->params.clear();
+    m_reqData->req_type = m_userSign;
+    m_reqData->params.insert("category", "option");
+    m_reqData->params.insert("settleCoin", "USDT");
+
+}
+void BB_OptionPositionsPage::updateDataPage(bool forcibly)
+{
+    if (!updateTimeOver(forcibly)) return;
+
+    clearTables();
+
+    m_reqData->uri = API_POS_URI;
+    m_reqData->req_type = rtOptionPositions;
+    m_reqData->params.insert("cursor", QString::number(0));
+
+    sendRequest();
+}
+void BB_OptionPositionsPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
+{
+    if (req_type != rtOptionPositions && req_type != rtOptionOrders) return;
+
+    const QJsonValue &jv = j_obj.value("result");
+    if (jv.isNull()) {emit signalError("BB_OptionPositionsPage: result QJsonValue not found"); return;}
+    const QJsonValue &j_list = jv.toObject().value("list");
+    if (j_list.isNull()) {emit signalError("BB_OptionPositionsPage: list QJsonValue not found"); return;}
+    const QJsonArray &j_arr = j_list.toArray();
+    if (j_arr.isEmpty())  {emit signalError("BB_OptionPositionsPage: j_arr QJsonArray is empty");}
+
+    if (req_type == rtOptionPositions)
+    {
+        fillPosTable(j_arr);
+
+
+        m_reqData->uri = API_ORDERS_URI;
+        m_reqData->req_type = rtOptionOrders;
+        m_reqData->params.insert("cursor", QString::number(0));
+        sendRequest(MAX_ORDERS_PAGE);
+    }
+    else if (req_type == rtOptionOrders)
+    {
+        fillOrdersTable(j_arr);
+    }
+}
+void BB_OptionPositionsPage::fillPosTable(const QJsonArray &j_arr)
+{
+    if (j_arr.isEmpty()) {qWarning()<<QString("BB_OptionPositionsPage::fillTable WARNING j_arr is empty"); return;}
+    //const QJsonArray &j_arr_assets = j_arr.first().toObject().value("coin").toArray();
+    //if (j_arr_assets.isEmpty())  {emit signalError("BB_OptionPositionsPage: j_arr_assets QJsonArray is empty");}
+
+    QTableWidget *t = m_table->table();
+    for (int i=0; i<j_arr.count(); i++)
+    {
+        QJsonObject j_el = j_arr.at(i).toObject();
+        if (j_el.isEmpty()) {qWarning()<<QString("BB_OptionPositionsPage::fillTable WARNING j_el is empty (index=%1)").arg(i); break;}
+
+        //    list << "Trigger time" << "Ticker" << "Lot" << "Action" << "Open price" << "Market price" << "Result";
+
+        float lot = j_el.value("size").toString().toFloat();
+        float open_price = j_el.value("avgPrice").toString().toFloat();
+        float cur_price = j_el.value("markPrice").toString().toFloat();
+        float result = (open_price-cur_price)*lot;
+        float theta = j_el.value("theta").toString().toFloat();
+        float vega = j_el.value("vega").toString().toFloat();
+
+
+        QStringList row_data;
+        double ts = j_el.value("openTime").toDouble();
+        row_data << APIConfig::fromTimeStamp(qint64(ts), QString("dd.MM.yyyy hh:mm"));
+        row_data << j_el.value("symbol").toString();
+        row_data << j_el.value("side").toString().trimmed().toUpper();
+        row_data << QString::number(lot, 'f', 2);
+        row_data << QString::number(open_price, 'f', 2);
+        row_data << QString::number(cur_price, 'f', 2);
+        row_data << QString("%1 / %2").arg(QString::number(theta, 'f', 3)).arg(QString::number(vega, 'f', 3));
+        row_data << QString::number(result, 'f', 2);
+
+        LTable::addTableRow(t, row_data);
+
+        if (result < 0) t->item(i, t->columnCount()-1)->setTextColor("#AA0000");
+    }
+
+    m_table->resizeByContents();
+    m_table->searchExec();
+}
+
+void BB_OptionPositionsPage::fillOrdersTable(const QJsonArray &j_arr)
+{
+    if (j_arr.isEmpty()) return;
+
+//    list << "Date" << "Ticker" << "Lot" << "Action" << "Open price" << "Status" << "Custom ID" << "Exec qty";
+
+    QTableWidget *t = m_orderTable->table();
+    for (int i=0; i<j_arr.count(); i++)
+    {
+        QJsonObject j_el = j_arr.at(i).toObject();
+        if (j_el.isEmpty()) {qWarning()<<QString("BB_OptionPositionsPage::fillOrdersTable WARNING j_el is empty (index=%1)").arg(i); break;}
+
+        QStringList row_data;
+        QString ts = j_el.value("createdTime").toString().trimmed();
+        row_data << APIConfig::fromTimeStamp(ts.toLong(), QString("dd.MM.yyyy"));
+        row_data << j_el.value("symbol").toString() << j_el.value("qty").toString() << j_el.value("side").toString().toUpper();
+        row_data << j_el.value("price").toString() << j_el.value("orderStatus").toString();
+        row_data << j_el.value("orderLinkId").toString() << j_el.value("cumExecQty").toString();
+
+        LTable::addTableRow(t, row_data);
+    }
+
+    m_orderTable->resizeByContents();
+    m_orderTable->searchExec();
+}
+void BB_OptionPositionsPage::initPopupMenu()
+{
+    QString path = APIConfig::commonIconsPath(); // icons path
+
+    //prepare menu actions data for assets table
+    QList< QPair<QString, QString> > act_list;
+    QPair<QString, QString> pair1("Modify", QString("%1/ball_green.svg").arg(path));
+    QPair<QString, QString> pair2("Cancel", QString("%1/ball_red.svg").arg(path));
+    act_list.append(pair1);
+    act_list.append(pair2);
+
+    //init popup menu actions
+    m_orderTable->popupMenuActivate(act_list);
+
+    //connect OWN slots to popup actions
+    int i_menu = 0;
+    m_orderTable->connectSlotToPopupAction(i_menu, this, SLOT(slotOptionOrderModify())); i_menu++;
+    m_orderTable->connectSlotToPopupAction(i_menu, this, SLOT(slotOptionOrderCancel())); i_menu++;
+
+}
+void BB_OptionPositionsPage::slotOptionOrderModify()
+{
+    qDebug("BB_OptionPositionsPage::slotOptionOrderModify()");
+
+}
+void BB_OptionPositionsPage::slotOptionOrderCancel()
+{
+    qDebug("BB_OptionPositionsPage::slotOptionOrderCancel()");
+
+}
+
+
+
+

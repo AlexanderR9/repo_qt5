@@ -21,7 +21,7 @@ struct TradeOperationData
     QString ticker;
     QString type; // CALL / PUT
     quint32 expirate;
-    //int maxLot_ps;
+    QString custom_id;
 
     void reset() {lot_size = award = 0; asset_price = strike = -1;  expirate = 0;}
 
@@ -57,16 +57,16 @@ protected:
     void init();
     void updateTitle();
     void updateWidgetsSizePolicy();
-    void fillLots();
+    virtual void fillLots();
     //void fillDeviations();
     void updateKindWidget();
     void updateToStrikeWidget();
 
-
+    QString genCustomId() const;
 
 protected slots:
-    void slotRecalcAwardByDeviation();
-    void slotApply();
+    virtual void slotRecalcAwardByDeviation();
+    virtual void slotApply();
 
 
 private:
@@ -75,6 +75,26 @@ private:
 
 
 };
+
+
+//APILinearTradeDialog
+class APILinearTradeDialog : public APITradeDialog
+{
+    Q_OBJECT
+public:
+    APILinearTradeDialog(TradeOperationData&, QWidget*);
+    virtual ~APILinearTradeDialog() {}
+
+protected:
+    void reinitWidgeys();
+    void fillLots();
+
+protected slots:
+    virtual void slotRecalcAwardByDeviation();
+    virtual void slotApply();
+
+};
+
 
 
 

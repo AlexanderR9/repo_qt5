@@ -79,11 +79,46 @@ void LSimpleDialog::addVerticalSpacer()
 void LSimpleDialog::addLineSeparator(quint8 w, QString color)
 {
     QFrame* myFrame = new QFrame(this);
+    myFrame->setObjectName(QString("line_separator%1").arg(m_lineSeparators.count()));
     myFrame->setFrameShape(QFrame::HLine);
     myFrame->setLineWidth(w);
     myFrame->setStyleSheet(QString("QFrame {color: %1;}").arg(color));
     QVBoxLayout *lay = qobject_cast<QVBoxLayout*>(groupBox->layout());
     if (lay) lay->addWidget(myFrame);
+
+    m_lineSeparators.append(myFrame);
+}
+void LSimpleDialog::removeSimpleWidget(QString key)
+{
+    int index = -1;
+    for (int i=0; i<m_widgets.count(); i++)
+        if (m_widgets.at(i).key == key) {index = i; break;};
+
+    if (index < 0) return;
+
+    SimpleWidget sw = m_widgets.takeAt(index);
+    if (sw.based_widget)
+        groupBox->layout()->removeWidget(sw.based_widget);
+
+    sw.destroyWidget();
+
+}
+void LSimpleDialog::removeLineSeparator(int l_index)
+{
+    if (l_index < 0 || l_index >= m_lineSeparators.count()) return;
+
+    QFrame *fw = m_lineSeparators.takeAt(l_index);
+    groupBox->layout()->removeWidget(fw);
+    delete fw;
+    fw = NULL;
+}
+void LSimpleDialog::removeAllLineSeparators()
+{
+    int n = m_lineSeparators.count();
+    if (n == 0) return;
+
+    for (int i=0; i<n; i++)
+        removeLineSeparator(0);
 }
 void LSimpleDialog::addSimpleWidget(QString caption, int dataType, QString key, int precision)
 {
@@ -94,11 +129,11 @@ void LSimpleDialog::addSimpleWidget(QString caption, int dataType, QString key, 
 
     for (int i=0; i<m_widgets.count(); i++)
     {
-	if (m_widgets.at(i).key == key)
-	{
-	    qWarning()<<QString("LSimpleDialog::addSimpleWidget ERR key[%1] allready exist.").arg(key);
-	    return;
-	}
+        if (m_widgets.at(i).key == key)
+        {
+            qWarning()<<QString("LSimpleDialog::addSimpleWidget ERR key[%1] allready exist.").arg(key);
+            return;
+        }
     }
 
     m_widgets.append(SimpleWidget(caption, dataType));
@@ -107,40 +142,40 @@ void LSimpleDialog::addSimpleWidget(QString caption, int dataType, QString key, 
     
     switch (dataType)
     {
-	case sdtFilePath:
-	case sdtDirPath:
-	{
-	    initSimpleWidgetPath(m_widgets.last());
-	    break;
-	}
-	case sdtColor:
-	{
-	    initSimpleWidgetColor(m_widgets.last());
-	    //setWidgetValue(key, QVariant()); 
-	    break;
-	}
-	case sdtString:
-	case sdtIntLine:
-	case sdtDoubleLine: 
-	{
-	    initSimpleWidgetLine(m_widgets.last());
-	    break;
-	}
-	case sdtBoolCombo:
-	case sdtStringCombo:
-	case sdtIntCombo:
-	case sdtDoubleCombo: 
-	{
-	    initSimpleWidgetCombo(m_widgets.last());
-	    break;
-	}
-	case sdtBool:
-	{
-	    m_widgets.last().checkBox = new QCheckBox(QString("  "), this);
-	    m_widgets.last().checkBox->setObjectName(QString("checkbox_%1").arg(key));
-	    break;
-	}
-	default: return;
+        case sdtFilePath:
+        case sdtDirPath:
+        {
+            initSimpleWidgetPath(m_widgets.last());
+            break;
+        }
+        case sdtColor:
+        {
+            initSimpleWidgetColor(m_widgets.last());
+            //setWidgetValue(key, QVariant());
+            break;
+        }
+        case sdtString:
+        case sdtIntLine:
+        case sdtDoubleLine:
+        {
+            initSimpleWidgetLine(m_widgets.last());
+            break;
+        }
+        case sdtBoolCombo:
+        case sdtStringCombo:
+        case sdtIntCombo:
+        case sdtDoubleCombo:
+        {
+            initSimpleWidgetCombo(m_widgets.last());
+            break;
+        }
+        case sdtBool:
+        {
+            m_widgets.last().checkBox = new QCheckBox(QString("  "), this);
+            m_widgets.last().checkBox->setObjectName(QString("checkbox_%1").arg(key));
+            break;
+        }
+        default: return;
     }
 
     m_widgets.last().label = new QLabel(m_widgets.last().caption, this);
@@ -243,7 +278,7 @@ void LSimpleDialog::slotOpenPath()
     if (!path.isEmpty())
 	sw->edit->setText(path.trimmed());
 }
-void LSimpleDialog::placeSimpleWidget(const SimpleWidget &sw)
+void LSimpleDialog::placeSimpleWidget(SimpleWidget &sw)
 {
     if (sw.invalid()) {qWarning()<<QString("LSimpleDialog::placeSimpleWidget ERR sw.invalid(), key=%1").arg(sw.key); return;}
 //    qDebug()<<QString("placeSimpleWidget  %1").arg(sw.key);
@@ -266,6 +301,7 @@ void LSimpleDialog::placeSimpleWidget(const SimpleWidget &sw)
     if (sw.checkBox) lay->addWidget(sw.checkBox);
     if (sw.button) lay->addWidget(sw.button);
 
+    sw.based_widget = w;
     groupBox->layout()->addWidget(w);
 }
 void LSimpleDialog::setBoxTitle(QString s)
@@ -491,6 +527,16 @@ void LSimpleDialog::setComboList(QString key, const QVariantList &combo_data, QV
 }
 
 
+void LSimpleDialog::SimpleWidget::destroyWidget()
+{
+    if (label) {delete label; label = NULL;}
+    if (edit) {delete edit; edit = NULL;}
+    if (comboBox) {delete comboBox; comboBox = NULL;}
+    if (checkBox) {delete checkBox; checkBox = NULL;}
+    if (button) {delete button; button = NULL;}
+    if (based_widget) {delete based_widget; based_widget = NULL;}
+
+}
 
 
 

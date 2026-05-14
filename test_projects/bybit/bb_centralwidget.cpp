@@ -101,6 +101,8 @@ void BB_CentralWidget::createPages()
 
     BB_OptionPage *options_page = new BB_OptionPage(this);
     w_stack->addWidget(options_page);
+    BB_OptionPositionsPage *option_pos_page = new BB_OptionPositionsPage(this);
+    w_stack->addWidget(option_pos_page);
 
 
     BB_ShadowExplorer *shadow_page = new BB_ShadowExplorer(this);

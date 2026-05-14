@@ -100,15 +100,14 @@ BB_OptionPage::BB_OptionPage(QWidget *parent)
 
     //loadTickers();
     m_monitTable->searchExec();
-    m_reqData->params.insert("category", "option");
-    m_reqData->params.insert("baseCoin", "ETH"); // работаем только с опционами по эфиру
 
 
     //m_reqData->uri = API_TICKERS_URI;
     //m_reqData->uri = API_OPTIONS_INFO_URI;
-    m_reqData->uri = API_OPTIONS_INFO_URI;
+    //m_reqData->uri = API_OPTIONS_INFO_URI;
 
     m_reqData->req_type = m_userSign;
+    //resetReqParams();
 
     // init popup
     initPopupMenu();
@@ -179,8 +178,8 @@ void BB_OptionPage::updateDataPage(bool force)
         return;
     }
 
+    resetReqParams(hrmGet);
     m_reqData->uri = API_OPTIONS_INFO_URI;
-    m_reqData->metod = hrmGet;
 
 
     int limit = OPTIONS_INFO_LIMIT;
@@ -389,9 +388,8 @@ void BB_OptionPage::updateInfoTable()
 void BB_OptionPage::slotUpdateOptionsPrices()
 {
     qDebug("BB_OptionPage::slotUpdateOptionsPrices()");
+    resetReqParams(hrmGet);
     m_reqData->uri = API_TICKERS_URI;
-    m_reqData->metod = hrmGet;
-
     m_table->removeAllRows();
 
     sendRequest();
@@ -631,9 +629,8 @@ void BB_OptionPage::sendTradeReq(const TradeOperationData &data)
 {
     emit signalMsg("Try send request on trade command ...........");
 
+    resetReqParams(hrmPost);
     m_reqData->uri = API_OPTION_CREATE_ORDER_URI;
-    m_reqData->metod = hrmPost;
-
 
     m_reqData->params.insert("symbol", data.ticker);
     m_reqData->params.insert("side", (data.isBuy() ? "Buy" : "Sell"));
@@ -642,12 +639,11 @@ void BB_OptionPage::sendTradeReq(const TradeOperationData &data)
     m_reqData->params.insert("qty", QString::number(data.lot_size));
     m_reqData->params.insert("price", QString::number(data.award, 'f', 2));
 
-    // m_reqData->params.insert("qty", "1");
-
     //extra params
     //m_reqData->params.insert("reduceOnly", "false");
-    QString custom_id = QString("my_custom_id_%1").arg(data.isBuy()?"long":"short");
-    m_reqData->params.insert("orderLinkId", custom_id);
+    //QString custom_id = QString("my_custom_id_%1").arg(data.isBuy()?"long":"short");
+    if (!data.custom_id.isEmpty())
+        m_reqData->params.insert("orderLinkId", data.custom_id);
 
     emit signalMsg(m_reqData->toStr());
 
@@ -655,6 +651,14 @@ void BB_OptionPage::sendTradeReq(const TradeOperationData &data)
 
 
     sendRequest();
+}
+void BB_OptionPage::resetReqParams(int http_m)
+{
+    m_reqData->params.clear();
+    m_reqData->params.insert("category", "option");
+    m_reqData->params.insert("baseCoin", "ETH"); // работаем только с опционами по эфиру
+
+    m_reqData->metod = http_m;
 }
 
 
