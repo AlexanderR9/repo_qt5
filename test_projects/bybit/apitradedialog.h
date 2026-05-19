@@ -5,7 +5,8 @@
 
 
 //Orepation Type
-enum TradeOrepationType {totBuyLimit = 771, totSellLimit, totTakeProfit, totStopLoss, totNone = 0};
+enum TradeOrepationType {totBuyLimit = 771, totSellLimit, totTakeProfit, totStopLoss,
+                         totCancel, totModify, totNone = 0};
 
 //TradeOperationData
 struct TradeOperationData
@@ -53,12 +54,10 @@ public:
 protected:
     TradeOperationData&     m_data;
 
-
     void init();
     void updateTitle();
     void updateWidgetsSizePolicy();
     virtual void fillLots();
-    //void fillDeviations();
     void updateKindWidget();
     void updateToStrikeWidget();
 
@@ -68,11 +67,8 @@ protected slots:
     virtual void slotRecalcAwardByDeviation();
     virtual void slotApply();
 
-
 private:
-    quint8 precision() const;
-    //void trimPrice();
-
+    quint8 precision() const {return 2;}
 
 };
 
@@ -86,7 +82,7 @@ public:
     virtual ~APILinearTradeDialog() {}
 
 protected:
-    void reinitWidgeys();
+    virtual void reinitWidgeys();
     void fillLots();
 
 protected slots:
@@ -94,6 +90,44 @@ protected slots:
     virtual void slotApply();
 
 };
+
+
+//APILinearCancelDialog
+class APILinearCancelDialog : public APILinearTradeDialog
+{
+    Q_OBJECT
+public:
+    APILinearCancelDialog(TradeOperationData&, QWidget*);
+    virtual ~APILinearCancelDialog() {}
+
+protected:
+    virtual void reinitWidgeys();
+
+protected slots:
+    virtual void slotRecalcAwardByDeviation();
+    virtual void slotApply();
+
+};
+
+
+
+//APILinearModifyDialog
+class APILinearModifyDialog : public APILinearCancelDialog
+{
+    Q_OBJECT
+public:
+    APILinearModifyDialog(TradeOperationData&, QWidget*);
+    virtual ~APILinearModifyDialog() {}
+
+protected:
+    virtual void reinitWidgeys();
+
+protected slots:
+    virtual void slotApply();
+
+};
+
+
 
 
 

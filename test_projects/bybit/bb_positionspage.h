@@ -9,6 +9,7 @@ class QJsonObject;
 class QPointF;
 class QJsonArray;
 struct BB_BagState;
+struct TradeOperationData;
 
 
 //BB_PositionsPage
@@ -35,13 +36,22 @@ protected:
     void clearTables(); //remove all rows
     void checkAdjacent(int);
 
+    void initPopupMenu(); //инициализировать элементы всплывающего меню
+    virtual void sendTradeReq(const TradeOperationData&);
+
 private:
     void initTable(LSearchTableWidgetBox*);
     QString getTimePoint(const QJsonObject&, bool&) const;
 
+
 public slots:
     virtual  void slotJsonReply(int, const QJsonObject&);
     void slotGetPosState(BB_BagState&);
+
+
+protected slots:
+    virtual void slotOrderModify();
+    virtual void slotOrderCancel();
 
 };
 
@@ -95,14 +105,16 @@ protected:
     void reinitWidgets();
     void reinitReqData();
 
-    void initPopupMenu(); //инициализировать элементы всплывающего меню
 
 public slots:
     virtual void slotJsonReply(int, const QJsonObject&);
 
 protected slots:
-    void slotOptionOrderModify();
-    void slotOptionOrderCancel();
+    virtual void slotOrderModify();
+    virtual void slotOrderCancel();
+
+
+
 
 };
 

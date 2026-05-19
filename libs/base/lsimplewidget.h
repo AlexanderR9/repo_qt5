@@ -125,6 +125,7 @@ public:
 
     //реализация всплывающего меню для таблицы по клику ПКМ  (поумолчанию эта функциональность отключена)
     virtual void popupMenuActivate(const QList< QPair<QString, QString> >&, bool need_row_selection = true); //активация всплывающего меню, необходимо передать набор пар <название, путь к иконке> , путь к иконке может быть пустым
+    virtual void popupMenuDestroy(); //деактивация всплывающего меню, (если оно было инициализировано)
     inline int popupMenuSize() const {return m_popupMenuActions.count();} //количество инициализированных пуктов меню
     void connectSlotToPopupAction(int, QObject*, const char*); //для соединения со слотами внешнего объекта-хозяина необходимо вызвать этот метод для каждого пункта меню, указав индекс пункта
     inline void setMaxPopupSelectRows(quint16 a) {m_maxPopupSelectRows = a;}

@@ -1,5 +1,4 @@
 #include "apitradedialog.h"
-//#include "apicommonsettings.h"
 
 
 #include <QDebug>
@@ -21,32 +20,16 @@ APITradeDialog::APITradeDialog(TradeOperationData &data, QWidget *parent)
     init();
     addVerticalSpacer();
     resize(600, 500);
+
     updateTitle();
     updateKindWidget();
     updateToStrikeWidget();
-
-    /*
-    if (m_data.invalid())
-    {
-        this->buttonBox->button(QDialogButtonBox::Ok)->setEnabled(false);
-    }
-    else
-    {
-        //
-        //slotRecalcResult();
-    }
-    */
-
     updateWidgetsSizePolicy();
-
-
 }
 void APITradeDialog::updateWidgetsSizePolicy()
 {
     foreach (const SimpleWidget &sw, m_widgets)
     {
-        //sw.label->setMinimumWidth(min_w);
-        //sw.label->setMaximumWidth(min_w);
         if (sw.edit) sw.edit->setReadOnly(true);
         if (sw.comboBox)
         {
@@ -96,8 +79,6 @@ void APITradeDialog::init()
     this->setWidgetValue(key, s_exp);
 
     this->addLineSeparator();
-
-
 
     key = "lots";
     this->addSimpleWidget(QString("Lot size (x 1_ETH)"), LSimpleDialog::sdtDoubleCombo, key);
@@ -154,6 +135,8 @@ QString APITradeDialog::captionByOrderType(int t)
         case totSellLimit: return QString("SELL_LIMIT");
         case totTakeProfit: return QString("TAKE_PROFIT");
         case totStopLoss: return QString("STOP_LOSS");
+        case totCancel: return QString("CANCEL_ORDER");
+        case totModify: return QString("MODIFY_ORDER");
         default: break;
     }
     return "UNKNOWN_ORDER_TYPE";
@@ -163,7 +146,9 @@ QString APITradeDialog::iconByOrderType(int t)
     switch (t)
     {
         case totBuyLimit: return QString(":/icons/images/ball_green.svg");
-        case totSellLimit: return QString(":/icons/images/ball_red.svg");
+        case totSellLimit:
+        case totCancel: return QString(":/icons/images/ball_red.svg");
+        case totModify: return QString(":/icons/images/ball_yellow.svg");
         case totTakeProfit: return QString(":/icons/images/up.svg");
         case totStopLoss: return QString(":/icons/images/down.svg");
         default: break;
@@ -205,7 +190,9 @@ void APITradeDialog::updateTitle()
 
     //update paper type text
     QPalette t_palette;
-    t_palette.setColor(QPalette::Text, m_data.isCall() ? Qt::darkGreen : Qt::darkRed);
+    int tc = Qt::darkRed;
+    if (m_data.isCall() || m_data.type.toLower() == "buy") tc = Qt::darkGreen;
+    t_palette.setColor(QPalette::Text, Qt::GlobalColor(tc));
     widgetByKey("type")->edit->setPalette(t_palette);
 
     //set require_award text color
@@ -232,17 +219,6 @@ void APITradeDialog::slotRecalcAwardByDeviation()
     setWidgetValue("require_award", QString::number(require_award, 'f', 4));
 
 }
-quint8 APITradeDialog::precision() const
-{
-    /*
-    if (m_data.price > 5000) return 0;
-    if (m_data.price > 10) return 1;
-    if (m_data.price < 1) return 3;
-    */
-    return 2;
-}
-
-
 void APITradeDialog::slotApply()
 {
     m_data.lot_size = widgetValue("lots").toFloat();
@@ -268,30 +244,20 @@ APILinearTradeDialog::APILinearTradeDialog(TradeOperationData &data, QWidget *pa
 {
     setObjectName(QString("api_linear_trade_dialog_%1").arg(data.order_type));
 
-    /*
-    init();
-    addVerticalSpacer();
-    resize(600, 500);
-    updateTitle();
-    updateKindWidget();
-    updateToStrikeWidget();
-    updateWidgetsSizePolicy();
-    */
-
-
     reinitWidgeys();
     slotRecalcAwardByDeviation();
 }
 void APILinearTradeDialog::reinitWidgeys()
 {
     removeAllLineSeparators();
-    removeSimpleWidget("type");
+    if (m_data.order_type != totCancel && m_data.order_type != totModify)
+        removeSimpleWidget("type");
+
     removeSimpleWidget("strike");
     removeSimpleWidget("to_strike");
     removeSimpleWidget("award");
     removeSimpleWidget("expirate");
     removeSimpleWidget("custom_id");
-
 
     const SimpleWidget *sw = this->widgetByKey("require_award");
     sw->label->setText("Limit price");
@@ -308,6 +274,7 @@ void APILinearTradeDialog::fillLots()
     sw->comboBox->clear();
 
     float step = 0.01;
+    if (m_data.asset_price < 10) step = 0.5;
     for (int i=1; i<=30; i++)
         sw->comboBox->addItem(QString::number(i*step));
 
@@ -318,21 +285,18 @@ void APILinearTradeDialog::fillLots()
         v /= 10;
         sw->comboBox->setItemText(i, QString::number(v, 'f', 1));
     }
-
 }
 void APILinearTradeDialog::slotApply()
 {
     m_data.custom_id.clear();
     m_data.lot_size = widgetValue("lots").toFloat();
     m_data.award = widgetValue("require_award").toFloat();
-    //m_data.custom_id = widgetValue("custom_id").toString().trimmed();
 
     LSimpleDialog::slotApply();
 }
 void APILinearTradeDialog::slotRecalcAwardByDeviation()
 {
     qDebug("APILinearTradeDialog::slotRecalcLimitPriceByDeviation()");
-
     bool ok;
     float dev = this->widgetValue("deviation").toFloat(&ok);
     if (!ok) {qWarning("APILinearTradeDialog::slotRecalcAwardByDeviation() WARNING - deviation invalid value"); return;}
@@ -341,13 +305,75 @@ void APILinearTradeDialog::slotRecalcAwardByDeviation()
     if (!ok) {qWarning("APILinearTradeDialog::slotRecalcAwardByDeviation() WARNING - cur_price invalid value"); return;}
 
     float limit_price = (dev/float(100) + 1)*cur_price;
-    //int r = int(qFloor(limit_price*10));
     qDebug()<<QString("deviation=%1  cur_price=%2  limit_price=%3").arg(dev).arg(cur_price).arg(limit_price);
-
-    //limit_price = float(r)/float(10);
-    //if (limit_price < 0.1) limit_price = 0.1;
-
     setWidgetValue("require_award", QString::number(limit_price, 'f', 2));
+}
+
+
+//APILinearCancelDialog
+APILinearCancelDialog::APILinearCancelDialog(TradeOperationData &data, QWidget *parent)
+    :APILinearTradeDialog(data, parent)
+{
+    setObjectName(QString("api_linear_cancel_dialog_%1").arg(data.order_type));
+
+    reinitWidgeys();
+    slotRecalcAwardByDeviation();
+
+    setSizes(500, 400);
+}
+void APILinearCancelDialog::reinitWidgeys()
+{
+    removeSimpleWidget("deviation");
+    removeSimpleWidget("price");
+
+    const SimpleWidget *sw = this->widgetByKey("require_award");
+    sw->edit->setReadOnly(true);
+
+    sw = this->widgetByKey("lots");
+    sw->comboBox->clear();
+    sw->comboBox->addItem(QString::number(m_data.lot_size));
+
+    this->setWidgetValue("type", m_data.type);
+}
+void APILinearCancelDialog::slotRecalcAwardByDeviation()
+{
+    setWidgetValue("require_award", QString::number(m_data.asset_price));
+}
+void APILinearCancelDialog::slotApply()
+{
+    LSimpleDialog::slotApply();
+}
+
+
+
+
+//APILinearModifyDialog
+APILinearModifyDialog::APILinearModifyDialog(TradeOperationData &data, QWidget *parent)
+    :APILinearCancelDialog(data, parent)
+{
+    setObjectName(QString("api_linear_modify_dialog_%1").arg(data.order_type));
+
+    reinitWidgeys();
 
 }
+void APILinearModifyDialog::reinitWidgeys()
+{
+    const SimpleWidget *sw = this->widgetByKey("require_award");
+    sw->edit->setReadOnly(false);
+
+}
+void APILinearModifyDialog::slotApply()
+{
+    bool ok;
+    m_data.asset_price = widgetValue("require_award").toFloat(&ok);
+    if (!ok || m_data.asset_price <= 0)
+    {
+        qWarning()<<QString("APILinearModifyDialog::slotApply() WARNING - invalid new limit price");
+        return;
+    }
+
+    LSimpleDialog::slotApply();
+}
+
+
 

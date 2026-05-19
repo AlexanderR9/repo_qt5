@@ -310,6 +310,11 @@ void LTableWidgetBox::slotSortByColumn(int col)
     m_table->scrollToTop();
     //m_table->selectRow(0);
 }
+void LTableWidgetBox::popupMenuDestroy()
+{
+     qDebug()<<QString("LTableWidgetBox::popupMenuDestroy  acts size %1").arg(m_popupMenuActions.count());
+     destroyPopupMenu();
+}
 void LTableWidgetBox::popupMenuActivate(const QList< QPair<QString, QString> > &list, bool need_row_selection)
 {
    // qDebug()<<QString("LTableWidgetBox::popupMenuActivate  acts size %1").arg(list.count());

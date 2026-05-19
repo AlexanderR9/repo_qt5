@@ -4,6 +4,8 @@
 #include "ltable.h"
 #include "apiconfig.h"
 #include "bb_apistruct.h"
+#include "apitradedialog.h"
+
 
 #include <QSplitter>
 #include <QDebug>
@@ -15,13 +17,20 @@
 #define API_POS_URI                 QString("v5/position/list")
 #define API_ORDERS_URI              QString("v5/order/realtime")
 #define API_SPOT_ASSET_URI          QString("v5/account/wallet-balance")
+#define API_ORDER_CANCEL_URI        QString("v5/order/cancel")
+#define API_ORDER_MODIFY_URI        QString("v5/order/amend")
+
 
 
 #define TRADE_TYPE_COL              3
-#define FREEZED_SUM_COL             5
-#define MAX_ORDERS_PAGE             50
+#define LOT_COL                     2
 #define TICKER_COL                  1
 #define DATE_COL                    0
+#define FREEZED_SUM_COL             5
+#define LIMIT_PRICE_COL             4
+
+
+#define MAX_ORDERS_PAGE             50
 #define OVER_DAYS                   90
 #define NOT_ADJACENT_POS            QString("#FFBB66")
 
@@ -35,8 +44,11 @@ BB_PositionsPage::BB_PositionsPage(QWidget *parent)
     setObjectName("positions_page");
     init();
 
-    m_reqData->params.insert("category", "linear");
-    m_reqData->params.insert("settleCoin", "USDT");
+    //m_reqData->params.insert("category", "linear");
+    //m_reqData->params.insert("settleCoin", "USDT");
+
+    // init popup
+    initPopupMenu();
 
 }
 void BB_PositionsPage::clearTables()
@@ -98,15 +110,29 @@ void BB_PositionsPage::updateDataPage(bool forcibly)
     if (!updateTimeOver(forcibly)) return;
 
     clearTables();
+    m_reqData->metod = hrmGet;
+
     m_reqData->uri = API_POS_URI;
     m_reqData->req_type = rtPositions;
+
+    m_reqData->params.clear();
     m_reqData->params.insert("cursor", QString::number(0));
+    m_reqData->params.insert("category", "linear");
+    m_reqData->params.insert("settleCoin", "USDT");
+
 
     sendRequest(api_config.req_limit_pos);
 }
 void BB_PositionsPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 {
     if (req_type != rtPositions && req_type != rtOrders) return;
+
+    if (m_reqData->metod == hrmPost)
+    {
+        qDebug("WAS POST REQ");
+        return;
+    }
+
 
     const QJsonValue &jv = j_obj.value("result");
     if (jv.isNull()) {emit signalError("BB_PositionsPage: result QJsonValue not found"); return;}
@@ -121,6 +147,7 @@ void BB_PositionsPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
         fillPosTable(j_arr);
 
         //next request (orders: next page)
+        /*
         next_cursor = jv.toObject().value("nextPageCursor").toString().trimmed();
         if (!next_cursor.isEmpty())
         {
@@ -134,18 +161,28 @@ void BB_PositionsPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
             m_reqData->params.insert("cursor", QString::number(0));
             sendRequest(MAX_ORDERS_PAGE);
         }
+        */
+
+        // simple variant
+        m_reqData->uri = API_ORDERS_URI;
+        m_reqData->req_type = rtOrders;
+        m_reqData->params.insert("cursor", QString::number(0));
+        sendRequest(MAX_ORDERS_PAGE);
+
     }
     else if (req_type == rtOrders)
     {
         fillOrdersTable(j_arr);
 
         //next request (orders: next page)
+        /*
         next_cursor = jv.toObject().value("nextPageCursor").toString().trimmed();
         if (!next_cursor.isEmpty())
         {
             m_reqData->params.insert("cursor", next_cursor);
             sendRequest(MAX_ORDERS_PAGE);
         }
+        */
     }
 }
 QString BB_PositionsPage::getTimePoint(const QJsonObject &j_el, bool &days_over) const
@@ -218,6 +255,8 @@ void BB_PositionsPage::fillOrdersTable(const QJsonArray &j_arr)
         }
 
         QString s_price = QString("%1 / %2").arg(j_el.value("price").toString()).arg(j_el.value("avgPrice").toString());
+        QString order_id = j_el.value("orderId").toString().trimmed();
+
 
         QStringList row_data;
         bool days_over = false;
@@ -228,6 +267,10 @@ void BB_PositionsPage::fillOrdersTable(const QJsonArray &j_arr)
         LTable::addTableRow(t, row_data);
 
         if (days_over) t->item(i, DATE_COL)->setTextColor("#880000");
+        t->item(i, 0)->setData(Qt::UserRole, order_id);
+
+        qDebug()<<QString("%1  order_id[%2]").arg(t->item(i, TICKER_COL)->text()).arg(order_id);
+
     }
 
     m_orderTable->resizeByContents();
@@ -289,6 +332,122 @@ void BB_PositionsPage::checkAdjacent(int req_type)
         if (!has_ticker) LTable::setTableRowColor(m_orderTable->table(), i, Qt::lightGray);
     }
 }
+void BB_PositionsPage::initPopupMenu()
+{
+    QString path = APIConfig::commonIconsPath(); // icons path
+
+    //prepare menu actions data for assets table
+    QList< QPair<QString, QString> > act_list;
+    QPair<QString, QString> pair1("Modify", QString("%1/ball_green.svg").arg(path));
+    QPair<QString, QString> pair2("Cancel", QString("%1/ball_red.svg").arg(path));
+    act_list.append(pair1);
+    act_list.append(pair2);
+
+    //init popup menu actions
+    m_orderTable->popupMenuActivate(act_list);
+
+    //connect OWN slots to popup actions
+    int i_menu = 0;
+    m_orderTable->connectSlotToPopupAction(i_menu, this, SLOT(slotOrderModify())); i_menu++;
+    m_orderTable->connectSlotToPopupAction(i_menu, this, SLOT(slotOrderCancel())); i_menu++;
+
+}
+void BB_PositionsPage::slotOrderModify()
+{
+    qDebug("BB_PositionsPage::slotOrderModify()");
+    QTableWidget *t = m_orderTable->table();
+    QList<int> sel_rows = LTable::selectedRows(t);
+    if (sel_rows.isEmpty() || sel_rows.count() > 1)
+    {
+        emit signalError("can't modify, selection record is invalid");
+        return;
+    }
+    int row = sel_rows.first();
+
+    TradeOperationData data(totModify);
+    data.ticker = t->item(row, TICKER_COL)->text().trimmed();
+    data.lot_size = t->item(row, LOT_COL)->text().toFloat();
+    data.asset_price = t->item(row, LIMIT_PRICE_COL)->text().toFloat();
+    data.type = t->item(row, TRADE_TYPE_COL)->text().trimmed();
+
+
+    APILinearModifyDialog d(data, this);
+    d.exec();
+    if (d.isApply())
+    {
+        qDebug()<<QString("d.isApply(MODIFY):  new limit price %1").arg(data.asset_price);
+        data.custom_id = t->item(row, 0)->data(Qt::UserRole).toString().trimmed();
+
+        sendTradeReq(data);
+    }
+    else
+    {
+        qDebug("canceled operation [MODIFY]");
+        emit signalError("Operation canceled! [MODIFY]");
+    }
+}
+void BB_PositionsPage::slotOrderCancel()
+{
+    qDebug("BB_PositionsPage::slotOrderCancel()");
+    QTableWidget *t = m_orderTable->table();
+    QList<int> sel_rows = LTable::selectedRows(t);
+    if (sel_rows.isEmpty() || sel_rows.count() > 1)
+    {
+        emit signalError("can't cancel, selection record is invalid");
+        return;
+    }
+    int row = sel_rows.first();
+
+    TradeOperationData data(totCancel);
+    data.ticker = t->item(row, TICKER_COL)->text().trimmed();
+    data.lot_size = t->item(row, LOT_COL)->text().toFloat();
+    data.asset_price = t->item(row, LIMIT_PRICE_COL)->text().toFloat();
+    data.type = t->item(row, TRADE_TYPE_COL)->text().trimmed();
+
+    qDebug()<<data.toStr();
+    APILinearCancelDialog d(data, this);
+    d.exec();
+    if (d.isApply())
+    {
+        qDebug("d.isApply(CANCEL)");
+        data.custom_id = t->item(row, 0)->data(Qt::UserRole).toString().trimmed();
+        sendTradeReq(data);
+    }
+    else
+    {
+        qDebug("canceled operation [CANCEL]");
+        emit signalError("Operation canceled! [CANCEL]");
+    }
+}
+void BB_PositionsPage::sendTradeReq(const TradeOperationData &data)
+{
+    emit signalMsg("Try send request on trade command ...........");
+    qDebug()<<QString("Try send request CANCEL order_id[%1] ..............").arg(data.custom_id);
+
+
+    // reinit req params
+    //m_reqData->params.insert("settleCoin", "USDT");
+    m_reqData->metod = hrmPost;
+    m_reqData->uri = API_ORDER_CANCEL_URI;
+    if (data.order_type == totModify) m_reqData->uri = API_ORDER_MODIFY_URI;
+    m_reqData->req_type = rtOrders;
+
+
+    m_reqData->params.clear();
+    m_reqData->params.insert("category", "linear");
+    m_reqData->params.insert("symbol", data.ticker);
+    m_reqData->params.insert("orderId", data.custom_id);
+    if (data.order_type == totModify)
+        m_reqData->params.insert("price", QString::number(data.asset_price, 'f', 2));
+
+    emit signalMsg(m_reqData->toStr());
+    m_reqData->outParams();
+    sendRequest();
+}
+
+
+
+
 
 //BB_SpotPositionsPage
 BB_SpotPositionsPage::BB_SpotPositionsPage(QWidget *parent)
@@ -299,6 +458,8 @@ BB_SpotPositionsPage::BB_SpotPositionsPage(QWidget *parent)
 
     m_userSign = rtSpotAssets;
     m_reqData->params.clear();
+
+    m_orderTable->popupMenuDestroy();
 }
 void BB_SpotPositionsPage::reinitWidgets()
 {
@@ -401,8 +562,6 @@ BB_OptionPositionsPage::BB_OptionPositionsPage(QWidget *parent)
     m_userSign = rtOptionPositions;
     reinitReqData();
 
-    // init popup
-    initPopupMenu();
 
 }
 void BB_OptionPositionsPage::reinitWidgets()
@@ -481,20 +640,21 @@ void BB_OptionPositionsPage::fillPosTable(const QJsonArray &j_arr)
         if (j_el.isEmpty()) {qWarning()<<QString("BB_OptionPositionsPage::fillTable WARNING j_el is empty (index=%1)").arg(i); break;}
 
         //    list << "Trigger time" << "Ticker" << "Lot" << "Action" << "Open price" << "Market price" << "Result";
+        QString act = j_el.value("side").toString().trimmed().toUpper();
 
         float lot = j_el.value("size").toString().toFloat();
         float open_price = j_el.value("avgPrice").toString().toFloat();
         float cur_price = j_el.value("markPrice").toString().toFloat();
         float result = (open_price-cur_price)*lot;
+        if (act == "BUY") result *= (-1);
         float theta = j_el.value("theta").toString().toFloat();
         float vega = j_el.value("vega").toString().toFloat();
-
 
         QStringList row_data;
         double ts = j_el.value("openTime").toDouble();
         row_data << APIConfig::fromTimeStamp(qint64(ts), QString("dd.MM.yyyy hh:mm"));
         row_data << j_el.value("symbol").toString();
-        row_data << j_el.value("side").toString().trimmed().toUpper();
+        row_data << act;
         row_data << QString::number(lot, 'f', 2);
         row_data << QString::number(open_price, 'f', 2);
         row_data << QString::number(cur_price, 'f', 2);
@@ -529,40 +689,24 @@ void BB_OptionPositionsPage::fillOrdersTable(const QJsonArray &j_arr)
         row_data << j_el.value("price").toString() << j_el.value("orderStatus").toString();
         row_data << j_el.value("orderLinkId").toString() << j_el.value("cumExecQty").toString();
 
+        QString id = j_el.value("orderId").toString().toUpper().trimmed();
+
         LTable::addTableRow(t, row_data);
+        t->item(i, 0)->setData(Qt::UserRole, id);
     }
 
     m_orderTable->resizeByContents();
     m_orderTable->searchExec();
 }
-void BB_OptionPositionsPage::initPopupMenu()
+
+void BB_OptionPositionsPage::slotOrderModify()
 {
-    QString path = APIConfig::commonIconsPath(); // icons path
-
-    //prepare menu actions data for assets table
-    QList< QPair<QString, QString> > act_list;
-    QPair<QString, QString> pair1("Modify", QString("%1/ball_green.svg").arg(path));
-    QPair<QString, QString> pair2("Cancel", QString("%1/ball_red.svg").arg(path));
-    act_list.append(pair1);
-    act_list.append(pair2);
-
-    //init popup menu actions
-    m_orderTable->popupMenuActivate(act_list);
-
-    //connect OWN slots to popup actions
-    int i_menu = 0;
-    m_orderTable->connectSlotToPopupAction(i_menu, this, SLOT(slotOptionOrderModify())); i_menu++;
-    m_orderTable->connectSlotToPopupAction(i_menu, this, SLOT(slotOptionOrderCancel())); i_menu++;
+    qDebug("BB_OptionPositionsPage::slotOrderModify()");
 
 }
-void BB_OptionPositionsPage::slotOptionOrderModify()
+void BB_OptionPositionsPage::slotOrderCancel()
 {
-    qDebug("BB_OptionPositionsPage::slotOptionOrderModify()");
-
-}
-void BB_OptionPositionsPage::slotOptionOrderCancel()
-{
-    qDebug("BB_OptionPositionsPage::slotOptionOrderCancel()");
+    qDebug("BB_OptionPositionsPage::slotOrderCancel()");
 
 }
 

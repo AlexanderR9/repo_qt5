@@ -28,6 +28,8 @@
 // создать лимитный ордер
 #define  API_OPTION_CREATE_ORDER_URI QString("v5/order/create")
 
+
+
 //BB_PricesPage
 BB_PricesPage::BB_PricesPage(QWidget *parent)
     :BB_BasePage(parent, 20, rtPrices),
@@ -89,6 +91,28 @@ void BB_PricesPage::slotOrderBuy()
         emit signalError("Operation canceled! [LONG]");
     }
 }
+void BB_PricesPage::slotOrderSell()
+{
+    qDebug("BB_PricesPage::slotOrderBuy()");
+    bool ok = false;
+    TradeOperationData data(totSellLimit);
+    prepareTradeOperationData(data, ok);
+    if (!ok) return;
+
+
+    APILinearTradeDialog d(data, this);
+    d.exec();
+    if (d.isApply())
+    {
+        qDebug("d.isApply(SHORT)");
+        sendTradeReq(data);
+    }
+    else
+    {
+        qDebug("canceled operation [SHORT]");
+        emit signalError("Operation canceled! [SHORT]");
+    }
+}
 void BB_PricesPage::sendTradeReq(const TradeOperationData &data)
 {
     emit signalMsg("Try send request on trade command ...........");
@@ -102,21 +126,16 @@ void BB_PricesPage::sendTradeReq(const TradeOperationData &data)
     m_reqData->params.insert("timeInForce", "GTC");
     m_reqData->params.insert("qty", QString::number(data.lot_size));
     m_reqData->params.insert("price", QString::number(data.award, 'f', 2));
-    //m_reqData->params.insert("positionIdx", QString::number(0));
     int positionIdx = (data.isBuy() ? 1 : 2);
+    if (data.ticker == "DOT") positionIdx = 0;
     m_reqData->params.insert("positionIdx", QString::number(positionIdx));
 
     //extra params
-    //m_reqData->params.insert("reduceOnly", "false");
-    //QString custom_id = QString("my_custom_id_%1").arg(data.isBuy()?"long":"short");
     if (!data.custom_id.isEmpty())
         m_reqData->params.insert("orderLinkId", data.custom_id);
 
     emit signalMsg(m_reqData->toStr());
-
     m_reqData->outParams();
-
-
     sendRequest();
 }
 void BB_PricesPage::resetReqParams(int http_m)
@@ -126,12 +145,6 @@ void BB_PricesPage::resetReqParams(int http_m)
     m_reqData->params.insert("baseCoin", "USDT");
 
     m_reqData->metod = http_m;
-}
-
-
-void BB_PricesPage::slotOrderSell()
-{
-
 }
 void BB_PricesPage::init()
 {
@@ -152,7 +165,6 @@ void BB_PricesPage::init()
     for (int j=2; j<m_monitTable->table()->columnCount(); j++)
         m_monitTable->addSortingData(j, LSearchTableWidgetBox::sdtNumeric);
     m_monitTable->sortingOn();
-
 
     h_splitter->addWidget(m_monitTable);
 }
@@ -380,22 +392,7 @@ void BB_PricesPage::prepareTradeOperationData(TradeOperationData &data, bool &ok
 
     data.ticker = t->item(sel_rows.first(), TICKER_COL)->text().trimmed();
     qDebug()<<QString("ticker [%1]").arg(data.ticker);
-
     data.asset_price = t->item(sel_rows.first(), PRICES_COL)->text().toFloat();
-
-
-    /*
-    int pos = findRecByTicker(ticker);
-    if (pos < 0) return;
-
-    data.ticker = m_container.at(pos).ticker;
-    data.strike = m_container.at(pos).strike;
-    data.type = m_container.at(pos).type;
-    data.expirate = m_container.at(pos).expiration;
-    data.award = t->item(sel_rows.first(), MARKET_COL)->text().toFloat();
-    data.asset_price = t->item(sel_rows.first(), ASSET_PRICE)->text().toFloat();
-    */
-
     ok = true;
 }
 
