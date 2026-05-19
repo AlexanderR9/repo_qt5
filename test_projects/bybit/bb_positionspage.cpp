@@ -28,6 +28,7 @@
 #define DATE_COL                    0
 #define FREEZED_SUM_COL             5
 #define LIMIT_PRICE_COL             4
+#define CUSTOM_ID_COL               6
 
 
 #define MAX_ORDERS_PAGE             50
@@ -422,7 +423,7 @@ void BB_PositionsPage::slotOrderCancel()
 void BB_PositionsPage::sendTradeReq(const TradeOperationData &data)
 {
     emit signalMsg("Try send request on trade command ...........");
-    qDebug()<<QString("Try send request CANCEL order_id[%1] ..............").arg(data.custom_id);
+    qDebug()<<QString("Try send request trade order_id[%1] ..............").arg(data.custom_id);
 
 
     // reinit req params
@@ -561,25 +562,20 @@ BB_OptionPositionsPage::BB_OptionPositionsPage(QWidget *parent)
 
     m_userSign = rtOptionPositions;
     reinitReqData();
-
-
 }
 void BB_OptionPositionsPage::reinitWidgets()
 {
     QStringList list;
-    list << "Trigger time" << "Ticker" << "Action" << "Lot" << "Open price" << "Market price" << "Theta/Vega" << "Result";
+    list << "Trigger time" << "Ticker" << "Volume" << "Action" << "Open price" << "Market price" << "Theta/Vega" << "Result";
 
     m_table->setHeaderLabels(list);
     m_table->resizeByContents();
     m_table->setTitle("Active options");
 
     list.clear();
-    list << "Date" << "Ticker" << "Lot" << "Action" << "Open price" << "Status" << "Custom ID" << "Exec qty";
+    list << "Date" << "Ticker" << "Volume" << "Action" << "Open price" << "Status" << "Custom ID" << "Exec qty";
     m_orderTable->setHeaderLabels(list);
     m_orderTable->resizeByContents();
-
-
-
 }
 void BB_OptionPositionsPage::reinitReqData()
 {
@@ -595,15 +591,27 @@ void BB_OptionPositionsPage::updateDataPage(bool forcibly)
 
     clearTables();
 
+    m_reqData->metod = hrmGet;
     m_reqData->uri = API_POS_URI;
+    m_reqData->params.clear();
     m_reqData->req_type = rtOptionPositions;
-    m_reqData->params.insert("cursor", QString::number(0));
+    //m_reqData->params.insert("cursor", QString::number(0));
+    m_reqData->params.insert("category", "option");
+
+
 
     sendRequest();
 }
 void BB_OptionPositionsPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
 {
     if (req_type != rtOptionPositions && req_type != rtOptionOrders) return;
+
+    if (m_reqData->metod == hrmPost)
+    {
+        qDebug("WAS POST REQ");
+        return;
+    }
+
 
     const QJsonValue &jv = j_obj.value("result");
     if (jv.isNull()) {emit signalError("BB_OptionPositionsPage: result QJsonValue not found"); return;}
@@ -630,8 +638,6 @@ void BB_OptionPositionsPage::slotJsonReply(int req_type, const QJsonObject &j_ob
 void BB_OptionPositionsPage::fillPosTable(const QJsonArray &j_arr)
 {
     if (j_arr.isEmpty()) {qWarning()<<QString("BB_OptionPositionsPage::fillTable WARNING j_arr is empty"); return;}
-    //const QJsonArray &j_arr_assets = j_arr.first().toObject().value("coin").toArray();
-    //if (j_arr_assets.isEmpty())  {emit signalError("BB_OptionPositionsPage: j_arr_assets QJsonArray is empty");}
 
     QTableWidget *t = m_table->table();
     for (int i=0; i<j_arr.count(); i++)
@@ -654,8 +660,7 @@ void BB_OptionPositionsPage::fillPosTable(const QJsonArray &j_arr)
         double ts = j_el.value("openTime").toDouble();
         row_data << APIConfig::fromTimeStamp(qint64(ts), QString("dd.MM.yyyy hh:mm"));
         row_data << j_el.value("symbol").toString();
-        row_data << act;
-        row_data << QString::number(lot, 'f', 2);
+        row_data << QString::number(lot, 'f', 2) << act;
         row_data << QString::number(open_price, 'f', 2);
         row_data << QString::number(cur_price, 'f', 2);
         row_data << QString("%1 / %2").arg(QString::number(theta, 'f', 3)).arg(QString::number(vega, 'f', 3));
@@ -669,12 +674,9 @@ void BB_OptionPositionsPage::fillPosTable(const QJsonArray &j_arr)
     m_table->resizeByContents();
     m_table->searchExec();
 }
-
 void BB_OptionPositionsPage::fillOrdersTable(const QJsonArray &j_arr)
 {
     if (j_arr.isEmpty()) return;
-
-//    list << "Date" << "Ticker" << "Lot" << "Action" << "Open price" << "Status" << "Custom ID" << "Exec qty";
 
     QTableWidget *t = m_orderTable->table();
     for (int i=0; i<j_arr.count(); i++)
@@ -689,27 +691,52 @@ void BB_OptionPositionsPage::fillOrdersTable(const QJsonArray &j_arr)
         row_data << j_el.value("price").toString() << j_el.value("orderStatus").toString();
         row_data << j_el.value("orderLinkId").toString() << j_el.value("cumExecQty").toString();
 
-        QString id = j_el.value("orderId").toString().toUpper().trimmed();
+        QString order_id = j_el.value("orderId").toString().trimmed();
 
         LTable::addTableRow(t, row_data);
-        t->item(i, 0)->setData(Qt::UserRole, id);
+        t->item(i, 0)->setData(Qt::UserRole, order_id);
     }
 
     m_orderTable->resizeByContents();
     m_orderTable->searchExec();
 }
-
 void BB_OptionPositionsPage::slotOrderModify()
 {
     qDebug("BB_OptionPositionsPage::slotOrderModify()");
+    BB_PositionsPage::slotOrderModify();
 
 }
 void BB_OptionPositionsPage::slotOrderCancel()
 {
     qDebug("BB_OptionPositionsPage::slotOrderCancel()");
+    BB_PositionsPage::slotOrderCancel();
 
 }
+void BB_OptionPositionsPage::sendTradeReq(const TradeOperationData &data)
+{
+    emit signalMsg("Try send request on trade command for OPTION ...........");
+    qDebug()<<QString("Try send request trade option_order_id[%1] ..............").arg(data.custom_id);
 
+
+    // reinit req params
+    //m_reqData->params.insert("settleCoin", "USDT");
+    m_reqData->metod = hrmPost;
+    m_reqData->uri = API_ORDER_CANCEL_URI;
+    if (data.order_type == totModify) m_reqData->uri = API_ORDER_MODIFY_URI;
+    m_reqData->req_type = rtOptionOrders;
+
+
+    m_reqData->params.clear();
+    m_reqData->params.insert("category", "option");
+    m_reqData->params.insert("symbol", data.ticker);
+    m_reqData->params.insert("orderId", data.custom_id);
+    if (data.order_type == totModify)
+        m_reqData->params.insert("price", QString::number(data.asset_price, 'f', 2));
+
+    emit signalMsg(m_reqData->toStr());
+    m_reqData->outParams();
+    sendRequest();
+}
 
 
 

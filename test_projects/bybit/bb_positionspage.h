@@ -105,6 +105,8 @@ protected:
     void reinitWidgets();
     void reinitReqData();
 
+    virtual void sendTradeReq(const TradeOperationData&);
+
 
 public slots:
     virtual void slotJsonReply(int, const QJsonObject&);
