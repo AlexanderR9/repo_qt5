@@ -5,6 +5,7 @@
 #include "apiconfig.h"
 #include "bb_apistruct.h"
 #include "apitradedialog.h"
+#include "lstring.h"
 
 
 #include <QSplitter>
@@ -19,7 +20,7 @@
 #define API_SPOT_ASSET_URI          QString("v5/account/wallet-balance")
 #define API_ORDER_CANCEL_URI        QString("v5/order/cancel")
 #define API_ORDER_MODIFY_URI        QString("v5/order/amend")
-
+#define API_ORDER_CREATE_URI        QString("v5/order/create")
 
 
 #define TRADE_TYPE_COL              3
@@ -29,6 +30,7 @@
 #define FREEZED_SUM_COL             5
 #define LIMIT_PRICE_COL             4
 #define CUSTOM_ID_COL               6
+#define OPTION_MARKET_PRICE_COL     5
 
 
 #define MAX_ORDERS_PAGE             50
@@ -40,13 +42,11 @@
 BB_PositionsPage::BB_PositionsPage(QWidget *parent)
     :BB_BasePage(parent, 20, rtPositions),
     m_table(NULL),
-    m_orderTable(NULL)
+    m_orderTable(NULL),
+    m_category("linear")
 {
     setObjectName("positions_page");
     init();
-
-    //m_reqData->params.insert("category", "linear");
-    //m_reqData->params.insert("settleCoin", "USDT");
 
     // init popup
     initPopupMenu();
@@ -118,7 +118,7 @@ void BB_PositionsPage::updateDataPage(bool forcibly)
 
     m_reqData->params.clear();
     m_reqData->params.insert("cursor", QString::number(0));
-    m_reqData->params.insert("category", "linear");
+    m_reqData->params.insert("category", m_category);
     m_reqData->params.insert("settleCoin", "USDT");
 
 
@@ -146,6 +146,7 @@ void BB_PositionsPage::slotJsonReply(int req_type, const QJsonObject &j_obj)
     if (req_type == rtPositions)
     {
         fillPosTable(j_arr);
+        //return;
 
         //next request (orders: next page)
         /*
@@ -352,33 +353,52 @@ void BB_PositionsPage::initPopupMenu()
     m_orderTable->connectSlotToPopupAction(i_menu, this, SLOT(slotOrderModify())); i_menu++;
     m_orderTable->connectSlotToPopupAction(i_menu, this, SLOT(slotOrderCancel())); i_menu++;
 
+
+    ////////////////////////////////////////
+    act_list[1].first = "Close by market";
+    m_table->popupMenuActivate(act_list);
+
+    i_menu = 0;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotPositionModify())); i_menu++;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotPositionClose())); i_menu++;
+
 }
-void BB_PositionsPage::slotOrderModify()
+// colntrol orders
+void BB_PositionsPage::prepareReqOrderData(TradeOperationData &data)
 {
-    qDebug("BB_PositionsPage::slotOrderModify()");
     QTableWidget *t = m_orderTable->table();
     QList<int> sel_rows = LTable::selectedRows(t);
     if (sel_rows.isEmpty() || sel_rows.count() > 1)
     {
-        emit signalError("can't modify, selection record is invalid");
+        data.order_type = totNone;
+        emit signalError("can't modify order, selection record is invalid");
         return;
     }
-    int row = sel_rows.first();
 
-    TradeOperationData data(totModify);
+    int row = sel_rows.first();
     data.ticker = t->item(row, TICKER_COL)->text().trimmed();
     data.lot_size = t->item(row, LOT_COL)->text().toFloat();
     data.asset_price = t->item(row, LIMIT_PRICE_COL)->text().toFloat();
     data.type = t->item(row, TRADE_TYPE_COL)->text().trimmed();
+    data.custom_id = t->item(row, 0)->data(Qt::UserRole).toString().trimmed();
 
+}
+void BB_PositionsPage::slotOrderModify()
+{
+    qDebug("BB_PositionsPage::slotOrderModify()");
+    TradeOperationData data(totModify);
+    prepareReqOrderData(data);
+    if (data.invalidType()) return;
 
+    QString saved_id = data.custom_id;
+
+    // start dialog
     APILinearModifyDialog d(data, this);
     d.exec();
     if (d.isApply())
     {
         qDebug()<<QString("d.isApply(MODIFY):  new limit price %1").arg(data.asset_price);
-        data.custom_id = t->item(row, 0)->data(Qt::UserRole).toString().trimmed();
-
+        data.custom_id = saved_id;
         sendTradeReq(data);
     }
     else
@@ -390,28 +410,19 @@ void BB_PositionsPage::slotOrderModify()
 void BB_PositionsPage::slotOrderCancel()
 {
     qDebug("BB_PositionsPage::slotOrderCancel()");
-    QTableWidget *t = m_orderTable->table();
-    QList<int> sel_rows = LTable::selectedRows(t);
-    if (sel_rows.isEmpty() || sel_rows.count() > 1)
-    {
-        emit signalError("can't cancel, selection record is invalid");
-        return;
-    }
-    int row = sel_rows.first();
-
     TradeOperationData data(totCancel);
-    data.ticker = t->item(row, TICKER_COL)->text().trimmed();
-    data.lot_size = t->item(row, LOT_COL)->text().toFloat();
-    data.asset_price = t->item(row, LIMIT_PRICE_COL)->text().toFloat();
-    data.type = t->item(row, TRADE_TYPE_COL)->text().trimmed();
+    prepareReqOrderData(data);
+    if (data.invalidType()) return;
 
-    qDebug()<<data.toStr();
+    QString saved_id = data.custom_id;
+
+    // start dialog
     APILinearCancelDialog d(data, this);
     d.exec();
     if (d.isApply())
     {
         qDebug("d.isApply(CANCEL)");
-        data.custom_id = t->item(row, 0)->data(Qt::UserRole).toString().trimmed();
+        data.custom_id = saved_id;
         sendTradeReq(data);
     }
     else
@@ -425,17 +436,14 @@ void BB_PositionsPage::sendTradeReq(const TradeOperationData &data)
     emit signalMsg("Try send request on trade command ...........");
     qDebug()<<QString("Try send request trade order_id[%1] ..............").arg(data.custom_id);
 
-
     // reinit req params
-    //m_reqData->params.insert("settleCoin", "USDT");
     m_reqData->metod = hrmPost;
     m_reqData->uri = API_ORDER_CANCEL_URI;
     if (data.order_type == totModify) m_reqData->uri = API_ORDER_MODIFY_URI;
     m_reqData->req_type = rtOrders;
 
-
     m_reqData->params.clear();
-    m_reqData->params.insert("category", "linear");
+    m_reqData->params.insert("category", m_category);
     m_reqData->params.insert("symbol", data.ticker);
     m_reqData->params.insert("orderId", data.custom_id);
     if (data.order_type == totModify)
@@ -445,8 +453,110 @@ void BB_PositionsPage::sendTradeReq(const TradeOperationData &data)
     m_reqData->outParams();
     sendRequest();
 }
+// colntrol positions
+void BB_PositionsPage::prepareReqPositionData(TradeOperationData &data)
+{
+    QTableWidget *t = m_table->table();
+    QList<int> sel_rows = LTable::selectedRows(t);
+    if (sel_rows.isEmpty() || sel_rows.count() > 1)
+    {
+        data.order_type = totNone;
+        emit signalError("can't modify position, selection record is invalid");
+        return;
+    }
+
+    int row = sel_rows.first();
+    data.ticker = t->item(row, TICKER_COL)->text().trimmed();
+    data.lot_size = t->item(row, LOT_COL)->text().toFloat();
+    data.strike = t->item(row, LIMIT_PRICE_COL)->text().toFloat(); // open price
+    data.asset_price = t->item(row, t->columnCount()-2)->text().toFloat(); // current price
+    data.type = t->item(row, TRADE_TYPE_COL)->text().trimmed();
+    data.result = t->item(row, t->columnCount()-1)->text().toFloat();
+
+}
+void BB_PositionsPage::slotPositionModify()
+{
+    qDebug("BB_PositionsPage::slotPositionModify()");
+    TradeOperationData data(totPosStopPrice);
+    prepareReqPositionData(data);
+    if (data.invalidType()) return;
+
+    // start dialog
+    APIPositionControlDialog d(data, this);
+    d.exec();
+    if (d.isApply())
+    {
+        qDebug()<<QString("d.isApply(MODIFY_POS):  new limit price %1").arg(data.asset_price);
+        sendTradePosControlReq(data);
+    }
+    else
+    {
+        qDebug("canceled operation [MODIFY_POS]");
+        emit signalError("Operation canceled! [MODIFY_POS]");
+    }
+}
+void BB_PositionsPage::slotPositionClose()
+{
+    qDebug("BB_PositionsPage::slotPositionClose()");
+    TradeOperationData data(totClosePosByMarket);
+    prepareReqPositionData(data);
+    if (data.invalidType()) return;
 
 
+    // start dialog
+    APIPositionControlDialog d(data, this);
+    d.exec();
+    if (d.isApply())
+    {
+        qDebug()<<QString("d.isApply(CLOSE_POS):  current price %1").arg(data.asset_price);
+        sendTradePosControlReq(data);
+    }
+    else
+    {
+        qDebug("canceled operation [CLOSE_POS]");
+        emit signalError("Operation canceled! [CLOSE_POS]");
+    }
+}
+void BB_PositionsPage::sendTradePosControlReq(const TradeOperationData &data)
+{
+    emit signalMsg("Try send request for control position ...........");
+
+    // reinit req params
+    m_reqData->metod = hrmPost;
+    m_reqData->uri = API_ORDER_CREATE_URI;
+    m_reqData->req_type = rtPositions;
+
+    m_reqData->params.clear();
+    m_reqData->params.insert("category", m_category);
+    m_reqData->params.insert("symbol", data.ticker);
+    QString side = (data.type.toLower() == "buy" ? "Sell" : "Buy");
+    m_reqData->params.insert("side", side);
+
+    if (data.order_type == totPosStopPrice)
+    {
+        m_reqData->params.insert("orderType", "Limit");
+        m_reqData->params.insert("timeInForce", "GTC");
+        m_reqData->params.insert("price", QString::number(data.asset_price, 'f', 2));
+    }
+    else // close by market
+    {
+        m_reqData->params.insert("orderType", "Market");
+    }
+
+    m_reqData->params.insert("reduceOnly", "true");
+    m_reqData->params.insert("qty", QString::number(data.lot_size));
+
+    // define positionIdx field
+    int positionIdx = (data.isBuy() ? 1 : 2);
+    if (data.ticker.contains("DOT")) positionIdx = 0;
+    m_reqData->params.insert("positionIdx", QString::number(positionIdx));
+
+
+    //send req
+    emit signalMsg(m_reqData->toStr());
+    m_reqData->outParams();
+    sendRequest();
+}
 
 
 
@@ -461,6 +571,8 @@ BB_SpotPositionsPage::BB_SpotPositionsPage(QWidget *parent)
     m_reqData->params.clear();
 
     m_orderTable->popupMenuDestroy();
+    m_table->popupMenuDestroy();
+
 }
 void BB_SpotPositionsPage::reinitWidgets()
 {
@@ -558,6 +670,8 @@ BB_OptionPositionsPage::BB_OptionPositionsPage(QWidget *parent)
     :BB_PositionsPage(parent)
 {
     setObjectName("option_positions_page");
+    m_category = QString("option");
+
     reinitWidgets();
 
     m_userSign = rtOptionPositions;
@@ -581,7 +695,7 @@ void BB_OptionPositionsPage::reinitReqData()
 {
     m_reqData->params.clear();
     m_reqData->req_type = m_userSign;
-    m_reqData->params.insert("category", "option");
+    m_reqData->params.insert("category", m_category);
     m_reqData->params.insert("settleCoin", "USDT");
 
 }
@@ -595,10 +709,7 @@ void BB_OptionPositionsPage::updateDataPage(bool forcibly)
     m_reqData->uri = API_POS_URI;
     m_reqData->params.clear();
     m_reqData->req_type = rtOptionPositions;
-    //m_reqData->params.insert("cursor", QString::number(0));
-    m_reqData->params.insert("category", "option");
-
-
+    m_reqData->params.insert("category", m_category);
 
     sendRequest();
 }
@@ -623,6 +734,7 @@ void BB_OptionPositionsPage::slotJsonReply(int req_type, const QJsonObject &j_ob
     if (req_type == rtOptionPositions)
     {
         fillPosTable(j_arr);
+        //return;
 
 
         m_reqData->uri = API_ORDERS_URI;
@@ -719,7 +831,6 @@ void BB_OptionPositionsPage::sendTradeReq(const TradeOperationData &data)
 
 
     // reinit req params
-    //m_reqData->params.insert("settleCoin", "USDT");
     m_reqData->metod = hrmPost;
     m_reqData->uri = API_ORDER_CANCEL_URI;
     if (data.order_type == totModify) m_reqData->uri = API_ORDER_MODIFY_URI;
@@ -727,7 +838,7 @@ void BB_OptionPositionsPage::sendTradeReq(const TradeOperationData &data)
 
 
     m_reqData->params.clear();
-    m_reqData->params.insert("category", "option");
+    m_reqData->params.insert("category", m_category);
     m_reqData->params.insert("symbol", data.ticker);
     m_reqData->params.insert("orderId", data.custom_id);
     if (data.order_type == totModify)
@@ -737,6 +848,58 @@ void BB_OptionPositionsPage::sendTradeReq(const TradeOperationData &data)
     m_reqData->outParams();
     sendRequest();
 }
+void BB_OptionPositionsPage::prepareReqPositionData(TradeOperationData &data)
+{
+    BB_PositionsPage::prepareReqPositionData(data);
+    if (data.invalidType()) return;
 
+    QTableWidget *t = m_table->table();
+    int row = LTable::selectedRows(t).first();
+    data.asset_price = t->item(row, OPTION_MARKET_PRICE_COL)->text().toFloat(); // current price
+
+}
+void BB_OptionPositionsPage::sendTradePosControlReq(const TradeOperationData &data)
+{
+    emit signalMsg("Try send request for control option_position ...........");
+
+    // reinit req params
+    m_reqData->metod = hrmPost;
+    m_reqData->uri = API_ORDER_CREATE_URI;
+    m_reqData->req_type = rtOptionPositions;
+
+    m_reqData->params.clear();
+    m_reqData->params.insert("category", m_category);
+    m_reqData->params.insert("symbol", data.ticker);
+    QString side = (data.type.toLower() == "buy" ? "Sell" : "Buy");
+    m_reqData->params.insert("side", side);
+
+    if (data.order_type == totPosStopPrice)
+    {
+        m_reqData->params.insert("orderType", "Limit");
+        m_reqData->params.insert("timeInForce", "GTC");
+        m_reqData->params.insert("price", QString::number(data.asset_price, 'f', 2));
+    }
+    else // close by market
+    {
+        m_reqData->params.insert("orderType", "Market");
+    }
+
+    m_reqData->params.insert("reduceOnly", "true");
+    m_reqData->params.insert("qty", QString::number(data.lot_size));
+
+    // set field     orderLinkId
+    QString custom_id = LString::strTrimLeft(data.ticker, 4);
+    custom_id = LString::strTrimRight(custom_id, 5);
+    QString s_time = QTime::currentTime().toString("hhmmss");
+    QString kind = (data.type.toLower() == "sell" ? "buy" :  "sell");
+    custom_id = QString("%1_%2_%3").arg(custom_id.trimmed().toLower()).arg(kind).arg(s_time);
+    m_reqData->params.insert("orderLinkId", custom_id);
+
+
+    //send req
+    emit signalMsg(m_reqData->toStr());
+    m_reqData->outParams();
+    sendRequest();
+}
 
 

@@ -28,6 +28,7 @@ public:
 protected:
     LSearchTableWidgetBox     *m_table;
     LSearchTableWidgetBox     *m_orderTable;
+    QString m_category;
 
     void init();
     QStringList tableHeaders(QString) const;
@@ -37,7 +38,10 @@ protected:
     void checkAdjacent(int);
 
     void initPopupMenu(); //инициализировать элементы всплывающего меню
-    virtual void sendTradeReq(const TradeOperationData&);
+    virtual void sendTradeReq(const TradeOperationData&); // управлять выделенным ордером
+    virtual void sendTradePosControlReq(const TradeOperationData&); // управлять выделеннной позицией
+    virtual void prepareReqOrderData(TradeOperationData&); // подготовить структуру данных диалога для управления выделенным ордером
+    virtual void prepareReqPositionData(TradeOperationData&); // подготовить структуру данных диалога для управления выделеннной позицией
 
 private:
     void initTable(LSearchTableWidgetBox*);
@@ -52,6 +56,9 @@ public slots:
 protected slots:
     virtual void slotOrderModify();
     virtual void slotOrderCancel();
+    virtual void slotPositionModify();
+    virtual void slotPositionClose();
+
 
 };
 
@@ -106,6 +113,8 @@ protected:
     void reinitReqData();
 
     virtual void sendTradeReq(const TradeOperationData&);
+    virtual void prepareReqPositionData(TradeOperationData&); // подготовить структуру данных диалога для управления выделеннной позицией
+    virtual void sendTradePosControlReq(const TradeOperationData&); // управлять выделеннной позицией
 
 
 public slots:

@@ -137,6 +137,8 @@ QString APITradeDialog::captionByOrderType(int t)
         case totStopLoss: return QString("STOP_LOSS");
         case totCancel: return QString("CANCEL_ORDER");
         case totModify: return QString("MODIFY_ORDER");
+        case totClosePosByMarket: return QString("CLOSE_POSITION");
+        case totPosStopPrice: return QString("STOP_PRICE_POSITION");
         default: break;
     }
     return "UNKNOWN_ORDER_TYPE";
@@ -151,6 +153,10 @@ QString APITradeDialog::iconByOrderType(int t)
         case totModify: return QString(":/icons/images/ball_yellow.svg");
         case totTakeProfit: return QString(":/icons/images/up.svg");
         case totStopLoss: return QString(":/icons/images/down.svg");
+        case totPosStopPrice: return QString(":/icons/images/clock.svg");
+        case totClosePosByMarket: return QString(":/icons/images/process-stop.svg");
+
+
         default: break;
     }
     return "???";
@@ -376,4 +382,73 @@ void APILinearModifyDialog::slotApply()
 }
 
 
+
+
+//APIPositionControlDialog
+APIPositionControlDialog::APIPositionControlDialog(TradeOperationData &data, QWidget *parent)
+    :APITradeDialog(data, parent)
+{
+    setObjectName(QString("api_position_control_dialog_%1").arg(data.order_type));
+
+    reinitWidgeys();
+}
+void APIPositionControlDialog::reinitWidgeys()
+{
+    removeAllLineSeparators();
+
+    //removeSimpleWidget("strike");
+    removeSimpleWidget("to_strike");
+    removeSimpleWidget("award");
+    removeSimpleWidget("expirate");
+    //removeSimpleWidget("custom_id");
+    removeSimpleWidget("deviation");
+
+    const SimpleWidget *sw = 0;
+
+    if (m_data.order_type == totClosePosByMarket)
+    {
+        removeSimpleWidget("require_award");
+    }
+    else
+    {
+        sw = this->widgetByKey("require_award");
+        sw->label->setText("Limit price");
+        sw->edit->setReadOnly(false);
+        sw->edit->setText(widgetValue("price").toString());
+    }
+
+
+    sw = this->widgetByKey("lots");
+    sw->comboBox->clear();
+    sw->comboBox->addItem(QString::number(m_data.lot_size));
+
+
+    sw = this->widgetByKey("strike");
+    sw->label->setText("Open price");
+    sw->edit->setReadOnly(true);
+
+    sw = this->widgetByKey("custom_id");
+    sw->label->setText("Current result");
+    sw->edit->setReadOnly(true);
+    sw->edit->setText(QString::number(m_data.result));
+    QPalette t_palette;
+    t_palette.setColor(QPalette::Text, ((m_data.result < 0) ? Qt::darkRed : Qt::darkGreen));
+    sw->edit->setPalette(t_palette);
+
+}
+void APIPositionControlDialog::slotApply()
+{
+    if (m_data.order_type == totPosStopPrice)
+    {
+        bool ok;
+        m_data.asset_price = widgetValue("require_award").toFloat(&ok);
+        if (!ok || m_data.asset_price <= 0)
+        {
+            qWarning()<<QString("APIPositionControlDialog::slotApply() WARNING - invalid new limit price");
+            return;
+        }
+    }
+
+    LSimpleDialog::slotApply();
+}
 

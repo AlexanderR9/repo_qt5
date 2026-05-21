@@ -6,7 +6,7 @@
 
 //Orepation Type
 enum TradeOrepationType {totBuyLimit = 771, totSellLimit, totTakeProfit, totStopLoss,
-                         totCancel, totModify, totNone = 0};
+                         totCancel, totModify, totClosePosByMarket, totPosStopPrice, totNone = 0};
 
 //TradeOperationData
 struct TradeOperationData
@@ -23,10 +23,11 @@ struct TradeOperationData
     QString type; // CALL / PUT
     quint32 expirate;
     QString custom_id;
+    float result; // текущий результат по открытой позе
 
-    void reset() {lot_size = award = 0; asset_price = strike = -1;  expirate = 0;}
+    void reset() {lot_size = award = 0; asset_price = strike = -1;  expirate = 0; result = 0;}
 
-    bool invalidType() const {return (order_type < totBuyLimit || order_type > totStopLoss);}
+    bool invalidType() const {return (order_type < totBuyLimit);}
     bool invalid() const {return (invalidType() || lot_size < 0.1 || asset_price<=0 || strike <= 0 || ticker.trimmed().isEmpty());}
     QString toStr() const {return QString("TradeOperationData: order_type=%1, lots=%2, price=%3").arg(order_type).arg(lot_size).arg(award);}
 
@@ -129,6 +130,25 @@ protected slots:
 
 
 
+//////////// FOR POSITIONS CONTROL /////////////
+
+//APIPositionControlDialog
+class APIPositionControlDialog : public APITradeDialog
+{
+    Q_OBJECT
+public:
+    APIPositionControlDialog(TradeOperationData&, QWidget*);
+    virtual ~APIPositionControlDialog() {}
+
+protected:
+    virtual void reinitWidgeys();
+
+protected slots:
+    virtual void slotApply();
+
+
+
+};
 
 
 
