@@ -226,7 +226,7 @@ void MainForm::initCommonSettings()
     lCommonSettings.addParam(QString("Candle size (one interval)"), LSimpleDialog::sdtStringCombo, key);
 
     key = QString("bond_period_filter");
-    lCommonSettings.addParam(QString("Filter period for bons"), LSimpleDialog::sdtStringCombo, key);
+    lCommonSettings.addParam(QString("Filter period for bonds"), LSimpleDialog::sdtStringCombo, key);
     combo_list.clear();
     combo_list << "none" << "1 month" << "2 month" << "3 month" << "6 month" << "1 year" << "2 year" << "3 year";
     lCommonSettings.setComboList(key, combo_list);
