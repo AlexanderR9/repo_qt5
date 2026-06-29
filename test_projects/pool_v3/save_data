@@ -4,7 +4,7 @@
 TARGET_DIR="data"
 CUR_DATE=$(date +%d%m%y)
 TAR_FILE="poolv3_data_${CUR_DATE}.tar.gz"
-DELAY=1.8
+DELAY=0.8
 
 echo "Saving data folder [$TARGET_DIR] .........."
 echo "TAR_FILE: $TAR_FILE"

@@ -19,6 +19,107 @@ DefiTxLogger::DefiTxLogger(QString chain_name, QObject *parent)
     setObjectName("defi_tx_logger_obj");
 
 }
+void DefiTxLogger::mergeRecords(QString &err)
+{
+    err.clear();
+    if (!LFile::dirExists(AppCommonSettings::mergeDataPath()))
+    {
+        err = QString("merge folder[%1] not found").arg(AppCommonSettings::mergeDataPath());
+        return;
+    }
+
+    //load base tx_list file
+    QString fname = QString("%1%2%3").arg(AppCommonSettings::appDataPath()).arg(QDir::separator()).arg(AppCommonSettings::txListFile());
+    QStringList fbasedata;
+    err = LFile::readFileSL(fname, fbasedata);
+    if (!err.isEmpty()) {err = QString("Base TX file [%1] not found").arg(fname); return;}
+    QList<TxLogRecord> base_data;
+    foreach (const QString &fline, fbasedata)
+    {
+        if (fline.trimmed().isEmpty() || fline.trimmed().at(0) == QChar('#')) continue;
+        QStringList rec_data = LString::trimSplitList(fline, "/");
+        if (rec_data.count() != 5) continue;
+
+        // имя сети не проверяется
+        TxLogRecord tx(rec_data.last(), rec_data.at(3));
+        tx.tx_hash = rec_data.first().trimmed();
+        tx.setDateTime(rec_data.at(1), rec_data.at(2));
+        if (!tx.invalid()) base_data.append(tx); // запись корректна
+    }
+    emit signalMsg(QString("base records of tx_list file:  %1").arg(base_data.count()));
+
+
+    // -------- load merge_data folder --------------
+    QStringList txlist_list;
+    QStringList txstate_list;
+    QStringList txdetails_list;
+    QString merge_path = QString("%1%2").arg(AppCommonSettings::mergeDataPath()).arg(QDir::separator());
+
+    // load merge     txListFile
+    fname = QString("%1%2").arg(merge_path).arg(AppCommonSettings::txListFile());
+    if (!LFile::fileExists(fname)) {err = QString("Merging TX file [%1] not found").arg(fname); return;}
+    err = LFile::readFileSL(fname, txlist_list);
+    if (!err.isEmpty()) return;
+
+    // load merge     txStateFile
+    fname = QString("%1%2").arg(merge_path).arg(AppCommonSettings::txStateFile());
+    if (!LFile::fileExists(fname)) {err = QString("Merging TX file [%1] not found").arg(fname); return;}
+    err = LFile::readFileSL(fname, txstate_list);
+    if (!err.isEmpty()) return;
+
+    // load merge     txDetailsFile
+    fname = QString("%1%2").arg(merge_path).arg(AppCommonSettings::txDetailsFile());
+    if (!LFile::fileExists(fname)) {err = QString("Merging TX file [%1] not found").arg(fname); return;}
+    err = LFile::readFileSL(fname, txdetails_list);
+    if (!err.isEmpty()) return;
+
+    emit signalMsg("Merging files readed OK!");
+    emit signalMsg(QString("txlist_list size: %1").arg(txlist_list.count()));
+    emit signalMsg(QString("txstate_list size: %1").arg(txstate_list.count()));
+    emit signalMsg(QString("txdetails_list size: %1").arg(txdetails_list.count()));
+
+    //parse merge data
+    QList<TxLogRecord> merging_data;
+    foreach (const QString &fline, txlist_list)
+    {
+        if (fline.trimmed().isEmpty() || fline.trimmed().at(0) == QChar('#')) continue;
+        QStringList rec_data = LString::trimSplitList(fline, "/");
+        if (rec_data.count() != 5) continue;
+
+        // имя сети не проверяется
+        TxLogRecord tx(rec_data.last(), rec_data.at(3));
+        tx.tx_hash = rec_data.first().trimmed();
+        tx.setDateTime(rec_data.at(1), rec_data.at(2));
+        if (!tx.invalid()) // запись корректна
+        {
+            if (LString::listIndexOf(txstate_list, tx.tx_hash) >= 0 &&
+                    LString::listIndexOf(txdetails_list, tx.tx_hash) >= 0) merging_data.append(tx);
+        }
+    }
+    if (merging_data.isEmpty()) {err = "merging_data is empty"; return;}
+
+    // ищем записи, хеши которых отсуствуют в основном наборе файлов tx_*
+    QList<int> need_idexes;
+    for (int i=0; i<merging_data.count(); i++)
+    {
+        if (hasRecordByHash(merging_data.at(i).tx_hash, base_data)) continue;
+        qDebug()<<QString("NEED_MERGE_REC: %1 / %2").arg(merging_data.at(i).tx_hash).arg(merging_data.at(i).chain_name);
+        need_idexes.append(i);
+    }
+    emit signalMsg(QString("find %1 records for merging").arg(need_idexes.count()));
+    if (need_idexes.isEmpty()) {emit signalMsg("Base TX log-data is FULL!!"); return;} // добавлять нечего, журнал актуален
+
+    int n = merging_data.count();
+    for (int i=n-1; i>=0; i--)
+        if (!need_idexes.contains(i)) merging_data.removeAt(i); // удаляем ненужные записи
+    emit signalMsg(QString("merging_data size %1").arg(merging_data.count()));
+
+
+    //merge and rewrite base files
+    insertMergingRecords(merging_data, base_data);
+    addDetailsMergingRecords(merging_data, txstate_list, txdetails_list);
+
+}
 void DefiTxLogger::removeRecord(const QString &hash, bool &ok)
 {
     ok = false;
@@ -41,13 +142,6 @@ void DefiTxLogger::removeRecord(const QString &hash, bool &ok)
     excludeRecFromFileByHash(hash, "tx_list.txt", ok);
     if (!ok) {qWarning("result: FALED"); return;}
     else qDebug("OK!");
-
-
-//    void loadTxListFile(); //load tx_list.txt
-//    void loadTxStateFile(); //load tx_state.txt
-//    void loadTxDetailsFile(); //load tx_details.txt
-
-
 }
 void DefiTxLogger::reloadLogFiles()
 {
@@ -268,10 +362,82 @@ int DefiTxLogger::indexOf(const QString &hash) const
         if (m_logData.at(i).tx_hash == hash) return i;
     return -1;
 }
+bool DefiTxLogger::hasRecord(const QString &hash) const
+{
+    return (indexOf(hash) >= 0);
+}
+void DefiTxLogger::insertMergingRecords(const QList<TxLogRecord> &merging_data, const QList<TxLogRecord> &base_data)
+{
+    if (merging_data.isEmpty()) return;
 
+    QStringList fdata;
+    QList<int> added_indexes;
+    foreach (const TxLogRecord &base_rec, base_data)
+    {
+        if (!merging_data.isEmpty())
+        {
+            for (int i=0; i<merging_data.count(); i++)
+            {
+                if (added_indexes.contains(i)) continue;
 
+                QDateTime ts = merging_data.at(i).dt;
+                if (base_rec.dt > ts)
+                {
+                    fdata.append(merging_data.at(i).listFileLine());
+                    added_indexes.append(i);
+                }
+            }
+        }
 
+        fdata.append(base_rec.listFileLine());
+    }
 
+    for (int i=0; i<merging_data.count(); i++)
+    {
+        if (!added_indexes.contains(i))
+            fdata.append(merging_data.at(i).listFileLine());
+    }
+
+    emit signalMsg(QString("try rewite TX_list file, new records list %1").arg(fdata.count()));
+    QString fname = QString("%1%2%3").arg(AppCommonSettings::appDataPath()).arg(QDir::separator()).arg(AppCommonSettings::txListFile());
+    QString err = LFile::writeFileSL(fname, fdata);
+    if (!err.isEmpty()) emit signalError(QString("DefiTxLogger: %1").arg(err));
+
+}
+void DefiTxLogger::addDetailsMergingRecords(const QList<TxLogRecord> &merging_data, const QStringList &txstate_list, const QStringList &txdetails_list)
+{
+    QString path = QString("%1%2").arg(AppCommonSettings::appDataPath()).arg(QDir::separator());
+
+    // merge txStateFile
+    QString fname_state = QString("%1%2").arg(path).arg(AppCommonSettings::txStateFile());
+    emit signalMsg(QString("try rewite TX file: %1").arg(AppCommonSettings::txStateFile()));
+    addDetailsMergingRecordsToFile(fname_state, merging_data, txstate_list);
+
+    // merge txDetailsFile
+    QString fname_details = QString("%1%2").arg(path).arg(AppCommonSettings::txDetailsFile());
+    emit signalMsg(QString("try rewite TX file: %1").arg(AppCommonSettings::txDetailsFile()));
+    addDetailsMergingRecordsToFile(fname_details, merging_data, txdetails_list);
+}
+void DefiTxLogger::addDetailsMergingRecordsToFile(QString fname, const QList<TxLogRecord> &merging_data, const QStringList &details)
+{
+    QStringList add_data;
+    foreach (const TxLogRecord &rec, merging_data)
+    {
+        int pos = LString::listIndexOf(details, rec.tx_hash);
+        if (pos >= 0) add_data.append(details.at(pos));
+    }
+    qDebug()<<QString("fname[%1],  add_data size %2").arg(fname).arg(add_data.count());
+
+    QString err = LFile::appendFileSL(fname, add_data);
+    if (!err.isEmpty()) emit signalError(QString("DefiTxLogger: %1").arg(err));
+}
+bool DefiTxLogger::hasRecordByHash(const QString &hash, const QList<TxLogRecord> &recs_data)
+{
+    foreach (const TxLogRecord &rec, recs_data)
+        if (rec.tx_hash == hash) return true;
+
+    return false;
+}
 
 
 

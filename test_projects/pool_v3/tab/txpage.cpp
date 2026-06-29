@@ -19,6 +19,8 @@
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QTimerEvent>
+#include <QMessageBox>
+
 
 #define HASH_COL                    0
 #define TX_KIND_COL                 3
@@ -161,6 +163,8 @@ void DefiTxTabPage::initPopupMenu()
     act_list.append(pair1);
     QPair<QString, QString> pair2("Remove TX record", QString("%1/list-remove.svg").arg(AppCommonSettings::commonIconsPath()));
     act_list.append(pair2);
+    QPair<QString, QString> pair3("Merge TX records", QString("%1/crypto/dot.png").arg(AppCommonSettings::commonIconsPath()));
+    act_list.append(pair3);
 
     //init popup menu actions
     m_table->popupMenuActivate(act_list);
@@ -169,6 +173,9 @@ void DefiTxTabPage::initPopupMenu()
     int i_menu = 0;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotTxStatus())); i_menu++;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotRemoveTxRecord())); i_menu++;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotMergeTxRecords())); i_menu++;
+
+
 }
 void DefiTxTabPage::slotTxStatus()
 {
@@ -183,19 +190,55 @@ void DefiTxTabPage::slotTxStatus()
     j_params.insert(AppCommonSettings::nodejsTxHashFieldName(), hash);
     sendReadNodejsRequest(j_params);
 }
+void DefiTxTabPage::slotMergeTxRecords()
+{
+    qDebug("DefiTxTabPage::slotMergeTxRecords()");
+    int ret = QMessageBox::question(this, QString("Pool_V3"),
+                                   QString("The records will be merged with other TX files.\nDo you want to rewrite TX files?"),
+                                   QMessageBox::Yes | QMessageBox::Cancel);
+
+    if (ret != QMessageBox::Yes)
+    {
+        emit signalError("Operation canceled");
+        return;
+    }
+
+    // try merge
+    emit signalMsg(QString("try merge records by merge_data ......."));
+
+    QString err;
+    m_logger->mergeRecords(err);
+    if (!err.isEmpty()) emit signalError(QString("can't merge records: %1").arg(err));
+    else emit signalMsg("--- MERGING FINISHED ---");
+
+}
 void DefiTxTabPage::slotRemoveTxRecord()
 {
-  //  qDebug("DefiTxTabPage::slotRemoveTxRecord()");
+    qDebug("DefiTxTabPage::slotRemoveTxRecord()");
     int row = m_table->curSelectedRow();
     if (row < 0) {emit signalError("You must select row"); return;}
+
+
+    int ret = QMessageBox::question(this, QString("Pool_V3"),
+                                   QString("The record will be removed.\nDo you want to rewrite TX files?"),
+                                   QMessageBox::Yes | QMessageBox::Cancel);
+
+    if (ret != QMessageBox::Yes)
+    {
+        emit signalError("Operation canceled");
+        return;
+    }
+
 
     QString hash = m_table->table()->item(row, HASH_COL)->text().trimmed();
     emit signalMsg(QString("try remove record by tx_hash [%1] .......").arg(hash));
 
+
     bool ok;
     m_logger->removeRecord(hash, ok);
-    if (!ok) emit signalError("can't remove record");
+    if (!ok) emit signalError("can't remove record");    
     else emit signalMsg("done!");
+
 }
 void DefiTxTabPage::slotStrategyTxStatus(const QMap<QString, QString> &map)
 {

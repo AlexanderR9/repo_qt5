@@ -34,12 +34,13 @@ public:
         QCheckBox		*checkBox;
         QToolButton		*button;
 
-        QWidget   *based_widget; // виджет - основа, на котором лежит текущаяя связка виджетов
 
     	QString			 caption;
     	int 			 data_type; //тип данных, в зависимости от него виджет преобретает тот или иной вид
         QString			 key; //уникальное слово виджета для поиска
         int 			 precision; //влияет только на вещественный тип
+
+        QWidget   *based_widget; // виджет - основа, на котором лежит текущаяя связка виджетов
 
         bool invalid() const {return (!edit && !comboBox && !checkBox);}
         void destroyWidget();

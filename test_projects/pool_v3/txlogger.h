@@ -61,7 +61,11 @@ public:
     void updateRecStatus(const QString&, QString, float, quint32); // обновить статус записи по указанному хешу, т.е. запись должна уже присутствовать в m_logData
     const TxLogRecord* recByHash(const QString&) const;
     int indexOf(const QString&) const; // поиск записи в m_logData по хешу, вернет индекс в контейнере или -1
+    bool hasRecord(const QString&) const; // признак присутсвия записи с указанным хешом
+
+
     void removeRecord(const QString&, bool&); // удалить запись по указанному хешу(из файлов в том числе), во 2-й параметр запишет результат
+    void mergeRecords(QString&); // слияние записей из вспомогательного набора в папке megre_data, во 2-й параметр запишет результат
 
     virtual QString name() const {return QString("defi_tx_logger");}
 
@@ -69,6 +73,8 @@ public:
     inline bool logEmpty() const {return m_logData.isEmpty();}
     inline const TxLogRecord& recordAt(int i) const {return m_logData.at(i);}
     inline const TxLogRecord& recordLast() const {return recordAt(logSize()-1);}
+
+    static bool hasRecordByHash(const QString&, const QList<TxLogRecord>&);
 
 protected:
     QString m_chain; //название текущей сети
@@ -94,6 +100,16 @@ private:
     //если такая строка в файле не найдена, то просто добавляется новая, подразумевается что статус транзакции - завершена(OK/Fault)
     //rewriting_line - готовая новая строка, НА которую надо заменить старую с таких хешом (или просто добавить)
     void rewriteFileRecState(QString, const TxLogRecord&, const QString &rewriting_line);
+
+    //rewrite files for merging (FUNCS)
+
+    //вставить недостоющие записи в файл tx_list, причем сортируя по временной метке
+    void insertMergingRecords(const QList<TxLogRecord>&, const QList<TxLogRecord>&);
+
+    // добавить в конец инфу от недостоющих записей в файлы tx_state/tx_details
+    void addDetailsMergingRecords(const QList<TxLogRecord>&, const QStringList&, const QStringList&);
+    void addDetailsMergingRecordsToFile(QString, const QList<TxLogRecord>&, const QStringList&);
+
 
 };
 

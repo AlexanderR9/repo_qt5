@@ -34,6 +34,7 @@ class AppCommonSettings
 {
 public:
     static QString appDataPath();
+    static QString mergeDataPath();
     static double tickKwant() {return 1.0001;}
     static QString nativeTokenAddress() {return QString("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");}
     static quint8 nativeTokenDecimal() {return 18;}

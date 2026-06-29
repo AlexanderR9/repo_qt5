@@ -4,7 +4,8 @@
 #include <QDir>
 
 
-#define APP_DATA_FOLDER     QString("data")
+#define APP_DATA_FOLDER         QString("data")
+#define MERGE_DATA_FOLDER       QString("merge_data")
 
 
 QString AppCommonSettings::m_nodejsPath = QString("none");
@@ -21,6 +22,10 @@ quint8 AppCommonSettings::interfacePricePrecision(float p)
 QString AppCommonSettings::appDataPath()
 {
     return QString("%1%2%3").arg(LFile::appPath()).arg(QDir::separator()).arg(APP_DATA_FOLDER);
+}
+QString AppCommonSettings::mergeDataPath()
+{
+    return QString("%1%2%3").arg(LFile::appPath()).arg(QDir::separator()).arg(MERGE_DATA_FOLDER);
 }
 QString AppCommonSettings::tabPageTitle(int p_kind)
 {
