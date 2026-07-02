@@ -16,7 +16,7 @@ enum NodejsReadCommand {nrcBalance = 830, nrcTXCount, nrcApproved, nrcGasPrice, 
 
 //TX Orepation Type
 enum NodejsTxCommand {txWrap = 870, txUnwrap, txApprove, txTransfer, txSwap, txMint, txIncrease, txDecrease, txCollect,
-                      txTakeaway, txBurn, txInvalid = -1};
+                      txTakeaway, txBurn, txMove, txInvalid = -1};
 
 // тип итерации при применении игр стратегий
 enum StrategyStepAction {ssaCloseStep = 15, ssaNextStep, ssaFirstStep};

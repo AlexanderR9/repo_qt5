@@ -57,9 +57,12 @@ struct DefiPosition
     float lockedSum() const; // количество текущих вложенных активов в единицах стейблов
     float rewardDesiredSum() const; // количество текущих невостребованных наград в единицах целевого токена из пары
     float rewardSum() const; // количество текущих вложенных активов в единицах стейблов
+    int tickRangeSize() const {return (tick_range.second - tick_range.first);}
+    quint16 tickSpacing() const;
 
 
     bool isOutRange() const; // признак что позиция (с ликвидностью) вышла из диапазона
+    QString poolAddress() const; // адрес пула в котором открыта эта поза
 
     // функции для отображения данных в интерфейсе
     QString interfaceFee() const;

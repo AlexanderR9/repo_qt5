@@ -15,9 +15,13 @@
 #include <QComboBox>
 #include <QGridLayout>
 #include <QMessageBox>
+#include <QTimer>
+#include <QDateTime>
 
 #define ERROR_KEY       QString("error")
 #define PID_KEY         QString("pid")
+#define PROGRESS_KEY    QString("progress")
+
 
 
 //////////////////////////DIALOGS/////////////////////////////////////
@@ -63,6 +67,7 @@ QString TxDialogBase::iconByTXType(int tt)
         case txCollect: {icon_file = "percent.png"; break;}
         case txBurn: {icon_file = "process-stop.svg"; break;}
         case txTakeaway: {icon_file = "coins.png"; break;}
+        case txMove: {icon_file = "right.svg"; break;}
         default: return QString();
     }
     return QString("%1%2%3").arg(path).arg(QDir::separator()).arg(icon_file);
@@ -81,6 +86,7 @@ QString TxDialogBase::captionByTXType(int tt)
         case txDecrease: return QString("DECREASE_LIQ");
         case txCollect: return QString("COLLECT_TOKENS");
         case txBurn: return QString("BURN_POSITION");
+        case txMove: return QString("MOVE_POSITION");
         case txTakeaway: return QString("TAKE_AWAY_ASSETS");
         default: break;
     }
@@ -991,12 +997,196 @@ void TxIncreaseLiqDialog::checkIncreaseParamsValidity(QString &err)
 }
 
 
+///////////////////TxMovePositionDialog////////////////////////////
+TxMovePositionDialog::TxMovePositionDialog(TxDialogData &data, QWidget *parent)
+    :TxDialogBase(data, parent)
+{
+    setObjectName(QString("tx_move_pos_dialog"));
+    resize(700, 600);
+
+    if (m_data.invalid()) return;
+
+    init();
+    addVerticalSpacer();
+
+    this->setCaptionsWidth(160);
+    setExpandWidgets();
+
+    disconnect(buttonBox->button(QDialogButtonBox::Ok), SIGNAL(clicked()), this, SLOT(slotApply()));
+    buttonBox->button(QDialogButtonBox::Ok)->setText("Move");
+    connect(buttonBox->button(QDialogButtonBox::Ok), SIGNAL(clicked()), this, SLOT(slotMove()));
+
+
+}
+void TxMovePositionDialog::init()
+{
+    const SimpleWidget *sw = NULL;
+
+    QString key = "desc";
+    this->addSimpleWidget("Pool parameters", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key,m_data.dialog_params.value(key));
+    this->widgetByKey(key)->edit->setReadOnly(true);
+
+    key = "addr";
+    this->addSimpleWidget("Pool address", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.pool_addr);
+    sw = this->widgetByKey(key);
+    sw->edit->setReadOnly(true);
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg("#060080"));
+
+    this->addSimpleWidget("PID position", LSimpleDialog::sdtString, PID_KEY);
+    this->setWidgetValue(PID_KEY, m_data.dialog_params.value(PID_KEY));
+    sw = this->widgetByKey(PID_KEY);
+    sw->edit->setReadOnly(true);
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1;}").arg("#060080"));
+
+    key = "price_range";
+    this->addSimpleWidget("Price range", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value(key));
+    this->widgetByKey(key)->edit->setReadOnly(true);
+
+    key = "tick_range";
+    this->addSimpleWidget("Tick range", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value(key));
+    this->widgetByKey(key)->edit->setReadOnly(true);
+
+    key = "tick_range_size";
+    this->addSimpleWidget("Tick range size", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value(key));
+    this->widgetByKey(key)->edit->setReadOnly(true);
+
+    key = "assets";
+    this->addSimpleWidget("Assets amounts", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value(key));
+    this->widgetByKey(key)->edit->setReadOnly(true);
+
+    key = "reward";
+    this->addSimpleWidget("Rewards size", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value(key, "-1"));
+    this->widgetByKey(key)->edit->setReadOnly(true);
+
+    this->addLineSeparator();
+
+    qDebug("TxMovePositionDialog::init() 1");
+
+    key = "pool_tick";
+    this->addSimpleWidget("Current pool tick", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, "---");
+    this->widgetByKey(key)->edit->setReadOnly(true);
+
+    key = "next_tick_range";
+    this->addSimpleWidget("Next tick range", LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, "---");
+    this->widgetByKey(key)->edit->setReadOnly(true);
+
+
+    qDebug("TxMovePositionDialog::init() 2");
+
+    key = "range_factor";
+    this->addSimpleWidget("Range factor", LSimpleDialog::sdtDoubleCombo, key);
+    sw = this->widgetByKey(key);
+    sw->comboBox->clear();
+    for (int i=0; i<16; i++)
+        sw->comboBox->addItem(QString::number(1 + float(i)*0.2, 'f', 1));
+
+    qDebug("TxMovePositionDialog::init() 3");
+
+    this->addLineSeparator();
+
+    this->addSimpleWidget("STAGES PROGRESS", LSimpleDialog::sdtString, PROGRESS_KEY);
+    sw = this->widgetByKey(PROGRESS_KEY);
+    sw->edit->setReadOnly(true);
+    sw->edit->setStyleSheet(QString("QLineEdit {background-color: %1;}").arg("#D3D3D3"));
+
+
+    qDebug("TxMovePositionDialog::init() 4");
+
+}
+void TxMovePositionDialog::setDelayProgress()
+{
+    const SimpleWidget *sw = this->widgetByKey(PROGRESS_KEY);
+    sw->edit->setStyleSheet(QString("QLineEdit {background-color: %1;}").arg("#DAA520"));
+}
+void TxMovePositionDialog::setProgressStartStage()
+{
+    const SimpleWidget *sw = this->widgetByKey(PROGRESS_KEY);
+    sw->edit->setStyleSheet(QString("QLineEdit {background-color: %1;}").arg("#87CEEB"));
+}
+void TxMovePositionDialog::breakMoving(const QString &text)
+{
+    const SimpleWidget *sw = this->widgetByKey(PROGRESS_KEY);
+    sw->edit->setStyleSheet(QString("QLineEdit {color: %1; background-color: %2;}").arg("#8B0000").arg("#FFFAFA"));
+    sw->edit->setText(text);
+
+    buttonBox->button(QDialogButtonBox::Ok)->hide();
+    buttonBox->button(QDialogButtonBox::Cancel)->setEnabled(true);
+    buttonBox->button(QDialogButtonBox::Cancel)->setText("Exit");
+
+}
+void TxMovePositionDialog::finishMoving()
+{
+    setProgressStopStage();
+    setStageText("Finished OK!");
+
+
+    buttonBox->button(QDialogButtonBox::Ok)->hide();
+    buttonBox->button(QDialogButtonBox::Cancel)->setEnabled(true);
+    buttonBox->button(QDialogButtonBox::Cancel)->setText("Exit");
+}
+void TxMovePositionDialog::setPoolTick(int t)
+{
+    setWidgetValue("pool_tick", t);
+
+}
+void TxMovePositionDialog::setNextTickRange(int t1, int t2)
+{
+    qDebug()<<QString("TxMovePositionDialog::setNextTickRange");
+    QString s = QString("[%1 : %2]").arg(t1).arg(t2);
+    setWidgetValue("next_tick_range", s);
+}
+void TxMovePositionDialog::setProgressStopStage()
+{
+    const SimpleWidget *sw = this->widgetByKey(PROGRESS_KEY);
+    sw->edit->setStyleSheet(QString("QLineEdit {background-color: %1;}").arg("#FFFAFA"));
+}
+void TxMovePositionDialog::setStageText(QString text)
+{
+    this->setWidgetValue(PROGRESS_KEY, text);
+}
+int TxMovePositionDialog::tickRangeSize() const
+{
+    return this->widgetValue("tick_range_size").toInt();
+}
+float TxMovePositionDialog::tickRangeFactor() const
+{
+    return this->widgetValue("range_factor").toFloat();
+}
+void TxMovePositionDialog::slotApply()
+{
+    m_data.dialog_params.clear();
+    //m_data.dialog_params.insert(PID_KEY, widgetValue(PID_KEY).toString().trimmed());
+    //m_data.dialog_params.insert("liq", widgetValue("liq").toString().trimmed());
+    TxDialogBase::slotApply();
+
+}
+void TxMovePositionDialog::slotMove()
+{
+    m_apply = true;
+
+    qDebug("TxMovePositionDialog::slotMove()");
+    buttonBox->button(QDialogButtonBox::Ok)->setEnabled(false);
+    buttonBox->button(QDialogButtonBox::Cancel)->setEnabled(false);
+    //m_ts = QDateTime::currentSecsSinceEpoch();
+
+    emit signalStartMove();
+}
+
 
 
 //TxDialogData
 bool TxDialogData::invalid() const
 {
-    return (tx_kind < txWrap || tx_kind > txBurn);
+    return (tx_kind < txWrap || tx_kind > txMove);
 }
 
 

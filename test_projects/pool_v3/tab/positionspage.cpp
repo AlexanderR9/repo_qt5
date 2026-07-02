@@ -7,6 +7,7 @@
 #include "txdialog.h"
 #include "txlogrecord.h"
 #include "postxworker.h"
+#include "postxmover.h"
 
 
 
@@ -34,7 +35,8 @@
 // DefiPositionsPage
 DefiPositionsPage::DefiPositionsPage(QWidget *parent)
     :BaseTabPage_V3(parent, 20, dpkPositions),
-      m_txWorker(NULL)
+      m_txWorker(NULL),
+      m_txMover(NULL)
 {
     setObjectName("defi_poositions_tab_page");
     m_positions.clear();
@@ -46,6 +48,10 @@ DefiPositionsPage::DefiPositionsPage(QWidget *parent)
     initPopupMenu();
 
 
+}
+bool DefiPositionsPage::moveRunning() const
+{
+    return m_txMover->isRunning();
 }
 bool DefiPositionsPage::hasBalances() const
 {
@@ -120,6 +126,8 @@ void DefiPositionsPage::initPopupMenu()
     act_list.append(pair4);
     QPair<QString, QString> pair8("Increase liquidity", TxDialogBase::iconByTXType(txIncrease));
     act_list.append(pair8);
+    QPair<QString, QString> pair9("Move position", TxDialogBase::iconByTXType(txMove));
+    act_list.append(pair9);
 
 
     //init popup menu actions
@@ -136,6 +144,7 @@ void DefiPositionsPage::initPopupMenu()
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotTakeawayPosSelected())); i_menu++;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotBurnPosSelected())); i_menu++;
     m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotIncreasePosSelected())); i_menu++;
+    m_table->connectSlotToPopupAction(i_menu, this, SLOT(slotMovePosSelected())); i_menu++;
 
 }
 void DefiPositionsPage::initTable()
@@ -174,6 +183,7 @@ void DefiPositionsPage::setChain(int cid)
     m_table->resizeByContents();
     m_integratedTable->resizeByContents();
 
+    // init m_txWorker
     m_txWorker = new PosTxWorker(this, cid, m_table->table());
     connect(m_txWorker, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
     connect(m_txWorker, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
@@ -182,6 +192,17 @@ void DefiPositionsPage::setChain(int cid)
     connect(m_txWorker, SIGNAL(signalNewTx(const TxLogRecord&)), this, SIGNAL(signalNewTx(const TxLogRecord&)));
     connect(m_txWorker, SIGNAL(signalGetTokenBalance(QString, float&)), this, SIGNAL(signalGetTokenBalance(QString, float&)));
     connect(m_txWorker, SIGNAL(signalTryUpdatePoolState(const QString&)), this, SLOT(slotGetPoolState(const QString&)));
+
+
+    // init m_txMover
+    m_txMover = new PosTxMover(this, cid, m_table->table());
+    connect(m_txMover, SIGNAL(signalError(QString)), this, SIGNAL(signalError(QString)));
+    connect(m_txMover, SIGNAL(signalMsg(QString)), this, SIGNAL(signalMsg(QString)));
+    connect(m_txMover, SIGNAL(signalGetPoolState(const QString&)), this, SLOT(slotGetPoolState(const QString&)));
+    connect(m_txMover, SIGNAL(signalRewriteJsonFile(const QJsonObject&, QString)), this, SIGNAL(signalRewriteJsonFile(const QJsonObject&, QString)));
+    connect(m_txMover, SIGNAL(signalNewTx(const TxLogRecord&)), this, SIGNAL(signalNewTx(const TxLogRecord&)));
+    connect(m_txMover, SIGNAL(signalStrategyTxStatus(const QMap<QString, QString>&)), this, SIGNAL(signalStrategyTxStatus(const QMap<QString, QString>&)));
+
 
 }
 void DefiPositionsPage::slotNodejsReply(const QJsonObject &js_reply)
@@ -223,6 +244,12 @@ void DefiPositionsPage::slotNodejsReply(const QJsonObject &js_reply)
 }
 void DefiPositionsPage::getPoolStateFromPoolPage(const QJsonObject &js_reply)
 {
+    if (m_txMover->isRunning())
+    {
+        m_txMover->poolStateReceived(js_reply);
+        return;
+    }
+
   //  qDebug("DefiPositionsPage::getPoolStateFromPoolPage 1");
     if (!m_txWorker->mintDialogActivated()) return;
 
@@ -244,6 +271,7 @@ void DefiPositionsPage::updatePositionsState(const QJsonObject &js_reply)
 {
     bool ok;
     QStringList keys = js_reply.keys();
+
     qDebug("received keys:");
     foreach (const QString &v, keys)
     {
@@ -603,6 +631,14 @@ void DefiPositionsPage::slotBurnPosSelected()
 void DefiPositionsPage::slotDecreasePosSelected()
 {
     m_txWorker->tryTx(txDecrease, m_positions);
+}
+void DefiPositionsPage::slotMovePosSelected()
+{
+    QTableWidget *t = m_table->table();
+    QList<int> list = LTable::selectedRows(t);
+    if (list.count() != 1) {emit signalError("DefiPositionsPage: You must select one position"); return;}
+
+    m_txMover->tryMove(m_positions.at(list.first()));
 }
 void DefiPositionsPage::slotIncreasePosSelected()
 {

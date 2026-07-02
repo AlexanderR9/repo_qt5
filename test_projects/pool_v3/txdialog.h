@@ -207,74 +207,39 @@ protected slots:
 };
 
 
-/*
-//TxMintPositionDialog
-class TxMintPositionDialog : public TxDialogBase
+//TxMovePositionDialog
+class TxMovePositionDialog : public TxDialogBase
 {
     Q_OBJECT
 public:
-    TxMintPositionDialog(TxDialogData&, const TxDialogData&, QWidget*);
-    virtual ~TxMintPositionDialog() {}
+    TxMovePositionDialog(TxDialogData&, QWidget*);
+    virtual ~TxMovePositionDialog() {}
 
-protected:
-    QGroupBox *m_mintParamsBox;
-    //const TxDialogData &m_savedParams;
+    void setDelayProgress();
+    void setProgressStartStage();
+    void setProgressStopStage();
+    void setStageText(QString);
+    void breakMoving(const QString&); // произошла ошибка, прервать выполнения сценария
+    void finishMoving(); // сценарий выпонился успешно, завершить выполнение
+    void setPoolTick(int);
+    void setNextTickRange(int, int);
 
-    void init();
-    void initStaticFields();
-    void initMintFields();
-    void replaceToGridLayout();
-    void checkMintParamsValidity(QString&);
-    //void parseNoteText();
-    void applySavedParams(const TxDialogData&); //проверить значения из прошлой аналогичной операции из заполнить соответствующие поля
+    int tickRangeSize() const;
+    float tickRangeFactor() const;
 
-protected slots:
-    void slotApply();
-    void slotRangeTypeChanged(int);
-    void slotAmountsChanged();
-    void slotCalcAverageRangePrice();
-
-};
-
-
-//TxRemoveLiqDialog
-class TxRemoveLiqDialog : public TxDialogBase
-{
-    Q_OBJECT
-public:
-    TxRemoveLiqDialog(TxDialogData&, QWidget*);
-    virtual ~TxRemoveLiqDialog() {}
 
 protected:
     void init();
-    void transformByTxKind();
 
 protected slots:
     void slotApply();
-};
+    void slotMove();
 
+signals:
+    void signalStartMove();
 
-//TxIncreaseLiqDialog
-class TxIncreaseLiqDialog : public TxDialogBase
-{
-    Q_OBJECT
-public:
-    TxIncreaseLiqDialog(TxDialogData&, QWidget*);
-    virtual ~TxIncreaseLiqDialog() {}
-
-protected:
-    void init();
-    void transformEditValues();
-    void initAmountFields();
-    void checkIncreaseParamsValidity(QString&);
-
-protected slots:
-    void slotApply();
-    void slotAmountsChanged();
 
 };
-
-*/
 
 
 

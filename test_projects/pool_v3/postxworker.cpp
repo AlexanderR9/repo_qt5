@@ -27,15 +27,61 @@
 #define LIQ_COL              6
 
 
+// PosTxWorkerBase
+PosTxWorkerBase::PosTxWorkerBase(QObject *parent, int cid, QTableWidget *t)
+    :LSimpleObject(parent),
+      m_table(t)
+{
+    setObjectName("pos_tx_worker_base");
+    m_userSign = cid;
+
+}
+QWidget* PosTxWorkerBase::parentWidget() const
+{
+    return qobject_cast<QWidget*>(parent());
+}
+QString PosTxWorkerBase::chainName() const
+{
+    int i = defi_config.chainIndexOf(chainId());
+    if (i < 0) return "??";
+    return defi_config.chains.at(i).name;
+}
+void PosTxWorkerBase::parseTickRange(QString s_ticks, TxLogRecord &rec)
+{
+    s_ticks.remove("[");
+    s_ticks.remove("]");
+    s_ticks = s_ticks.trimmed();
+    QStringList list = LString::trimSplitList(s_ticks, QString(":"));
+    if (list.count() != 2) return;
+
+    bool ok = false;
+    int t = list.first().toInt(&ok);
+    if (ok) rec.pool.tick_range.first = t;
+    t = list.last().toInt(&ok);
+    if (ok) rec.pool.tick_range.second = t;
+}
+int PosTxWorkerBase::tableRowIndexOf(int pid) const
+{
+    if (!m_table) return -1;
+
+    QString cell_data = QString::number(pid);
+    int n_row = m_table->rowCount();
+    for (int i=0; i<n_row; i++)
+        if (m_table->item(i, 0)->text().trimmed() == cell_data) return i;
+
+    qWarning()<<QString("PosTxWorker::tableRowIndexOf WARNING not found pid %1").arg(pid);
+    return -1;
+}
+
+
+
+
 //PosTxWorker
 PosTxWorker::PosTxWorker(QObject *parent, int cid, QTableWidget *t)
-    :LSimpleObject(parent),
-    m_table(t),
+    :PosTxWorkerBase(parent, cid, t),
     m_mintDialog(NULL)
 {
     setObjectName("pos_tx_worker");
-    m_userSign = cid;
-
     m_lastTx.reset();
 }
 void PosTxWorker::tryTx(int tx_kind, const QList<DefiPosition> &pos_data)
@@ -60,16 +106,6 @@ void PosTxWorker::tryTx(int tx_kind, const QList<DefiPosition> &pos_data)
             break;
         }
     }
-}
-QWidget* PosTxWorker::parentWidget() const
-{
-    return qobject_cast<QWidget*>(parent());
-}
-QString PosTxWorker::chainName() const
-{
-    int i = defi_config.chainIndexOf(chainId());
-    if (i < 0) return "??";
-    return defi_config.chains.at(i).name;
 }
 QString PosTxWorker::extraDataLastTx(const QJsonObject &js_reply) const
 {
@@ -195,20 +231,6 @@ void PosTxWorker::fillTxMintLogRecord(TxLogRecord &rec, const QJsonObject &js_re
     rec.pool.tick_range.first = js_reply.value("tick1").toString().toInt();
     rec.pool.tick_range.second = js_reply.value("tick2").toString().toInt();
 }
-void PosTxWorker::parseTickRange(QString s_ticks, TxLogRecord &rec)
-{
-    s_ticks.remove("[");
-    s_ticks.remove("]");
-    s_ticks = s_ticks.trimmed();
-    QStringList list = LString::trimSplitList(s_ticks, QString(":"));
-    if (list.count() != 2) return;
-
-    bool ok = false;
-    int t = list.first().toInt(&ok);
-    if (ok) rec.pool.tick_range.first = t;
-    t = list.last().toInt(&ok);
-    if (ok) rec.pool.tick_range.second = t;
-}
 void PosTxWorker::fillTxLogRecord(TxLogRecord &rec, const QJsonObject &js_reply, const DefiPosition &pos)
 {
     Q_UNUSED(js_reply);
@@ -247,18 +269,6 @@ void PosTxWorker::fillTxLogRecord(TxLogRecord &rec, const QJsonObject &js_reply,
     {
         fillTxMintLogRecord(rec, js_reply);
     }
-}
-int PosTxWorker::tableRowIndexOf(int pid) const
-{
-    if (!m_table) return -1;
-
-    QString cell_data = QString::number(pid);
-    int n_row = m_table->rowCount();
-    for (int i=0; i<n_row; i++)
-        if (m_table->item(i, 0)->text().trimmed() == cell_data) return i;
-
-    qWarning()<<QString("PosTxWorker::tableRowIndexOf WARNING not found pid %1").arg(pid);
-    return -1;
 }
 
 

@@ -325,8 +325,8 @@ void CentralWidgetV3::createTabPages(int chain_id)
 
 
     // strategy
-    DefiStrategyPage *stg_page = new DefiStrategyPage(this);
-    tab->tabWidget()->addTab(stg_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(stg_page->kind()));
+    //DefiStrategyPage *stg_page = new DefiStrategyPage(this);
+    //tab->tabWidget()->addTab(stg_page, QIcon(chain_icon), AppCommonSettings::tabPageTitle(stg_page->kind()));
 
 
 }

@@ -210,6 +210,28 @@ bool DefiPosition::isOutRange() const
     if (state.invalid() || !hasLiquidity()) return false;
     return ((state.pool_tick < tick_range.first) || (state.pool_tick >= tick_range.second));
 }
+QString DefiPosition::poolAddress() const
+{
+    int pool_i = defi_config.getPoolIndexByPosition(*this);
+    if (pool_i >= 0) return defi_config.pools.at(pool_i).address;
+    //if (pool_i >= 0) t->item(i, POOL_COL)->setToolTip(defi_config.pools.at(pool_i).address);
+    //else t->item(i, POOL_COL)->setToolTip("WARNING: pool not found");
+
+    return QString("?");
+}
+quint16 DefiPosition::tickSpacing() const
+{
+    switch (fee)
+    {
+        case 100: return 1;
+        case 500: return 10;
+        case 10000: return 200;
+        default: break;
+    }
+    return 60;
+}
+
+
 
 
 ////////////////DefiPositionState//////////////////

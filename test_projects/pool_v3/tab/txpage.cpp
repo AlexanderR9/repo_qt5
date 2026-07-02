@@ -8,7 +8,7 @@
 #include "txlogger.h"
 #include "nodejsbridge.h"
 #include "txdialog.h"
-
+#include "positionspage.h"
 
 
 #include <QTableWidget>
@@ -66,6 +66,12 @@ void DefiTxTabPage::slotNewTx(const TxLogRecord &rec)
 {
     m_logger->addNewRecord(rec);
     createTableByNewRec(rec);
+
+    const DefiPositionsPage *pos_page = qobject_cast<const DefiPositionsPage*>(sender());
+    if (pos_page)
+    {
+        if (pos_page->moveRunning()) return;
+    }
 
     emit signalStartTXDelay(rec.tx_kind.trimmed().toLower());
 }

@@ -10,7 +10,7 @@
 class QJsonObject;
 class QJsonValue;
 class PosTxWorker;
-
+class PosTxMover;
 
 
 //DefiPositionsPage
@@ -29,11 +29,13 @@ public:
     inline bool hasPos() const {return (posCount() > 0);}
 
     void mintPos(); // запустить диалог для чеканки позы
+    bool moveRunning() const;
 
 
 protected:
     QList<DefiPosition> m_positions;
     PosTxWorker *m_txWorker;
+    PosTxMover  *m_txMover;
 
 
     void initTable();
@@ -76,10 +78,12 @@ protected slots:
     void slotDecreasePosSelected(); // удалить ликвидность у выделенной одной позиции (перенести активы в зону reward)
     void slotTakeawayPosSelected(); // извлечь все активы у выделенной одной позиции (на кошелек)
     void slotIncreasePosSelected(); // добавить ликвидность в существующую указанную позицию
+    void slotMovePosSelected(); // передвинуть указанную позицию на новый диапазон (сработает только если поза вышла из диапазона)
 
 signals:
     void signalGetPoolStateFromPoolPage(const QString&, QStringList&);
     void signalGetMintedBurnedTxFromTxPage(int&, int&); // получить со страницы TXPage количетсво отчеканеных и сожженных поз (только с состоянием OK)
+    void signalStrategyTxStatus(const QMap<QString, QString>&);
 
 
 };

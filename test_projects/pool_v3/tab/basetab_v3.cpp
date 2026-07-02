@@ -317,6 +317,11 @@ void DefiChainTabV3::connectPageSignals()
                     connect(w, SIGNAL(signalStrategyTx(const TxLogRecord&)), tx_page, SLOT(slotStrategyTx(const TxLogRecord&)));
                     connect(w, SIGNAL(signalStrategyTxStatus(const QMap<QString, QString>&)), tx_page, SLOT(slotStrategyTxStatus(const QMap<QString, QString>&)));
                 }
+                else if (w->kind() == dpkPositions)
+                {
+                    connect(w, SIGNAL(signalNewTx(const TxLogRecord&)), tx_page, SLOT(slotNewTx(const TxLogRecord&)));
+                    connect(w, SIGNAL(signalStrategyTxStatus(const QMap<QString, QString>&)), tx_page, SLOT(slotStrategyTxStatus(const QMap<QString, QString>&)));
+                }
                 else
                 {
                     connect(w, SIGNAL(signalNewTx(const TxLogRecord&)), tx_page, SLOT(slotNewTx(const TxLogRecord&)));
