@@ -586,6 +586,11 @@ bool BB_Option::invalid() const
     if (expiration <= 0 || strike <= 0)  return true;
     return false;
 }
+bool BB_Option::inMoney(float cur_p) const
+{
+    if (isPut()) return (cur_p < strike);
+    return (cur_p > strike);
+}
 QString BB_Option::strExpiration() const
 {
     return LTime::strDateTime(QDateTime::fromSecsSinceEpoch(expiration), "dd.MM.yyyy hh:mm");

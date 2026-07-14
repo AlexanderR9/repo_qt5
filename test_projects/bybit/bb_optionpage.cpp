@@ -256,6 +256,8 @@ void BB_OptionPage::parsePriceRecord(const QJsonObject &j_el)
     else s_strike = QString("%1 (-%2)").arg(s_strike).arg(QString::number(d, 'f', 1));
 
     float day_profit = (market_p - d)/days_to;
+    if (!m_container.at(pos).inMoney(eth_p)) day_profit = market_p/days_to;
+
 
 
     QStringList row_data;

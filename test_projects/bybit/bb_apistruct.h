@@ -272,8 +272,10 @@ struct BB_Option
 
     inline bool isCall() const {return (type.trimmed().toLower() == "call");}
     inline bool isPut() const {return (type.trimmed().toLower() == "put");}
+
     quint8 filedsCount() const {return 4;}
     bool invalid() const;
+    bool inMoney(float) const; // признак того что опцион в текущий момент в деньгах
 
 };
 

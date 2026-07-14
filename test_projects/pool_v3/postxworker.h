@@ -50,7 +50,11 @@ public:
         int pid; // для типов collect/increase/decrease это PID позиции с которой совершается действие
         bool need_reupdate; // признак что после успешной транзакции необходимо переобновить страницу
         bool mint_activated; // запущен диалог MINT
-        void reset() {tx_kind = t_row = pid = -1; need_reupdate = mint_activated =false;}
+
+        QPair<float, float> wallet_balance; // текущие доступные балансы в кошельке пары токенов пула
+
+        void resetBalances() {wallet_balance.first = wallet_balance.second = -1;}
+        void reset() {tx_kind = t_row = pid = -1; need_reupdate = mint_activated =false; resetBalances();}
         inline bool invalid() const {return (tx_kind < 0);}
     };
 
@@ -60,10 +64,13 @@ public:
     //inline int chainId() const {return userSign();}
     inline int lastTx() const {return m_lastTx.tx_kind;}
     inline int lastPosPid() const {return m_lastTx.pid;}
+    inline const QPair<float, float>& lastTxBalances() {return m_lastTx.wallet_balance;}
     inline bool needReupdatePage() const {return m_lastTx.need_reupdate;}
     inline void setReupdatePage(bool b) {m_lastTx.need_reupdate = b;}
     inline bool mintDialogActivated() const {return m_lastTx.mint_activated;}
 
+    // получить текущие доступные балансы в кошельке пары токенов пула
+    void getPoolTokenBalaces(const QString&);
 
     // подготовить параметры и отправить транзакцию указанного типа (элемент NodejsTxCommand)
     void tryTx(int, const QList<DefiPosition>&);
@@ -73,6 +80,11 @@ public:
 
     // подготовить поле note для лога последней транзакции
     QString extraDataLastTx(const QJsonObject &js_reply) const;
+
+    // функция выполняется только при TX==increase и только в режиме simulate.
+    // функция показывает сколько нужно обменять одного токена на другой в этом же пуле,
+    // чтобы максимально внести ликвидности при реальной TX.
+    QString increaseSwapInfo(const QJsonObject &js_reply) const;
 
     // for mint operation
     void poolStateReceived(const QStringList&); // после запроса на обновление состояния пула пришел ответ от nodejs на страницу pools

@@ -47,7 +47,7 @@ protected:
     void initPopupMenu(); //инициализировать элементы всплывающего меню
     int posIndexOf(int) const; // поиск позиции по ее PID, вернет индекс в контейнере или -1
     void updateIntegratedTable();
-    bool hasBalances() const;// проверка что балансы кошелька были получены
+    //bool hasBalances() const;// проверка что балансы кошелька были получены
     void getPoolStateFromPoolPage(const QJsonObject&);
 
 

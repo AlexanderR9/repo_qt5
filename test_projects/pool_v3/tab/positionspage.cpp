@@ -53,6 +53,7 @@ bool DefiPositionsPage::moveRunning() const
 {
     return m_txMover->isRunning();
 }
+/*
 bool DefiPositionsPage::hasBalances() const
 {
     QString t_name;
@@ -70,6 +71,7 @@ bool DefiPositionsPage::hasBalances() const
     qDebug()<<QString("DefiPositionsPage::hasBalances()  t_name[%1] cid[%2] amount=%3 ").arg(t_name).arg(m_txWorker->chainId()).arg(amount);
     return (amount >= 0);
 }
+*/
 void DefiPositionsPage::mintPos()
 {
     qDebug("DefiPositionsPage::mintPos()");
@@ -560,7 +562,12 @@ void DefiPositionsPage::checkTxResult(QString req, const QJsonObject &js_reply)
         {
             QString extra_data = m_txWorker->extraDataLastTx(js_reply);
             if (extra_data.contains("invalid")) emit signalError(extra_data);
-            emit signalMsg(extra_data);
+            else
+            {
+                emit signalMsg(extra_data);
+                if (m_txWorker->lastTx() == txIncrease)
+                    emit signalMsg(m_txWorker->increaseSwapInfo(js_reply));
+            }
         }
     }
     else if (js_reply.contains(AppCommonSettings::nodejsTxHashFieldName()))

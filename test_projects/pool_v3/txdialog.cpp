@@ -21,6 +21,9 @@
 #define ERROR_KEY       QString("error")
 #define PID_KEY         QString("pid")
 #define PROGRESS_KEY    QString("progress")
+#define BALANCE0_KEY    QString("balance0") //   wallet balance of token_0
+#define BALANCE1_KEY    QString("balance1") //   wallet balance of token_1
+
 
 
 
@@ -813,14 +816,14 @@ TxIncreaseLiqDialog::TxIncreaseLiqDialog(TxDialogData &data, QWidget *parent)
     :TxDialogBase(data, parent)
 {
     setObjectName(QString("tx_increase_liq_pos_dialog"));
-    resize(600, 400);
+    resize(700, 500);
 
     if (m_data.invalid()) return;
 
     init();
     addVerticalSpacer();
 
-    this->setCaptionsWidth(160);
+    this->setCaptionsWidth(210);
     setExpandWidgets();
 }
 void TxIncreaseLiqDialog::init()
@@ -850,11 +853,17 @@ void TxIncreaseLiqDialog::init()
     sw = this->widgetByKey(key);
     sw->edit->setReadOnly(true);
 
-    key = "assets";
-    this->addSimpleWidget("Assets amounts", LSimpleDialog::sdtString, key);
+    // show wallet balances
+    key = BALANCE0_KEY;
+    QString t_name = defi_config.token0NameByPoolAddr(m_data.pool_addr);
+    this->addSimpleWidget(QString("Wallet balance of %1").arg(t_name), LSimpleDialog::sdtString, key);
     this->setWidgetValue(key, m_data.dialog_params.value(key));
-    sw = this->widgetByKey(key);
-    sw->edit->setReadOnly(true);
+    this->widgetByKey(key)->edit->setReadOnly(true);
+    key = BALANCE1_KEY;
+    t_name = defi_config.token1NameByPoolAddr(m_data.pool_addr);
+    this->addSimpleWidget(QString("Wallet balance of %1").arg(t_name), LSimpleDialog::sdtString, key);
+    this->setWidgetValue(key, m_data.dialog_params.value(key));
+    this->widgetByKey(key)->edit->setReadOnly(true);
 
     key = "liq";
     this->addSimpleWidget("Uniswap liquidity", LSimpleDialog::sdtString, key);
