@@ -8,8 +8,8 @@ INCLUDEPATH += .\
             $$PWD
 
 QT -= gui
-QT += webenginewidgets websockets
-#QT += websockets network
+#QT += webenginewidgets websockets network
+QT += websockets network
 
 
 #path for libs files (include libs)
@@ -19,7 +19,7 @@ unix:!macx: LIBS += -L$$PWD/../base/build/ -llbase
 # Input
 HEADERS += $$PWD/lhtmlrequesterbase.h \
         $$PWD/lhtmlrequester.h \
-	$$PWD/lhtmlpagerequester.h \
+#	$$PWD/lhtmlpagerequester.h \
 	$$PWD/lhttpapirequester.h \
 	$$PWD/lhttp_types.h \
 	$$PWD/web_global.h \
@@ -28,7 +28,7 @@ HEADERS += $$PWD/lhtmlrequesterbase.h \
 SOURCES += $$PWD/lhtmlrequesterbase.cpp \
         $$PWD/lhtmlrequester.cpp \
 	$$PWD/lhttpapirequester.cpp \
-        $$PWD/lhtmlpagerequester.cpp \
+#        $$PWD/lhtmlpagerequester.cpp \
         $$PWD/lwebsocketserver.cpp
 
 

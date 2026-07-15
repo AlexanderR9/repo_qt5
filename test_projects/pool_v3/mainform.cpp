@@ -9,6 +9,7 @@
 #include <QDebug>
 #include <QSettings>
 #include <QSplitter>
+#include <QAction>
 
 
 // MainForm

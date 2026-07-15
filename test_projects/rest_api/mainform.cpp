@@ -25,7 +25,7 @@
 #include <QApplication>
 #include <QSplitter>
 #include <QTextEdit>
-#include <QWebEngineView>
+//#include <QWebEngineView>
 #include <QTimer>
 #include <QProgressBar>
 #include <QGroupBox>
@@ -36,6 +36,9 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonValue>
+#include <QAction>
+
+
 
 // MainForm
 MainForm::MainForm(QWidget *parent)

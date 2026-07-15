@@ -8,7 +8,7 @@ UI_DIR=ui
 
 QT -= gui
 QT *= network widgets xml
-QT += webenginewidgets
+#QT += webenginewidgets
 
 
 INCLUDEPATH += . \

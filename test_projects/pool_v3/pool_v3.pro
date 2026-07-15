@@ -8,7 +8,7 @@ UI_DIR=ui
 
 QT -= gui
 QT *= network widgets xml
-QT += webenginewidgets
+#QT += webenginewidgets
 
 
 INCLUDEPATH += . \
@@ -19,19 +19,21 @@ INCLUDEPATH += . \
             $$PWD/../../libs/base/ui_h \
             $$PWD/../../libs/web \
             $$PWD/../../libs/process \
-            $$PWD/../../libs/uniswap \
+#            $$PWD/../../libs/uniswap \
 
 #path for libs files
 DEPENDPATH += $$PWD/../../libs/base/build \
             $$PWD/../../libs/web/build \
             $$PWD/../../libs/process/build \
-            $$PWD/../../libs/uniswap/build \
+#            $$PWD/../../libs/uniswap/build \
+
 
 #include libs
 unix:!macx: LIBS += -L$$PWD/../../libs/base/build/ -llbase
 unix:!macx: LIBS += -L$$PWD/../../libs/web/build/ -llweb
 unix:!macx: LIBS += -L$$PWD/../../libs/process/build/ -llprocess
-unix:!macx: LIBS += -L$$PWD/../../libs/uniswap/build/ -lluniswap
+#unix:!macx: LIBS += -L$$PWD/../../libs/uniswap/build/ -lluniswap
+
 
 # include pri
 include(tab/tab.pri)

@@ -55,13 +55,19 @@ rebuild_lib "base"
 rebuild_lib "web"
 #exit 2
 
-rebuild_lib "fx"
 rebuild_lib "io_bus"
 rebuild_lib "process"
 rebuild_lib "mq"
 rebuild_lib "tcp"
-rebuild_lib "tg"
 rebuild_lib "xmlpack"
 rebuild_lib "socat"
 
+#rebuild_lib "fx"
+#rebuild_lib "tg"
+#rebuild_lib "uniswap"
+
+
 exit 1
+
+
+

@@ -25,6 +25,7 @@
 #include <QTableWidget>
 #include <QClipboard>
 #include <QGuiApplication>
+#include <QAction>
 
 
 

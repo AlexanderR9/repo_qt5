@@ -7,7 +7,7 @@
 #include <QStringList>
 #include <QByteArray>
 #include <QJsonDocument>
-
+#include <QSslSocket>
 
 
 ////////////////LHttpApiRequester///////////////////////
@@ -45,6 +45,9 @@ void LHttpApiRequester::slotFinished(QNetworkReply *reply)
     if (reply)
     {
         emit signalMsg(QString("LHttpApiRequester::slotFinished  err_code=%1").arg(reply->error()));
+
+        qDebug() << QSslSocket::sslLibraryBuildVersionString();
+        qDebug() << QSslSocket::sslLibraryVersionString();
 
         m_lastReply.takeHeaders(reply);
         m_lastReply.takeData(reply);

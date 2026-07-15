@@ -8,7 +8,7 @@ UI_DIR=ui
 
 QT -= gui
 QT *= network widgets xml
-QT += webenginewidgets testlib
+#QT += webenginewidgets testlib
 
 INCLUDEPATH += . \
             $$PWD \
