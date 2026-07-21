@@ -51,6 +51,8 @@ rebuild_lib()
     cd ..
 }
 
+
+
 rebuild_lib "base"
 rebuild_lib "web"
 #exit 2
@@ -61,6 +63,7 @@ rebuild_lib "mq"
 rebuild_lib "tcp"
 rebuild_lib "xmlpack"
 rebuild_lib "socat"
+rebuild_lib "zip"
 
 #rebuild_lib "fx"
 #rebuild_lib "tg"

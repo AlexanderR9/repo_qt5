@@ -39,6 +39,9 @@ public:
     virtual ~LHttpServerObj() {}
 
     void setWebPath(QString wpath) {m_wwwPath = wpath.trimmed();}
+    inline QString webPath() const {return m_wwwPath;}
+
+    bool invalidWebPath() const; // признак что m_wwwPath не задан или такой папки нет
 
     // возвращает значение заголовка "Content-Type" которое необходимо поставить в отвтете на запрос браузера.
     // определяется по типу запрашиваемого ресурса(файла/страницы)
@@ -51,7 +54,6 @@ protected:
     virtual void parseHttpHeaders(const QStringList&, LHttpReqParams&); //обработать заголовки запроса и записать необходимые поля в структуру
     virtual void processHttpReq(const LHttpReqParams&); //обработать заголовки запроса и отправить страницу обратно в браузер по указанному сокету
 
-    bool invalidWebPath() const; // признак что m_wwwPath не задан или такой папки нет
 
 protected slots:
     virtual void slotServerNewConnection(); //произошло новое подключение к серверу
