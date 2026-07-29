@@ -558,16 +558,17 @@ QString PosTxWorker::increaseSwapInfo(const QJsonObject &js_reply) const
     QString t0 = defi_config.token0NameByPoolAddr(pool_addr);
     QString t1 = defi_config.token1NameByPoolAddr(pool_addr);
 
-    QString info;
+    QString info = QString("BALANCE0 = %1    BALANCE1 = %2 \n").arg(QString::number(wb0, 'f', 4)).arg(QString::number(wb1, 'f', 4));
     float per_step = 0.1/100; // 0.1%, шаг увеличиния/уменьшения одного из токенов
     if (amount0 > amount1) // база token0, amount1 - расчетная величина
     {
         float rel = amount1/amount0; // отношение количества друг к другу необходимое для позы
-        info = QString("amount1=%1, rel_factor=%2").arg(QString::number(amount1, 'f', AppCommonSettings::interfacePricePrecision(amount1))).arg(QString::number(rel, 'f', 4));
+        info.append(QString("amount1=%1, rel_factor=%2").arg(QString::number(amount1, 'f', AppCommonSettings::interfacePricePrecision(amount1))).arg(QString::number(rel, 'f', 4)));
         float fb_rel = wb1/wb0; // текущее отношение балансов, нужно привести к rel
 
         if (fb_rel < rel) // нужно часть из токена_0 перелить в токен_1
         {
+            qDebug("VARIANT_1");
             float a = wb0*per_step; // такими частять откусовать
             float d = 0; // сколько в итоге нужно перелить
             while (2 > 1)
@@ -583,6 +584,7 @@ QString PosTxWorker::increaseSwapInfo(const QJsonObject &js_reply) const
         }
         else // нужно часть из токена_1 перелить в токен_0
         {
+            qDebug("VARIANT_2");
             float a = wb1*per_step; // такими частять откусовать
             float d = 0; // сколько в итоге нужно перелить
             while (2 > 1)
@@ -600,19 +602,20 @@ QString PosTxWorker::increaseSwapInfo(const QJsonObject &js_reply) const
     else // база token1
     {
         float rel = amount0/amount1; // отношение количества друг к другу необходимое для позы
-        info = QString("amount0=%1, rel_factor=%2").arg(QString::number(amount0, 'f', AppCommonSettings::interfacePricePrecision(amount0))).arg(QString::number(rel, 'f', 4));
+        info.append(QString("amount0=%1, rel_factor=%2").arg(QString::number(amount0, 'f', AppCommonSettings::interfacePricePrecision(amount0))).arg(QString::number(rel, 'f', 4)));
         float fb_rel = wb0/wb1; // текущее отношение балансов, нужно привести к rel
 
 
         if (fb_rel > rel) // нужно часть из токена_0 перелить в токен_1
         {
+            qDebug("VARIANT_3");
             float a = wb0*per_step; // такими частять откусовать
             float d = 0; // сколько в итоге нужно перелить
             while (2 > 1)
             {
                 wb0 -= a;
                 wb1 += (a*pool_price);
-                if ((wb1/wb0) > rel) break;
+                if ((wb0/wb1) < rel) break;
                 else d += a;
             }
             QString sd0 = QString::number(d, 'f', AppCommonSettings::interfacePricePrecision(d));
@@ -621,21 +624,25 @@ QString PosTxWorker::increaseSwapInfo(const QJsonObject &js_reply) const
         }
         else // нужно часть из токена_1 перелить в токен_0
         {
+            qDebug("VARIANT_4");
             float a = wb1*per_step; // такими частять откусовать
             float d = 0; // сколько в итоге нужно перелить
             while (2 > 1)
             {
                 wb1 -= a;
                 wb0 += (a/pool_price);
-                if ((wb1/wb0) < rel) break;
+                if ((wb0/wb1) > rel) break;
                 else d += a;
             }
             QString sd1 = QString::number(d, 'f', AppCommonSettings::interfacePricePrecision(d));
             QString sd0 = QString::number(d/pool_price, 'f', AppCommonSettings::interfacePricePrecision(d/pool_price));
             info = QString("%1, NEED: %2(%3) => %4(%5)").arg(info).arg(sd1).arg(t1).arg(sd0).arg(t0);
         }
-
     }
+
+    info.append(QChar('\n'));
+    info.append(QString("Icrease balanses: %1 / %2 \n").arg(QString::number(wb0, 'f', 4)).arg(QString::number(wb1, 'f', 4)));
+
     return info;
 }
 

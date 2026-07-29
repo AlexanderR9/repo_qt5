@@ -34,20 +34,19 @@ rebuild_lib()
 
 
     echo "clearing ...."
-    sleep 0.5
+    sleep 0.1
     fclear
     echo -e "done! \n"
 
 
-    sleep 0.5
+    sleep 0.1
     echo "building ...."
     sleep 1
     qmake
-    sleep 0.5
-    make
-    sleep 1
+    sleep 0.1
+    make -j2
     echo  -e "//////////////////////FINISHED/////////////////////////////// \n"
-    sleep 1
+    sleep 0.5
     cd ..
 }
 
