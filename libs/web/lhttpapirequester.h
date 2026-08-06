@@ -9,6 +9,8 @@
 class QNetworkAccessManager;
 class QNetworkRequest;
 class QNetworkReply;
+class QSslError;
+
 
 //структура для хванения ответа полученного от сервера в результате выполнения REST_API запроса
 struct LHttpApiReplyData
@@ -89,7 +91,7 @@ protected:
 protected slots:
     virtual void slotFinished(QNetworkReply*); //выполняется когда пришел ответ от сервера, не важно с каким результатом
     virtual void slotAuthenticationRequired() {emit signalError(QString("LHttpApiRequester::slotAuthenticationRequired()"));} // заготовка на будущее
-    virtual void slotSSLErrors() {emit signalError(QString("LHttpApiRequester::slotSSLErrors()"));} // заготовка на будущее
+    virtual void slotSSLErrors(QNetworkReply*, const QList<QSslError>&); // {emit signalError(QString("LHttpApiRequester::slotSSLErrors()"));} // заготовка на будущее
 
 signals:
     void signalFinished(int); //эмитится когда запрос выполнен (завершен), param - обобщенный результат запроса, елемент множества HttpReplyError

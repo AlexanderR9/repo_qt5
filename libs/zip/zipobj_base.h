@@ -26,6 +26,7 @@ public:
     bool processBuzy() const; // признак что объект m_proc что-то выполняет в текущий момент
     QString processState() const;
     int objState() const {return m_state;}
+    void breakProcess();
 
     static bool isArchiveFile(const QString&); // признак того что указанные файл является архивом, т.е. имя содержит '.gz'
 

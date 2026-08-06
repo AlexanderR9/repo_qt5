@@ -8,6 +8,7 @@
 #include <QByteArray>
 #include <QJsonDocument>
 #include <QSslSocket>
+#include <QSslError>
 
 
 ////////////////LHttpApiRequester///////////////////////
@@ -31,7 +32,8 @@ void LHttpApiRequester::initNetObjects()
     m_manager = new QNetworkAccessManager(this);
     connect(m_manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(slotFinished(QNetworkReply*)));
     connect(m_manager, SIGNAL(authenticationRequired(QNetworkReply*, QAuthenticator*)), this, SLOT(slotAuthenticationRequired()));
-    connect(m_manager, SIGNAL(sslErrors(QNetworkReply*, const QList<QSslError>&)), this, SLOT(slotSSLErrors()));
+    connect(m_manager, SIGNAL(sslErrors(QNetworkReply*, const QList<QSslError>&)),
+            this, SLOT(slotSSLErrors(QNetworkReply*, const QList<QSslError>&)));
 }
 void LHttpApiRequester::reinitReq()
 {
@@ -158,6 +160,31 @@ QString LHttpApiRequester::validity() const
         return QString("Invalid API server domen - %1").arg(m_apiServer);
     return QString();
 }
+void LHttpApiRequester::slotSSLErrors(QNetworkReply *net_reply , const QList<QSslError> &ssl_errs)
+{
+    emit signalError(QString("LHttpApiRequester::slotSSLErrors(%1)").arg(ssl_errs.count()));
+    QString s;
+    if (!ssl_errs.isEmpty())
+    {
+        for (int i=0; i<ssl_errs.count(); i++)
+        {
+            s = QString("SSL_ERR: %1").arg(ssl_errs.at(i).errorString());
+            emit signalError(s);
+            s = QString("QSslCertificate: \n %1").arg(ssl_errs.at(i).certificate().toText());
+            qDebug()<<s;
+            emit signalMsg(s);
+        }
+    }
+    if (net_reply)
+    {
+        s = QString(" QNetworkReply err=%1").arg(net_reply->error());
+        emit signalError(s);
+    }
+
+
+
+}
+
 
 
 ////////////////LHttpApiReplyData///////////////////////

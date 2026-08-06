@@ -16,13 +16,15 @@ class LThreadObj : public QThread
 {
     Q_OBJECT
 public:
-    enum ThreadResult {trOk = 0, trTimeoutBreaked = 111, trInvalidParams = -2, trUnknown = -1, trCanNotStartTimer = -3};
+    enum ThreadResult {trOk = 0, trTimeoutBreaked = 111, trBreaked, trInvalidParams = -2,
+                       trUnknown = -1, trCanNotStartTimer = -3};
 
     LThreadObj(QObject *parent = NULL);
     virtual ~LThreadObj() {stopThread();}
 
     virtual void startThread(int cheking_interval = -1);
     virtual QString name() const {return QString("lthread_obj");}
+    virtual void breakThread();
 
     inline void setTimeout(quint32 t) {m_timeout = t;}
     inline void resetCounter() {m_counter = 0;}

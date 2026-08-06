@@ -38,6 +38,10 @@ void LZipObj_base::initProcessor()
     connect(m_proc, SIGNAL(signalFinished()), this, SLOT(slotProcFinished()));
 
 }
+void LZipObj_base::breakProcess()
+{
+    if (m_proc) m_proc->breakCommand();
+}
 QString LZipObj_base::processState() const
 {
     if (!m_proc) return "NULL";

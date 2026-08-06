@@ -58,6 +58,11 @@ void LThreadObj::timerEvent(QTimerEvent *e)
         stopThread();
     }
 }
+void LThreadObj::breakThread()
+{
+    m_resultCode = trBreaked;
+    stopThread();
+}
 void LThreadObj::slotThreadFinished()
 {
     qDebug("LThread::slotThreadFinished()");

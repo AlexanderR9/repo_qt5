@@ -290,8 +290,14 @@ QString LFile::dirFiles(QString dir_path, QStringList &list, QString ftype)
     {
         QString s = dir_list.at(i).trimmed();
         if (s.length() < 3) continue;
-        if (!ftype.trimmed().isEmpty() && !s.contains(QString(".%1").arg(ftype.trimmed()))) continue;
-        list.append(QString("%1%2%3").arg(dir.path()).arg(QDir::separator()).arg(s));
+
+        QString fname = QString("%1%2%3").arg(dir.path()).arg(QDir::separator()).arg(s);
+        if (!ftype.trimmed().isEmpty())
+        {
+            if (LFile::fileExtension(fname) == ftype)
+                list.append(fname);
+        }
+        else list.append(fname);
     }
 
     return err;

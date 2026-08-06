@@ -178,6 +178,7 @@ void LZipObj::startZipProcess(const QString &fname)
     qDebug()<<QString("%1 ..... processor started").arg(LTime::strCurrentTime());
     QStringList args;
     m_proc->setProcessDir(m_workingFolder);
+    qDebug()<<QString("m_workingFolder=%1  fname=%2").arg(m_workingFolder).arg(fname);
 
     switch (m_zipType)
     {
@@ -203,7 +204,10 @@ void LZipObj::startZipProcess(const QString &fname)
 
     if (!args.isEmpty())
     {
+        m_proc->setArgs(args);
         m_state = zosProcessZipping;
+
+        qDebug()<<QString("CMD: [%1]").arg(m_proc->fullCommand());
         m_proc->startCommand();
     }
 }
