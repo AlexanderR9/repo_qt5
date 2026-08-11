@@ -283,7 +283,7 @@ void DefiStatPosPage::checkTx(const TxLogRecord *tx_rec)
 void DefiStatPosPage::initTable()
 {
     m_table = new JSPosTableWidgetBox(this);
-    m_table->setTitle("Wallet positions list");
+    m_table->setTitle("Positions statistic");
     m_table->vHeaderHide();
     (qobject_cast<JSPosTableWidgetBox*>(m_table))->setFilterCol(3);
 
@@ -602,14 +602,31 @@ void JSPosTableWidgetBox::slotItemDoubleClicked(QTableWidgetItem *item)
     QString f_text(item->text());
     //qDebug()<<QString("NEED FILTER: item(%1/%2)  text(%3)").arg(item->row()).arg(item->column()).arg(item->text());
     int n_visible = 0;
+    float pool_rewards = 0;
+    QString rew_token = QString();
     for (int i=0; i<m_table->rowCount(); i++)
     {
         bool need_hide = (m_table->item(i, m_filterCol)->text() != f_text);
         if (need_hide) m_table->hideRow(i);
-        else {m_table->showRow(i); n_visible++;}
+        else
+        {
+            m_table->showRow(i);
+            n_visible++;
+            QString s_rew = m_table->item(i, REWARDS_COL)->toolTip().trimmed();
+            int pos = s_rew.indexOf(LString::spaceSymbol());
+            if (pos > 0)
+            {
+                pool_rewards += s_rew.left(pos).toFloat();
+                if (rew_token.isEmpty()) rew_token = LString::strTrimLeft(s_rew, pos+1).trimmed();
+            }
+        }
     }
-    //QString s = QString("Record number: %2/%3").arg(n_visible).arg(m_table->rowCount());
-    //m_searchLabel->setText(s);
+    if (rew_token.isEmpty()) rew_token = "?";
+    QString s = QString("records %2/%3").arg(n_visible).arg(m_table->rowCount());
+    QString s_rew = QString("got rewards %1 %2").arg(QString::number(pool_rewards, 'f', 1)).arg(rew_token);
+    setTitle(QString("Positions statistic (%1; %2)").arg(s).arg(s_rew));
+
+
 }
 void JSPosTableWidgetBox::slotDoubleClickEmptyArea()
 {
@@ -620,6 +637,9 @@ void JSPosTableWidgetBox::slotDoubleClickEmptyArea()
     //this->searchExec();
 
     m_table->resizeColumnsToContents();
+
+    setTitle(QString("Positions statistic (records %1)").arg(m_table->rowCount()));
+
 }
 
 
