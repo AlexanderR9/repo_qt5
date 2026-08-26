@@ -87,14 +87,14 @@ add_lib()
 }
 
 add_lib "base"
-#rebuild_lib "web"
 add_lib "io_bus"
 add_lib "process"
 add_lib "mq"
 add_lib "tcp"
-#rebuild_lib "tg"
 add_lib "xmlpack"
 add_lib "socat"
+add_lib "web"
+add_lib "zip"
 sleep 1
 
 #exit 1;
