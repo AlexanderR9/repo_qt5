@@ -72,8 +72,11 @@ QString BB_APIReqParams::strReqTypeByType(int t, QString s_extra)
         case rtSpotAssets:  {s = "GET_SPOT_ASSETS"; break;}
         case rtSportOrders: {s = "GET_SPOT_ORDERS"; break;}
         case rtOrders:      {s = "GET_ORDERS"; break;}
+
         case rtHistory:     {s = "GET_HISTORY"; break;}
         case rtSpotHistory: {s = "GET_SPOT_HISTORY"; break;}
+        case rtOptionHistory: {s = "GET_OPTION_HISTORY"; break;}
+
         case rtBag:         {s = "GET_WALLET"; break;}
         case rtFundRate:    {s = "GET_FUND_RATES"; break;}
         case rtOptions:     {s = "GET_OPTIONS_DATA"; break;}
@@ -466,6 +469,124 @@ QString BB_HistorySpot::resultDeal() const
     if (r < 0.3) p = 5;
     else if (r < 2) p = 4;
     return QString::number(r, 'f', p);
+}
+
+
+
+// BB_HistoryOption
+BB_HistoryOption::BB_HistoryOption(const BB_HistoryOption &other)
+{
+    open_time = other.open_time;
+    closed_time = other.closed_time;
+    open_price = other.open_price;
+    closed_price = other.closed_price;
+    fee = other.fee;
+    total_result = other.total_result;
+
+    // base
+    uid = other.uid;
+    ticker = other.ticker;
+    action = other.action;
+    lot_size = other.lot_size;
+    type = other.type;
+    status = other.status;
+}
+void BB_HistoryOption::reset()
+{
+    BB_HistoryRecordBase::reset();
+
+    open_time = closed_time = -1;
+    open_price = closed_price = -1;
+    fee = total_result = 0;
+}
+QStringList BB_HistoryOption::tableHeaders()
+{
+    QStringList list;
+    list << "Symbol" << "Open time" << "Close time" << "Lasting, d" << "Action";
+    list << "Open price" << "Close price" << "Lot size" << "Fee" << "Result";
+    return list;
+}
+QString BB_HistoryOption::toFileLine() const
+{
+    QString s(QString::number(total_result, 'f', 2));
+    s = QString("%1 / %2 / %3 / %4").arg(s).arg(uid).arg(ticker).arg(action);
+    s = QString("%1 / %2").arg(s).arg(QString::number(lot_size, 'f', PRICE_PRECISION));
+    s = QString("%1 / %2 / %3").arg(s).arg(open_time).arg(closed_time);
+    s = QString("%1 / %2").arg(s).arg(QString::number(open_price, 'f', 2));
+    s = QString("%1 / %2").arg(s).arg(QString::number(closed_price, 'f', 2));
+    s = QString("%1 / %2").arg(s).arg(QString::number(fee, 'f', 4));
+    s = QString("%1 / %2").arg(s).arg(status);
+
+    return s;
+    //return QString("%1 \n").arg(s);
+}
+void BB_HistoryOption::parseSplitedFileLine(const QStringList &list)
+{
+    total_result = list.first().toFloat();
+
+    int i = 5;
+    open_time = list.at(i).trimmed().toLong(); i++;
+    closed_time = list.at(i).trimmed().toLong(); i++;
+    open_price = list.at(i).trimmed().toFloat(); i++;
+    closed_price = list.at(i).trimmed().toFloat(); i++;
+    fee = list.at(i).trimmed().toFloat(); i++;
+}
+QStringList BB_HistoryOption::toTableRowData() const
+{
+    QStringList list;
+    list.append(ticker);
+    list.append(strOpenTime());
+    list.append(strCloseTime());
+    list.append(QString::number(lastingDays(), 'f', 2));
+    list.append(action);
+    list.append(QString::number(open_price, 'f', 2));
+    list.append(QString::number(closed_price, 'f', 2));
+    list.append(QString::number(lot_size, 'f', 2));
+    list.append(QString::number(fee, 'f', 3));
+    list.append(QString::number(total_result, 'f', 2));
+    return list;
+}
+QString BB_HistoryOption::strOpenTime() const
+{
+    if (open_time <= 0) return  "invalid";
+
+    QDateTime dt = QDateTime::fromMSecsSinceEpoch(open_time);
+    return dt.toString(BB_APIReqParams::userDateTimeMask());
+}
+QString BB_HistoryOption::strCloseTime() const
+{
+    if (closed_time <= 0) return  "invalid";
+
+    QDateTime dt = QDateTime::fromMSecsSinceEpoch(closed_time);
+    return dt.toString(BB_APIReqParams::userDateTimeMask());
+}
+float BB_HistoryOption::lastingDays() const
+{
+    if (closed_time <= 0 || closed_time <= open_time) return  -1;
+
+    QDateTime dt1 = QDateTime::fromMSecsSinceEpoch(open_time);
+    QDateTime dt2 = QDateTime::fromMSecsSinceEpoch(closed_time);
+    double d = double(dt1.secsTo(dt2))/double(3600);
+    return d/24;
+}
+void BB_HistoryOption::fromJson(const QJsonObject &j_obj)
+{
+    if (j_obj.isEmpty()) return;
+
+    open_price = j_obj.value("avgEntryPrice").toString().toFloat();
+    closed_price = j_obj.value("avgExitPrice").toString().toFloat();
+    open_time = qint64(j_obj.value("openTime").toDouble());
+    closed_time = qint64(j_obj.value("closeTime").toDouble());
+    lot_size = j_obj.value("qty").toString().toFloat();
+    action = j_obj.value("side").toString().toUpper().trimmed();
+    ticker = j_obj.value("symbol").toString().trimmed();
+    fee = j_obj.value("totalCloseFee").toString().toFloat() + j_obj.value("totalOpenFee").toString().toFloat();
+    if (fee > 0) fee *= (-1);
+    total_result = j_obj.value("totalPnl").toString().toFloat();
+
+    // made unique ID
+    uid = QString("%1-%2").arg(open_time).arg(closed_time);
+    status = "Closed";
 }
 
 // BB_PricesContainer

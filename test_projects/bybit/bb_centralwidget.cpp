@@ -8,6 +8,7 @@
 #include "bb_positionspage.h"
 #include "bb_historypage.h"
 #include "bb_spothistorypage.h"
+#include "bb_optionhistorypage.h"
 #include "bb_bagstatepage.h"
 #include "bb_pricespage.h"
 #include "bb_shadowexplorer.h"
@@ -87,6 +88,9 @@ void BB_CentralWidget::createPages()
 
     BB_SpotHistoryPage *sh_page = new BB_SpotHistoryPage(this);
     w_stack->addWidget(sh_page);
+
+    BB_OptionHistoryPage *oph_page = new BB_OptionHistoryPage(this);
+    w_stack->addWidget(oph_page);
 
     BB_BagStatePage *bs_page = new BB_BagStatePage(this);
     w_stack->addWidget(bs_page);

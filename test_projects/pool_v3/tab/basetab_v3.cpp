@@ -20,7 +20,7 @@
 
 
 #define STATE_TIMER_INTERVAL        1300 //ms
-#define UPDATING_TIMEOUT            25 //sec, таймаут выполнения одного сценария запросов
+#define UPDATING_TIMEOUT            45 //sec, таймаут выполнения одного сценария запросов
 
 
 

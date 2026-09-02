@@ -8,7 +8,8 @@ class QJsonObject;
 
 //типы страниц пользовательского интерфейса
 enum BB_ReqType {rtCandles = 181, rtPositions, rtSpotAssets, rtSportOrders, rtOrders, rtHistory, rtSpotHistory,
-                 rtBag, rtJsonView, rtFundRate, rtPrices, rtShadows, rtOptions, rtOptionPositions, rtOptionOrders};
+                 rtBag, rtJsonView, rtFundRate, rtPrices, rtShadows, rtOptions, rtOptionPositions,
+                 rtOptionOrders, rtOptionHistory};
 
 
 //необходимые данные для формирования запроса перед отправкой
@@ -178,6 +179,36 @@ struct BB_HistorySpot : public BB_HistoryRecordBase
     void fromJson(const QJsonObject&);
 
     static QStringList tableHeaders();
+};
+struct BB_HistoryOption : public BB_HistoryRecordBase
+{
+    BB_HistoryOption() {reset();}
+    BB_HistoryOption(const BB_HistoryOption&);
+
+    qint64 open_time; // msecs
+    qint64 closed_time;  // msecs
+    float open_price;
+    float closed_price;
+    float total_result; //окончательный результат после вычета всех коммисий
+    float fee; //абсолютное значение всех уплаченных комиссий этой позиции
+
+
+    inline bool isSell() const {return (action.toLower() == "sell");}
+    inline bool isBuy() const {return (action.toLower() == "buy");}
+
+    void reset();
+    quint8 filedsCount() const {return 11;}
+    QString strOpenTime() const;
+    QString strCloseTime() const;
+    float lastingDays() const; // сколько времени жила позиция от открытия до закрытия
+
+    QString toFileLine() const;
+    void parseSplitedFileLine(const QStringList&);
+    void fromJson(const QJsonObject&);
+    QStringList toTableRowData() const;
+
+    static QStringList tableHeaders();
+
 };
 
 //контейнер для хранения всех цен по всем избранным инструментам.
