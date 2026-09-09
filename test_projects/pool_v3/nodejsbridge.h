@@ -21,11 +21,15 @@ public:
     bool buzy() const;
     void breakProcessing(); // принудительный останов m_procObj, обычно вызывается по таймауту
 
+    inline void setReqTimeout(quint16 t) {m_timeout = t;}
+    inline quint16 reqTimeout() const {return m_timeout;}
+
     static QString jsonCommandValue(int); //значение поля 'req_name' в файле-параметрах  по коду команды
     static int commandCodeByTxKind(QString); //инерсное выполнение функции jsonCommandValue
 
 protected:
     LProcessObj     *m_procObj; //объект для запуска скриптов
+    quint16         m_timeout; // таймаут выполнения запроса, seconds
 
     void initProcessObj();
     void parseJsReply(const QString&, int&); // прочитать полученный очередной ответ по завршению работы скрипта

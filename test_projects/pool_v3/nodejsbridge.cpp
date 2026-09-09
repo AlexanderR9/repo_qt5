@@ -21,7 +21,8 @@
 
 //NodejsBridge
 NodejsBridge::NodejsBridge(QObject *parent, int cid)
-    :LSimpleObject(parent)
+    :LSimpleObject(parent),
+      m_timeout(30)
 {
     setObjectName("nodejs_bridge");
     m_userSign = cid;

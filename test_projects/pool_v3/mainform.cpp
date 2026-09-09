@@ -74,7 +74,6 @@ void MainForm::initWidgets()
 void MainForm::initCommonSettings()
 {
    // qDebug("MainForm::initCommonSettings()");
-
     QString key = QString("defi_config");
     lCommonSettings.addParam(QString("Defi config file"), LSimpleDialog::sdtFilePath, key);
 
@@ -89,6 +88,12 @@ void MainForm::initCommonSettings()
     lCommonSettings.setComboList(key, combo_list);
     lCommonSettings.setDefValue(key, 8);
 
+    key = QString("js_req_timeout");
+    lCommonSettings.addParam(QString("NodeJS request timeout, secs"), LSimpleDialog::sdtIntCombo, key);
+    combo_list.clear();
+    combo_list << "15" << "30" << "45" << "60" << "90" << "150" << "270" << "360";
+    lCommonSettings.setComboList(key, combo_list);
+    lCommonSettings.setDefValue(key, 1);
 
     key = QString("update_wallet");
     lCommonSettings.addParam(QString("Update wallet at startup"), LSimpleDialog::sdtBool, key);
@@ -179,6 +184,7 @@ void MainForm::load()
 
     //init central widget
     m_centralWidget->load(settings);
+    m_centralWidget->setJsReqTimeout(nodejsReqTimeout());
 
     if (updateWalletAtStart())
         actStartUpdating();
@@ -201,6 +207,9 @@ void MainForm::slotAppSettingsChanged(QStringList list)
     if (list.contains("tx_delay"))
         defi_config.delayAfterTX = txDelay();
 
+
+    if (list.contains("js_req_timeout"))
+        if (m_centralWidget) m_centralWidget->setJsReqTimeout(nodejsReqTimeout());
 
     // check need change gas price
     bool need_gp = false;
@@ -260,5 +269,9 @@ float MainForm::chainGasPrice(QString chain_name) const
 quint16 MainForm::txDelay() const
 {
     return lCommonSettings.paramValue("tx_delay").toUInt();
+}
+quint16 MainForm::nodejsReqTimeout() const
+{
+    return lCommonSettings.paramValue("js_req_timeout").toUInt();
 }
 

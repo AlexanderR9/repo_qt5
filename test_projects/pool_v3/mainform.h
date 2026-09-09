@@ -45,6 +45,7 @@ protected slots:
 private:
     QString defiConfig() const;
     QString nodejsPath() const;
+    quint16 nodejsReqTimeout() const;
     bool updateWalletAtStart() const;
     float chainGasPrice(QString) const; // текущая цена газа из общих настроек для указанной сети
     quint16 txDelay() const; // задержка после отправленной транзакции

@@ -122,6 +122,16 @@ void CentralWidgetV3::mintPos()
     DefiChainTabV3 *tab = currentTab();
     if (tab) tab->mintPos();
 }
+void CentralWidgetV3::setJsReqTimeout(quint16 t)
+{
+    if (!w_stack) return;
+
+    for (int i=0; i<w_stack->count(); i++)
+    {
+        DefiChainTabV3 *tab = qobject_cast<DefiChainTabV3*>(w_stack->widget(i));
+        if (tab) tab->setJsReqTimeout(t);
+    }
+}
 void CentralWidgetV3::setEnableControl(bool b)
 {
     w_list->listWidget()->setEnabled(b);

@@ -28,6 +28,8 @@ public:
     void startUpdating(); // запустить сценарий запросов для обновления данных на текущей странице
     void mintPos(); // запустить диалог для чеканки позы
     void setEnableControl(bool);
+    void setJsReqTimeout(quint16);
+
 
 protected:
     LListWidgetBox      *w_list;

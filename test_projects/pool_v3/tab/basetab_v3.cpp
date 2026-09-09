@@ -20,7 +20,7 @@
 
 
 #define STATE_TIMER_INTERVAL        1300 //ms
-#define UPDATING_TIMEOUT            45 //sec, таймаут выполнения одного сценария запросов
+//#define UPDATING_TIMEOUT            45 //sec, таймаут выполнения одного сценария запросов
 
 
 
@@ -252,7 +252,7 @@ void DefiChainTabV3::slotTimer()
 
 
     int t = m_timerCounter*STATE_TIMER_INTERVAL;
-    if (t > (UPDATING_TIMEOUT*1000))
+    if (t > (js_bridge->reqTimeout()*1000))
     {
         emit signalError("request processing timeout");
         stopUpdating();
@@ -277,6 +277,10 @@ void DefiChainTabV3::stopUpdating()
         emit signalError("try js_obj force stopping ...");
         js_bridge->breakProcessing();
     }
+}
+void DefiChainTabV3::setJsReqTimeout(quint16 t)
+{
+    if (js_bridge) js_bridge->setReqTimeout(t);
 }
 void DefiChainTabV3::mintPos()
 {

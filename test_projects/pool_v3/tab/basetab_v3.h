@@ -36,6 +36,7 @@ public:
     void autoCheckStatusLastTx(); // после выполнения транзакции и задержки после нее, необходимо автоматом проверить статус выполнения
     int currentPageKind() const;
     void mintPos(); // запустить диалог для чеканки позы
+    void setJsReqTimeout(quint16);
 
 protected:
     LTabWidgetBox       *m_tab;
