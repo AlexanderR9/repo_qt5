@@ -23,10 +23,11 @@ public:
 
 protected:
     void reset() {m_params.reset();}
+    void receivedUpdates(const QList<LTGUpdate>&);
 
 protected slots:
     void slotJsonReceived(QJsonObject);
-    void slotJArrReceived(QJsonArray);
+    //void slotJArrReceived(QJsonArray);
 
 };
 

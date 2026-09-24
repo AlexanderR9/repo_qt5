@@ -20,7 +20,7 @@
 #include <QApplication>
 #include <QSplitter>
 #include <QTextEdit>
-#include <QWebEngineView>
+//#include <QWebEngineView>
 #include <QProgressBar>
 #include <QGroupBox>
 #include <QStyleFactory>

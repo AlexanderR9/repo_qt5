@@ -1,5 +1,6 @@
 #include "lbot.h"
 #include "tgconfigloaderbase.h"
+#include "tgjsonworker.h"
 
 #include <QDebug>
 
@@ -18,6 +19,7 @@ void LBot::slotJsonReceived(QJsonObject reply_obj)
     jsonToDebug(reply_obj);
     return;
 }
+/*
 void LBot::slotJArrReceived(QJsonArray j_arr)
 {
     qDebug("LBot::slotJArrReceived");
@@ -32,6 +34,16 @@ void LBot::slotJArrReceived(QJsonArray j_arr)
         {
             jsonToDebug(jv.toObject());
         }
+    }
+}
+*/
+
+void LBot::receivedUpdates(const QList<LTGUpdate> &arr)
+{
+    qDebug()<<QString("LBot::receivedUpdates, n = %1").arg(arr.count());
+    foreach (const LTGUpdate &v, arr)
+    {
+        qDebug()<<v.toStr();
     }
 }
 

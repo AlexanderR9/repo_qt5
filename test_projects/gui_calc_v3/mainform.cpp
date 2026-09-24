@@ -18,6 +18,7 @@
 #include <QTreeWidget>
 #include <QColor>
 #include <QTableWidget>
+#include <QAction>
 
 
 

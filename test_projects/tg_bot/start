@@ -1,4 +1,16 @@
 #!/bin/bash
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../libs/base/build:../libs/tg/build
+
+
+L_PATH=../../libs
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$L_PATH/base/build
+#LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$L_PATH/web/build
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$L_PATH/tg/build
+
+export LD_LIBRARY_PATH
+
+
+
+#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../libs/base/build:../libs/tg/build
+
 ./tg_bot
 

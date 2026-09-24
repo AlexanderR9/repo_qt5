@@ -10,7 +10,7 @@ class LHTMLRequester;
 class QSplitter;
 class QTextEdit;
 class MyHTMLParser;
-class QWebEngineView;
+//class QWebEngineView;
 class QProgressBar;
 class QGroupBox;
 class QTimer;

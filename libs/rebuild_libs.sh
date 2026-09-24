@@ -63,9 +63,9 @@ rebuild_lib "tcp"
 rebuild_lib "xmlpack"
 rebuild_lib "socat"
 rebuild_lib "zip"
+rebuild_lib "tg"
 
 #rebuild_lib "fx"
-#rebuild_lib "tg"
 #rebuild_lib "uniswap"
 
 
