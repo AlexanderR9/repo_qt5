@@ -24,7 +24,7 @@ protected:
     virtual void loadTablesByContainers(); //by start program once
     virtual void goExchange(const QJsonObject &jresult_obj);
     virtual void loadContainers(); //load m_posList, m_orderList from files by start program
-    virtual quint8 daysSeparator() const {return 6;}
+    virtual quint8 daysSeparator() const {return 3;}
 
     void sendOrdersReq();
     void sendNextOrdersReq();

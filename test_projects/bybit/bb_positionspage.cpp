@@ -30,7 +30,9 @@
 #define FREEZED_SUM_COL             5
 #define LIMIT_PRICE_COL             4
 #define CUSTOM_ID_COL               6
+
 #define OPTION_MARKET_PRICE_COL     5
+#define OPTION_VOLUME_COL           3
 
 
 #define MAX_ORDERS_PAGE             50
@@ -781,6 +783,10 @@ void BB_OptionPositionsPage::fillPosTable(const QJsonArray &j_arr)
         LTable::addTableRow(t, row_data);
 
         if (result < 0) t->item(i, t->columnCount()-1)->setTextColor("#AA0000");
+
+        if (act == "BUY") t->item(i, OPTION_VOLUME_COL)->setForeground(QBrush("#008000"));
+        if (act == "SELL") t->item(i, OPTION_VOLUME_COL)->setForeground(QBrush("#880000"));
+
     }
 
     m_table->resizeByContents();
@@ -796,10 +802,12 @@ void BB_OptionPositionsPage::fillOrdersTable(const QJsonArray &j_arr)
         QJsonObject j_el = j_arr.at(i).toObject();
         if (j_el.isEmpty()) {qWarning()<<QString("BB_OptionPositionsPage::fillOrdersTable WARNING j_el is empty (index=%1)").arg(i); break;}
 
+        QString act = j_el.value("side").toString().trimmed().toUpper();
+
         QStringList row_data;
         QString ts = j_el.value("createdTime").toString().trimmed();
         row_data << APIConfig::fromTimeStamp(ts.toLong(), QString("dd.MM.yyyy"));
-        row_data << j_el.value("symbol").toString() << j_el.value("qty").toString() << j_el.value("side").toString().toUpper();
+        row_data << j_el.value("symbol").toString() << j_el.value("qty").toString() << act;
         row_data << j_el.value("price").toString() << j_el.value("orderStatus").toString();
         row_data << j_el.value("orderLinkId").toString() << j_el.value("cumExecQty").toString();
 
@@ -807,6 +815,10 @@ void BB_OptionPositionsPage::fillOrdersTable(const QJsonArray &j_arr)
 
         LTable::addTableRow(t, row_data);
         t->item(i, 0)->setData(Qt::UserRole, order_id);
+
+        if (act == "BUY") t->item(i, OPTION_VOLUME_COL)->setForeground(QBrush("#008000"));
+        if (act == "SELL") t->item(i, OPTION_VOLUME_COL)->setForeground(QBrush("#880000"));
+
     }
 
     m_orderTable->resizeByContents();
