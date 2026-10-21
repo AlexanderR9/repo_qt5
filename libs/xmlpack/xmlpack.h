@@ -41,6 +41,7 @@ public:
     inline const LXMLPackElement* rootElement() const {return m_rootNode;}
     inline LXMLPackElement* rootElementVar() const {return m_rootNode;}
     inline bool kksUsed() const {return m_kksUsed;}
+    inline int byteOrder() const {return m_byteOrder;}
 
     //QDataStream operation
     void toByteArray(QByteArray&, bool singleFloatPrecision = false); //запись пакета в массив байт

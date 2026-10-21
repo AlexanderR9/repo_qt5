@@ -83,6 +83,7 @@ public:
 
 
     virtual void setPacketByteOrder(int); //устанавливает порядок байт для записи пакета в поток данных в m_packet
+    virtual int packetByteOrder() const;
     virtual void resizeColumns(); //подогнать размеры столбцов под контент    
 
     //обновить значения итемов (ВСЕХ), т.е. вытащить их из m_packet заполнить итемы дерева соответствующими значениями нод

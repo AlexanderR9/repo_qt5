@@ -200,6 +200,11 @@ void LXMLPackView::setPacketByteOrder(int bo)
     if (m_packet)
         m_packet->setByteOrder(bo);
 }
+int LXMLPackView::packetByteOrder() const
+{
+    if (m_packet) return m_packet->byteOrder();
+    return 0;
+}
 void LXMLPackView::nextRandValues(bool update_items)
 {
     if (m_packet)
