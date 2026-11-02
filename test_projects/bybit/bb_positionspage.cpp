@@ -761,6 +761,7 @@ void BB_OptionPositionsPage::fillPosTable(const QJsonArray &j_arr)
 
         //    list << "Trigger time" << "Ticker" << "Lot" << "Action" << "Open price" << "Market price" << "Result";
         QString act = j_el.value("side").toString().trimmed().toUpper();
+        QString ticker = j_el.value("symbol").toString().trimmed().toUpper();
 
         float lot = j_el.value("size").toString().toFloat();
         float open_price = j_el.value("avgPrice").toString().toFloat();
@@ -773,7 +774,7 @@ void BB_OptionPositionsPage::fillPosTable(const QJsonArray &j_arr)
         QStringList row_data;
         double ts = j_el.value("openTime").toDouble();
         row_data << APIConfig::fromTimeStamp(qint64(ts), QString("dd.MM.yyyy hh:mm"));
-        row_data << j_el.value("symbol").toString();
+        row_data << ticker;
         row_data << QString::number(lot, 'f', 2) << act;
         row_data << QString::number(open_price, 'f', 2);
         row_data << QString::number(cur_price, 'f', 2);
@@ -782,10 +783,12 @@ void BB_OptionPositionsPage::fillPosTable(const QJsonArray &j_arr)
 
         LTable::addTableRow(t, row_data);
 
-        if (result < 0) t->item(i, t->columnCount()-1)->setTextColor("#AA0000");
+        if (result < 0) t->item(i, t->columnCount()-1)->setForeground(QBrush("#AA0000"));
+
 
         if (act == "BUY") t->item(i, OPTION_VOLUME_COL)->setForeground(QBrush("#008000"));
         if (act == "SELL") t->item(i, OPTION_VOLUME_COL)->setForeground(QBrush("#880000"));
+        if (ticker.contains("C-USDT")) t->item(i, TICKER_COL)->setForeground(QBrush("#0000DD"));
 
     }
 
@@ -803,11 +806,12 @@ void BB_OptionPositionsPage::fillOrdersTable(const QJsonArray &j_arr)
         if (j_el.isEmpty()) {qWarning()<<QString("BB_OptionPositionsPage::fillOrdersTable WARNING j_el is empty (index=%1)").arg(i); break;}
 
         QString act = j_el.value("side").toString().trimmed().toUpper();
+        QString ticker = j_el.value("symbol").toString().trimmed().toUpper();
 
         QStringList row_data;
         QString ts = j_el.value("createdTime").toString().trimmed();
         row_data << APIConfig::fromTimeStamp(ts.toLong(), QString("dd.MM.yyyy"));
-        row_data << j_el.value("symbol").toString() << j_el.value("qty").toString() << act;
+        row_data << ticker << j_el.value("qty").toString() << act;
         row_data << j_el.value("price").toString() << j_el.value("orderStatus").toString();
         row_data << j_el.value("orderLinkId").toString() << j_el.value("cumExecQty").toString();
 
@@ -818,6 +822,7 @@ void BB_OptionPositionsPage::fillOrdersTable(const QJsonArray &j_arr)
 
         if (act == "BUY") t->item(i, OPTION_VOLUME_COL)->setForeground(QBrush("#008000"));
         if (act == "SELL") t->item(i, OPTION_VOLUME_COL)->setForeground(QBrush("#880000"));
+        if (ticker.contains("C-USDT")) t->item(i, TICKER_COL)->setForeground(QBrush("#0000DD"));
 
     }
 

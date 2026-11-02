@@ -32,10 +32,10 @@ void APITradeDialog::updateWidgetsSizePolicy()
     {
         if (sw.edit) sw.edit->setReadOnly(true);
         if (sw.comboBox)
-        {
             sw.comboBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        }
-    }
+
+        if (sw.key == "require_award") sw.edit->setReadOnly(false);
+    }       
 
     this->setCaptionsWidth(230);
 }
@@ -87,8 +87,9 @@ void APITradeDialog::init()
     this->addSimpleWidget(QString("Award deviation, %"), LSimpleDialog::sdtDoubleCombo, key);
 
     key = "require_award";
-    this->addSimpleWidget("Require award of oprtion", LSimpleDialog::sdtDoubleLine, key, precision());
+    this->addSimpleWidget("Require award of option", LSimpleDialog::sdtDoubleLine, key, precision());
     this->setWidgetValue(key, 0.05);
+    //this->widgetByKey(key)->edit->setReadOnly(false);
 
     key = "custom_id";
     this->addSimpleWidget("Custom order_ID", LSimpleDialog::sdtString, key);
