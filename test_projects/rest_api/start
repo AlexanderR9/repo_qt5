@@ -1,4 +1,11 @@
 #!/bin/bash
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../../libs/base/build:../../libs/web/build
+
+
+
+L_PATH=../../libs
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$L_PATH/base/build
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$L_PATH/web/build
+export LD_LIBRARY_PATH
+
 
 ./rest_api_test
