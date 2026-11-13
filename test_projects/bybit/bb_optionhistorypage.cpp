@@ -35,8 +35,8 @@
 //BB_OptionHistoryPage
 BB_OptionHistoryPage::BB_OptionHistoryPage(QWidget *parent)
     :BB_HistoryPage(parent),
-    m_needRewriteFile(false)
-      //m_amountEdit(NULL)
+    m_needRewriteFile(false),
+    m_totalResultEdit(NULL)
 {
     setObjectName("option_history_page");
     reinitWidgets();
@@ -55,23 +55,24 @@ void BB_OptionHistoryPage::reinitWidgets()
     m_tablePos->setTitle("Option history");
     m_tablePos->setHeaderLabels(BB_HistoryOption::tableHeaders());
 
-    //QLabel *amountLabel = new QLabel("Amount volume", this);
-    //m_amountEdit = new QLineEdit(this);
-    //m_amountEdit->setReadOnly(true);
+    QLabel *amountLabel = new QLabel("Total result", this);
+    m_totalResultEdit = new QLineEdit(this);
+    m_totalResultEdit->setReadOnly(true);
 
-    /*
+
     QGridLayout *g_lay = qobject_cast<QGridLayout*>(h_splitter->widget(1)->layout());
     if (g_lay)
     {
         qDebug()<<h_splitter->widget(1)->objectName();
         g_lay->addWidget(amountLabel, 3, 0);
-        g_lay->addWidget(m_amountEdit, 3, 1);
+        g_lay->addWidget(m_totalResultEdit, 3, 1);
     }
-    */
+    m_totalResultEdit->setText("???");
+
 
     viewTablesUpdate();
 
-    //connect(m_tablePos, SIGNAL(signalSearched()), this, SLOT(slotSearched()));
+    connect(m_tablePos, SIGNAL(signalSearched()), this, SLOT(slotSearched()));
 }
 void BB_OptionHistoryPage::loadTablesByContainers()
 {
@@ -247,6 +248,21 @@ void BB_OptionHistoryPage::sendOrdersReq()
 
     sendRequest(REQ_LIMIT_RECORDS);
 }
+void BB_OptionHistoryPage::recalcTotalResult()
+{
+    qDebug("BB_OptionHistoryPage::recalcTotalResult()");
+    float sum = 0;
+    QTableWidget *t = m_tablePos->table();
+    for (int i=0; i<t->rowCount(); i++)
+    {
+        if (!t->isRowHidden(i))
+        {
+            sum += t->item(i, RESULT_COL)->text().toFloat();
+        }
+    }
+
+    m_totalResultEdit->setText(QString::number(sum, 'f', 1));
+}
 void BB_OptionHistoryPage::sendNextOrdersReq()
 {
     h_stage = hsFinished;
@@ -291,18 +307,12 @@ void BB_OptionHistoryPage::load(QSettings &settings)
 
 }
 
-/*
+
 void BB_OptionHistoryPage::slotSearched()
 {
-    QTableWidget *t = m_tablePos->table();
-    float a = 0;
-    for (int i=0; i<t->rowCount(); i++)
-    {
-      //  if (!t->isRowHidden(i)) a += m_spotOrders.at(i).lot_size;
-    }
-    //m_amountEdit->setText(QString::number(a, 'f', 4));
+    recalcTotalResult();
 }
-*/
+
 
 
 

@@ -3,6 +3,8 @@
 
 #include "bb_historypage.h"
 
+class QLineEdit;
+
 
 
 //BB_OptionHistoryPage
@@ -20,6 +22,7 @@ public:
 protected:
     QList<BB_HistoryOption> m_positions;
     bool m_needRewriteFile;
+    QLineEdit *m_totalResultEdit;
 
     virtual void loadTablesByContainers(); //by start program once
     virtual void goExchange(const QJsonObject &jresult_obj);
@@ -33,6 +36,7 @@ protected:
     void reinitWidgets();
     void fillTable(const QJsonArray&);
     void updateLastRowColors(const BB_HistoryOption&);
+    void recalcTotalResult();
 
 
     //make after finish ALL requests
@@ -41,7 +45,7 @@ protected:
     void finishReqScenario();
 
 protected slots:
-    //void slotSearched();
+    void slotSearched();
 
 
 };
